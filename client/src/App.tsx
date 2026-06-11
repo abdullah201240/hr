@@ -12,6 +12,7 @@ import CreateEmployeePage from "@/routes/pages/create-employee"
 import EditEmployeePage from "@/routes/pages/edit-employee"
 import ViewEmployeePage from "@/routes/pages/view-employee"
 import AttendancePage from "@/routes/pages/attendance"
+import AttendanceSetupPage from "@/routes/pages/attendance-setup"
 import LeavePage from "@/routes/pages/leave"
 import PayrollPage from "@/routes/pages/payroll"
 import DepartmentsPage from "@/routes/pages/departments"
@@ -64,6 +65,7 @@ function App() {
               <Route path="employees/edit/:email" element={<EditEmployeePage />} />
               <Route path="employees/view/:email" element={<ViewEmployeePage />} />
               <Route path="attendance" element={<AttendancePage />} />
+              <Route path="attendance/setup" element={<AttendanceSetupPage />} />
               <Route path="leave" element={<LeavePage />} />
               <Route path="payroll" element={<PayrollPage />} />
               <Route path="departments" element={<DepartmentsPage />} />

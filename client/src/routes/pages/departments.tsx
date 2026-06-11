@@ -25,7 +25,8 @@ import {
   Eye,
   Edit2,
   Trash2,
-  Filter
+  Filter,
+  Network,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import Swal from "sweetalert2"
+import OrgChart from "@/components/organization/org-chart"
 
 const initialDepartments = [
   { name: "Engineering", head: "Michael Torres", count: 64, openRoles: 5, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
@@ -154,17 +156,19 @@ export default function DepartmentsPage() {
         </div>
         <Button 
           className="gap-2" 
-          onClick={() => navigate(activeTab === "departments" ? "/departments/create" : "/designations/create")}
+          onClick={() => navigate(activeTab === "departments" ? "/departments/create" : activeTab === "designations" ? "/designations/create" : "#")}
+          disabled={activeTab === "orgchart"}
         >
           <Plus className="h-4 w-4" />
-          {activeTab === "departments" ? "Add Department" : "Add Designation"}
+          {activeTab === "departments" ? "Add Department" : activeTab === "designations" ? "Add Designation" : "Edit in Tree"}
         </Button>
       </div>
 
       <Tabs defaultValue="departments" onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-[400px] grid-cols-2 shadow-none border border-border/40 bg-muted/20">
+        <TabsList className="grid w-full max-w-[500px] grid-cols-3 shadow-none border border-border/40 bg-muted/20">
           <TabsTrigger value="departments" className="text-xs">Departments</TabsTrigger>
           <TabsTrigger value="designations" className="text-xs">Designations</TabsTrigger>
+          <TabsTrigger value="orgchart" className="text-xs">Org Chart</TabsTrigger>
         </TabsList>
 
         {/* DEPARTMENTS TAB CONTENT */}
@@ -299,6 +303,25 @@ export default function DepartmentsPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+        </TabsContent>
+
+        {/* ORG CHART TAB CONTENT */}
+        <TabsContent value="orgchart" className="space-y-6 outline-none">
+          {/* Org Chart */}
+          <div className="rounded-2xl border border-border/50 bg-card/50 p-5 sm:p-6 shadow-sm">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Network className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm">Enterprise Organization Chart</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Full hierarchy from CEO to individual contributors. Hover any card to add, edit, or remove positions.
+                </p>
+              </div>
+            </div>
+            <OrgChart />
           </div>
         </TabsContent>
 
