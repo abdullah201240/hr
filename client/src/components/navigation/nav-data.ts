@@ -70,7 +70,7 @@ export const navGroups: NavGroup[] = [
     label: "Organization",
     items: [
       {
-        title: "Departments",
+        title: "Org Structure",
         href: "/departments",
         icon: Building2,
       },

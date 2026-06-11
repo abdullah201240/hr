@@ -15,6 +15,12 @@ import AttendancePage from "@/routes/pages/attendance"
 import LeavePage from "@/routes/pages/leave"
 import PayrollPage from "@/routes/pages/payroll"
 import DepartmentsPage from "@/routes/pages/departments"
+import CreateDepartmentPage from "@/routes/pages/create-department"
+import EditDepartmentPage from "@/routes/pages/edit-department"
+import ViewDepartmentPage from "@/routes/pages/view-department"
+import CreateDesignationPage from "@/routes/pages/create-designation"
+import EditDesignationPage from "@/routes/pages/edit-designation"
+import ViewDesignationPage from "@/routes/pages/view-designation"
 import TasksPage from "@/routes/pages/tasks"
 import ProjectsPage from "@/routes/pages/projects"
 import DocumentsPage from "@/routes/pages/documents"
@@ -61,6 +67,12 @@ function App() {
               <Route path="leave" element={<LeavePage />} />
               <Route path="payroll" element={<PayrollPage />} />
               <Route path="departments" element={<DepartmentsPage />} />
+              <Route path="departments/create" element={<CreateDepartmentPage />} />
+              <Route path="departments/edit/:name" element={<EditDepartmentPage />} />
+              <Route path="departments/view/:name" element={<ViewDepartmentPage />} />
+              <Route path="designations/create" element={<CreateDesignationPage />} />
+              <Route path="designations/edit/:name" element={<EditDesignationPage />} />
+              <Route path="designations/view/:name" element={<ViewDesignationPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
