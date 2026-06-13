@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -34,9 +35,11 @@ import {
   ClipboardList,
   X,
   Pencil,
+  Printer,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
+import { useSearchParams, useNavigate } from "react-router"
 
 // Interfaces
 interface JobOpening {
@@ -59,6 +62,11 @@ interface Candidate {
   source: string
   stage: "Applied" | "Screening" | "Interview" | "Technical" | "Offer" | "Hired"
   appliedDate: string
+  offerLetterGenerated?: boolean
+  joiningLetterGenerated?: boolean
+  offeredSalary?: string
+  offeredStartDate?: string
+  joiningManager?: string
 }
 
 interface OnboardingTask {
@@ -114,12 +122,138 @@ const INITIAL_ONBOARDING: OnboardingHire[] = [
 const PIPELINE_STAGES = ["Applied", "Screening", "Interview", "Technical", "Offer", "Hired"] as const
 
 export default function RecruitmentPage() {
-  const [activeTab, setActiveTab] = useState<"overview" | "jobs" | "pipeline" | "onboarding">("overview")
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = (searchParams.get("tab") as "overview" | "jobs" | "pipeline" | "onboarding") || "overview"
+
+  const setActiveTab = (tab: "overview" | "jobs" | "pipeline" | "onboarding") => {
+    setSearchParams({ tab }, { replace: true })
+  }
 
   // Core States
   const [jobs, setJobs] = useState<JobOpening[]>([])
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [onboardingHires, setOnboardingHires] = useState<OnboardingHire[]>([])
+  const [pipelineJobFilter, setPipelineJobFilter] = useState<string>("all")
+  const [onboardingJobFilter, setOnboardingJobFilter] = useState<string>("all")
+
+  // Pagination & Search States
+  const [jobsSearch, setJobsSearch] = useState("")
+  const [jobsPage, setJobsPage] = useState(1)
+  const [pipelinePage, setPipelinePage] = useState(1)
+  const [onboardingPage, setOnboardingPage] = useState(1)
+
+  const JOBS_PER_PAGE = 5
+  const PIPELINE_PER_PAGE = 3
+  const ONBOARDING_PER_PAGE = 2
+
+  const handleGenerateOfferLetter = (cand: Candidate) => {
+    Swal.fire({
+      title: "Generate Offer Letter",
+      html: `
+        <div class="text-left space-y-3">
+          <label class="text-xs font-semibold block text-gray-700 dark:text-gray-300 mb-1">Annual Salary Offered *</label>
+          <input id="swal-salary" class="swal2-input !mt-0 !w-full" placeholder="e.g. $75,000 / year" value="$80,000">
+          
+          <label class="text-xs font-semibold block text-gray-700 dark:text-gray-300 mt-3 mb-1">Proposed Start Date *</label>
+          <input id="swal-start-date" type="date" class="swal2-input !mt-0 !w-full" value="2026-07-01">
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Generate & Send",
+      preConfirm: () => {
+        const salary = (document.getElementById("swal-salary") as HTMLInputElement).value
+        const startDate = (document.getElementById("swal-start-date") as HTMLInputElement).value
+        if (!salary || !startDate) {
+          Swal.showValidationMessage("Please enter all details")
+          return false
+        }
+        return { salary, startDate }
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const updated = candidates.map(c => {
+          if (c.id === cand.id) {
+            return {
+              ...c,
+              offerLetterGenerated: true,
+              offeredSalary: result.value.salary,
+              offeredStartDate: result.value.startDate
+            }
+          }
+          return c
+        })
+        saveCandidates(updated)
+        
+        Swal.fire({
+          title: "Offer Letter Generated!",
+          icon: "success",
+          html: `
+            <div class="text-left border p-3 rounded bg-muted/30 text-xs font-mono space-y-2 max-h-60 overflow-y-auto">
+              <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+              <p><strong>To:</strong> ${cand.name} (${cand.email})</p>
+              <p>Dear ${cand.name},</p>
+              <p>We are pleased to offer you the position of <strong>${cand.role}</strong> at our organization. We offer a starting salary of <strong>${result.value.salary}</strong> with a start date of <strong>${result.value.startDate}</strong>.</p>
+              <p>Sincerely,<br/>HR Department</p>
+            </div>
+          `
+        })
+      }
+    })
+  }
+
+  const handleGenerateJoiningLetter = (cand: Candidate) => {
+    Swal.fire({
+      title: "Generate Joining Letter",
+      html: `
+        <div class="text-left space-y-3">
+          <label class="text-xs font-semibold block text-gray-700 dark:text-gray-300 mb-1">Reporting Manager *</label>
+          <input id="swal-manager" class="swal2-input !mt-0 !w-full" placeholder="e.g. Michael Torres" value="Michael Torres">
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Generate & Issue",
+      preConfirm: () => {
+        const manager = (document.getElementById("swal-manager") as HTMLInputElement).value
+        if (!manager) {
+          Swal.showValidationMessage("Please enter manager name")
+          return false
+        }
+        return { manager }
+      }
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        const updated = candidates.map(c => {
+          if (c.id === cand.id) {
+            return {
+              ...c,
+              joiningLetterGenerated: true,
+              joiningManager: result.value.manager
+            }
+          }
+          return c
+        })
+        saveCandidates(updated)
+        
+        Swal.fire({
+          title: "Joining Letter Issued!",
+          icon: "success",
+          html: `
+            <div class="text-left border p-3 rounded bg-muted/30 text-xs font-mono space-y-2 max-h-60 overflow-y-auto">
+              <p><strong>OFFICIAL JOINING LETTER</strong></p>
+              <p><strong>Employee:</strong> ${cand.name}</p>
+              <p><strong>Designation:</strong> ${cand.role}</p>
+              <p><strong>Reporting To:</strong> ${result.value.manager}</p>
+              <p>Dear ${cand.name},</p>
+              <p>Welcome to our team! This letter confirms your active placement. Please report to <strong>${result.value.manager}</strong> on your start date.</p>
+            </div>
+          `
+        })
+      }
+    })
+  }
 
   // Modal States
   const [isJobModalOpen, setIsJobModalOpen] = useState(false)
@@ -170,6 +304,19 @@ export default function RecruitmentPage() {
       localStorage.setItem("onboarding_hires", JSON.stringify(INITIAL_ONBOARDING))
     }
   }, [])
+
+  // Reset pages when filters change
+  useEffect(() => {
+    setJobsPage(1)
+  }, [jobsSearch])
+
+  useEffect(() => {
+    setPipelinePage(1)
+  }, [pipelineJobFilter])
+
+  useEffect(() => {
+    setOnboardingPage(1)
+  }, [onboardingJobFilter])
 
   // Helper to persist state updates
   const saveJobs = (updatedJobs: JobOpening[]) => {
@@ -605,250 +752,647 @@ export default function RecruitmentPage() {
       )}
 
       {/* JOB OPENINGS TAB */}
-      {activeTab === "jobs" && (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg font-bold">Open Requisitions</CardTitle>
-                <CardDescription>Monitor currently active and filled job requisitions</CardDescription>
-              </div>
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search job roles..." className="pl-9" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-muted/50 border-b border-border font-bold text-muted-foreground">
-                    <th className="p-3">Job Title</th>
-                    <th className="p-3">Department</th>
-                    <th className="p-3">Type / Location</th>
-                    <th className="p-3">Experience</th>
-                    <th className="p-3">Date Opened</th>
-                    <th className="p-3 text-center">Applicants</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {jobs.map(job => (
-                    <tr key={job.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="p-3 font-semibold text-foreground">{job.title}</td>
-                      <td className="p-3">{job.department}</td>
-                      <td className="p-3 text-muted-foreground">
-                        <span className="font-medium">{job.type}</span> • {job.location}
-                      </td>
-                      <td className="p-3">{job.experience}</td>
-                      <td className="p-3">{job.dateOpened}</td>
-                      <td className="p-3 text-center font-bold">{job.applicants}</td>
-                      <td className="p-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border",
-                            job.status === "Open"
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                              : "bg-muted text-muted-foreground border-border/80"
-                          )}
-                        >
-                          {job.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right flex items-center justify-end gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                          onClick={() => handleEditJobClick(job)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => deleteJob(job.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {activeTab === "jobs" && (() => {
+        const filteredJobs = jobs.filter(job => 
+          job.title.toLowerCase().includes(jobsSearch.toLowerCase()) ||
+          job.department.toLowerCase().includes(jobsSearch.toLowerCase()) ||
+          job.location.toLowerCase().includes(jobsSearch.toLowerCase())
+        )
+        const totalJobsPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+        const startIndex = (jobsPage - 1) * JOBS_PER_PAGE
+        const paginatedJobs = filteredJobs.slice(startIndex, startIndex + JOBS_PER_PAGE)
 
-      {/* PIPELINE ATS TAB */}
-      {activeTab === "pipeline" && (
-        <div className="space-y-4">
+        return (
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-bold">Candidate Pipeline (ATS)</CardTitle>
-              <CardDescription>Move candidates between stages in the recruitment process</CardDescription>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg font-bold">Open Requisitions</CardTitle>
+                  <CardDescription>Monitor currently active and filled job requisitions</CardDescription>
+                </div>
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search job roles..." 
+                    className="pl-9" 
+                    value={jobsSearch}
+                    onChange={e => setJobsSearch(e.target.value)}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              {/* Kanban stages */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 overflow-x-auto pb-4">
-                {PIPELINE_STAGES.map(stage => {
-                  const stageCandidates = candidates.filter(c => c.stage === stage)
-                  return (
-                    <div key={stage} className="rounded-xl border border-border/50 bg-muted/20 p-3 min-w-[200px] flex flex-col space-y-3">
-                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                        <span className="text-xs font-bold text-foreground/80">{stage}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                          {stageCandidates.length}
-                        </span>
-                      </div>
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border font-bold text-muted-foreground">
+                      <th className="p-3">Job Title</th>
+                      <th className="p-3">Department</th>
+                      <th className="p-3">Type / Location</th>
+                      <th className="p-3">Experience</th>
+                      <th className="p-3">Date Opened</th>
+                      <th className="p-3 text-center">Applicants</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {paginatedJobs.map(job => (
+                      <tr key={job.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="p-3 font-semibold text-foreground">{job.title}</td>
+                        <td className="p-3">{job.department}</td>
+                        <td className="p-3 text-muted-foreground">
+                          <span className="font-medium">{job.type}</span> • {job.location}
+                        </td>
+                        <td className="p-3">{job.experience}</td>
+                        <td className="p-3">{job.dateOpened}</td>
+                        <td className="p-3 text-center font-bold">{job.applicants}</td>
+                        <td className="p-3">
+                          <span
+                            className={cn(
+                              "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border",
+                              job.status === "Open"
+                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                : "bg-muted text-muted-foreground border-border/80"
+                            )}
+                          >
+                            {job.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditJobClick(job)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteJob(job.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {paginatedJobs.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                          No jobs found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                      <div className="flex-1 space-y-2.5 overflow-y-auto max-h-[400px]">
-                        {stageCandidates.length === 0 ? (
-                          <div className="text-center py-6 text-[10px] text-muted-foreground italic">
-                            No candidates
-                          </div>
-                        ) : (
-                          stageCandidates.map(cand => (
-                            <div key={cand.id} className="p-3 rounded-lg border border-border bg-card shadow-xs relative group hover:border-primary/50 transition-colors">
-                              <button
-                                type="button"
-                                className="absolute top-2 right-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => deleteCandidate(cand.id)}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                              <p className="text-xs font-bold truncate pr-3">{cand.name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{cand.role}</p>
-                              <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-border/40">
-                                <span className="text-[9px] font-medium text-muted-foreground/85 px-1 bg-muted/60 rounded">
-                                  {cand.source}
+              {/* Pagination Controls */}
+              {totalJobsPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+                  <span className="text-xs text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(startIndex + JOBS_PER_PAGE, filteredJobs.length)} of {filteredJobs.length} entries
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setJobsPage(prev => Math.max(prev - 1, 1))}
+                      disabled={jobsPage === 1}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setJobsPage(prev => Math.min(prev + 1, totalJobsPages))}
+                      disabled={jobsPage === totalJobsPages}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })()}
+
+      {/* PIPELINE ATS TAB */}
+      {activeTab === "pipeline" && (() => {
+        // Collect all job groups based on filter
+        const pipelineGroups = [
+          ...jobs.filter(job => {
+            const jobCandidates = candidates.filter(c => c.role === job.title)
+            if (job.status === "Closed" && jobCandidates.length === 0) return false
+            return pipelineJobFilter === "all" || job.title === pipelineJobFilter
+          }).map(job => ({
+            type: "active",
+            id: job.id,
+            title: job.title,
+            department: job.department,
+            location: job.location,
+            status: job.status,
+            candidates: candidates.filter(c => c.role === job.title),
+          })),
+          ...(() => {
+            const activeJobTitles = jobs.map(j => j.title)
+            const otherCandidates = candidates.filter(c => !activeJobTitles.includes(c.role))
+            const otherRoles = Array.from(new Set(otherCandidates.map(c => c.role)))
+            return otherRoles
+              .filter(role => pipelineJobFilter === "all" || role === pipelineJobFilter)
+              .map(roleName => ({
+                type: "archived",
+                id: roleName,
+                title: roleName,
+                department: "N/A",
+                location: "N/A",
+                status: "Archived",
+                candidates: otherCandidates.filter(c => c.role === roleName),
+              }))
+          })()
+        ]
+
+        const totalPipelinePages = Math.ceil(pipelineGroups.length / PIPELINE_PER_PAGE)
+        const startIndex = (pipelinePage - 1) * PIPELINE_PER_PAGE
+        const paginatedPipelineGroups = pipelineGroups.slice(startIndex, startIndex + PIPELINE_PER_PAGE)
+
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold">Job-by-Job Candidate Pipeline</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Track candidate progression across the recruitment funnel, separated by active job requisition.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-muted-foreground">Filter by Job:</span>
+                <Select value={pipelineJobFilter} onValueChange={setPipelineJobFilter}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs">
+                    <SelectValue placeholder="All Jobs" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Jobs</SelectItem>
+                    {jobs.map(j => (
+                      <SelectItem key={j.id} value={j.title}>{j.title}</SelectItem>
+                    ))}
+                    {(() => {
+                      const activeTitles = jobs.map(j => j.title)
+                      const otherRoles = Array.from(
+                        new Set(candidates.filter(c => !activeTitles.includes(c.role)).map(c => c.role))
+                      )
+                      return otherRoles.map(role => (
+                        <SelectItem key={role} value={role}>{role} (Archived)</SelectItem>
+                      ))
+                    })()}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {paginatedPipelineGroups.map(group => {
+                const isArchived = group.type === "archived"
+                return (
+                  <Card key={group.id} className={cn("border border-border/40 shadow-none", isArchived && "border-dashed bg-muted/5")}>
+                    <CardHeader className="pb-3 bg-muted/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-sm font-bold text-foreground">
+                            {group.title}
+                          </CardTitle>
+                          <span className={cn("text-[10px] text-muted-foreground font-semibold px-2 py-0.5 rounded bg-muted", isArchived && "bg-muted/80 italic")}>
+                            {isArchived ? "Archived / Unlisted Role" : group.department}
+                          </span>
+                        </div>
+                        {!isArchived && (
+                          <CardDescription className="text-[11px] mt-0.5">
+                            Location: {group.location} • Status: 
+                            <span className={cn("ml-1 font-bold", group.status === "Open" ? "text-emerald-600" : "text-muted-foreground")}>
+                              {group.status}
+                            </span>
+                          </CardDescription>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className="text-xs font-semibold">
+                        {group.candidates.length} {group.candidates.length === 1 ? "Candidate" : "Candidates"}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      {/* Mini Kanban stages grid for this job */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto">
+                        {PIPELINE_STAGES.map(stage => {
+                          const stageCandidates = group.candidates.filter(c => c.stage === stage)
+                          return (
+                            <div key={stage} className="rounded-xl border border-border/40 bg-muted/10 p-2.5 min-w-[150px] flex flex-col space-y-2">
+                              <div className="flex items-center justify-between border-b border-border/20 pb-1.5 mb-1">
+                                <span className="text-[10px] font-bold text-foreground/75 uppercase tracking-wider">{stage}</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.25 rounded bg-muted text-muted-foreground">
+                                  {stageCandidates.length}
                                 </span>
-                                {stage !== "Hired" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const nextIndex = PIPELINE_STAGES.indexOf(stage) + 1
-                                      if (nextIndex < PIPELINE_STAGES.length) {
-                                        promoteCandidate(cand.id, PIPELINE_STAGES[nextIndex])
-                                      }
-                                    }}
-                                    className="text-[10px] text-primary font-semibold flex items-center gap-0.5 hover:underline"
-                                  >
-                                    Move <ArrowRight className="h-3 w-3" />
-                                  </button>
+                              </div>
+
+                              <div className="flex-1 space-y-2 overflow-y-auto max-h-[220px]">
+                                {stageCandidates.length === 0 ? (
+                                  <div className="text-center py-5 text-[9px] text-muted-foreground/60 italic">
+                                    Empty
+                                  </div>
+                                ) : (
+                                  stageCandidates.map(cand => (
+                                    <div key={cand.id} className="p-2.5 rounded-lg border border-border bg-card shadow-xs relative group hover:border-primary/50 transition-colors">
+                                      <button
+                                        type="button"
+                                        className="absolute top-1.5 right-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => deleteCandidate(cand.id)}
+                                      >
+                                        <X className="h-2.5 w-2.5" />
+                                      </button>
+                                      <p className="text-[11px] font-bold truncate pr-3 text-foreground">{cand.name}</p>
+                                      <p className="text-[9px] text-muted-foreground truncate">{cand.email}</p>
+
+                                      {cand.stage === "Offer" && (
+                                        <div className="mt-1.5 pt-1.5 border-t border-border/40 space-y-1">
+                                          {cand.offerLetterGenerated ? (
+                                            <div className="flex items-center justify-between gap-1">
+                                              <span className="inline-flex items-center text-[8px] font-bold text-emerald-600 bg-emerald-500/10 px-1 py-0.5 rounded">
+                                                📄 Offer Sent
+                                              </span>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => navigate(`/recruitment/print-offer/${cand.id}`)}
+                                                className="h-5 w-5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-500/5 cursor-pointer shrink-0"
+                                                title="Print Offer Letter"
+                                              >
+                                                <Printer className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <Button
+                                              variant="outline"
+                                              className="w-full text-[9px] h-6 justify-center gap-1 text-primary cursor-pointer hover:bg-primary/5"
+                                              onClick={() => handleGenerateOfferLetter(cand)}
+                                            >
+                                              📄 Make Offer
+                                            </Button>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {cand.stage === "Hired" && (
+                                        <div className="mt-1.5 pt-1.5 border-t border-border/40 space-y-1">
+                                          {cand.joiningLetterGenerated ? (
+                                            <div className="flex items-center justify-between gap-1">
+                                              <span className="inline-flex items-center text-[8px] font-bold text-indigo-600 bg-indigo-500/10 px-1 py-0.5 rounded">
+                                                ✉️ Joined
+                                              </span>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => navigate(`/recruitment/print/${cand.id}`)}
+                                                className="h-5 w-5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-500/5 cursor-pointer shrink-0"
+                                                title="Print Joining Letter"
+                                              >
+                                                <Printer className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <Button
+                                              variant="outline"
+                                              className="w-full text-[9px] h-6 justify-center gap-1 text-primary cursor-pointer hover:bg-primary/5"
+                                              onClick={() => handleGenerateJoiningLetter(cand)}
+                                            >
+                                              ✉️ Make Join Letter
+                                            </Button>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      <div className="flex justify-between items-center mt-2 pt-1.5 border-t border-border/30">
+                                        <span className="text-[8px] font-medium text-muted-foreground/85 px-1 bg-muted/60 rounded">
+                                          {cand.source}
+                                        </span>
+                                        {stage !== "Hired" && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const nextIndex = PIPELINE_STAGES.indexOf(stage) + 1
+                                              if (nextIndex < PIPELINE_STAGES.length) {
+                                                promoteCandidate(cand.id, PIPELINE_STAGES[nextIndex])
+                                              }
+                                            }}
+                                            className="text-[9px] text-primary font-semibold flex items-center gap-0.5 hover:underline"
+                                          >
+                                            Move <ArrowRight className="h-2.5 w-2.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))
                                 )}
                               </div>
                             </div>
-                          ))
-                        )}
+                          )
+                        })}
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
 
+              {pipelineGroups.length === 0 && (
+                <div className="text-center py-12 border border-dashed border-border/50 rounded-xl bg-muted/5">
+                  <p className="text-sm text-muted-foreground">No candidates match the selected filter.</p>
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPipelinePages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+                  <span className="text-xs text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(startIndex + PIPELINE_PER_PAGE, pipelineGroups.length)} of {pipelineGroups.length} jobs
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPipelinePage(prev => Math.max(prev - 1, 1))}
+                      disabled={pipelinePage === 1}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPipelinePage(prev => Math.min(prev + 1, totalPipelinePages))}
+                      disabled={pipelinePage === totalPipelinePages}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
       {/* ONBOARDING TAB */}
-      {activeTab === "onboarding" && (
-        <div className="space-y-6">
-          <div className="grid gap-5">
-            {onboardingHires.map(hire => {
-              const completedTasksCount = hire.tasks.filter(t => t.completed).length
-              const progressPct = Math.round((completedTasksCount / hire.tasks.length) * 100)
-              
-              return (
-                <Card key={hire.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 bg-muted/10">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-base">{hire.name}</h3>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
-                          New Hire
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {hire.role} • {hire.department}
-                      </p>
+      {activeTab === "onboarding" && (() => {
+        // Collect onboarding groups
+        const onboardingGroups = [
+          ...jobs.filter(job => {
+            const jobHires = onboardingHires.filter(h => h.role === job.title)
+            if (jobHires.length === 0) return false
+            return onboardingJobFilter === "all" || job.title === onboardingJobFilter
+          }).map(job => ({
+            type: "active",
+            id: job.id,
+            title: job.title,
+            department: job.department,
+            hires: onboardingHires.filter(h => h.role === job.title),
+          })),
+          ...(() => {
+            const activeJobTitles = jobs.map(j => j.title)
+            const otherHires = onboardingHires.filter(h => !activeJobTitles.includes(h.role))
+            const otherRoles = Array.from(new Set(otherHires.map(h => h.role)))
+            return otherRoles
+              .filter(role => onboardingJobFilter === "all" || role === onboardingJobFilter)
+              .map(roleName => ({
+                type: "archived",
+                id: roleName,
+                title: roleName,
+                department: "N/A",
+                hires: otherHires.filter(h => h.role === roleName),
+              }))
+          })()
+        ]
+
+        const totalOnboardingPages = Math.ceil(onboardingGroups.length / ONBOARDING_PER_PAGE)
+        const startIndex = (onboardingPage - 1) * ONBOARDING_PER_PAGE
+        const paginatedOnboardingGroups = onboardingGroups.slice(startIndex, startIndex + ONBOARDING_PER_PAGE)
+
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold">Job-by-Job Onboarding Tracking</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Monitor onboarding task completion lists for new hires, grouped by job role.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-semibold text-muted-foreground">Filter by Job:</span>
+                <Select value={onboardingJobFilter} onValueChange={setOnboardingJobFilter}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs">
+                    <SelectValue placeholder="All Jobs" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Jobs</SelectItem>
+                    {jobs.map(j => (
+                      <SelectItem key={j.id} value={j.title}>{j.title}</SelectItem>
+                    ))}
+                    {(() => {
+                      const activeTitles = jobs.map(j => j.title)
+                      const otherRoles = Array.from(
+                        new Set(onboardingHires.filter(h => !activeTitles.includes(h.role)).map(h => h.role))
+                      )
+                      return otherRoles.map(role => (
+                        <SelectItem key={role} value={role}>{role} (Archived)</SelectItem>
+                      ))
+                    })()}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              {paginatedOnboardingGroups.map(group => {
+                const isArchived = group.type === "archived"
+                return (
+                  <div key={group.id} className="space-y-4">
+                    <div className="flex items-center gap-2 border-b border-border/20 pb-2">
+                      <h4 className="text-sm font-bold text-foreground">{group.title}</h4>
+                      <span className={cn("text-[10px] text-muted-foreground font-semibold px-2 py-0.5 rounded bg-muted", isArchived && "bg-muted/80 italic")}>
+                        {isArchived ? "Archived / Unlisted Role" : group.department}
+                      </span>
+                      <Badge variant="secondary" className="text-[10px] font-semibold ml-auto">
+                        {group.hires.length} {group.hires.length === 1 ? "New Hire" : "New Hires"}
+                      </Badge>
                     </div>
 
-                    <div className="flex items-center gap-5 self-start md:self-auto shrink-0">
-                      <div className="text-xs text-right">
-                        <p className="font-medium text-muted-foreground">Start Date</p>
-                        <p className="font-semibold text-foreground flex items-center gap-1 mt-0.5">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> {hire.startDate}
-                        </p>
-                      </div>
+                    <div className="grid gap-5">
+                      {group.hires.map(hire => {
+                        const completedTasksCount = hire.tasks.filter(t => t.completed).length
+                        const progressPct = Math.round((completedTasksCount / hire.tasks.length) * 100)
 
-                      <div className="flex items-center gap-2">
-                        <div className="h-2.5 w-24 sm:w-32 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-300",
-                              progressPct === 100 ? "bg-emerald-500" : "bg-primary"
-                            )}
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-bold tabular-nums min-w-[32px] text-right">
-                          {progressPct}%
-                        </span>
-                      </div>
+                        return (
+                          <Card key={hire.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                            <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 bg-muted/10">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-bold text-base">{hire.name}</h3>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
+                                    New Hire
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {hire.role} • {hire.department}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-5 self-start md:self-auto shrink-0">
+                                <div className="text-xs text-right">
+                                  <p className="font-medium text-muted-foreground">Start Date</p>
+                                  <p className="font-semibold text-foreground flex items-center gap-1 mt-0.5">
+                                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> {hire.startDate}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2.5 w-24 sm:w-32 rounded-full bg-muted overflow-hidden">
+                                    <div
+                                      className={cn(
+                                        "h-full rounded-full transition-all duration-300",
+                                        progressPct === 100 ? "bg-emerald-500" : "bg-primary"
+                                      )}
+                                      style={{ width: `${progressPct}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-bold tabular-nums min-w-[32px] text-right">
+                                    {progressPct}%
+                                  </span>
+                                </div>
+
+                                {(() => {
+                                  const hireCandidate = candidates.find(c => c.id === hire.candidateId)
+                                  if (!hireCandidate) return null
+                                  return (
+                                    <div className="text-xs shrink-0 flex items-center gap-1.5">
+                                      {hireCandidate.joiningLetterGenerated ? (
+                                        <>
+                                          <span className="inline-flex items-center gap-1 font-bold text-indigo-600 bg-indigo-500/10 px-2.5 py-1 rounded-lg">
+                                            ✉️ Joining Letter Sent
+                                          </span>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => navigate(`/recruitment/print/${hireCandidate.id}`)}
+                                            className="h-8 w-8 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-500/5 cursor-pointer"
+                                            title="Print Joining Letter"
+                                          >
+                                            <Printer className="h-4 w-4" />
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleGenerateJoiningLetter(hireCandidate)}
+                                          className="h-8 text-xs font-semibold cursor-pointer"
+                                        >
+                                          ✉️ Make Joining Letter
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
+                              </div>
+                            </div>
+
+                            <CardContent className="p-5">
+                              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border/30">
+                                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-xs font-semibold text-foreground/80">Onboarding Checklist Tasks</span>
+                              </div>
+
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                {hire.tasks.map(task => (
+                                  <div
+                                    key={task.id}
+                                    onClick={() => toggleOnboardingTask(hire.id, task.id)}
+                                    className={cn(
+                                      "flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer select-none",
+                                      task.completed
+                                        ? "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10"
+                                        : "border-border/60 hover:border-primary/20 hover:bg-muted/20"
+                                    )}
+                                  >
+                                    <div
+                                      className={cn(
+                                        "h-4.5 w-4.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                                        task.completed
+                                          ? "border-emerald-500 bg-emerald-500 text-white"
+                                          : "border-border bg-background"
+                                      )}
+                                    >
+                                      {task.completed && <CheckCircle className="h-3.5 w-3.5 fill-current" />}
+                                    </div>
+                                    <span className={cn(
+                                      "text-xs font-medium transition-all",
+                                      task.completed ? "line-through text-muted-foreground" : "text-foreground"
+                                    )}>
+                                      {task.title}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })}
                     </div>
                   </div>
+                )
+              })}
 
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border/30">
-                      <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-foreground/80">Onboarding Checklist Tasks</span>
-                    </div>
+              {onboardingGroups.length === 0 && (
+                <div className="text-center py-12 border border-dashed border-border/50 rounded-xl bg-muted/5">
+                  <p className="text-sm text-muted-foreground">No new hires match the selected filter.</p>
+                </div>
+              )}
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {hire.tasks.map(task => (
-                        <div
-                          key={task.id}
-                          onClick={() => toggleOnboardingTask(hire.id, task.id)}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer select-none",
-                            task.completed
-                              ? "border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10"
-                              : "border-border/60 hover:border-primary/20 hover:bg-muted/20"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "h-4.5 w-4.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
-                              task.completed
-                                ? "border-emerald-500 bg-emerald-500 text-white"
-                                : "border-border bg-background"
-                            )}
-                          >
-                            {task.completed && <CheckCircle className="h-3.5 w-3.5 fill-current" />}
-                          </div>
-                          <span className={cn(
-                            "text-xs font-medium transition-all",
-                            task.completed ? "line-through text-muted-foreground" : "text-foreground"
-                          )}>
-                            {task.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+              {/* Pagination Controls */}
+              {totalOnboardingPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+                  <span className="text-xs text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(startIndex + ONBOARDING_PER_PAGE, onboardingGroups.length)} of {onboardingGroups.length} jobs
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOnboardingPage(prev => Math.max(prev - 1, 1))}
+                      disabled={onboardingPage === 1}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOnboardingPage(prev => Math.min(prev + 1, totalOnboardingPages))}
+                      disabled={onboardingPage === totalOnboardingPages}
+                      className="h-8 text-xs cursor-pointer"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* MODALS */}
       {/* 1. Add Job Modal */}

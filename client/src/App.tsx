@@ -28,6 +28,11 @@ import DocumentsPage from "@/routes/pages/documents"
 import ReportsPage from "@/routes/pages/reports"
 import SettingsPage from "@/routes/pages/settings"
 import RecruitmentPage from "@/routes/pages/recruitment"
+import MedicalReimbursementPage from "@/routes/pages/medical-reimbursement"
+import TADAClaimPage from "@/routes/pages/tada-claim"
+import BusinessTravelAdvancePage from "@/routes/pages/business-travel-advance"
+import PrintJoiningLetterPage from "@/routes/pages/print/joining-letter"
+import PrintOfferLetterPage from "@/routes/pages/print/offer-letter"
 
 function NotFoundPage() {
   return (
@@ -69,6 +74,9 @@ function App() {
               <Route path="attendance/setup" element={<AttendanceSetupPage />} />
               <Route path="leave" element={<LeavePage />} />
               <Route path="payroll" element={<PayrollPage />} />
+              <Route path="claims/medical" element={<MedicalReimbursementPage />} />
+              <Route path="claims/tada" element={<TADAClaimPage />} />
+              <Route path="claims/advance" element={<BusinessTravelAdvancePage />} />
               <Route path="departments" element={<DepartmentsPage />} />
               <Route path="departments/create" element={<CreateDepartmentPage />} />
               <Route path="departments/edit/:name" element={<EditDepartmentPage />} />
@@ -84,6 +92,10 @@ function App() {
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
+
+            {/* Printable templates */}
+            <Route path="/recruitment/print/:candidateId" element={<PrintJoiningLetterPage />} />
+            <Route path="/recruitment/print-offer/:candidateId" element={<PrintOfferLetterPage />} />
           </Routes>
         </BrowserRouter>
         <Toaster />

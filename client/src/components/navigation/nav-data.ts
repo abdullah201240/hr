@@ -10,6 +10,9 @@ import {
   Building2,
   BarChart3,
   Settings,
+  HeartPulse,
+  Car,
+  Plane,
 } from "lucide-react"
 import type { NavGroup } from "@/types"
 
@@ -53,6 +56,39 @@ export const navGroups: NavGroup[] = [
         title: "Payroll",
         href: "/payroll",
         icon: DollarSign,
+      },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      {
+        title: "Payroll",
+        href: "/payroll",
+        icon: DollarSign,
+      },
+      {
+        title: "Claims & Reimbursement",
+        href: "/claims",
+        icon: HeartPulse,
+        badge: "3",
+        items: [
+          {
+            title: "Medical Reimbursement",
+            href: "/claims/medical",
+            icon: HeartPulse,
+          },
+          {
+            title: "TA/DA Claim",
+            href: "/claims/tada",
+            icon: Car,
+          },
+          {
+            title: "Business Travel Advance",
+            href: "/claims/advance",
+            icon: Plane,
+          },
+        ],
       },
     ],
   },

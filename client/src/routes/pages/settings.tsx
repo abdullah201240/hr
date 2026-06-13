@@ -3,12 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarOff, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useState } from "react"
+import { useSearchParams } from "react-router"
 import { LeaveSummaryCards } from "@/components/leave/leave-summary-cards"
 import { LeaveTypesList } from "@/components/leave/leave-types-list"
 import { LeaveTypeDialog } from "@/components/leave/leave-type-dialog"
 import { AttendanceSetup } from "@/components/settings/attendance-setup"
 import { OfficeHours } from "@/components/settings/office-hours"
 import { ThemeSettings } from "@/components/settings/theme-settings"
+import { SalarySetup } from "@/components/settings/salary-setup"
 
 // ─── Leave Type Interface ─────────────────────────────────────────────────────
 interface LeaveType {
@@ -167,6 +169,13 @@ export default function SettingsPage() {
     })
   }
 
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get("tab") || "leave"
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value }, { replace: true })
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -174,11 +183,12 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your account and application preferences</p>
       </div>
 
-      <Tabs defaultValue="leave" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 shadow-none border border-border/40">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 shadow-none border border-border/40">
           <TabsTrigger value="leave" className="text-xs">Leave Management</TabsTrigger>
           <TabsTrigger value="attendance" className="text-xs">Attendance Setup</TabsTrigger>
           <TabsTrigger value="office" className="text-xs">Office Hours</TabsTrigger>
+          <TabsTrigger value="salary" className="text-xs">Salary Structure</TabsTrigger>
           <TabsTrigger value="appearance" className="text-xs">Theme</TabsTrigger>
         </TabsList>
 
@@ -224,6 +234,10 @@ export default function SettingsPage() {
 
         <TabsContent value="office">
           <OfficeHours />
+        </TabsContent>
+
+        <TabsContent value="salary">
+          <SalarySetup />
         </TabsContent>
 
         <TabsContent value="appearance">

@@ -203,14 +203,19 @@ export function AttendanceSetup() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Main Calendar Picker */}
-          <div className="flex justify-center border border-border/30 rounded-xl p-3 bg-muted/5">
+          <div className="flex justify-center border border-border/30 rounded-xl p-4 bg-muted/5">
             <Calendar
               mode="range"
               selected={dateRange}
               onSelect={setDateRange}
               modifiers={modifiers}
               modifiersClassNames={modifiersClassNames}
-              className="rounded-md"
+              className="w-full max-w-full flex justify-center [--cell-size:2.75rem] [--cell-radius:8px]"
+              classNames={{
+                root: "w-full flex justify-center",
+                months: "w-full flex justify-center",
+                month: "w-full flex flex-col items-center",
+              }}
             />
           </div>
 
