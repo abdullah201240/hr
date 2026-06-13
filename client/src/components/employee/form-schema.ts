@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { User, Briefcase, HeartHandshake, FileUser, Landmark, CheckCircle2 } from "lucide-react"
+import { User, Briefcase, HeartHandshake, FileUser, Landmark, CheckCircle2, FileText } from "lucide-react"
 
 const passwordSchema = z
   .string()
@@ -89,6 +89,18 @@ export const employeeFormSchema = z
     swiftCode: z.string().default(""),
     ibanNumber: z.string().default(""),
     bankStatementPdf: z.any().optional(),
+    documents: z
+      .array(
+        z.object({
+          title: z.string().min(1, "Title is required"),
+          description: z.string().optional().default(""),
+          file: z.any().refine(
+            (file) => file instanceof File || (typeof file === "string" && file.length > 0),
+            "File is required",
+          ),
+        })
+      )
+      .default([]),
   })
   .superRefine((data, ctx) => {
     if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
@@ -102,7 +114,7 @@ export const employeeFormSchema = z
 
 export type EmployeeFormInput = z.input<typeof employeeFormSchema>
 
-export type StepKey = "personal" | "work" | "family" | "nominee" | "banking" | "review"
+export type StepKey = "personal" | "work" | "family" | "nominee" | "banking" | "documents" | "review"
 
 export const STEPS = [
   { key: "personal" as const, label: "Personal", icon: User },
@@ -110,6 +122,7 @@ export const STEPS = [
   { key: "family" as const, label: "Family", icon: HeartHandshake },
   { key: "nominee" as const, label: "Nominee", icon: FileUser },
   { key: "banking" as const, label: "Banking", icon: Landmark },
+  { key: "documents" as const, label: "Documents", icon: FileText },
   { key: "review" as const, label: "Review", icon: CheckCircle2 },
 ]
 
@@ -132,6 +145,10 @@ export const NOMINEE_FIELDS: (keyof EmployeeFormInput)[] = [
 
 export const BANKING_FIELDS: (keyof EmployeeFormInput)[] = [
   "bankName", "bankBranch", "accountNumber", "accountType", "routingNumber", "swiftCode", "ibanNumber",
+]
+
+export const DOCUMENTS_FIELDS: (keyof EmployeeFormInput)[] = [
+  "documents",
 ]
 
 export const DEFAULT_VALUES: EmployeeFormInput = {
@@ -177,4 +194,5 @@ export const DEFAULT_VALUES: EmployeeFormInput = {
   swiftCode: "",
   ibanNumber: "",
   bankStatementPdf: null,
+  documents: [],
 }

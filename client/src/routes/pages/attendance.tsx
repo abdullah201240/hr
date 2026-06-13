@@ -85,6 +85,8 @@ export interface SetupHoliday {
   name: string
   startDay: number
   endDay: number
+  startDate?: string
+  endDate?: string
 }
 
 export default function AttendancePage() {
@@ -124,7 +126,19 @@ export default function AttendancePage() {
     if (record.status === "upcoming") return record
 
     // Check regular holidays (range-based)
-    const matchingRegularHoliday = regularHolidays.find(h => record.day >= h.startDay && record.day <= h.endDay)
+    const matchingRegularHoliday = regularHolidays.find(h => {
+      if (h.startDate && h.endDate) {
+        const recordDate = new Date(2026, 5, record.day) // June 2026
+        const start = new Date(h.startDate)
+        const end = new Date(h.endDate)
+        // Strip hours
+        recordDate.setHours(0, 0, 0, 0)
+        start.setHours(0, 0, 0, 0)
+        end.setHours(0, 0, 0, 0)
+        return recordDate >= start && recordDate <= end
+      }
+      return record.day >= h.startDay && record.day <= h.endDay
+    })
     if (matchingRegularHoliday) {
       return {
         ...record,

@@ -42,8 +42,11 @@ export function ThemeProvider({
 
   useEffect(() => {
     const root = window.document.documentElement
-    root.classList.remove("light", "dark")
-    root.classList.add(resolvedTheme)
+    // Only update if the theme actually changed
+    if (!root.classList.contains(resolvedTheme)) {
+      root.classList.remove("light", "dark")
+      root.classList.add(resolvedTheme)
+    }
   }, [resolvedTheme])
 
   useEffect(() => {

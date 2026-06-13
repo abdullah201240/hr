@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router"
+import { useNavigate, useSearchParams } from "react-router"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,7 +62,12 @@ const initialDesignations = [
 
 export default function DepartmentsPage() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState("departments")
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get("tab") || "departments"
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true })
+  }
   const [deptSearch, setDeptSearch] = useState("")
   const [desgSearch, setDesgSearch] = useState("")
 
@@ -164,7 +169,7 @@ export default function DepartmentsPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="departments" onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-[500px] grid-cols-3 shadow-none border border-border/40 bg-muted/20">
           <TabsTrigger value="departments" className="text-xs">Departments</TabsTrigger>
           <TabsTrigger value="designations" className="text-xs">Designations</TabsTrigger>

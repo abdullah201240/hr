@@ -6,6 +6,7 @@ export interface NavItem {
   icon: LucideIcon
   badge?: string
   roles?: string[]
+  items?: NavItem[]
 }
 
 export interface NavGroup {
