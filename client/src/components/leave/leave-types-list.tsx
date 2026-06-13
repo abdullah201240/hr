@@ -63,15 +63,12 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
             </TableRow>
           ) : (
             leaveTypes.map((leave) => {
-              const Icon = leave.icon
               return (
                 <TableRow key={leave.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                   {/* Leave Type with Icon */}
                   <TableCell className="py-3">
                     <div className="flex items-center gap-3">
-                      <div className={`h-9 w-9 rounded-xl ${leave.color}/10 flex items-center justify-center shrink-0`}>
-                        <Icon className={`h-5 w-5 ${leave.color.replace('bg-', 'text-')}`} />
-                      </div>
+                      
                       <div>
                         <p className="font-semibold text-sm">{leave.name}</p>
                         <div className="flex items-center gap-1.5 mt-1">
