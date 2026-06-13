@@ -9,7 +9,6 @@ import {
   Building2,
   BarChart3,
   Settings,
-  SlidersHorizontal,
 } from "lucide-react"
 import type { NavGroup } from "@/types"
 
@@ -37,11 +36,6 @@ export const navGroups: NavGroup[] = [
         title: "Attendance",
         href: "/attendance",
         icon: CalendarClock,
-      },
-      {
-        title: "Attendance Setup",
-        href: "/attendance/setup",
-        icon: SlidersHorizontal,
       },
       {
         title: "Leave Management",
