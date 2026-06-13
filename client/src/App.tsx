@@ -27,6 +27,7 @@ import ProjectsPage from "@/routes/pages/projects"
 import DocumentsPage from "@/routes/pages/documents"
 import ReportsPage from "@/routes/pages/reports"
 import SettingsPage from "@/routes/pages/settings"
+import RecruitmentPage from "@/routes/pages/recruitment"
 
 function NotFoundPage() {
   return (
@@ -78,6 +79,7 @@ function App() {
               <Route path="tasks" element={<TasksPage />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
+              <Route path="recruitment" element={<RecruitmentPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFoundPage />} />

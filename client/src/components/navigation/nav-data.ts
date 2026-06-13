@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  UserPlus,
   CalendarClock,
   CalendarOff,
   DollarSign,
@@ -31,6 +32,11 @@ export const navGroups: NavGroup[] = [
         href: "/employees",
         icon: Users,
         badge: "248",
+      },
+      {
+        title: "Recruitment",
+        href: "/recruitment",
+        icon: UserPlus,
       },
       {
         title: "Attendance",

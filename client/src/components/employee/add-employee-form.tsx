@@ -12,6 +12,7 @@ import {
   PERSONAL_FIELDS,
   WORK_FIELDS,
   FAMILY_FIELDS,
+  DOCUMENTS_FIELDS,
   DEFAULT_VALUES,
   type EmployeeFormInput,
   type StepKey,
@@ -21,6 +22,7 @@ import EmploymentStep from "./employment-step"
 import FamilyInfoStep from "./family-info-step"
 import NomineeStep from "./nominee-step"
 import BankingStep from "./banking-step"
+import DocumentsStep from "./documents-step"
 import ReviewStep from "./review-step"
 
 const FIELD_LABELS: Record<string, string> = {
@@ -187,7 +189,14 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
     } else if (activeTab === "banking") {
       isValid = true
       markComplete("banking")
-      setActiveTab("review")
+      setActiveTab("documents")
+    } else if (activeTab === "documents") {
+      fieldsToTrigger = DOCUMENTS_FIELDS
+      isValid = await trigger(DOCUMENTS_FIELDS, { shouldFocus: false })
+      if (isValid) {
+        markComplete("documents")
+        setActiveTab("review")
+      }
     }
 
     if (!isValid && fieldsToTrigger.length > 0) {
@@ -200,7 +209,8 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
     else if (activeTab === "family") setActiveTab("work")
     else if (activeTab === "nominee") setActiveTab("family")
     else if (activeTab === "banking") setActiveTab("nominee")
-    else if (activeTab === "review") setActiveTab("banking")
+    else if (activeTab === "documents") setActiveTab("banking")
+    else if (activeTab === "review") setActiveTab("documents")
   }
 
   const goToStep = async (step: StepKey) => {
@@ -259,16 +269,34 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
       }
       return
     }
+    if (step === "documents") {
+      const v1 = await trigger(PERSONAL_FIELDS, { shouldFocus: false })
+      const v2 = await trigger(WORK_FIELDS, { shouldFocus: false })
+      if (v1 && v2) {
+        markComplete("personal")
+        markComplete("work")
+        setActiveTab("documents")
+      } else {
+        const failed: (keyof EmployeeFormInput)[] = []
+        if (!v1) failed.push(...PERSONAL_FIELDS)
+        if (!v2) failed.push(...WORK_FIELDS)
+        handleValidationFailure(failed)
+      }
+      return
+    }
     const v1 = await trigger(PERSONAL_FIELDS, { shouldFocus: false })
     const v2 = await trigger(WORK_FIELDS, { shouldFocus: false })
-    if (v1 && v2) {
+    const v3 = await trigger(DOCUMENTS_FIELDS, { shouldFocus: false })
+    if (v1 && v2 && v3) {
       markComplete("personal")
       markComplete("work")
+      markComplete("documents")
       setActiveTab("review")
     } else {
       const failed: (keyof EmployeeFormInput)[] = []
       if (!v1) failed.push(...PERSONAL_FIELDS)
       if (!v2) failed.push(...WORK_FIELDS)
+      if (!v3) failed.push(...DOCUMENTS_FIELDS)
       handleValidationFailure(failed)
     }
   }
@@ -387,6 +415,11 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
               <BankingStep
                 bankPdfName={bankPdfName}
                 setBankPdfName={setBankPdfName}
+                isView={isView}
+              />
+            )}
+            {activeTab === "documents" && (
+              <DocumentsStep
                 isView={isView}
               />
             )}

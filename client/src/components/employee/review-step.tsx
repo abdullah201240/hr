@@ -1,6 +1,6 @@
 import { useFormContext } from "react-hook-form"
 import { ReviewItem, ReviewSection, SectionCard } from "./form-ui"
-import { User,HeartHandshake, FileUser, Landmark, MapPin, Shield, Phone } from "lucide-react"
+import { User, HeartHandshake, FileUser, Landmark, MapPin, Shield, Phone, FolderOpen } from "lucide-react"
 import type { EmployeeFormInput } from "./form-schema"
 
 interface ReviewStepProps {
@@ -200,6 +200,26 @@ export default function ReviewStep({ photoPreview, nidPdfName }: ReviewStepProps
               <ReviewItem label="Routing Number" value={v.routingNumber} />
               <ReviewItem label="SWIFT Code" value={v.swiftCode} />
               <ReviewItem label="IBAN Number" value={v.ibanNumber} />
+            </div>
+          </ReviewSection>
+        </SectionCard>
+      )}
+
+      {/* Documents */}
+      {v.documents && v.documents.length > 0 && (
+        <SectionCard>
+          <ReviewSection title="Certificates & Compliance" icon={FolderOpen}>
+            <div className="space-y-3">
+              {v.documents.map((doc: any, i: number) => {
+                const fileName = doc.file instanceof File ? doc.file.name : typeof doc.file === "string" ? doc.file.substring(doc.file.lastIndexOf("/") + 1) : "—"
+                return (
+                  <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 p-3 rounded-lg bg-muted/20">
+                    <ReviewItem label="Document Title" value={doc.title} />
+                    <ReviewItem label="Description" value={doc.description || "—"} />
+                    <ReviewItem label="Uploaded File" value={fileName} />
+                  </div>
+                )
+              })}
             </div>
           </ReviewSection>
         </SectionCard>
