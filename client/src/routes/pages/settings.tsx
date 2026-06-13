@@ -1,7 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarOff, Plus, AlertCircle } from "lucide-react"
+import { CalendarOff, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useState } from "react"
 import { LeaveSummaryCards } from "@/components/leave/leave-summary-cards"
@@ -216,16 +215,6 @@ export default function SettingsPage() {
               onDelete={handleDeleteLeaveType}
             />
 
-            {/* Info Box */}
-            <Card className="shadow-none border-border/40 bg-muted/30">
-              <CardContent className="flex gap-3 p-4">
-                <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p className="font-semibold text-foreground">International Leave Standards</p>
-                  <p>All leave types follow ILO (International Labour Organization) guidelines. Maternity leave meets the 14-week minimum standard. Leave policies can be customized per department or employee grade.</p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
 
