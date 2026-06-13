@@ -31,11 +31,6 @@ const JUNE_OFFSET = 0
 
 const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
-const getDayOfWeek = (day: number) => {
-  // June 1 = Monday (index 0), so day 1 => 0, day 2 => 1, ...
-  return (JUNE_OFFSET + day - 1) % 7
-}
-
 const getDurationLabel = (start: number, end: number) => {
   const count = end - start + 1
   return `${count} day${count !== 1 ? "s" : ""}`
