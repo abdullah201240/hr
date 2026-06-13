@@ -28,7 +28,7 @@ import {
   Search, 
   CheckCircle2, 
   AlertCircle,
-  DollarSign,
+  CircleDollarSign,
   Calendar,
   Briefcase,
   Upload,
@@ -296,11 +296,11 @@ export default function BusinessTravelAdvancePage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" /> Total Requested
+              <CircleDollarSign className="h-4 w-4 text-emerald-500" /> Total Requested
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRequested.toLocaleString()}</div>
+            <div className="text-2xl font-bold">৳{totalRequested.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">{advances.length} total requests</p>
           </CardContent>
         </Card>
@@ -322,7 +322,7 @@ export default function BusinessTravelAdvancePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalApproved.toLocaleString()}</div>
+            <div className="text-2xl font-bold">৳{totalApproved.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">{approvedAdvances} approved</p>
           </CardContent>
         </Card>
@@ -397,7 +397,7 @@ export default function BusinessTravelAdvancePage() {
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Requested</p>
-                    <p className="text-lg font-bold">${advance.requestedAmount}</p>
+                    <p className="text-lg font-bold">৳{advance.requestedAmount.toLocaleString()}</p>
                   </div>
                   {advance.status === "Pending" ? (
                     <div className="flex gap-2">

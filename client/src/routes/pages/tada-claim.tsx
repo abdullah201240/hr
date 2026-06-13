@@ -29,7 +29,7 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertCircle,
-  DollarSign,
+  CircleDollarSign,
   Calendar,
   MapPin,
   Upload,
@@ -308,11 +308,11 @@ export default function TADAClaimPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-emerald-500" /> Total Claims
+              <CircleDollarSign className="h-4 w-4 text-emerald-500" /> Total Claims
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalAmount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">৳{totalAmount.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">{claims.length} total claims</p>
           </CardContent>
         </Card>
@@ -334,7 +334,7 @@ export default function TADAClaimPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${approvedAmount.toLocaleString()}</div>
+            <div className="text-2xl font-bold">৳{approvedAmount.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">{approvedClaims} claims</p>
           </CardContent>
         </Card>
@@ -409,7 +409,7 @@ export default function TADAClaimPage() {
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                   <div className="text-right">
-                    <p className="text-lg font-bold">${claim.amount}</p>
+                    <p className="text-lg font-bold">৳{claim.amount.toLocaleString()}</p>
                   </div>
                   {claim.status === "Pending" ? (
                     <div className="flex gap-2">
