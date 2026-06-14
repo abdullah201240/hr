@@ -5,8 +5,6 @@ import {
   CalendarClock,
   CalendarOff,
   Coins,
-  CheckSquare,
-  FolderKanban,
   Building2,
   BarChart3,
   Settings,
@@ -110,22 +108,6 @@ export const navGroups: NavGroup[] = [
             icon: Plane,
           },
         ],
-      },
-    ],
-  },
-  {
-    label: "Productivity",
-    items: [
-      {
-        title: "Tasks",
-        href: "/tasks",
-        icon: CheckSquare,
-        badge: "12",
-      },
-      {
-        title: "Projects",
-        href: "/projects",
-        icon: FolderKanban,
       },
     ],
   },
