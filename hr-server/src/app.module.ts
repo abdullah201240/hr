@@ -15,6 +15,8 @@ import { UploadModule } from './modules/upload/upload.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { EmployeeModule } from './modules/employee/employee.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DepartmentModule } from './modules/department/department.module';
+import { DesignationModule } from './modules/designation/designation.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -42,6 +44,8 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     QueueModule,
     EmployeeModule,
     AuthModule,
+    DepartmentModule,
+    DesignationModule,
   ],
   providers: [
     {

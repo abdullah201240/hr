@@ -11,7 +11,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { baseTable } from './index';
+import { baseTable } from './_base';
 
 // ─── Employees ──────────────────────────────────────────────────────────────
 
