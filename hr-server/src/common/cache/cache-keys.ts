@@ -34,10 +34,10 @@ export const CacheKeys = {
     description: 'Paginated employee list',
   },
 
-  /** Single employee by ID */
+  /** Single employee by ID — TTL kept short to limit stale window after direct DB changes */
   employeeById: {
     key: key('employees:id:*'),
-    ttl: 600, // 10 min
+    ttl: 300, // 5 min
     description: 'Employee record by ID',
   },
 
@@ -88,6 +88,41 @@ export const CacheKeys = {
     key: key('settings:*'),
     ttl: 1800, // 30 min
     description: 'Application settings by key',
+  },
+
+  /** Uploaded file metadata cache */
+  uploadMeta: {
+    key: key('uploads:meta:*'),
+    ttl: 600, // 10 min
+    description: 'Uploaded file metadata by public ID',
+  },
+
+  /** Folder listing cache */
+  uploadFolderList: {
+    key: key('uploads:folder:*'),
+    ttl: 120, // 2 min
+    description: 'Cloudinary folder listing cache',
+  },
+
+  /** Login rate limiting */
+  loginRateLimit: {
+    key: key('auth:rate:login:*'),
+    ttl: 60, // 1 min window
+    description: 'Login rate limit counter by IP and email',
+  },
+
+  /** Token blacklist */
+  tokenBlacklist: {
+    key: key('auth:blacklist:*'),
+    ttl: 0, // dynamic TTL based on token expiry
+    description: 'Revoked JWT blacklist',
+  },
+
+  /** JWT validation cache (short-lived) */
+  jwtValidate: {
+    key: key('jwt:validate:*'),
+    ttl: 60, // 1 min
+    description: 'Cached JWT user validation result',
   },
 } as const;
 

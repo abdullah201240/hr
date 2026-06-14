@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -39,9 +40,20 @@ async function bootstrap() {
     timeWindow: '1 minute',
   });
 
+  // ── Multipart (file uploads) ─────────────────────────────────────
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10 MB default
+      files: 5, // max 5 files per request
+    },
+  });
+
   // ── CORS ──────────────────────────────────────────────────────
+  // Uses process.env directly because CORS must be configured before
+  // the app is fully initialized and ConfigService is available.
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim());
   app.enableCors({
-    origin: nodeEnv === 'production' ? [] : true,
+    origin: nodeEnv === 'production' ? (corsOrigins ?? []) : true,
     credentials: true,
   });
 

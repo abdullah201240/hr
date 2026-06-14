@@ -1,0 +1,127 @@
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ConfigService } from '@nestjs/config';
+import { eq } from 'drizzle-orm';
+import { DB_CONNECTION, type Database } from '../../../db';
+import { employees } from '../../../db/schema';
+import { TokenBlacklistService } from '../token-blacklist.service';
+import { CacheService } from '../../../common/cache/cache.service';
+import { CacheKeys } from '../../../common/cache/cache-keys';
+
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  ver: number;
+  jti: string;
+  iat: number;
+  exp: number;
+}
+
+export interface JwtUser {
+  id: string;
+  email: string;
+  role: string;
+  fullNameEnglish: string;
+  employeePhotoUrl: string | null;
+}
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    configService: ConfigService,
+    @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly tokenBlacklist: TokenBlacklistService,
+    private readonly cache: CacheService,
+  ) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get<string>('jwt.accessTokenSecret')!,
+      passReqToCallback: false,
+    });
+  }
+
+  async validate(payload: JwtPayload): Promise<JwtUser> {
+    // 1. Check if token is blacklisted
+    if (payload.jti) {
+      const isRevoked = await this.tokenBlacklist.isBlacklisted(payload.jti);
+      if (isRevoked) {
+        throw new UnauthorizedException('Token has been revoked');
+      }
+    }
+
+    // 2. Check cache for validated user (avoids DB hit on every request)
+    const cached = await this.cache.getByKey<JwtUser & { ver: number; status: string }>(
+      CacheKeys.jwtValidate,
+      payload.sub,
+    );
+
+    if (cached) {
+      // Verify version from cache
+      if (cached.ver !== payload.ver) {
+        throw new UnauthorizedException('Token has been invalidated');
+      }
+      if (cached.status !== 'active') {
+        throw new UnauthorizedException('Account is not active');
+      }
+      return {
+        id: cached.id,
+        email: cached.email,
+        role: cached.role,
+        fullNameEnglish: cached.fullNameEnglish,
+        employeePhotoUrl: cached.employeePhotoUrl,
+      };
+    }
+
+    // 3. Cache miss — verify user exists and is active
+    const [user] = await this.db
+      .select({
+        id: employees.id,
+        email: employees.email,
+        role: employees.role,
+        status: employees.status,
+        refreshTokenVersion: employees.refreshTokenVersion,
+        fullNameEnglish: employees.fullNameEnglish,
+        employeePhotoUrl: employees.employeePhotoUrl,
+      })
+      .from(employees)
+      .where(eq(employees.id, payload.sub))
+      .limit(1);
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.status !== 'active') {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    // 4. Verify token version matches (catches password changes / forced logout)
+    if (payload.ver !== user.refreshTokenVersion) {
+      throw new UnauthorizedException('Token has been invalidated');
+    }
+
+    // 5. Cache the validation result for subsequent requests
+    const userToCache = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullNameEnglish: user.fullNameEnglish,
+      employeePhotoUrl: user.employeePhotoUrl,
+      ver: user.refreshTokenVersion,
+      status: user.status,
+    };
+    await this.cache.setByKey(CacheKeys.jwtValidate, userToCache, user.id);
+
+    // Return user to attach to request
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      fullNameEnglish: user.fullNameEnglish,
+      employeePhotoUrl: user.employeePhotoUrl,
+    };
+  }
+}
