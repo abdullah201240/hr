@@ -513,43 +513,39 @@ function TreeBranch({
   return (
     <div className="flex flex-col items-center">
       {/* Node Card */}
-      <div className="relative">
-        <OrgCard node={node} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />
+      <OrgCard node={node} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />
 
-        {/* Collapse toggle */}
-        {hasChildren && (
-          <button
-            onClick={() => toggleCollapse(node.id)}
-            className={cn(
-              "absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-10 h-5 w-5 rounded-full border border-background bg-card flex items-center justify-center shadow-xs hover:bg-muted transition-colors",
-            )}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-2.5 w-2.5 text-muted-foreground rotate-90" />
-            ) : (
-              <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
-            )}
-            {isCollapsed && (
-              <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-primary text-primary-foreground text-[7px] font-bold flex items-center justify-center">
-                {node.children.length}
-              </span>
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* Connector line down */}
-      {hasChildren && !isCollapsed && (
-        <div className="w-[1.5px] h-3 bg-border/50" />
+      {/* Toggle button – in flex flow for perfect centering */}
+      {hasChildren && (
+        <button
+          onClick={() => toggleCollapse(node.id)}
+          className="relative z-10 -mt-1.5 h-5 w-5 rounded-full border-2 border-background bg-card flex items-center justify-center shadow-xs hover:bg-muted transition-colors"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-2.5 w-2.5 text-muted-foreground rotate-90" />
+          ) : (
+            <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
+          )}
+          {isCollapsed && (
+            <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 rounded-full bg-primary text-primary-foreground text-[7px] font-bold flex items-center justify-center">
+              {node.children.length}
+            </span>
+          )}
+        </button>
       )}
 
-      {/* Children */}
+      {/* Connector line down from card/toggle */}
       {hasChildren && !isCollapsed && (
-        <div className="relative">
-          {/* Horizontal connector bar */}
+        <div className="w-[2px] h-2.5 bg-muted-foreground/40" />
+      )}
+
+      {/* Children with connector lines */}
+      {hasChildren && !isCollapsed && (
+        <div className="relative pt-2.5">
+          {/* Horizontal connector bar (spans between child centers) */}
           {node.children.length > 1 && (
             <div
-              className="absolute top-0 h-[1.5px] bg-border/50"
+              className="absolute top-2.5 h-[2px] bg-muted-foreground/40"
               style={{
                 left: `calc(50% / ${node.children.length})`,
                 right: `calc(50% / ${node.children.length})`,
@@ -560,7 +556,8 @@ function TreeBranch({
           <div className="flex items-start gap-2 sm:gap-3">
             {node.children.map((child) => (
               <div key={child.id} className="flex flex-col items-center">
-                <div className="w-[1.5px] h-3 bg-border/50" />
+                {/* Vertical line down to child */}
+                <div className="w-[2px] h-2.5 bg-muted-foreground/40" />
                 <TreeBranch
                   node={child}
                   onAdd={onAdd}
