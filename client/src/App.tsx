@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
@@ -74,6 +74,7 @@ function App() {
               <Route path="attendance/setup" element={<AttendanceSetupPage />} />
               <Route path="leave" element={<LeavePage />} />
               <Route path="payroll" element={<PayrollPage />} />
+              <Route path="claims" element={<Navigate to="/claims/medical" replace />} />
               <Route path="claims/medical" element={<MedicalReimbursementPage />} />
               <Route path="claims/tada" element={<TADAClaimPage />} />
               <Route path="claims/advance" element={<BusinessTravelAdvancePage />} />

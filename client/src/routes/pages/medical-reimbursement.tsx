@@ -21,6 +21,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import { 
   HeartPulse, 
@@ -321,69 +329,94 @@ export default function MedicalReimbursementPage() {
             </Select>
           </div>
 
-          <div className="space-y-3">
-            {filteredClaims.map((claim) => (
-              <div key={claim.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-border p-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{claim.id}</span>
-                    <Badge variant="secondary" className="text-[10px]">{claim.type}</Badge>
-                  </div>
-                  <p className="text-sm font-medium">{claim.employee}</p>
-                  <p className="text-xs text-muted-foreground">{claim.description}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(claim.date).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FileText className="h-3 w-3" />
-                      Documents attached
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="text-right">
-                    <p className="text-lg font-bold">৳{claim.amount.toLocaleString()}</p>
-                  </div>
-                  {claim.status === "Pending" ? (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="default" 
-                        size="sm" 
-                        className="h-7 text-xs bg-emerald-500 hover:bg-emerald-600"
-                        onClick={() => handleStatusChange(claim.id, "Approved")}
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 text-xs"
-                        onClick={() => handleStatusChange(claim.id, "Rejected")}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  ) : (
-                    <Badge
-                      variant={claim.status === "Approved" ? "default" : "destructive"}
-                      className={claim.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : ""}
-                    >
-                      {claim.status}
-                    </Badge>
-                  )}
-                </div>
+          <div className="w-full overflow-x-auto bg-transparent">
+            {filteredClaims.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
+                <HeartPulse className="mx-auto h-12 w-12 mb-4 opacity-20 text-muted-foreground" />
+                <p className="text-sm font-semibold text-muted-foreground">No medical claims found</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Try modifying your search or filter keywords</p>
               </div>
-            ))}
+            ) : (
+              <Table>
+                <TableHeader className="bg-muted/10 border-b border-border/30">
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Claim Info</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Type</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Description</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Amount</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                    <TableHead className="w-36 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredClaims.map((claim) => (
+                    <TableRow key={claim.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      <TableCell className="py-3">
+                        <div>
+                          <p className="font-mono text-xs text-muted-foreground">{claim.id}</p>
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(claim.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className="font-semibold text-sm">{claim.employee}</span>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge variant="secondary" className="text-[10px] font-bold tracking-wide uppercase">
+                          {claim.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 max-w-xs truncate text-xs text-muted-foreground" title={claim.description}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate">{claim.description}</span>
+                          <Badge variant="outline" className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 shrink-0">
+                            <FileText className="h-2.5 w-2.5 mr-0.5 inline" /> Docs
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 font-bold text-sm">
+                        ৳{claim.amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge
+                          className={claim.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : claim.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
+                        >
+                          {claim.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        {claim.status === "Pending" ? (
+                          <div className="inline-flex gap-2 justify-end">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                              onClick={() => handleStatusChange(claim.id, "Approved")}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                              onClick={() => handleStatusChange(claim.id, "Rejected")}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Processed</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
-
-          {filteredClaims.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <HeartPulse className="mx-auto h-12 w-12 mb-4 opacity-20" />
-              <p>No medical claims found</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
