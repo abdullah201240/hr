@@ -16,12 +16,12 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
-import { AuthService } from './auth.service.js';
-import { LoginDto } from './dto/login.dto.js';
-import { RefreshTokenDto } from './dto/refresh-token.dto.js';
-import { ChangePasswordDto } from './dto/change-password.dto.js';
-import { Public } from './guards/public.decorator.js';
-import { LoginThrottleGuard } from './guards/login-throttle.guard.js';
+import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { Public } from './guards/public.decorator';
+import { LoginThrottleGuard } from './guards/login-throttle.guard';
 
 @ApiTags('Auth')
 @Controller('auth')

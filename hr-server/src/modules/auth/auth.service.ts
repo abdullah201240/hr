@@ -10,11 +10,11 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { eq, and } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { DB_CONNECTION, type Database } from '../../db/index.js';
-import { employees } from '../../db/schema/index.js';
-import { TokenBlacklistService } from './token-blacklist.service.js';
-import type { LoginDto } from './dto/login.dto.js';
-import type { ChangePasswordDto } from './dto/change-password.dto.js';
+import { DB_CONNECTION, type Database } from '../../db';
+import { employees } from '../../db/schema';
+import { TokenBlacklistService } from './token-blacklist.service';
+import type { LoginDto } from './dto/login.dto';
+import type { ChangePasswordDto } from './dto/change-password.dto';
 
 export interface TokenPair {
   accessToken: string;
@@ -203,8 +203,8 @@ export class AuthService {
         phone: employees.phone,
         gender: employees.gender,
         role: employees.role,
-        department: employees.department,
-        designation: employees.designation,
+        departmentId: employees.departmentId,
+        designationId: employees.designationId,
         employeeType: employees.employeeType,
         employeePhotoUrl: employees.employeePhotoUrl,
         joinDate: employees.joinDate,
@@ -253,7 +253,6 @@ export class AuthService {
       .set({
         passwordHash: newPasswordHash,
         refreshTokenVersion: user.refreshTokenVersion + 1,
-        updatedAt: new Date(),
       })
       .where(eq(employees.id, userId));
 

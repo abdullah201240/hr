@@ -11,8 +11,8 @@ export const EMPLOYEE_UPDATE_QUEUE = 'employee-update';
     BullModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
         connection: {
-          host: config.get<string>('redis.host', 'localhost'),
-          port: config.get<number>('redis.port', 6379),
+          host: config.get<string>('bullmq.redis.host', 'localhost'),
+          port: config.get<number>('bullmq.redis.port', 6379),
         },
       }),
       inject: [ConfigService],

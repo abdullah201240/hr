@@ -26,53 +26,55 @@ export class DepartmentService {
   // ─── Create ─────────────────────────────────────────────────────────────
 
   async create(dto: CreateDepartmentDto) {
-    // Check uniqueness of name and code
-    const existing = await this.db
-      .select({ id: departments.id })
-      .from(departments)
-      .where(
-        or(
-          eq(departments.name, dto.name),
-          eq(departments.code, dto.code),
-        ),
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      throw new ConflictException(
-        `Department with name "${dto.name}" or code "${dto.code}" already exists`,
-      );
-    }
-
-    // Validate head employee exists (if provided)
-    if (dto.headEmployeeId) {
-      const [head] = await this.db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.id, dto.headEmployeeId))
+    return this.db.transaction(async (tx) => {
+      // Check uniqueness of name and code
+      const existing = await tx
+        .select({ id: departments.id })
+        .from(departments)
+        .where(
+          or(
+            eq(departments.name, dto.name),
+            eq(departments.code, dto.code),
+          ),
+        )
         .limit(1);
 
-      if (!head) {
-        throw new BadRequestException(
-          `Head employee with ID "${dto.headEmployeeId}" not found`,
+      if (existing.length > 0) {
+        throw new ConflictException(
+          `Department with name "${dto.name}" or code "${dto.code}" already exists`,
         );
       }
-    }
 
-    const [department] = await this.db
-      .insert(departments)
-      .values({
-        name: dto.name,
-        code: dto.code,
-        description: dto.description || '',
-        headEmployeeId: dto.headEmployeeId || null,
-      })
-      .returning();
+      // Validate head employee exists (if provided)
+      if (dto.headEmployeeId) {
+        const [head] = await tx
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.id, dto.headEmployeeId))
+          .limit(1);
 
-    await this.invalidateListCache();
+        if (!head) {
+          throw new BadRequestException(
+            `Head employee with ID "${dto.headEmployeeId}" not found`,
+          );
+        }
+      }
 
-    this.logger.log(`Department created: ${department!.name} (${department!.code})`);
-    return department!;
+      const [department] = await tx
+        .insert(departments)
+        .values({
+          name: dto.name,
+          code: dto.code,
+          description: dto.description || '',
+          headEmployeeId: dto.headEmployeeId || null,
+        })
+        .returning();
+
+      await this.invalidateListCache();
+
+      this.logger.log(`Department created: ${department!.name} (${department!.code})`);
+      return department!;
+    });
   }
 
   // ─── Find all ────────────────────────────────────────────────────────────
@@ -168,7 +170,7 @@ export class DepartmentService {
     const [empCount] = await this.db
       .select({ count: count() })
       .from(employees)
-      .where(eq(employees.department, department.name));
+      .where(eq(employees.departmentId, department.id));
 
     return {
       ...department,
@@ -179,72 +181,74 @@ export class DepartmentService {
   // ─── Update ──────────────────────────────────────────────────────────────
 
   async update(id: string, dto: UpdateDepartmentDto) {
-    const [existing] = await this.db
-      .select()
-      .from(departments)
-      .where(eq(departments.id, id))
-      .limit(1);
-
-    if (!existing) {
-      throw new NotFoundException(`Department with ID "${id}" not found`);
-    }
-
-    // Check name/code uniqueness if being changed
-    if (dto.name || dto.code) {
-      const conflict = await this.db
-        .select({ id: departments.id })
+    return this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
         .from(departments)
-        .where(
-          and(
-            or(
-              dto.name ? eq(departments.name, dto.name) : undefined,
-              dto.code ? eq(departments.code, dto.code) : undefined,
+        .where(eq(departments.id, id))
+        .limit(1);
+
+      if (!existing) {
+        throw new NotFoundException(`Department with ID "${id}" not found`);
+      }
+
+      // Check name/code uniqueness if being changed
+      if (dto.name || dto.code) {
+        const conflict = await tx
+          .select({ id: departments.id })
+          .from(departments)
+          .where(
+            and(
+              or(
+                dto.name ? eq(departments.name, dto.name) : undefined,
+                dto.code ? eq(departments.code, dto.code) : undefined,
+              ),
             ),
-          ),
-        )
-        .limit(1);
+          )
+          .limit(1);
 
-      // Filter out self-match
-      if (conflict.length > 0 && conflict[0]!.id !== id) {
-        throw new ConflictException(
-          `Another department already uses this name or code`,
-        );
+        // Filter out self-match
+        if (conflict.length > 0 && conflict[0]!.id !== id) {
+          throw new ConflictException(
+            `Another department already uses this name or code`,
+          );
+        }
       }
-    }
 
-    // Validate head employee (if being changed)
-    if (dto.headEmployeeId) {
-      const [head] = await this.db
-        .select({ id: employees.id })
-        .from(employees)
-        .where(eq(employees.id, dto.headEmployeeId))
-        .limit(1);
+      // Validate head employee (if being changed)
+      if (dto.headEmployeeId) {
+        const [head] = await tx
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.id, dto.headEmployeeId))
+          .limit(1);
 
-      if (!head) {
-        throw new BadRequestException(
-          `Head employee with ID "${dto.headEmployeeId}" not found`,
-        );
+        if (!head) {
+          throw new BadRequestException(
+            `Head employee with ID "${dto.headEmployeeId}" not found`,
+          );
+        }
       }
-    }
 
-    const updateData: Record<string, any> = { updatedAt: new Date() };
+      const updateData: Record<string, any> = {};
 
-    if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.code !== undefined) updateData.code = dto.code;
-    if (dto.description !== undefined) updateData.description = dto.description;
-    if (dto.headEmployeeId !== undefined) updateData.headEmployeeId = dto.headEmployeeId || null;
-    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+      if (dto.name !== undefined) updateData.name = dto.name;
+      if (dto.code !== undefined) updateData.code = dto.code;
+      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.headEmployeeId !== undefined) updateData.headEmployeeId = dto.headEmployeeId || null;
+      if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
-    const [updated] = await this.db
-      .update(departments)
-      .set(updateData)
-      .where(eq(departments.id, id))
-      .returning();
+      const [updated] = await tx
+        .update(departments)
+        .set(updateData)
+        .where(eq(departments.id, id))
+        .returning();
 
-    await this.invalidateListCache();
+      await this.invalidateListCache();
 
-    this.logger.log(`Department updated: ${updated!.name} (${updated!.code})`);
-    return updated!;
+      this.logger.log(`Department updated: ${updated!.name} (${updated!.code})`);
+      return updated!;
+    });
   }
 
   // ─── Delete (soft) ────────────────────────────────────────────────────────
@@ -266,7 +270,7 @@ export class DepartmentService {
       .from(employees)
       .where(
         and(
-          eq(employees.department, existing.name),
+          eq(employees.departmentId, existing.id),
           eq(employees.status, 'active'),
         ),
       );
@@ -279,7 +283,7 @@ export class DepartmentService {
 
     await this.db
       .update(departments)
-      .set({ isActive: false, updatedAt: new Date() })
+      .set({ isActive: false })
       .where(eq(departments.id, id));
 
     await this.invalidateListCache();

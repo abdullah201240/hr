@@ -1,8 +1,8 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { REDIS_CLIENT } from '../../common/cache/cache.service.js';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
 import type Redis from 'ioredis';
-
-const BLACKLIST_PREFIX = 'auth:blacklist:';
+import { REDIS_CLIENT } from '../../common/cache/cache.service';
 
 @Injectable()
 export class TokenBlacklistService {
@@ -16,7 +16,7 @@ export class TokenBlacklistService {
    */
   async blacklist(jti: string, ttlSeconds: number): Promise<void> {
     try {
-      const key = `${BLACKLIST_PREFIX}${jti}`;
+      const key = resolveKey(CacheKeys.tokenBlacklist, jti);
       await this.redis.setex(key, ttlSeconds, '1');
     } catch (error) {
       this.logger.error(`Failed to blacklist token ${jti}`, error);
@@ -29,7 +29,7 @@ export class TokenBlacklistService {
    */
   async isBlacklisted(jti: string): Promise<boolean> {
     try {
-      const key = `${BLACKLIST_PREFIX}${jti}`;
+      const key = resolveKey(CacheKeys.tokenBlacklist, jti);
       const exists = await this.redis.exists(key);
       return exists === 1;
     } catch {

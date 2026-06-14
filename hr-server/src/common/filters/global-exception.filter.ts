@@ -5,6 +5,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  ConflictException,
 } from '@nestjs/common';
 import { FastifyReply } from 'fastify';
 
@@ -19,6 +20,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let errors: string[] | undefined;
+
+    // Handle PostgreSQL unique violation (error code 23505)
+    if (
+      exception instanceof Error &&
+      'code' in exception &&
+      (exception as any).code === '23505'
+    ) {
+      const conflict = new ConflictException('A record with this value already exists');
+      status = conflict.getStatus();
+      message = conflict.getResponse() as string;
+    }
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();

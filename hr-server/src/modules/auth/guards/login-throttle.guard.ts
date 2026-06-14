@@ -7,10 +7,10 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { REDIS_CLIENT } from '../../../common/cache/cache.service.js';
+import { REDIS_CLIENT } from '../../../common/cache/cache.service';
+import { CacheKeys, resolveKey } from '../../../common/cache/cache-keys';
 import type Redis from 'ioredis';
 
-const LOGIN_RATE_LIMIT_PREFIX = 'auth:rate:login:';
 const MAX_ATTEMPTS = 5;
 const WINDOW_SECONDS = 60; // 1 minute
 
@@ -24,7 +24,7 @@ export class LoginThrottleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const ip = request.ip || request.headers['x-forwarded-for'] || 'unknown';
     const email = request.body?.email || '';
-    const key = `${LOGIN_RATE_LIMIT_PREFIX}${ip}:${email}`;
+    const key = resolveKey(CacheKeys.loginRateLimit, `${ip}:${email}`);
 
     try {
       const current = await this.redis.incr(key);

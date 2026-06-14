@@ -13,6 +13,54 @@ import {
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
 
+// ─── Departments ────────────────────────────────────────────────────────────
+
+export const departments = pgTable(
+  'departments',
+  {
+    ...baseTable,
+
+    name: varchar('name', { length: 255 }).notNull(),
+    code: varchar('code', { length: 50 }).notNull(),
+    description: text('description').default(''),
+
+    /** Optional head of department (reference to an employee) */
+    headEmployeeId: uuid('head_employee_id'),
+
+    /** Soft delete / active flag */
+    isActive: boolean('is_active').default(true).notNull(),
+  },
+  (table) => [
+    uniqueIndex('departments_code_idx').on(table.code),
+    uniqueIndex('departments_name_idx').on(table.name),
+    index('departments_is_active_idx').on(table.isActive),
+  ],
+);
+
+// ─── Designations ───────────────────────────────────────────────────────────
+
+export const designations = pgTable(
+  'designations',
+  {
+    ...baseTable,
+
+    name: varchar('name', { length: 255 }).notNull(),
+    code: varchar('code', { length: 50 }).notNull(),
+    description: text('description').default(''),
+
+    /** Grade/level for hierarchy (e.g. L1, L2, L3 … or "Senior", "Junior") */
+    grade: varchar('grade', { length: 50 }).default(''),
+
+    /** Soft delete / active flag */
+    isActive: boolean('is_active').default(true).notNull(),
+  },
+  (table) => [
+    uniqueIndex('designations_code_idx').on(table.code),
+    uniqueIndex('designations_name_idx').on(table.name),
+    index('designations_is_active_idx').on(table.isActive),
+  ],
+);
+
 // ─── Employees ──────────────────────────────────────────────────────────────
 
 export const employees = pgTable(
@@ -57,8 +105,12 @@ export const employees = pgTable(
     emergencyContactNumber: varchar('emergency_contact_number', { length: 30 }).default(''),
 
     // Employment
-    designation: varchar('designation', { length: 255 }).notNull(),
-    department: varchar('department', { length: 255 }).notNull(),
+    designationId: uuid('designation_id')
+      .notNull()
+      .references(() => designations.id, { onDelete: 'restrict' }),
+    departmentId: uuid('department_id')
+      .notNull()
+      .references(() => departments.id, { onDelete: 'restrict' }),
     employeeType: varchar('employee_type', { length: 50 }).notNull(),
     joinDate: date('join_date').notNull(),
     lineManagerId: uuid('line_manager_id'),
@@ -78,7 +130,7 @@ export const employees = pgTable(
   (table) => [
     uniqueIndex('employees_employee_id_idx').on(table.employeeId),
     uniqueIndex('employees_email_idx').on(table.email),
-    index('employees_department_idx').on(table.department),
+    index('employees_department_id_idx').on(table.departmentId),
     index('employees_status_idx').on(table.status),
     index('employees_join_date_idx').on(table.joinDate),
   ],
@@ -175,12 +227,33 @@ export const employeeDocuments = pgTable(
 
 // ─── Relations ──────────────────────────────────────────────────────────────
 
+export const departmentsRelations = relations(departments, ({ many, one }) => ({
+  employees: many(employees),
+  headEmployee: one(employees, {
+    fields: [departments.headEmployeeId],
+    references: [employees.id],
+    relationName: 'headOfDepartment',
+  }),
+}));
+
+export const designationsRelations = relations(designations, ({ many }) => ({
+  employees: many(employees),
+}));
+
 export const employeesRelations = relations(employees, ({ many, one }) => ({
   spouses: many(employeeSpouses),
   children: many(employeeChildren),
   nominees: many(employeeNominees),
   bankDetails: one(employeeBankDetails),
   documents: many(employeeDocuments),
+  department: one(departments, {
+    fields: [employees.departmentId],
+    references: [departments.id],
+  }),
+  designation: one(designations, {
+    fields: [employees.designationId],
+    references: [designations.id],
+  }),
   lineManager: one(employees, {
     fields: [employees.lineManagerId],
     references: [employees.id],

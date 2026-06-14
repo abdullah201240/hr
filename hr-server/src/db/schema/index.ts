@@ -2,7 +2,6 @@
 export { baseTable } from './_base';
 
 // ─────────────────────────────────────────────────────────────
-// Domain tables
+// Domain tables (all consolidated in employee.ts to avoid circular imports)
 // ─────────────────────────────────────────────────────────────
 export * from './employee';
-export * from './department';

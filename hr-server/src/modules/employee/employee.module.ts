@@ -3,13 +3,13 @@ import { BullModule } from '@nestjs/bullmq';
 import {
   EMPLOYEE_CREATE_QUEUE,
   EMPLOYEE_UPDATE_QUEUE,
-} from '../queue/queue.module.js';
-import { EmployeeController } from './employee.controller.js';
-import { EmployeeService } from './employee.service.js';
+} from '../queue/queue.module';
+import { EmployeeController } from './employee.controller';
+import { EmployeeService } from './employee.service';
 import {
   EmployeeCreateProcessor,
   EmployeeUpdateProcessor,
-} from './employee.processor.js';
+} from './employee.processor';
 
 @Module({
   imports: [

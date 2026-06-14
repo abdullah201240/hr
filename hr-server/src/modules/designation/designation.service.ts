@@ -26,38 +26,40 @@ export class DesignationService {
   // ─── Create ─────────────────────────────────────────────────────────────
 
   async create(dto: CreateDesignationDto) {
-    // Check uniqueness of name and code
-    const existing = await this.db
-      .select({ id: designations.id })
-      .from(designations)
-      .where(
-        or(
-          eq(designations.name, dto.name),
-          eq(designations.code, dto.code),
-        ),
-      )
-      .limit(1);
+    return this.db.transaction(async (tx) => {
+      // Check uniqueness of name and code
+      const existing = await tx
+        .select({ id: designations.id })
+        .from(designations)
+        .where(
+          or(
+            eq(designations.name, dto.name),
+            eq(designations.code, dto.code),
+          ),
+        )
+        .limit(1);
 
-    if (existing.length > 0) {
-      throw new ConflictException(
-        `Designation with name "${dto.name}" or code "${dto.code}" already exists`,
-      );
-    }
+      if (existing.length > 0) {
+        throw new ConflictException(
+          `Designation with name "${dto.name}" or code "${dto.code}" already exists`,
+        );
+      }
 
-    const [designation] = await this.db
-      .insert(designations)
-      .values({
-        name: dto.name,
-        code: dto.code,
-        description: dto.description || '',
-        grade: dto.grade || '',
-      })
-      .returning();
+      const [designation] = await tx
+        .insert(designations)
+        .values({
+          name: dto.name,
+          code: dto.code,
+          description: dto.description || '',
+          grade: dto.grade || '',
+        })
+        .returning();
 
-    await this.invalidateListCache();
+      await this.invalidateListCache();
 
-    this.logger.log(`Designation created: ${designation!.name} (${designation!.code})`);
-    return designation!;
+      this.logger.log(`Designation created: ${designation!.name} (${designation!.code})`);
+      return designation!;
+    });
   }
 
   // ─── Find all ────────────────────────────────────────────────────────────
@@ -155,7 +157,7 @@ export class DesignationService {
     const [empCount] = await this.db
       .select({ count: count() })
       .from(employees)
-      .where(eq(employees.designation, designation.name));
+      .where(eq(employees.designationId, designation.id));
 
     return {
       ...designation,
@@ -166,56 +168,58 @@ export class DesignationService {
   // ─── Update ──────────────────────────────────────────────────────────────
 
   async update(id: string, dto: UpdateDesignationDto) {
-    const [existing] = await this.db
-      .select()
-      .from(designations)
-      .where(eq(designations.id, id))
-      .limit(1);
-
-    if (!existing) {
-      throw new NotFoundException(`Designation with ID "${id}" not found`);
-    }
-
-    // Check name/code uniqueness if being changed
-    if (dto.name || dto.code) {
-      const conflict = await this.db
-        .select({ id: designations.id })
+    return this.db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
         .from(designations)
-        .where(
-          and(
-            or(
-              dto.name ? eq(designations.name, dto.name) : undefined,
-              dto.code ? eq(designations.code, dto.code) : undefined,
-            ),
-          ),
-        )
+        .where(eq(designations.id, id))
         .limit(1);
 
-      if (conflict.length > 0 && conflict[0]!.id !== id) {
-        throw new ConflictException(
-          `Another designation already uses this name or code`,
-        );
+      if (!existing) {
+        throw new NotFoundException(`Designation with ID "${id}" not found`);
       }
-    }
 
-    const updateData: Record<string, any> = { updatedAt: new Date() };
+      // Check name/code uniqueness if being changed
+      if (dto.name || dto.code) {
+        const conflict = await tx
+          .select({ id: designations.id })
+          .from(designations)
+          .where(
+            and(
+              or(
+                dto.name ? eq(designations.name, dto.name) : undefined,
+                dto.code ? eq(designations.code, dto.code) : undefined,
+              ),
+            ),
+          )
+          .limit(1);
 
-    if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.code !== undefined) updateData.code = dto.code;
-    if (dto.description !== undefined) updateData.description = dto.description;
-    if (dto.grade !== undefined) updateData.grade = dto.grade;
-    if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+        if (conflict.length > 0 && conflict[0]!.id !== id) {
+          throw new ConflictException(
+            `Another designation already uses this name or code`,
+          );
+        }
+      }
 
-    const [updated] = await this.db
-      .update(designations)
-      .set(updateData)
-      .where(eq(designations.id, id))
-      .returning();
+      const updateData: Record<string, any> = {};
 
-    await this.invalidateListCache();
+      if (dto.name !== undefined) updateData.name = dto.name;
+      if (dto.code !== undefined) updateData.code = dto.code;
+      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.grade !== undefined) updateData.grade = dto.grade;
+      if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
-    this.logger.log(`Designation updated: ${updated!.name} (${updated!.code})`);
-    return updated!;
+      const [updated] = await tx
+        .update(designations)
+        .set(updateData)
+        .where(eq(designations.id, id))
+        .returning();
+
+      await this.invalidateListCache();
+
+      this.logger.log(`Designation updated: ${updated!.name} (${updated!.code})`);
+      return updated!;
+    });
   }
 
   // ─── Delete (soft) ────────────────────────────────────────────────────────
@@ -237,7 +241,7 @@ export class DesignationService {
       .from(employees)
       .where(
         and(
-          eq(employees.designation, existing.name),
+          eq(employees.designationId, existing.id),
           eq(employees.status, 'active'),
         ),
       );
@@ -250,7 +254,7 @@ export class DesignationService {
 
     await this.db
       .update(designations)
-      .set({ isActive: false, updatedAt: new Date() })
+      .set({ isActive: false })
       .where(eq(designations.id, id));
 
     await this.invalidateListCache();

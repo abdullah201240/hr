@@ -9,20 +9,38 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiConsumes, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiConsumes, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsNumberString } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
 import { CloudinaryService, UploadResult } from './cloudinary.service';
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
 class UploadQueryDto {
+  @ApiPropertyOptional({ description: 'Target folder in Cloudinary' })
+  @IsOptional()
+  @IsString()
   folder?: string;
+
+  @ApiPropertyOptional({ description: 'Comma-separated tags' })
+  @IsOptional()
+  @IsString()
   tags?: string;
+
+  @ApiPropertyOptional({ description: 'Custom public ID' })
+  @IsOptional()
+  @IsString()
   publicId?: string;
 }
 
 class DeleteByPrefixQueryDto {
+  @ApiPropertyOptional({ description: 'Prefix to match for deletion' })
+  @IsString()
   prefix!: string;
+
+  @ApiPropertyOptional({ enum: ['image', 'raw', 'video'] })
+  @IsOptional()
+  @IsString()
   resourceType?: 'image' | 'raw' | 'video';
 }
 
@@ -119,6 +137,9 @@ export class UploadController {
       throw new BadRequestException('URL query parameter is required');
     }
 
+    // SSRF protection: only allow https and block private IPs
+    this.validateUrl(url);
+
     const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
 
     const result = await this.cloudinary.uploadUrl(url, {
@@ -190,5 +211,42 @@ export class UploadController {
   ) {
     const decodedId = decodeURIComponent(publicId);
     return this.cloudinary.generateSignedUrl(decodedId, expiresIn ?? 3600);
+  }
+
+  // ── URL Validation (SSRF protection) ────────────────────────────────────────
+
+  private validateUrl(url: string): void {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new BadRequestException('Invalid URL format');
+    }
+
+    // Only allow HTTPS
+    if (parsed.protocol !== 'https:') {
+      throw new BadRequestException('Only HTTPS URLs are allowed');
+    }
+
+    // Block private/reserved IP ranges and localhost
+    const hostname = parsed.hostname.toLowerCase();
+    const blockedPatterns = [
+      /^localhost$/i,
+      /^127\./,
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[01])\./,
+      /^192\.168\./,
+      /^169\.254\./,
+      /^0\.0\.0\.0$/,
+      /^::1$/,
+      /^fc00:/i,
+      /^fe80:/i,
+    ];
+
+    for (const pattern of blockedPatterns) {
+      if (pattern.test(hostname)) {
+        throw new BadRequestException('URLs pointing to private or reserved addresses are not allowed');
+      }
+    }
   }
 }

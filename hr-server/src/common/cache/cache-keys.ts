@@ -117,6 +117,13 @@ export const CacheKeys = {
     ttl: 0, // dynamic TTL based on token expiry
     description: 'Revoked JWT blacklist',
   },
+
+  /** JWT validation cache (short-lived) */
+  jwtValidate: {
+    key: key('jwt:validate:*'),
+    ttl: 60, // 1 min
+    description: 'Cached JWT user validation result',
+  },
 } as const;
 
 export type CacheKeyDefinition = (typeof CacheKeys)[keyof typeof CacheKeys];

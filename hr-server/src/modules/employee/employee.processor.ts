@@ -3,7 +3,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
-import { DB_CONNECTION, type Database } from '../../db/index.js';
+import { DB_CONNECTION, type Database } from '../../db';
 import {
   employees,
   employeeSpouses,
@@ -11,15 +11,15 @@ import {
   employeeNominees,
   employeeBankDetails,
   employeeDocuments,
-} from '../../db/schema/index.js';
-import { REDIS_CLIENT } from '../../common/cache/cache.service.js';
-import type Redis from 'ioredis';
+} from '../../db/schema';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
 import {
   EMPLOYEE_CREATE_QUEUE,
   EMPLOYEE_UPDATE_QUEUE,
-} from '../queue/queue.module.js';
-import type { CreateEmployeeDto } from './dto/create-employee.dto.js';
-import type { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+} from '../queue/queue.module';
+import type { CreateEmployeeDto } from './dto/create-employee.dto';
+import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 // ─── Create Processor ───────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ export class EmployeeCreateProcessor extends WorkerHost {
 
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly cache: CacheService,
   ) {
     super();
   }
@@ -74,8 +74,8 @@ export class EmployeeCreateProcessor extends WorkerHost {
             emergencyContactName: dto.emergencyContactName || '',
             emergencyContactRelation: dto.emergencyContactRelation || '',
             emergencyContactNumber: dto.emergencyContactNumber || '',
-            designation: dto.designation,
-            department: dto.department,
+            designationId: dto.designationId,
+            departmentId: dto.departmentId,
             employeeType: dto.employeeType,
             joinDate: dto.joinDate,
             lineManagerId: dto.lineManagerId || null,
@@ -156,7 +156,8 @@ export class EmployeeCreateProcessor extends WorkerHost {
       });
 
       // 3. Invalidate employee list cache
-      await this.redis.del('employee:list:*');
+      await this.cache.delByPattern(CacheKeys.employeeList);
+      await this.cache.delByPattern(CacheKeys.employeeById);
 
       this.logger.log(`Employee created successfully: ${dto.employeeId}`);
       return { employeeId: result.id };
@@ -178,7 +179,7 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly cache: CacheService,
   ) {
     super();
   }
@@ -190,7 +191,7 @@ export class EmployeeUpdateProcessor extends WorkerHost {
     try {
       const result = await this.db.transaction(async (tx) => {
         // Build update set from provided fields
-        const updateData: Record<string, any> = { updatedAt: new Date() };
+        const updateData: Record<string, any> = {};
 
         const directFields = [
           'employeeId', 'email', 'personalEmail', 'fullNameEnglish', 'fullNameBangla',
@@ -199,7 +200,7 @@ export class EmployeeUpdateProcessor extends WorkerHost {
           'tinNumber', 'fatherNameEnglish', 'fatherNameBangla', 'motherNameEnglish',
           'motherNameBangla', 'currentAddress', 'permanentAddress',
           'emergencyContactName', 'emergencyContactRelation', 'emergencyContactNumber',
-          'designation', 'department', 'employeeType', 'joinDate', 'lineManagerId',
+          'designationId', 'departmentId', 'employeeType', 'joinDate', 'lineManagerId',
         ] as const;
 
         for (const field of directFields) {
@@ -300,7 +301,8 @@ export class EmployeeUpdateProcessor extends WorkerHost {
       });
 
       // Invalidate caches
-      await this.redis.del(`employee:by-id:${id}`);
+      await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByPattern(CacheKeys.employeeList);
 
       this.logger.log(`Employee updated successfully: ${id}`);
       return { employeeId: result.id };

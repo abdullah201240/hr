@@ -18,10 +18,11 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { EmployeeService } from './employee.service.js';
-import { CreateEmployeeDto } from './dto/create-employee.dto.js';
-import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
-import { EmployeeQueryDto } from './dto/employee-query.dto.js';
+import { EmployeeService } from './employee.service';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { EmployeeQueryDto } from './dto/employee-query.dto';
+import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -32,6 +33,7 @@ export class EmployeeController {
   // ─── Create (async via queue) ─────────────────────────────────────────
 
   @Post()
+  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Create a new employee (queued)' })
   @ApiResponse({ status: 202, description: 'Employee creation job enqueued' })
@@ -43,6 +45,7 @@ export class EmployeeController {
   // ─── Update (async via queue) ────────────────────────────────────────
 
   @Patch(':id')
+  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Update an employee (queued)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -78,6 +81,7 @@ export class EmployeeController {
   // ─── Job status ───────────────────────────────────────────────────────
 
   @Get('jobs/:jobId')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Check employee processing job status' })
   @ApiParam({ name: 'jobId', type: 'string' })
   @ApiResponse({ status: 200, description: 'Job status details' })
@@ -91,6 +95,7 @@ export class EmployeeController {
   // ─── Soft delete ──────────────────────────────────────────────────────
 
   @Delete(':id')
+  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Soft delete (terminate) an employee' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

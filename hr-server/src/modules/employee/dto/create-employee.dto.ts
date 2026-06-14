@@ -285,15 +285,15 @@ export class CreateEmployeeDto {
   emergencyContactNumber?: string;
 
   // Employment
-  @ApiProperty({ example: 'Software Engineer' })
+  @ApiProperty({ description: 'UUID of the designation' })
   @IsString()
   @IsNotEmpty()
-  designation!: string;
+  designationId!: string;
 
-  @ApiProperty({ example: 'Engineering' })
+  @ApiProperty({ description: 'UUID of the department' })
   @IsString()
   @IsNotEmpty()
-  department!: string;
+  departmentId!: string;
 
   @ApiProperty({ example: 'Full-time', enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'] })
   @IsString()

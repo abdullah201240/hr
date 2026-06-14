@@ -23,15 +23,15 @@ export class EmployeeQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filter by department UUID' })
   @IsOptional()
   @IsString()
-  department?: string;
+  departmentId?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Filter by designation UUID' })
   @IsOptional()
   @IsString()
-  designation?: string;
+  designationId?: string;
 
   @ApiPropertyOptional({ enum: ['active', 'inactive', 'terminated'] })
   @IsOptional()

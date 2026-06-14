@@ -8,24 +8,26 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { eq, and, or, like, desc, asc, count } from 'drizzle-orm';
-import { DB_CONNECTION, type Database } from '../../db/index.js';
+import { DB_CONNECTION, type Database } from '../../db';
 import {
   employees,
+  departments,
+  designations,
   employeeSpouses,
   employeeChildren,
   employeeNominees,
   employeeBankDetails,
   employeeDocuments,
-} from '../../db/schema/index.js';
-import { REDIS_CLIENT } from '../../common/cache/cache.service.js';
-import type Redis from 'ioredis';
+} from '../../db/schema';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
 import {
   EMPLOYEE_CREATE_QUEUE,
   EMPLOYEE_UPDATE_QUEUE,
-} from '../queue/queue.module.js';
-import type { CreateEmployeeDto } from './dto/create-employee.dto.js';
-import type { UpdateEmployeeDto } from './dto/update-employee.dto.js';
-import type { EmployeeQueryDto } from './dto/employee-query.dto.js';
+} from '../queue/queue.module';
+import type { CreateEmployeeDto } from './dto/create-employee.dto';
+import type { UpdateEmployeeDto } from './dto/update-employee.dto';
+import type { EmployeeQueryDto } from './dto/employee-query.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -33,7 +35,7 @@ export class EmployeeService {
 
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly cache: CacheService,
     @InjectQueue(EMPLOYEE_CREATE_QUEUE)
     private readonly createQueue: Queue<CreateEmployeeDto>,
     @InjectQueue(EMPLOYEE_UPDATE_QUEUE)
@@ -102,13 +104,55 @@ export class EmployeeService {
   // ─── Find one with all relations ────────────────────────────────────────
 
   async findOne(id: string) {
-    const cacheKey = `employee:by-id:${id}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    const cached = await this.cache.getByKey<any>(CacheKeys.employeeById, id);
+    if (cached) return cached;
 
     const [employee] = await this.db
-      .select()
+      .select({
+        id: employees.id,
+        employeeId: employees.employeeId,
+        email: employees.email,
+        personalEmail: employees.personalEmail,
+        fullNameEnglish: employees.fullNameEnglish,
+        fullNameBangla: employees.fullNameBangla,
+        phone: employees.phone,
+        personalMobileNumber: employees.personalMobileNumber,
+        religion: employees.religion,
+        gender: employees.gender,
+        dateOfBirth: employees.dateOfBirth,
+        bloodGroup: employees.bloodGroup,
+        maritalStatus: employees.maritalStatus,
+        employeePhotoUrl: employees.employeePhotoUrl,
+        nidNumber: employees.nidNumber,
+        nidPdfUrl: employees.nidPdfUrl,
+        tinNumber: employees.tinNumber,
+        fatherNameEnglish: employees.fatherNameEnglish,
+        fatherNameBangla: employees.fatherNameBangla,
+        motherNameEnglish: employees.motherNameEnglish,
+        motherNameBangla: employees.motherNameBangla,
+        currentAddress: employees.currentAddress,
+        permanentAddress: employees.permanentAddress,
+        emergencyContactName: employees.emergencyContactName,
+        emergencyContactRelation: employees.emergencyContactRelation,
+        emergencyContactNumber: employees.emergencyContactNumber,
+        designationId: employees.designationId,
+        departmentId: employees.departmentId,
+        employeeType: employees.employeeType,
+        joinDate: employees.joinDate,
+        lineManagerId: employees.lineManagerId,
+        status: employees.status,
+        role: employees.role,
+        isEmailVerified: employees.isEmailVerified,
+        lastLoginAt: employees.lastLoginAt,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+        deletedAt: employees.deletedAt,
+        departmentName: departments.name,
+        designationName: designations.name,
+      })
       .from(employees)
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(and(eq(employees.id, id), eq(employees.status, 'active')))
       .limit(1);
 
@@ -138,8 +182,7 @@ export class EmployeeService {
       documents,
     };
 
-    // Cache for 5 minutes
-    await this.redis.setex(cacheKey, 300, JSON.stringify(result));
+    await this.cache.setByKey(CacheKeys.employeeById, result, id);
 
     return result;
   }
@@ -151,8 +194,8 @@ export class EmployeeService {
       page = 1,
       limit = 20,
       search,
-      department,
-      designation,
+      departmentId,
+      designationId,
       status = 'active',
       employeeType,
       sortBy = 'createdAt',
@@ -162,8 +205,8 @@ export class EmployeeService {
     const conditions = [];
 
     if (status) conditions.push(eq(employees.status, status));
-    if (department) conditions.push(eq(employees.department, department));
-    if (designation) conditions.push(eq(employees.designation, designation));
+    if (departmentId) conditions.push(eq(employees.departmentId, departmentId));
+    if (designationId) conditions.push(eq(employees.designationId, designationId));
     if (employeeType) conditions.push(eq(employees.employeeType, employeeType));
 
     if (search) {
@@ -196,7 +239,7 @@ export class EmployeeService {
     const sortCol = sortColumns[sortBy] ?? employees.createdAt;
     const orderFn = sortOrder === 'asc' ? asc : desc;
 
-    // Paginated query
+    // Paginated query with department/designation names via join
     const offset = (page - 1) * limit;
     const data = await this.db
       .select({
@@ -207,8 +250,10 @@ export class EmployeeService {
         email: employees.email,
         phone: employees.phone,
         gender: employees.gender,
-        department: employees.department,
-        designation: employees.designation,
+        departmentId: employees.departmentId,
+        departmentName: departments.name,
+        designationId: employees.designationId,
+        designationName: designations.name,
         employeeType: employees.employeeType,
         joinDate: employees.joinDate,
         status: employees.status,
@@ -216,6 +261,8 @@ export class EmployeeService {
         createdAt: employees.createdAt,
       })
       .from(employees)
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(where)
       .orderBy(orderFn(sortCol))
       .limit(limit)
@@ -250,12 +297,12 @@ export class EmployeeService {
       .set({
         status: 'terminated',
         deletedAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date(),
       })
       .where(eq(employees.id, id));
 
     // Invalidate cache
-    await this.redis.del(`employee:by-id:${id}`);
+    await this.cache.delByKey(CacheKeys.employeeById, id);
+    await this.cache.delByPattern(CacheKeys.employeeList);
 
     return { message: 'Employee terminated successfully' };
   }
