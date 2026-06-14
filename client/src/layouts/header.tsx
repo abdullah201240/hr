@@ -14,6 +14,12 @@ import {
   LogOut,
   ChevronRight,
   X,
+  UserPlus,
+  FilePlus,
+  CalendarPlus,
+  Megaphone,
+  Clock,
+  CreditCard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -121,10 +127,42 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
         </Button>
 
         {/* Quick Action */}
-        <Button size="sm" className="hidden sm:flex gap-1.5 h-8 text-xs px-3 font-normal bg-primary text-primary-foreground hover:bg-primary/95 border-none shadow-none">
-          <Plus className="h-3.5 w-3.5" />
-          <span>Quick Action</span>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="hidden sm:flex gap-1.5 h-8 text-xs px-3 font-normal bg-primary text-primary-foreground hover:bg-primary/95 border-none shadow-none cursor-pointer">
+              <Plus className="h-3.5 w-3.5" />
+              <span>Quick Action</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56 shadow-none border-border/50 text-xs">
+            <DropdownMenuLabel className="py-1.5 font-semibold text-foreground">Quick Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5" onClick={() => navigate("/employees/create")}>
+              <UserPlus className="h-3.5 w-3.5 text-indigo-500" />
+              <span>Add Employee</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5" onClick={() => navigate("/letters")}>
+              <FilePlus className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Create HR Letter</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5" onClick={() => navigate("/leave")}>
+              <CalendarPlus className="h-3.5 w-3.5 text-amber-500" />
+              <span>Apply for Leave</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5" onClick={() => navigate("/claims/medical")}>
+              <CreditCard className="h-3.5 w-3.5 text-sky-500" />
+              <span>File Medical Claim</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5" onClick={() => navigate("/announcements")}>
+              <Megaphone className="h-3.5 w-3.5 text-violet-500" />
+              <span>Post Announcement</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5" onClick={() => navigate("/attendance")}>
+              <Clock className="h-3.5 w-3.5 text-rose-500" />
+              <span>View Attendance</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Notifications */}
         <DropdownMenu>
@@ -211,9 +249,9 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
+             <DropdownMenuItem
               className="gap-2 cursor-pointer py-1.5"
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/profile")}
             >
               <User className="h-3.5 w-3.5" />
               My Profile
@@ -225,7 +263,10 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
               <Settings className="h-3.5 w-3.5" />
               Account Settings
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5">
+            <DropdownMenuItem 
+              className="gap-2 cursor-pointer py-1.5"
+              onClick={() => navigate("/profile?tab=security")}
+            >
               <KeyRound className="h-3.5 w-3.5" />
               Change Password
             </DropdownMenuItem>

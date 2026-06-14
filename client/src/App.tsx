@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
@@ -28,11 +28,19 @@ import DocumentsPage from "@/routes/pages/documents"
 import ReportsPage from "@/routes/pages/reports"
 import SettingsPage from "@/routes/pages/settings"
 import RecruitmentPage from "@/routes/pages/recruitment"
+import AnnouncementsPage from "@/routes/pages/announcements"
+import SeparationPage from "@/routes/pages/separation"
+import DisciplinaryPage from "@/routes/pages/disciplinary"
+import PerformancePage from "@/routes/pages/performance"
 import MedicalReimbursementPage from "@/routes/pages/medical-reimbursement"
 import TADAClaimPage from "@/routes/pages/tada-claim"
 import BusinessTravelAdvancePage from "@/routes/pages/business-travel-advance"
+import LettersPage from "@/routes/pages/letters"
+import ViewLetterPage from "@/routes/pages/view-letter"
 import PrintJoiningLetterPage from "@/routes/pages/print/joining-letter"
 import PrintOfferLetterPage from "@/routes/pages/print/offer-letter"
+import PrintHRLetterPage from "@/routes/pages/print/hr-letter"
+import ProfilePage from "@/routes/pages/profile"
 
 function NotFoundPage() {
   return (
@@ -74,9 +82,12 @@ function App() {
               <Route path="attendance/setup" element={<AttendanceSetupPage />} />
               <Route path="leave" element={<LeavePage />} />
               <Route path="payroll" element={<PayrollPage />} />
+              <Route path="claims" element={<Navigate to="/claims/medical" replace />} />
               <Route path="claims/medical" element={<MedicalReimbursementPage />} />
               <Route path="claims/tada" element={<TADAClaimPage />} />
               <Route path="claims/advance" element={<BusinessTravelAdvancePage />} />
+              <Route path="letters" element={<LettersPage />} />
+              <Route path="letters/view/:id" element={<ViewLetterPage />} />
               <Route path="departments" element={<DepartmentsPage />} />
               <Route path="departments/create" element={<CreateDepartmentPage />} />
               <Route path="departments/edit/:name" element={<EditDepartmentPage />} />
@@ -88,14 +99,20 @@ function App() {
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="recruitment" element={<RecruitmentPage />} />
+              <Route path="announcements" element={<AnnouncementsPage />} />
+              <Route path="separation" element={<SeparationPage />} />
+              <Route path="disciplinary" element={<DisciplinaryPage />} />
+              <Route path="performance" element={<PerformancePage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
 
             {/* Printable templates */}
             <Route path="/recruitment/print/:candidateId" element={<PrintJoiningLetterPage />} />
             <Route path="/recruitment/print-offer/:candidateId" element={<PrintOfferLetterPage />} />
+            <Route path="/letters/print/:id" element={<PrintHRLetterPage />} />
           </Routes>
         </BrowserRouter>
         <Toaster />

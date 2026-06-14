@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { SectionCard, SectionTitle, Field, StepHeader } from "@/components/employee/form-ui"
 import { Building2, ArrowLeft } from "lucide-react"
 import Swal from "sweetalert2"
+import { z } from "zod"
 
 const initialDepartments = [
   { name: "Engineering", head: "Michael Torres", count: 64, openRoles: 5, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
@@ -14,6 +15,13 @@ const initialDepartments = [
   { name: "Human Resources", head: "Patricia Lee", count: 12, openRoles: 1, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   { name: "Finance", head: "Thomas Wright", count: 18, openRoles: 2, color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
 ]
+
+const departmentSchema = z.object({
+  name: z.string().trim().min(1, "Department Name is required"),
+  head: z.string().trim().min(1, "Head of Department is required"),
+  count: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Count must be 0 or more")),
+  openRoles: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Open roles must be 0 or more")),
+})
 
 export default function EditDepartmentPage() {
   const navigate = useNavigate()
@@ -43,15 +51,21 @@ export default function EditDepartmentPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Simple validation
-    const nextErrors: { [key: string]: string } = {}
-    if (!name.trim()) nextErrors.name = "Department Name is required"
-    if (!head.trim()) nextErrors.head = "Head of Department is required"
+    // Zod validation
+    const result = departmentSchema.safeParse({ name, head, count, openRoles })
     
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors)
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
       return
     }
+
+    const data = result.data
 
     const stored = localStorage.getItem("departments_list")
     const currentList = stored ? JSON.parse(stored) : initialDepartments
@@ -59,10 +73,10 @@ export default function EditDepartmentPage() {
     const updatedList = currentList.map((d: any) => {
       if (d.name === decodeURIComponent(paramName || "")) {
         return {
-          name: name.trim(),
-          head: head.trim(),
-          count: parseInt(count) || 0,
-          openRoles: parseInt(openRoles) || 0,
+          name: data.name,
+          head: data.head,
+          count: data.count,
+          openRoles: data.openRoles,
           color: color || "bg-blue-500/10 text-blue-600 dark:text-blue-400",
         }
       }

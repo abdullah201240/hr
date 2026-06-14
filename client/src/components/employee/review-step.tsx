@@ -67,6 +67,7 @@ export default function ReviewStep({ photoPreview, nidPdfName }: ReviewStepProps
             <ReviewItem label="Religion" value={v.religion} />
             <ReviewItem label="Gender" value={v.gender} />
             <ReviewItem label="Blood Group" value={v.bloodGroup} />
+            {v.lineManager && <ReviewItem label="Line Manager" value={v.lineManager} />}
             {v.tinNumber && <ReviewItem label="TIN Number" value={v.tinNumber} />}
             {nidPdfName && <ReviewItem label="NID PDF" value={nidPdfName} />}
           </div>

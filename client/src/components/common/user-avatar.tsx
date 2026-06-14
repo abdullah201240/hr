@@ -3,7 +3,7 @@ import type { User } from "@/types"
 
 export const currentUser: User = {
   name: "Alex Johnson",
-  email: "alex.johnson@company.com",
+  email: "alex.johnson@sadoshima.com",
   avatar: "",
   role: "HR Manager",
 }

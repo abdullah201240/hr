@@ -29,12 +29,13 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertCircle,
-  CircleDollarSign,
+  Coins,
   Calendar,
   MapPin,
   Upload,
   Receipt
 } from "lucide-react"
+import { z } from "zod"
 
 interface TADAClaim {
   id: string
@@ -112,6 +113,28 @@ const initialClaims: TADAClaim[] = [
   },
 ]
 
+const tadaClaimSchema = z.object({
+  travelType: z.string().min(1, "Travel Type is required"),
+  from: z.string().min(1, "Origin (From) is required"),
+  to: z.string().min(1, "Destination (To) is required"),
+  startDate: z.string().min(1, "Start Date is required"),
+  endDate: z.string().min(1, "End Date is required"),
+  amount: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ message: "Amount must be a number" })
+      .positive("Amount must be greater than 0")
+  ),
+  purpose: z.string().min(1, "Purpose of travel is required"),
+}).refine((data: any) => {
+  if (data.startDate && data.endDate) {
+    return new Date(data.endDate) >= new Date(data.startDate)
+  }
+  return true;
+}, {
+  message: "End date must be on or after start date",
+  path: ["endDate"],
+})
+
 export default function TADAClaimPage() {
   const [claims, setClaims] = useState<TADAClaim[]>(initialClaims)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -127,12 +150,13 @@ export default function TADAClaimPage() {
     amount: "",
     purpose: "",
   })
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.to.toLowerCase().includes(searchTerm.toLowerCase())
+                          claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          claim.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          claim.to.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === "all" || claim.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -145,6 +169,29 @@ export default function TADAClaimPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
+
+    const result = tadaClaimSchema.safeParse({
+      travelType: formData.travelType,
+      from: formData.from,
+      to: formData.to,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      amount: formData.amount,
+      purpose: formData.purpose,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
     const newClaim: TADAClaim = {
       id: `TA-${String(claims.length + 1).padStart(3, '0')}`,
       employee: "Current User",
@@ -159,6 +206,7 @@ export default function TADAClaimPage() {
     }
     setClaims([newClaim, ...claims])
     setFormData({ travelType: "", from: "", to: "", startDate: "", endDate: "", amount: "", purpose: "" })
+    setErrors({})
     setDialogOpen(false)
   }
 
@@ -178,7 +226,13 @@ export default function TADAClaimPage() {
           </h2>
           <p className="text-muted-foreground">Travel allowance and daily allowance claims</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(val) => {
+          setDialogOpen(val)
+          if (!val) {
+            setFormData({ travelType: "", from: "", to: "", startDate: "", endDate: "", amount: "", purpose: "" })
+            setErrors({})
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -210,17 +264,18 @@ export default function TADAClaimPage() {
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.travelType && <p className="text-[10px] text-red-500">{errors.travelType}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Total Amount ($) *</Label>
+                  <Label htmlFor="amount">Total Amount (৳) *</Label>
                   <Input
                     id="amount"
                     type="number"
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    required
                   />
+                  {errors.amount && <p className="text-[10px] text-red-500">{errors.amount}</p>}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -232,8 +287,8 @@ export default function TADAClaimPage() {
                     placeholder="Departure city"
                     value={formData.from}
                     onChange={(e) => setFormData({ ...formData, from: e.target.value })}
-                    required
                   />
+                  {errors.from && <p className="text-[10px] text-red-500">{errors.from}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="to">To *</Label>
@@ -243,8 +298,8 @@ export default function TADAClaimPage() {
                     placeholder="Destination city"
                     value={formData.to}
                     onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-                    required
                   />
+                  {errors.to && <p className="text-[10px] text-red-500">{errors.to}</p>}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -255,8 +310,8 @@ export default function TADAClaimPage() {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
                   />
+                  {errors.startDate && <p className="text-[10px] text-red-500">{errors.startDate}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date *</Label>
@@ -265,8 +320,8 @@ export default function TADAClaimPage() {
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    required
                   />
+                  {errors.endDate && <p className="text-[10px] text-red-500">{errors.endDate}</p>}
                 </div>
               </div>
               <div className="space-y-2">
@@ -276,8 +331,8 @@ export default function TADAClaimPage() {
                   placeholder="Describe the purpose of your travel..."
                   value={formData.purpose}
                   onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                  required
                 />
+                {errors.purpose && <p className="text-[10px] text-red-500">{errors.purpose}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Upload Travel Documents</Label>
@@ -304,51 +359,61 @@ export default function TADAClaimPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CircleDollarSign className="h-4 w-4 text-emerald-500" /> Total Claims
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{totalAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{claims.length} total claims</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Claims</p>
+                <p className="text-2xl font-bold mt-1">৳{totalAmount.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{claims.length} total claims</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Coins className="h-5 w-5 text-emerald-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" /> Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingClaims}</div>
-            <Progress value={(pendingClaims / claims.length) * 100} className="h-1.5 mt-2" />
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-2xl font-bold mt-1">{pendingClaims}</p>
+                <Progress value={(pendingClaims / claims.length) * 100} className="h-1 mt-1.5 w-16" />
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Approved
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{approvedAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{approvedClaims} claims</p>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Approved</p>
+                <p className="text-2xl font-bold mt-1">৳{approvedAmount.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{approvedClaims} claims</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-red-500" /> Rejected
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{rejectedClaims}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {((rejectedClaims / claims.length) * 100).toFixed(1)}% rejection rate
-            </p>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Rejected</p>
+                <p className="text-2xl font-bold mt-1">{rejectedClaims}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rate</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <XCircle className="h-5 w-5 text-red-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

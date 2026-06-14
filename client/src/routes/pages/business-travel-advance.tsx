@@ -28,12 +28,13 @@ import {
   Search, 
   CheckCircle2, 
   AlertCircle,
-  CircleDollarSign,
+  Coins,
   Calendar,
   Briefcase,
   Upload,
   Clock
 } from "lucide-react"
+import { z } from "zod"
 
 interface TravelAdvance {
   id: string
@@ -111,6 +112,27 @@ const initialAdvances: TravelAdvance[] = [
   },
 ]
 
+const travelAdvanceSchema = z.object({
+  destination: z.string().min(1, "Destination is required"),
+  purpose: z.string().min(1, "Purpose of Travel is required"),
+  startDate: z.string().min(1, "Start Date is required"),
+  endDate: z.string().min(1, "End Date is required"),
+  requestedAmount: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ message: "Requested Amount must be a number" })
+      .positive("Amount must be greater than 0")
+  ),
+  justification: z.string().min(1, "Justification is required"),
+}).refine((data: any) => {
+  if (data.startDate && data.endDate) {
+    return new Date(data.endDate) >= new Date(data.startDate)
+  }
+  return true;
+}, {
+  message: "End date must be on or after start date",
+  path: ["endDate"],
+})
+
 export default function BusinessTravelAdvancePage() {
   const [advances, setAdvances] = useState<TravelAdvance[]>(initialAdvances)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -125,12 +147,13 @@ export default function BusinessTravelAdvancePage() {
     requestedAmount: "",
     justification: "",
   })
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const filteredAdvances = advances.filter(advance => {
     const matchesSearch = advance.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         advance.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         advance.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         advance.purpose.toLowerCase().includes(searchTerm.toLowerCase())
+                          advance.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          advance.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          advance.purpose.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === "all" || advance.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -144,6 +167,28 @@ export default function BusinessTravelAdvancePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
+
+    const result = travelAdvanceSchema.safeParse({
+      destination: formData.destination,
+      purpose: formData.purpose,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      requestedAmount: formData.requestedAmount,
+      justification: formData.justification,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
     const newAdvance: TravelAdvance = {
       id: `ADV-${String(advances.length + 1).padStart(3, '0')}`,
       employee: "Current User",
@@ -158,6 +203,7 @@ export default function BusinessTravelAdvancePage() {
     }
     setAdvances([newAdvance, ...advances])
     setFormData({ destination: "", purpose: "", startDate: "", endDate: "", requestedAmount: "", justification: "" })
+    setErrors({})
     setDialogOpen(false)
   }
 
@@ -187,7 +233,13 @@ export default function BusinessTravelAdvancePage() {
           </h2>
           <p className="text-muted-foreground">Request and manage travel advance payments</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(val) => {
+          setDialogOpen(val)
+          if (!val) {
+            setFormData({ destination: "", purpose: "", startDate: "", endDate: "", requestedAmount: "", justification: "" })
+            setErrors({})
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -210,8 +262,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="City, State/Country"
                   value={formData.destination}
                   onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                  required
                 />
+                {errors.destination && <p className="text-[10px] text-red-500">{errors.destination}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="purpose">Purpose of Travel *</Label>
@@ -221,8 +273,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="e.g., Client Meeting, Conference"
                   value={formData.purpose}
                   onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                  required
                 />
+                {errors.purpose && <p className="text-[10px] text-red-500">{errors.purpose}</p>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -232,8 +284,8 @@ export default function BusinessTravelAdvancePage() {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
                   />
+                  {errors.startDate && <p className="text-[10px] text-red-500">{errors.startDate}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date *</Label>
@@ -242,20 +294,20 @@ export default function BusinessTravelAdvancePage() {
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    required
                   />
+                  {errors.endDate && <p className="text-[10px] text-red-500">{errors.endDate}</p>}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="requestedAmount">Requested Amount ($) *</Label>
+                <Label htmlFor="requestedAmount">Requested Amount (৳) *</Label>
                 <Input
                   id="requestedAmount"
                   type="number"
                   placeholder="0.00"
                   value={formData.requestedAmount}
                   onChange={(e) => setFormData({ ...formData, requestedAmount: e.target.value })}
-                  required
                 />
+                {errors.requestedAmount && <p className="text-[10px] text-red-500">{errors.requestedAmount}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="justification">Justification *</Label>
@@ -264,8 +316,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="Provide detailed justification for the advance request..."
                   value={formData.justification}
                   onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
-                  required
                 />
+                {errors.justification && <p className="text-[10px] text-red-500">{errors.justification}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Upload Supporting Documents</Label>
@@ -292,49 +344,61 @@ export default function BusinessTravelAdvancePage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CircleDollarSign className="h-4 w-4 text-emerald-500" /> Total Requested
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{totalRequested.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{advances.length} total requests</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Requested</p>
+                <p className="text-2xl font-bold mt-1">৳{totalRequested.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{advances.length} total requests</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Coins className="h-5 w-5 text-emerald-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" /> Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingAdvances}</div>
-            <Progress value={(pendingAdvances / advances.length) * 100} className="h-1.5 mt-2" />
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-2xl font-bold mt-1">{pendingAdvances}</p>
+                <Progress value={(pendingAdvances / advances.length) * 100} className="h-1 mt-1.5 w-16" />
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Approved
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{totalApproved.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{approvedAdvances} approved</p>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Approved</p>
+                <p className="text-2xl font-bold mt-1">৳{totalApproved.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{approvedAdvances} approved</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" /> Settled
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{settledAdvances}</div>
-            <p className="text-xs text-muted-foreground mt-1">{settledAdvances} settled</p>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Settled</p>
+                <p className="text-2xl font-bold mt-1">{settledAdvances}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{settledAdvances} settled</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -377,7 +441,7 @@ export default function BusinessTravelAdvancePage() {
                     <span className="text-xs font-mono text-muted-foreground">{advance.id}</span>
                     {advance.status === "Approved" && (
                       <Badge variant="secondary" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20">
-                        Approved: ${advance.approvedAmount}
+                        Approved: ৳{advance.approvedAmount}
                       </Badge>
                     )}
                   </div>

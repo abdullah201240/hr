@@ -109,11 +109,11 @@ export default function PrintJoiningLetterPage() {
         <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight uppercase text-slate-900 dark:text-slate-50">
-              HR Portal Corp
+              Sadoshima
             </h1>
             <p className="text-xs text-muted-foreground mt-1 print:text-slate-600">
               123 Innovation Boulevard, Suite 500<br />
-              Dhaka, Bangladesh • contact@hrportal.com
+              Dhaka, Bangladesh • contact@sadoshima.com
             </p>
           </div>
           <div className="text-right text-xs text-muted-foreground print:text-slate-600">
@@ -138,7 +138,7 @@ export default function PrintJoiningLetterPage() {
           <p>Dear {candidate.name},</p>
 
           <p>
-            We are pleased to formally issue this Letter of Appointment for the position of <strong>{candidate.role}</strong> at HR Portal Corp. This letter confirms your onboarding placement into our organization.
+            We are pleased to formally issue this Letter of Appointment for the position of <strong>{candidate.role}</strong> at Sadoshima. This letter confirms your onboarding placement into our organization.
           </p>
 
           <p>

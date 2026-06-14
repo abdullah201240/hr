@@ -12,6 +12,7 @@ import {
 import { SectionCard, SectionTitle, Field, StepHeader } from "@/components/employee/form-ui"
 import { Briefcase, ArrowLeft } from "lucide-react"
 import Swal from "sweetalert2"
+import { z } from "zod"
 
 const initialDepartments = [
   { name: "Engineering", head: "Michael Torres", count: 64, openRoles: 5 },
@@ -34,6 +35,14 @@ const initialDesignations = [
   { name: "Marketing Lead", grade: "L3", department: "Marketing", count: 10, openRoles: 2 },
   { name: "Sales Rep", grade: "L1", department: "Sales", count: 20, openRoles: 5 },
 ]
+
+const designationSchema = z.object({
+  name: z.string().trim().min(1, "Designation Title is required"),
+  grade: z.string().trim().min(1, "Pay Grade is required"),
+  department: z.string().trim().min(1, "Department is required"),
+  count: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Count must be 0 or more")),
+  openRoles: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Open roles must be 0 or more")),
+})
 
 export default function EditDesignationPage() {
   const navigate = useNavigate()
@@ -67,16 +76,21 @@ export default function EditDesignationPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Simple validation
-    const nextErrors: { [key: string]: string } = {}
-    if (!name.trim()) nextErrors.name = "Designation Title is required"
-    if (!grade.trim()) nextErrors.grade = "Pay Grade is required"
-    if (!department) nextErrors.department = "Department is required"
+    // Zod validation
+    const result = designationSchema.safeParse({ name, grade, department, count, openRoles })
     
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors)
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
       return
     }
+
+    const data = result.data
 
     const stored = localStorage.getItem("designations_list")
     const currentList = stored ? JSON.parse(stored) : initialDesignations
@@ -84,11 +98,11 @@ export default function EditDesignationPage() {
     const updatedList = currentList.map((d: any) => {
       if (d.name === decodeURIComponent(paramName || "")) {
         return {
-          name: name.trim(),
-          grade: grade.trim(),
-          department,
-          count: parseInt(count) || 0,
-          openRoles: parseInt(openRoles) || 0,
+          name: data.name,
+          grade: data.grade,
+          department: data.department,
+          count: data.count,
+          openRoles: data.openRoles,
         }
       }
       return d
