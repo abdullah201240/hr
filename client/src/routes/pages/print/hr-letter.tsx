@@ -39,7 +39,7 @@ export default function PrintHRLetterPage() {
   const [letter, setLetter] = useState<HRLetter | null>(null)
 
   useEffect(() => {
-    // Try to load from letters page seed data
+    // Try to load from localStorage first, then fallback to seed data
     const allLetters: HRLetter[] = [
       {
         id: "HR-L001", type: "offer", employeeName: "James Anderson", employeeDepartment: "Engineering",
@@ -113,7 +113,19 @@ export default function PrintHRLetterPage() {
       },
     ]
 
-    const match = allLetters.find((l) => l.id === id)
+    // Try localStorage first for newly created letters
+    let lettersToSearch = allLetters
+    try {
+      const stored = localStorage.getItem("hr_letters")
+      if (stored) {
+        const parsed: HRLetter[] = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          lettersToSearch = parsed
+        }
+      }
+    } catch { /* fallback to seed data */ }
+
+    const match = lettersToSearch.find((l) => l.id === id)
     if (match) {
       setLetter(match)
     }

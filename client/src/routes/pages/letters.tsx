@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
 import { z } from "zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -395,9 +395,23 @@ const letterFormSchema = z.object({
 })
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
+const LETTERS_STORAGE_KEY = "hr_letters"
+
 export default function LettersPage() {
   const navigate = useNavigate()
-  const [letters, setLetters] = useState<HRLetter[]>(initialLetters)
+  const [letters, setLetters] = useState<HRLetter[]>(() => {
+    try {
+      const stored = localStorage.getItem(LETTERS_STORAGE_KEY)
+      if (stored) return JSON.parse(stored)
+    } catch { /* ignore */ }
+    return initialLetters
+  })
+
+  // Persist letters to localStorage
+  useEffect(() => {
+    localStorage.setItem(LETTERS_STORAGE_KEY, JSON.stringify(letters))
+  }, [letters])
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
@@ -547,7 +561,7 @@ export default function LettersPage() {
               Create Letter
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create HR Letter</DialogTitle>
               <DialogDescription>
@@ -948,7 +962,7 @@ export default function LettersPage() {
       </Card>
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
           {previewLetter && (
             <>
               <DialogHeader>
