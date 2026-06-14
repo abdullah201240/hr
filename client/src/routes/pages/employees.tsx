@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/table"
 import {
   Search,
-  Filter,
   Plus,
   MoreHorizontal,
   Edit2,
@@ -23,6 +22,9 @@ import {
   CheckCircle,
   Clock,
   Building2,
+  Phone,
+  Calendar,
+  IdCard,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -33,14 +35,15 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import Swal from "sweetalert2"
+import { cn } from "@/lib/utils"
 
 const initialEmployees = [
-  { name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", role: "Senior Engineer", dept: "Engineering", status: "Active", initials: "SM" },
-  { name: "James Cooper", email: "james.c@sadoshima.com", role: "Product Manager", dept: "Product", status: "Active", initials: "JC" },
-  { name: "Emily Zhang", email: "emily.z@sadoshima.com", role: "HR Specialist", dept: "HR", status: "Active", initials: "EZ" },
-  { name: "David Kim", email: "david.k@sadoshima.com", role: "Finance Analyst", dept: "Finance", status: "On Leave", initials: "DK" },
-  { name: "Lisa Johnson", email: "lisa.j@sadoshima.com", role: "Marketing Lead", dept: "Marketing", status: "Active", initials: "LJ" },
-  { name: "Marcus Brown", email: "marcus.b@sadoshima.com", role: "Sales Rep", dept: "Sales", status: "Active", initials: "MB" },
+  { employeeId: "EMP-001", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", phone: "+880 1711-234567", role: "Senior Engineer", dept: "Engineering", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B+", joinDate: "2023-03-15", dateOfBirth: "1992-07-22", initials: "SM" },
+  { employeeId: "EMP-002", name: "James Cooper", email: "james.c@sadoshima.com", phone: "+880 1722-345678", role: "Product Manager", dept: "Product", status: "Active", employeeType: "Permanent", gender: "Male", bloodGroup: "A+", joinDate: "2022-08-01", dateOfBirth: "1990-01-10", initials: "JC" },
+  { employeeId: "EMP-003", name: "Emily Zhang", email: "emily.z@sadoshima.com", phone: "+880 1733-456789", role: "HR Specialist", dept: "HR", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "O+", joinDate: "2024-01-10", dateOfBirth: "1995-11-05", initials: "EZ" },
+  { employeeId: "EMP-004", name: "David Kim", email: "david.k@sadoshima.com", phone: "+880 1744-567890", role: "Finance Analyst", dept: "Finance", status: "On Leave", employeeType: "Contractual", gender: "Male", bloodGroup: "AB+", joinDate: "2023-06-20", dateOfBirth: "1988-04-18", initials: "DK" },
+  { employeeId: "EMP-005", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", phone: "+880 1755-678901", role: "Marketing Lead", dept: "Marketing", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B-", joinDate: "2021-11-05", dateOfBirth: "1993-09-30", initials: "LJ" },
+  { employeeId: "EMP-006", name: "Marcus Brown", email: "marcus.b@sadoshima.com", phone: "+880 1766-789012", role: "Sales Rep", dept: "Sales", status: "Active", employeeType: "Probation", gender: "Male", bloodGroup: "A-", joinDate: "2025-02-01", dateOfBirth: "1997-06-14", initials: "MB" },
 ]
 
 export default function EmployeesPage() {
@@ -84,12 +87,17 @@ export default function EmployeesPage() {
     })
   }
 
-  const filteredEmployees = employees.filter((emp: any) =>
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.dept.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredEmployees = employees.filter((emp: any) => {
+    const term = searchTerm.toLowerCase()
+    return (
+      (emp.name || "").toLowerCase().includes(term) ||
+      (emp.email || "").toLowerCase().includes(term) ||
+      (emp.role || "").toLowerCase().includes(term) ||
+      (emp.dept || "").toLowerCase().includes(term) ||
+      (emp.employeeId || "").toLowerCase().includes(term) ||
+      (emp.phone || "").toLowerCase().includes(term)
+    )
+  })
 
   // KPI calculations
   const totalEmployees = employees.length
@@ -157,19 +165,15 @@ export default function EmployeesPage() {
       <div className="space-y-4">
         {/* Search controls directly in flow without Card container */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="relative flex-1">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search employees..."
+              placeholder="Search by name, ID, email, department, or phone..."
               className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
         </div>
 
         {/* Clean, borderless, shadowless Table Container */}
@@ -177,9 +181,15 @@ export default function EmployeesPage() {
           <Table>
             <TableHeader className="bg-muted/10 border-b border-border/30">
               <TableRow className="border-b-0 hover:bg-transparent">
+                <TableHead className="w-24 font-semibold text-xs text-muted-foreground">ID</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
-                <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Role</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Department</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Designation</TableHead>
+                <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Phone</TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Join Date</TableHead>
+                <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Type</TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Gender</TableHead>
+                <TableHead className="hidden xl:table-cell font-semibold text-xs text-muted-foreground">Blood</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
                 <TableHead className="w-12 font-semibold text-xs text-muted-foreground" />
               </TableRow>
@@ -187,13 +197,19 @@ export default function EmployeesPage() {
             <TableBody>
               {filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center border-b-0">
+                  <TableCell colSpan={11} className="h-24 text-center border-b-0">
                     <p className="text-sm text-muted-foreground">No employees found matching &quot;{searchTerm}&quot;.</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredEmployees.map((emp: any) => (
                   <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                    <TableCell className="py-3">
+                      <div className="flex items-center gap-1.5">
+                        <IdCard className="h-3 w-3 text-muted-foreground/50" />
+                        <span className="text-xs font-mono font-semibold text-muted-foreground">{emp.employeeId || "—"}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="cursor-pointer py-3" onClick={() => navigate(`/employees/view/${encodeURIComponent(emp.email)}`)}>
                       <div className="flex items-center gap-3 group">
                         <Avatar className="h-9 w-9">
@@ -207,11 +223,39 @@ export default function EmployeesPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground py-3">
-                      {emp.role}
+                    <TableCell className="py-3">
+                      <Badge variant="secondary" className="text-[10px] font-semibold">{emp.dept}</Badge>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <span className="text-xs text-muted-foreground">{emp.role}</span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell py-3">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span>{emp.phone || "—"}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell py-3">
-                      <Badge variant="secondary" className="text-xs">{emp.dept}</Badge>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3 shrink-0" />
+                        <span>{emp.joinDate || "—"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell py-3">
+                      <Badge className={cn(
+                        "text-[9px] font-bold border-none",
+                        emp.employeeType === "Permanent" ? "bg-emerald-500/10 text-emerald-600" :
+                        emp.employeeType === "Contractual" ? "bg-amber-500/10 text-amber-600" :
+                        "bg-sky-500/10 text-sky-600"
+                      )}>
+                        {emp.employeeType || "Permanent"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell py-3">
+                      <span className="text-xs text-muted-foreground">{emp.gender || "—"}</span>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell py-3">
+                      <Badge variant="outline" className="text-[10px] font-bold">{emp.bloodGroup || "—"}</Badge>
                     </TableCell>
                     <TableCell className="py-3">
                       <Badge
