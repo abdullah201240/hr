@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -37,6 +38,14 @@ async function bootstrap() {
     global: true,
     max: 100,
     timeWindow: '1 minute',
+  });
+
+  // ── Multipart (file uploads) ─────────────────────────────────────
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10 MB default
+      files: 5, // max 5 files per request
+    },
   });
 
   // ── CORS ──────────────────────────────────────────────────────

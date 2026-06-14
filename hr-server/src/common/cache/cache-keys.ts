@@ -89,6 +89,20 @@ export const CacheKeys = {
     ttl: 1800, // 30 min
     description: 'Application settings by key',
   },
+
+  /** Uploaded file metadata cache */
+  uploadMeta: {
+    key: key('uploads:meta:*'),
+    ttl: 600, // 10 min
+    description: 'Uploaded file metadata by public ID',
+  },
+
+  /** Folder listing cache */
+  uploadFolderList: {
+    key: key('uploads:folder:*'),
+    ttl: 120, // 2 min
+    description: 'Cloudinary folder listing cache',
+  },
 } as const;
 
 export type CacheKeyDefinition = (typeof CacheKeys)[keyof typeof CacheKeys];
