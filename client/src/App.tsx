@@ -40,6 +40,7 @@ import ViewLetterPage from "@/routes/pages/view-letter"
 import PrintJoiningLetterPage from "@/routes/pages/print/joining-letter"
 import PrintOfferLetterPage from "@/routes/pages/print/offer-letter"
 import PrintHRLetterPage from "@/routes/pages/print/hr-letter"
+import ProfilePage from "@/routes/pages/profile"
 
 function NotFoundPage() {
   return (
@@ -104,6 +105,7 @@ function App() {
               <Route path="performance" element={<PerformancePage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
 
