@@ -187,7 +187,7 @@ export default function PersonalInfoStep({ photoPreview, setPhotoPreview, isView
         <SectionTitle icon={Phone}>Contact Information</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Work Email" required error={errors.email?.message}>
-            <Input id="email" type="email" placeholder="john@company.com" className={cn(errors.email && "border-destructive")} {...register("email")} />
+            <Input id="email" type="email" placeholder="john@sadoshima.com" className={cn(errors.email && "border-destructive")} {...register("email")} />
           </Field>
           <Field label="Personal Email" error={errors.personalEmail?.message}>
             <Input id="personalEmail" type="email" placeholder="john@gmail.com" className={cn(errors.personalEmail && "border-destructive")} {...register("personalEmail")} />

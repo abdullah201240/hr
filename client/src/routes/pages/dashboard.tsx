@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -554,309 +555,6 @@ export default function DashboardPage() {
                 )
               })}
             </div>
-
-            {/* Selected Day Log Panel */}
-            {selectedRecord && (
-              <div className="mt-4 p-4 rounded-xl border border-border/60 bg-muted/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1.5 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="font-bold uppercase tracking-wide">
-                      {selectedRecord.dayName}
-                    </Badge>
-                    <span className="text-xs font-bold">{selectedRecord.dateStr}, 2026</span>
-                    <Badge className={cn("text-[10px] font-bold capitalize",
-                      selectedRecord.status === "present" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                      selectedRecord.status === "late" && "bg-amber-500/10 text-amber-600 border-amber-500/20",
-                      selectedRecord.status === "absent" && "bg-red-500/10 text-red-600 border-red-500/20",
-                      selectedRecord.status === "leave" && "bg-sky-500/10 text-sky-600 border-sky-500/20",
-                      selectedRecord.status === "holiday" && "bg-violet-500/10 text-violet-600 border-violet-500/20",
-                      selectedRecord.status === "weekend" && "bg-muted text-muted-foreground"
-                    )}>
-                      {selectedRecord.status}
-                    </Badge>
-
-                    {/* Apply Leave Dialog Button */}
-                    {selectedRecord.status !== "leave" && selectedRecord.status !== "holiday" && selectedRecord.status !== "weekend" && (
-                      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" className="h-7 border-sky-500/30 hover:border-sky-500 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 gap-1 text-[10px] font-bold px-2.5">
-                            <Coffee className="h-3 w-3" /> Apply Leave
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[420px]">
-                          <DialogHeader>
-                            <DialogTitle className="text-base font-bold">Apply Leave for {selectedRecord.dateStr}, 2026</DialogTitle>
-                            <DialogDescription className="text-xs">
-                              Select leave type and provide details to apply for leave.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-3">
-                            <div className="space-y-1.5">
-                              <Label htmlFor="leave-type" className="text-xs font-semibold">Leave Type</Label>
-                              <Select value={leaveType} onValueChange={setLeaveType}>
-                                <SelectTrigger id="leave-type" className="w-full text-xs h-9">
-                                  <SelectValue placeholder="Select leave type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {balances.map((b) => (
-                                    <SelectItem key={b.key} value={b.key} disabled={b.total - b.used <= 0} className="text-xs">
-                                      {b.label} ({b.total - b.used} days left)
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            {/* Date Range Selection (Start Day & End Day) */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1.5">
-                                <Label htmlFor="start-day" className="text-xs font-semibold">Start Day</Label>
-                                <Select value={startDay.toString()} onValueChange={(val) => setStartDay(parseInt(val))}>
-                                  <SelectTrigger id="start-day" className="w-full text-xs h-9">
-                                    <SelectValue placeholder="Start Day" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Array.from({ length: 30 }).map((_, i) => (
-                                      <SelectItem key={i + 1} value={(i + 1).toString()} className="text-xs">
-                                        June {i + 1}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label htmlFor="end-day" className="text-xs font-semibold">End Day</Label>
-                                <Select value={endDay.toString()} onValueChange={(val) => setEndDay(parseInt(val))}>
-                                  <SelectTrigger id="end-day" className="w-full text-xs h-9">
-                                    <SelectValue placeholder="End Day" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Array.from({ length: 30 }).map((_, i) => (
-                                      <SelectItem key={i + 1} value={(i + 1).toString()} className="text-xs" disabled={i + 1 < startDay}>
-                                        June {i + 1}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-
-                            {endDay >= startDay && (
-                              <p className="text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-500/10 px-2 py-1 rounded w-fit">
-                                Duration: {endDay - startDay + 1} {endDay - startDay + 1 === 1 ? "day" : "days"}
-                              </p>
-                            )}
-                            <div className="space-y-1.5">
-                              <Label htmlFor="reason" className="text-xs font-semibold">Reason for Leave</Label>
-                              <Textarea
-                                id="reason"
-                                placeholder="Please specify the reason for your leave request..."
-                                value={leaveReason}
-                                onChange={(e) => setLeaveReason(e.target.value)}
-                                className="text-xs min-h-[80px] resize-none"
-                              />
-                            </div>
-
-                            {/* File Attachments Area */}
-                            <div className="space-y-2 border-t border-border/40 pt-3">
-                              <Label className="text-xs font-semibold">Attachments</Label>
-                              
-                              {/* Current Attachments List */}
-                              {dialogAttachments.length > 0 && (
-                                <div className="space-y-1.5 mb-2">
-                                  {dialogAttachments.map((att) => (
-                                    <div key={att.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/20 text-xs">
-                                      <div className="flex items-center gap-1.5 truncate">
-                                        <span className="font-semibold text-primary shrink-0">{att.title}:</span>
-                                        <span className="text-muted-foreground truncate">{att.fileName}</span>
-                                      </div>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-5 w-5 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 rounded"
-                                        onClick={() => setDialogAttachments(dialogAttachments.filter(a => a.id !== att.id))}
-                                      >
-                                        &times;
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Form to Add Attachment */}
-                              <div className="space-y-2 p-2.5 rounded-lg border border-border/40 bg-muted/10">
-                                <div className="space-y-1">
-                                  <Label htmlFor="att-title" className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">Document Title</Label>
-                                  <input
-                                    id="att-title"
-                                    type="text"
-                                    placeholder="e.g. Doctor Certificate, Ticket"
-                                    value={newAttachmentTitle}
-                                    onChange={(e) => setNewAttachmentTitle(e.target.value)}
-                                    className="w-full text-xs bg-background border border-input rounded-md px-2.5 py-1.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label htmlFor="att-file" className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">Select File</Label>
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      id="att-file"
-                                      type="file"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0]
-                                        if (file) {
-                                          setNewAttachmentFileName(file.name)
-                                        }
-                                      }}
-                                      className="hidden"
-                                    />
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => document.getElementById("att-file")?.click()}
-                                      className="h-8 text-[11px] font-semibold flex items-center gap-1.5"
-                                    >
-                                      Browse...
-                                    </Button>
-                                    <span className="text-[11px] text-muted-foreground truncate max-w-[180px]">
-                                      {newAttachmentFileName || "No file chosen"}
-                                    </span>
-                                    {newAttachmentFileName && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setNewAttachmentFileName("")}
-                                        className="h-6 w-6 p-0 text-muted-foreground hover:bg-muted"
-                                      >
-                                        &times;
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  disabled={!newAttachmentTitle.trim() || !newAttachmentFileName}
-                                  onClick={() => {
-                                    if (newAttachmentTitle.trim() && newAttachmentFileName) {
-                                      setDialogAttachments([
-                                        ...dialogAttachments,
-                                        {
-                                          id: Math.random().toString(36).substring(2, 9),
-                                          title: newAttachmentTitle.trim(),
-                                          fileName: newAttachmentFileName
-                                        }
-                                      ])
-                                      setNewAttachmentTitle("")
-                                      setNewAttachmentFileName("")
-                                    }
-                                  }}
-                                  className="w-full h-8 text-[11px] font-semibold bg-primary/10 hover:bg-primary/20 text-primary border-none mt-1"
-                                >
-                                  Add Document
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" size="sm" onClick={() => setIsLeaveDialogOpen(false)} className="text-xs">
-                              Cancel
-                            </Button>
-                            <Button size="sm" onClick={handleApplyLeave} className="text-xs bg-sky-500 hover:bg-sky-600 text-white border-none">
-                              Submit Leave Request
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-
-                    {/* Cancel Leave Button */}
-                    {selectedRecord.status === "leave" && (() => {
-                      const matchingApp = leaveApplications.find(la => selectedDayNumber >= la.startDay && selectedDayNumber <= la.endDay)
-                      if (!matchingApp) return null
-                      return (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCancelLeaveById(matchingApp.id)}
-                          className="h-7 border-red-500/30 hover:border-red-500 hover:bg-red-500/10 text-red-600 dark:text-red-400 gap-1 text-[10px] font-bold px-2.5"
-                        >
-                          <XCircle className="h-3 w-3" /> Cancel Leave
-                        </Button>
-                      )
-                    })()}
-                  </div>
-                  {selectedRecord.notes && (
-                    <p className="text-xs text-muted-foreground font-medium flex items-center gap-1 mt-1">
-                      <Info className="h-3.5 w-3.5 text-primary" /> {selectedRecord.notes}
-                    </p>
-                  )}
-                  {selectedRecord.attachments && selectedRecord.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedRecord.attachments.map((att) => (
-                        <div
-                          key={att.id}
-                          className="flex items-center gap-1.5 bg-sky-500/10 dark:bg-sky-500/[0.04] border border-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg px-2 py-1 text-[11px] font-semibold"
-                        >
-                          <span className="opacity-70">{att.title}:</span>
-                          <span className="underline cursor-pointer hover:text-sky-700 dark:hover:text-sky-300">{att.fileName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {selectedRecord.status !== "weekend" && selectedRecord.status !== "holiday" && selectedRecord.status !== "leave" && selectedRecord.status !== "absent" ? (
-                  <div className="flex flex-wrap gap-4 text-xs font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <div>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">PUNCH</p>
-                        <p className="font-bold">{selectedRecord.checkIn} - {selectedRecord.checkOut || "Active"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                      <div>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">LOCATION</p>
-                        <p className="font-bold">{selectedRecord.location}</p>
-                      </div>
-                    </div>
-                    {selectedRecord.hours && (
-                      <div className="flex items-center gap-1.5">
-                        <Laptop className="h-3.5 w-3.5 text-muted-foreground" />
-                        <div>
-                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide">LOGGED</p>
-                          <p className="font-bold">{selectedRecord.hours} hrs</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-xs text-muted-foreground font-medium italic">
-                    No active punch records for this calendar day.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Legend */}
-            <div className="flex flex-wrap gap-3 pt-3 border-t border-border/20">
-              {[
-                { label: "Present", color: "bg-emerald-500" },
-                { label: "Late", color: "bg-amber-500" },
-                { label: "Absent", color: "bg-red-500" },
-                { label: "Leave", color: "bg-sky-500" },
-                { label: "Holiday", color: "bg-violet-500" },
-                { label: "Weekend", color: "bg-muted-foreground/30" },
-              ].map(l => (
-                <div key={l.label} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                  <span className={cn("h-2 w-2 rounded-full", l.color)} />
-                  {l.label}
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Right Column: Day Details & Leave History (cols 4-5) */}
@@ -917,33 +615,41 @@ export default function DashboardPage() {
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1.5">
                                 <Label htmlFor="start-day" className="text-xs font-semibold">Start Day</Label>
-                                <Select value={startDay.toString()} onValueChange={(val) => setStartDay(parseInt(val))}>
-                                  <SelectTrigger id="start-day" className="w-full text-xs h-9">
-                                    <SelectValue placeholder="Start Day" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Array.from({ length: 30 }).map((_, i) => (
-                                      <SelectItem key={i + 1} value={(i + 1).toString()} className="text-xs">
-                                        June {i + 1}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Input
+                                  id="start-day"
+                                  type="date"
+                                  min="2026-06-01"
+                                  max="2026-06-30"
+                                  value={`2026-06-${startDay.toString().padStart(2, "0")}`}
+                                  onChange={(e) => {
+                                    const parts = e.target.value.split("-")
+                                    if (parts[2]) {
+                                      const day = parseInt(parts[2])
+                                      setStartDay(day)
+                                      if (endDay < day) {
+                                        setEndDay(day)
+                                      }
+                                    }
+                                  }}
+                                  className="w-full text-xs h-9"
+                                />
                               </div>
                               <div className="space-y-1.5">
                                 <Label htmlFor="end-day" className="text-xs font-semibold">End Day</Label>
-                                <Select value={endDay.toString()} onValueChange={(val) => setEndDay(parseInt(val))}>
-                                  <SelectTrigger id="end-day" className="w-full text-xs h-9">
-                                    <SelectValue placeholder="End Day" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Array.from({ length: 30 }).map((_, i) => (
-                                      <SelectItem key={i + 1} value={(i + 1).toString()} className="text-xs" disabled={i + 1 < startDay}>
-                                        June {i + 1}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Input
+                                  id="end-day"
+                                  type="date"
+                                  min={`2026-06-${startDay.toString().padStart(2, "0")}`}
+                                  max="2026-06-30"
+                                  value={`2026-06-${endDay.toString().padStart(2, "0")}`}
+                                  onChange={(e) => {
+                                    const parts = e.target.value.split("-")
+                                    if (parts[2]) {
+                                      setEndDay(parseInt(parts[2]))
+                                    }
+                                  }}
+                                  className="w-full text-xs h-9"
+                                />
                               </div>
                             </div>
 

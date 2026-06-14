@@ -5,12 +5,12 @@ import { DEFAULT_VALUES } from "@/components/employee/form-schema"
 import { Button } from "@/components/ui/button"
 
 const initialEmployees = [
-  { name: "Sarah Mitchell", email: "sarah.m@company.com", role: "Senior Engineer", dept: "Engineering", status: "Active", initials: "SM" },
-  { name: "James Cooper", email: "james.c@company.com", role: "Product Manager", dept: "Product", status: "Active", initials: "JC" },
-  { name: "Emily Zhang", email: "emily.z@company.com", role: "HR Specialist", dept: "HR", status: "Active", initials: "EZ" },
-  { name: "David Kim", email: "david.k@company.com", role: "Finance Analyst", dept: "Finance", status: "On Leave", initials: "DK" },
-  { name: "Lisa Johnson", email: "lisa.j@company.com", role: "Marketing Lead", dept: "Marketing", status: "Active", initials: "LJ" },
-  { name: "Marcus Brown", email: "marcus.b@company.com", role: "Sales Rep", dept: "Sales", status: "Active", initials: "MB" },
+  { name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", role: "Senior Engineer", dept: "Engineering", status: "Active", initials: "SM" },
+  { name: "James Cooper", email: "james.c@sadoshima.com", role: "Product Manager", dept: "Product", status: "Active", initials: "JC" },
+  { name: "Emily Zhang", email: "emily.z@sadoshima.com", role: "HR Specialist", dept: "HR", status: "Active", initials: "EZ" },
+  { name: "David Kim", email: "david.k@sadoshima.com", role: "Finance Analyst", dept: "Finance", status: "On Leave", initials: "DK" },
+  { name: "Lisa Johnson", email: "lisa.j@sadoshima.com", role: "Marketing Lead", dept: "Marketing", status: "Active", initials: "LJ" },
+  { name: "Marcus Brown", email: "marcus.b@sadoshima.com", role: "Sales Rep", dept: "Sales", status: "Active", initials: "MB" },
 ]
 
 export default function EditEmployeePage() {

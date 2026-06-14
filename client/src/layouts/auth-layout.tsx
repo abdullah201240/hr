@@ -18,7 +18,7 @@ export function AuthLayout() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              HR Suite
+              Sadoshima HR
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Enterprise Management System
@@ -33,7 +33,7 @@ export function AuthLayout() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} Acme Corporation. All rights reserved.
+          &copy; {new Date().getFullYear()} Sadoshima. All rights reserved.
         </p>
       </div>
     </div>

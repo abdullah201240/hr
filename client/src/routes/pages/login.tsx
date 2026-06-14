@@ -55,7 +55,7 @@ export default function LoginPage() {
       // Simulate API call
       await new Promise((resolve, reject) => {
         setTimeout(() => {
-          if (data.email === "admin@company.com" && data.password === "password123") {
+          if (data.email === "admin@sadoshima.com" && data.password === "password123") {
             resolve(true)
           } else if (data.email && data.password) {
             // Accept any valid credentials for demo
@@ -100,7 +100,7 @@ export default function LoginPage() {
           <Input
             id="email"
             type="email"
-            placeholder="you@company.com"
+            placeholder="you@sadoshima.com"
             autoComplete="email"
             className={cn(errors.email && "border-destructive focus-visible:ring-destructive")}
             {...register("email")}

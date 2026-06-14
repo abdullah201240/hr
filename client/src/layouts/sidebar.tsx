@@ -45,7 +45,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
             {!collapsed && (
               <div className="flex flex-col overflow-hidden">
                 <span className="text-xs font-semibold text-sidebar-foreground truncate tracking-wide">
-                  HR Suite
+                  Sadoshima HR
                 </span>
                 <span className="text-[10px] text-muted-foreground truncate">
                   Management System

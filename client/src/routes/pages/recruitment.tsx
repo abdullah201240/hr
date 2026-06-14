@@ -21,14 +21,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  Briefcase,
-  Users,
   ArrowRight,
   Plus,
   Search,
   UserPlus,
-  TrendingUp,
-  FileCheck2,
   Trash2,
   CheckCircle,
   Calendar,
@@ -98,7 +94,7 @@ const INITIAL_CANDIDATES: Candidate[] = [
   { id: "cand-2", name: "Maya Lin", email: "maya.lin@outlook.com", role: "Senior Product Designer", source: "Referral", stage: "Interview", appliedDate: "2026-06-08" },
   { id: "cand-3", name: "Liam Patel", email: "liam.patel@yahoo.com", role: "Software Engineer", source: "Job Board", stage: "Technical", appliedDate: "2026-06-05" },
   { id: "cand-4", name: "Emily Watson", email: "emily.watson@gmail.com", role: "HR Manager", source: "LinkedIn", stage: "Offer", appliedDate: "2026-06-07" },
-  { id: "cand-5", name: "Jane Cooper", email: "jane.cooper@company.com", role: "Software Engineer", source: "Careers Site", stage: "Hired", appliedDate: "2026-06-02" },
+  { id: "cand-5", name: "Jane Cooper", email: "jane.cooper@sadoshima.com", role: "Software Engineer", source: "Careers Site", stage: "Hired", appliedDate: "2026-06-02" },
 ]
 
 const INITIAL_ONBOARDING: OnboardingHire[] = [
@@ -124,9 +120,9 @@ const PIPELINE_STAGES = ["Applied", "Screening", "Interview", "Technical", "Offe
 export default function RecruitmentPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = (searchParams.get("tab") as "overview" | "jobs" | "pipeline" | "onboarding") || "overview"
+  const activeTab = (searchParams.get("tab") as "jobs" | "pipeline" | "onboarding") || "jobs"
 
-  const setActiveTab = (tab: "overview" | "jobs" | "pipeline" | "onboarding") => {
+  const setActiveTab = (tab: "jobs" | "pipeline" | "onboarding") => {
     setSearchParams({ tab }, { replace: true })
   }
 
@@ -547,19 +543,6 @@ export default function RecruitmentPage() {
     saveOnboarding(updated)
   }
 
-  // Calculations for dashboard
-  const openJobsCount = jobs.filter(j => j.status === "Open").length
-  const totalCandidatesCount = candidates.length
-  const hiredCandidatesCount = candidates.filter(c => c.stage === "Hired").length
-  const onboardingCompletionRate = Math.round(
-    onboardingHires.length > 0
-      ? (onboardingHires.reduce((acc, hire) => {
-          const completed = hire.tasks.filter(t => t.completed).length
-          return acc + (completed / hire.tasks.length)
-        }, 0) / onboardingHires.length) * 100
-      : 0
-  )
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -599,7 +582,7 @@ export default function RecruitmentPage() {
 
       {/* Tabs Selector */}
       <div className="flex border-b border-border">
-        {(["overview", "jobs", "pipeline", "onboarding"] as const).map(tab => (
+        {(["jobs", "pipeline", "onboarding"] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -614,142 +597,6 @@ export default function RecruitmentPage() {
           </button>
         ))}
       </div>
-
-      {/* OVERVIEW TAB */}
-      {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* Key Stats Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 bg-blue-500/10 rounded-xl">
-                  <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Active Openings</p>
-                  <p className="text-2xl font-bold">{openJobsCount}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 bg-amber-500/10 rounded-xl">
-                  <Users className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Active Candidates</p>
-                  <p className="text-2xl font-bold">{totalCandidatesCount}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 bg-emerald-500/10 rounded-xl">
-                  <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Hired Overall</p>
-                  <p className="text-2xl font-bold">{hiredCandidatesCount}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="p-3 bg-indigo-500/10 rounded-xl">
-                  <FileCheck2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Onboarding Rate</p>
-                  <p className="text-2xl font-bold">{onboardingCompletionRate}%</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {/* Pipeline Stage Counts */}
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-foreground/75">
-                  Pipeline Funnel
-                </CardTitle>
-                <CardDescription>Visual breakdown of candidates across key hiring stages</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {PIPELINE_STAGES.map(stage => {
-                    const count = candidates.filter(c => c.stage === stage).length
-                    const percentage = totalCandidatesCount > 0 ? (count / totalCandidatesCount) * 100 : 0
-                    return (
-                      <div key={stage} className="space-y-1">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-semibold text-foreground/80">{stage}</span>
-                          <span className="text-muted-foreground font-bold">{count} {count === 1 ? "candidate" : "candidates"}</span>
-                        </div>
-                        <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-500",
-                              stage === "Hired" ? "bg-emerald-500" :
-                              stage === "Offer" ? "bg-indigo-500" :
-                              stage === "Technical" ? "bg-purple-500" : "bg-primary/75"
-                            )}
-                            style={{ width: `${percentage || 3}%` }}
-                          />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions / Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-foreground/75">
-                  Recent Activities
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex gap-3 text-xs">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Jane Cooper completed NDA signature</p>
-                      <p className="text-[10px] text-muted-foreground">Onboarding • Just now</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 text-xs">
-                    <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Alex Rivera applied for Software Engineer</p>
-                      <p className="text-[10px] text-muted-foreground">Recruitment • 2 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 text-xs">
-                    <div className="h-2 w-2 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Liam Patel promoted to Technical Interview</p>
-                      <p className="text-[10px] text-muted-foreground">Recruitment • Yesterday</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 text-xs">
-                    <div className="h-2 w-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">New job position opened: HR Manager</p>
-                      <p className="text-[10px] text-muted-foreground">Requisition • 2 days ago</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
 
       {/* JOB OPENINGS TAB */}
       {activeTab === "jobs" && (() => {
