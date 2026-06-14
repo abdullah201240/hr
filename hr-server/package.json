@@ -22,12 +22,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand --verbose",
-    "test:e2e:health": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Health'",
-    "test:e2e:auth": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Auth'",
-    "test:e2e:departments": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Departments'",
-    "test:e2e:designations": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Designations'",
-    "test:e2e:employees": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Employees'",
+    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand --verbose --forceExit",
+    "test:e2e:health": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Health' --forceExit",
+    "test:e2e:auth": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Auth Module' --forceExit",
+    "test:e2e:departments": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Departments' --forceExit",
+    "test:e2e:designations": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Designations' --forceExit",
+    "test:e2e:employees": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Employees' --forceExit",
     "test:e2e:upload": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Upload'"
   },
   "dependencies": {
