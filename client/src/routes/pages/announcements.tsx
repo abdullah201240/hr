@@ -38,6 +38,7 @@ import {
   Calendar,
   User,
 } from "lucide-react"
+import { z } from "zod"
 
 export interface Announcement {
   id: string
@@ -83,6 +84,12 @@ const defaultAnnouncements: Announcement[] = [
   },
 ]
 
+const announcementSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+  status: z.enum(["Published", "Draft"]),
+})
+
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
     const saved = localStorage.getItem("hr_announcements")
@@ -115,6 +122,7 @@ export default function AnnouncementsPage() {
   const [formCategory, setFormCategory] = useState<Announcement["category"]>("info")
   const [formDepartment, setFormDepartment] = useState("All Departments")
   const [formStatus, setFormStatus] = useState<Announcement["status"]>("Published")
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const openCreateModal = () => {
     setEditMode(false)
@@ -123,6 +131,7 @@ export default function AnnouncementsPage() {
     setFormCategory("info")
     setFormDepartment("All Departments")
     setFormStatus("Published")
+    setErrors({})
     setIsFormOpen(true)
   }
 
@@ -134,6 +143,7 @@ export default function AnnouncementsPage() {
     setFormCategory(ann.category)
     setFormDepartment(ann.department)
     setFormStatus(ann.status)
+    setErrors({})
     setIsFormOpen(true)
   }
 
@@ -143,7 +153,23 @@ export default function AnnouncementsPage() {
   }
 
   const handleSave = () => {
-    if (!formTitle.trim() || !formContent.trim()) return
+    setErrors({})
+    const result = announcementSchema.safeParse({
+      title: formTitle,
+      content: formContent,
+      status: formStatus,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
 
     if (editMode && currentAnnouncement) {
       setAnnouncements(prev =>
@@ -319,7 +345,17 @@ export default function AnnouncementsPage() {
       </Card>
 
       {/* Form Dialog for Create/Edit */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={(val) => {
+        setIsFormOpen(val)
+        if (!val) {
+          setFormTitle("")
+          setFormContent("")
+          setFormCategory("info")
+          setFormDepartment("All Departments")
+          setFormStatus("Published")
+          setErrors({})
+        }
+      }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
@@ -339,6 +375,7 @@ export default function AnnouncementsPage() {
                 onChange={e => setFormTitle(e.target.value)}
                 className="text-xs"
               />
+              {errors.title && <p className="text-[10px] text-red-500">{errors.title}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -350,6 +387,7 @@ export default function AnnouncementsPage() {
                 onChange={e => setFormContent(e.target.value)}
                 className="text-xs min-h-[140px] resize-none"
               />
+              {errors.content && <p className="text-[10px] text-red-500">{errors.content}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="status" className="text-xs font-semibold">Status</Label>
@@ -362,13 +400,14 @@ export default function AnnouncementsPage() {
                   <SelectItem value="Draft" className="text-xs">Draft</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.status && <p className="text-[10px] text-red-500">{errors.status}</p>}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setIsFormOpen(false)} className="text-xs">
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={!formTitle.trim() || !formContent.trim()} className="text-xs">
+            <Button size="sm" onClick={handleSave} className="text-xs">
               Save Announcement
             </Button>
           </DialogFooter>

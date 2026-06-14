@@ -42,6 +42,7 @@ import {
   FileText,
   Upload
 } from "lucide-react"
+import { z } from "zod"
 
 interface MedicalClaim {
   id: string
@@ -101,6 +102,17 @@ const initialClaims: MedicalClaim[] = [
   },
 ]
 
+const medicalClaimSchema = z.object({
+  type: z.string().min(1, "Claim Type is required"),
+  amount: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ message: "Amount must be a number" })
+      .positive("Amount must be greater than 0")
+  ),
+  date: z.string().min(1, "Date of Service is required"),
+  description: z.string().min(1, "Description is required"),
+})
+
 export default function MedicalReimbursementPage() {
   const [claims, setClaims] = useState<MedicalClaim[]>(initialClaims)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -113,11 +125,12 @@ export default function MedicalReimbursementPage() {
     date: "",
     description: "",
   })
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = claim.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         claim.type.toLowerCase().includes(searchTerm.toLowerCase())
+                          claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          claim.type.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === "all" || claim.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -130,6 +143,26 @@ export default function MedicalReimbursementPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
+
+    const result = medicalClaimSchema.safeParse({
+      type: formData.type,
+      amount: formData.amount,
+      date: formData.date,
+      description: formData.description,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
     const newClaim: MedicalClaim = {
       id: `MED-${String(claims.length + 1).padStart(3, '0')}`,
       employee: "Current User",
@@ -141,6 +174,7 @@ export default function MedicalReimbursementPage() {
     }
     setClaims([newClaim, ...claims])
     setFormData({ type: "", amount: "", date: "", description: "" })
+    setErrors({})
     setDialogOpen(false)
   }
 
@@ -160,7 +194,13 @@ export default function MedicalReimbursementPage() {
           </h2>
           <p className="text-muted-foreground">Medical test and healthcare reimbursement claims</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(val) => {
+          setDialogOpen(val)
+          if (!val) {
+            setFormData({ type: "", amount: "", date: "", description: "" })
+            setErrors({})
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -193,6 +233,7 @@ export default function MedicalReimbursementPage() {
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.type && <p className="text-[10px] text-red-500">{errors.type}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount (৳) *</Label>
@@ -202,8 +243,8 @@ export default function MedicalReimbursementPage() {
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    required
                   />
+                  {errors.amount && <p className="text-[10px] text-red-500">{errors.amount}</p>}
                 </div>
               </div>
               <div className="space-y-2">
@@ -213,8 +254,8 @@ export default function MedicalReimbursementPage() {
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
                 />
+                {errors.date && <p className="text-[10px] text-red-500">{errors.date}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
@@ -223,8 +264,8 @@ export default function MedicalReimbursementPage() {
                   placeholder="Provide details about the medical service..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
                 />
+                {errors.description && <p className="text-[10px] text-red-500">{errors.description}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Upload Medical Documents</Label>

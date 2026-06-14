@@ -37,6 +37,7 @@ import {
   FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { z } from "zod"
 
 export interface DisciplinaryCase {
   id: string
@@ -86,6 +87,13 @@ const defaultCases: DisciplinaryCase[] = [
   },
 ]
 
+const disciplinaryCaseSchema = z.object({
+  employeeName: z.string().min(1, "Employee name is required"),
+  employeeEmail: z.string().email("Invalid email address"),
+  offenseType: z.string().min(1, "Offense type is required"),
+  showCauseNotice: z.string().optional(),
+})
+
 export default function DisciplinaryPage() {
   const [cases, setCases] = useState<DisciplinaryCase[]>(() => {
     const saved = localStorage.getItem("hr_disciplinary")
@@ -112,6 +120,7 @@ export default function DisciplinaryPage() {
   const [newEmpEmail, setNewEmpEmail] = useState("")
   const [newOffense, setNewOffense] = useState("Attendance Violation")
   const [newShowCause, setNewShowCause] = useState("")
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   // Case resolution states
   const [tempExplanation, setTempExplanation] = useState("")
@@ -119,7 +128,25 @@ export default function DisciplinaryPage() {
   const [tempStatus, setTempStatus] = useState<DisciplinaryCase["status"]>("Under Investigation")
 
   const handleCreate = () => {
-    if (!newEmpName.trim() || !newEmpEmail.trim()) return
+    setErrors({})
+    const result = disciplinaryCaseSchema.safeParse({
+      employeeName: newEmpName,
+      employeeEmail: newEmpEmail,
+      offenseType: newOffense,
+      showCauseNotice: newShowCause,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
     const newRecord: DisciplinaryCase = {
       id: "DSC-" + Math.floor(100 + Math.random() * 900),
       employeeName: newEmpName.trim(),
@@ -345,7 +372,15 @@ export default function DisciplinaryPage() {
       </Card>
 
       {/* Case Creation Modal */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={(val) => {
+        setIsCreateOpen(val)
+        if (!val) {
+          setNewEmpName("")
+          setNewEmpEmail("")
+          setNewShowCause("")
+          setErrors({})
+        }
+      }}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">Log Disciplinary Case</DialogTitle>
@@ -355,10 +390,12 @@ export default function DisciplinaryPage() {
             <div className="space-y-1.5">
               <Label htmlFor="c-emp-name" className="text-xs font-semibold">Employee Name</Label>
               <Input id="c-emp-name" placeholder="e.g. Sara Chen" value={newEmpName} onChange={e => setNewEmpName(e.target.value)} className="text-xs" />
+              {errors.employeeName && <p className="text-[10px] text-red-500">{errors.employeeName}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="c-emp-email" className="text-xs font-semibold">Employee Email</Label>
               <Input id="c-emp-email" type="email" placeholder="e.g. sara.chen@sadoshima.com" value={newEmpEmail} onChange={e => setNewEmpEmail(e.target.value)} className="text-xs" />
+              {errors.employeeEmail && <p className="text-[10px] text-red-500">{errors.employeeEmail}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="offense-type" className="text-xs font-semibold">Offense Type</Label>
@@ -373,15 +410,17 @@ export default function DisciplinaryPage() {
                   <SelectItem value="Performance Issue" className="text-xs">Unsatisfactory Performance Standards</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.offenseType && <p className="text-[10px] text-red-500">{errors.offenseType}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="show-cause-draft" className="text-xs font-semibold">Show Cause Notice (Draft)</Label>
               <Textarea id="show-cause-draft" placeholder="Draft show cause statement or leave blank to investigate first..." value={newShowCause} onChange={e => setNewShowCause(e.target.value)} className="text-xs min-h-[90px] resize-none" />
+              {errors.showCauseNotice && <p className="text-[10px] text-red-500">{errors.showCauseNotice}</p>}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(false)} className="text-xs">Cancel</Button>
-            <Button size="sm" onClick={handleCreate} disabled={!newEmpName.trim() || !newEmpEmail.trim()} className="text-xs">Log Case</Button>
+            <Button size="sm" onClick={handleCreate} className="text-xs">Log Case</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -34,6 +34,7 @@ import {
   Upload,
   Clock
 } from "lucide-react"
+import { z } from "zod"
 
 interface TravelAdvance {
   id: string
@@ -111,6 +112,27 @@ const initialAdvances: TravelAdvance[] = [
   },
 ]
 
+const travelAdvanceSchema = z.object({
+  destination: z.string().min(1, "Destination is required"),
+  purpose: z.string().min(1, "Purpose of Travel is required"),
+  startDate: z.string().min(1, "Start Date is required"),
+  endDate: z.string().min(1, "End Date is required"),
+  requestedAmount: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ message: "Requested Amount must be a number" })
+      .positive("Amount must be greater than 0")
+  ),
+  justification: z.string().min(1, "Justification is required"),
+}).refine((data: any) => {
+  if (data.startDate && data.endDate) {
+    return new Date(data.endDate) >= new Date(data.startDate)
+  }
+  return true;
+}, {
+  message: "End date must be on or after start date",
+  path: ["endDate"],
+})
+
 export default function BusinessTravelAdvancePage() {
   const [advances, setAdvances] = useState<TravelAdvance[]>(initialAdvances)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -125,12 +147,13 @@ export default function BusinessTravelAdvancePage() {
     requestedAmount: "",
     justification: "",
   })
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const filteredAdvances = advances.filter(advance => {
     const matchesSearch = advance.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         advance.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         advance.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         advance.purpose.toLowerCase().includes(searchTerm.toLowerCase())
+                          advance.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          advance.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          advance.purpose.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === "all" || advance.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -144,6 +167,28 @@ export default function BusinessTravelAdvancePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
+
+    const result = travelAdvanceSchema.safeParse({
+      destination: formData.destination,
+      purpose: formData.purpose,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      requestedAmount: formData.requestedAmount,
+      justification: formData.justification,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
     const newAdvance: TravelAdvance = {
       id: `ADV-${String(advances.length + 1).padStart(3, '0')}`,
       employee: "Current User",
@@ -158,6 +203,7 @@ export default function BusinessTravelAdvancePage() {
     }
     setAdvances([newAdvance, ...advances])
     setFormData({ destination: "", purpose: "", startDate: "", endDate: "", requestedAmount: "", justification: "" })
+    setErrors({})
     setDialogOpen(false)
   }
 
@@ -187,7 +233,13 @@ export default function BusinessTravelAdvancePage() {
           </h2>
           <p className="text-muted-foreground">Request and manage travel advance payments</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(val) => {
+          setDialogOpen(val)
+          if (!val) {
+            setFormData({ destination: "", purpose: "", startDate: "", endDate: "", requestedAmount: "", justification: "" })
+            setErrors({})
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -210,8 +262,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="City, State/Country"
                   value={formData.destination}
                   onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                  required
                 />
+                {errors.destination && <p className="text-[10px] text-red-500">{errors.destination}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="purpose">Purpose of Travel *</Label>
@@ -221,8 +273,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="e.g., Client Meeting, Conference"
                   value={formData.purpose}
                   onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-                  required
                 />
+                {errors.purpose && <p className="text-[10px] text-red-500">{errors.purpose}</p>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -232,8 +284,8 @@ export default function BusinessTravelAdvancePage() {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    required
                   />
+                  {errors.startDate && <p className="text-[10px] text-red-500">{errors.startDate}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date *</Label>
@@ -242,8 +294,8 @@ export default function BusinessTravelAdvancePage() {
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    required
                   />
+                  {errors.endDate && <p className="text-[10px] text-red-500">{errors.endDate}</p>}
                 </div>
               </div>
               <div className="space-y-2">
@@ -254,8 +306,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="0.00"
                   value={formData.requestedAmount}
                   onChange={(e) => setFormData({ ...formData, requestedAmount: e.target.value })}
-                  required
                 />
+                {errors.requestedAmount && <p className="text-[10px] text-red-500">{errors.requestedAmount}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="justification">Justification *</Label>
@@ -264,8 +316,8 @@ export default function BusinessTravelAdvancePage() {
                   placeholder="Provide detailed justification for the advance request..."
                   value={formData.justification}
                   onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
-                  required
                 />
+                {errors.justification && <p className="text-[10px] text-red-500">{errors.justification}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Upload Supporting Documents</Label>

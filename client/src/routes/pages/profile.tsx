@@ -22,6 +22,16 @@ import {
   UserCheck,
 } from "lucide-react"
 import { toast } from "sonner"
+import { z } from "zod"
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(6, "New password must be at least 6 characters long"),
+  confirmPassword: z.string().min(1, "Confirm password is required"),
+}).refine((data: any) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+})
 
 export default function ProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -33,26 +43,27 @@ export default function ProfilePage() {
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const handleTabChange = (val: string) => {
     setSearchParams({ tab: val }, { replace: true })
+    setErrors({})
   }
 
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
 
-    if (!currentPassword) {
-      toast.error("Please enter your current password")
-      return
-    }
+    const result = changePasswordSchema.safeParse({ currentPassword, newPassword, confirmPassword })
 
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters long")
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match")
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
       return
     }
 
@@ -244,7 +255,10 @@ export default function ProfilePage() {
                     <Input
                       type={showCurrent ? "text" : "password"}
                       value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value)
+                        if (errors.currentPassword) setErrors(prev => ({ ...prev, currentPassword: "" }))
+                      }}
                       placeholder="Enter current password"
                       className="pr-10 text-xs h-9 bg-secondary"
                       required
@@ -257,6 +271,9 @@ export default function ProfilePage() {
                       {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {errors.currentPassword && (
+                    <p className="text-[10px] text-destructive mt-0.5">{errors.currentPassword}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -265,7 +282,10 @@ export default function ProfilePage() {
                     <Input
                       type={showNew ? "text" : "password"}
                       value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value)
+                        if (errors.newPassword) setErrors(prev => ({ ...prev, newPassword: "" }))
+                      }}
                       placeholder="Min. 6 characters"
                       className="pr-10 text-xs h-9 bg-secondary"
                       required
@@ -278,6 +298,9 @@ export default function ProfilePage() {
                       {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {errors.newPassword && (
+                    <p className="text-[10px] text-destructive mt-0.5">{errors.newPassword}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -286,7 +309,10 @@ export default function ProfilePage() {
                     <Input
                       type={showConfirm ? "text" : "password"}
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value)
+                        if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: "" }))
+                      }}
                       placeholder="Repeat new password"
                       className="pr-10 text-xs h-9 bg-secondary"
                       required
@@ -299,6 +325,9 @@ export default function ProfilePage() {
                       {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {errors.confirmPassword && (
+                    <p className="text-[10px] text-destructive mt-0.5">{errors.confirmPassword}</p>
+                  )}
                 </div>
 
                 <Button type="submit" className="w-full gap-2 text-xs h-9">

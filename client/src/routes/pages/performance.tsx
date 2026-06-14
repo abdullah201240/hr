@@ -32,6 +32,16 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
+import { z } from "zod"
+
+const kpiSchema = z.object({
+  title: z.string().min(1, "KPI Title is required"),
+  description: z.string().min(1, "Objective Description is required"),
+  targetMetric: z.string().min(1, "Target Success Metric is required"),
+  weight: z.number({ message: "Weight must be a number" })
+    .min(5, "Weight must be at least 5%")
+    .max(100, "Weight cannot exceed 100%"),
+})
 
 interface EmployeeDef {
   email: string
@@ -92,6 +102,7 @@ export default function PerformancePage() {
   const [newKpiDesc, setNewKpiDesc] = useState("")
   const [newKpiMetric, setNewKpiMetric] = useState("")
   const [newKpiWeight, setNewKpiWeight] = useState(25)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   // Fetch employees
   useEffect(() => {
@@ -148,7 +159,25 @@ export default function PerformancePage() {
 
   // Handle Add KPI
   const handleAddKpi = () => {
-    if (!newKpiTitle.trim() || !newKpiMetric.trim()) return
+    setErrors({})
+    const result = kpiSchema.safeParse({
+      title: newKpiTitle,
+      description: newKpiDesc,
+      targetMetric: newKpiMetric,
+      weight: newKpiWeight,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
     const newKpi: KPI = {
       id: "kpi-" + Math.floor(Math.random() * 100000),
       title: newKpiTitle.trim(),
@@ -169,6 +198,7 @@ export default function PerformancePage() {
     setNewKpiDesc("")
     setNewKpiMetric("")
     setNewKpiWeight(25)
+    setErrors({})
     setIsAddKpiOpen(false)
 
     Swal.fire({
@@ -492,9 +522,17 @@ export default function PerformancePage() {
           </Card>
         </TabsContent>
       </Tabs>
-
       {/* Add KPI Modal */}
-      <Dialog open={isAddKpiOpen} onOpenChange={setIsAddKpiOpen}>
+      <Dialog open={isAddKpiOpen} onOpenChange={(val) => {
+        setIsAddKpiOpen(val)
+        if (!val) {
+          setNewKpiTitle("")
+          setNewKpiDesc("")
+          setNewKpiMetric("")
+          setNewKpiWeight(25)
+          setErrors({})
+        }
+      }}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle className="text-base font-bold">Add Performance Objective</DialogTitle>
@@ -509,6 +547,7 @@ export default function PerformancePage() {
                 onChange={e => setNewKpiTitle(e.target.value)}
                 className="text-xs"
               />
+              {errors.title && <p className="text-[10px] text-red-500">{errors.title}</p>}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Objective Description</Label>
@@ -518,6 +557,7 @@ export default function PerformancePage() {
                 onChange={e => setNewKpiDesc(e.target.value)}
                 className="text-xs min-h-[70px]"
               />
+              {errors.description && <p className="text-[10px] text-red-500">{errors.description}</p>}
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 space-y-1.5">
@@ -528,6 +568,7 @@ export default function PerformancePage() {
                   onChange={e => setNewKpiMetric(e.target.value)}
                   className="text-xs"
                 />
+                {errors.targetMetric && <p className="text-[10px] text-red-500">{errors.targetMetric}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Weight (%)</Label>
@@ -539,12 +580,13 @@ export default function PerformancePage() {
                   onChange={e => setNewKpiWeight(Number(e.target.value))}
                   className="text-xs"
                 />
+                {errors.weight && <p className="text-[10px] text-red-500">{errors.weight}</p>}
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setIsAddKpiOpen(false)} className="text-xs">Cancel</Button>
-            <Button size="sm" onClick={handleAddKpi} disabled={!newKpiTitle.trim() || !newKpiMetric.trim()} className="text-xs">Create Target</Button>
+            <Button size="sm" onClick={handleAddKpi} className="text-xs">Create Target</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
+import { z } from "zod"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -384,6 +385,15 @@ const getCategoryLabel = (category: string) => {
   return labels[category] || category
 }
 
+const letterFormSchema = z.object({
+  selectedType: z.string().min(1, "Letter Type is required"),
+  formEmployee: z.string().trim().min(1, "Employee Name is required"),
+  formSubject: z.string().trim().min(1, "Subject is required"),
+  formIssueDate: z.string().min(1, "Issue Date is required"),
+  formEffectiveDate: z.string().min(1, "Effective Date is required"),
+  formBody: z.string().trim().min(1, "Letter Body is required"),
+})
+
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export default function LettersPage() {
   const navigate = useNavigate()
@@ -406,6 +416,7 @@ export default function LettersPage() {
   const [formBody, setFormBody] = useState("")
   const [formFields, setFormFields] = useState<Record<string, string>>({})
   const [formStatus, setFormStatus] = useState<HRLetter["status"]>("Draft")
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   // Filter letters
   const filteredLetters = letters.filter((letter) => {
@@ -434,11 +445,13 @@ export default function LettersPage() {
     setFormBody("")
     setFormFields({})
     setFormStatus("Draft")
+    setErrors({})
   }
 
   // Handle type selection - prefill template
   const handleTypeSelect = (typeId: string) => {
     setSelectedType(typeId)
+    setErrors((prev) => ({ ...prev, selectedType: "" }))
     const config = getLetterTypeConfig(typeId)
     if (config) {
       setFormSubject(config.name)
@@ -454,19 +467,42 @@ export default function LettersPage() {
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const config = getLetterTypeConfig(selectedType)
+    setErrors({})
+
+    const result = letterFormSchema.safeParse({
+      selectedType,
+      formEmployee,
+      formSubject,
+      formIssueDate,
+      formEffectiveDate,
+      formBody,
+    })
+
+    if (!result.success) {
+      const fieldErrors: { [key: string]: string } = {}
+      result.error.issues.forEach((err: any) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message
+        }
+      })
+      setErrors(fieldErrors)
+      return
+    }
+
+    const data = result.data
+    const config = getLetterTypeConfig(data.selectedType)
     if (!config) return
 
     const newLetter: HRLetter = {
       id: `HR-L${String(letters.length + 1).padStart(3, "0")}`,
-      type: selectedType,
-      employeeName: formEmployee,
+      type: data.selectedType,
+      employeeName: data.formEmployee,
       employeeDepartment: "Department",
-      subject: formSubject,
-      issueDate: formIssueDate,
-      effectiveDate: formEffectiveDate,
+      subject: data.formSubject,
+      issueDate: data.formIssueDate,
+      effectiveDate: data.formEffectiveDate,
       status: formStatus,
-      body: formBody,
+      body: data.formBody,
       fields: formFields,
       createdBy: "HR Admin",
       createdAt: new Date().toISOString(),
@@ -547,6 +583,9 @@ export default function LettersPage() {
                     )
                   })}
                 </div>
+                {errors.selectedType && (
+                  <p className="text-[10px] text-destructive mt-0.5">{errors.selectedType}</p>
+                )}
               </div>
 
               {selectedType && (
@@ -558,20 +597,32 @@ export default function LettersPage() {
                       <Input
                         placeholder="Enter employee name"
                         value={formEmployee}
-                        onChange={(e) => setFormEmployee(e.target.value)}
+                        onChange={(e) => {
+                          setFormEmployee(e.target.value)
+                          if (errors.formEmployee) setErrors(prev => ({ ...prev, formEmployee: "" }))
+                        }}
                         required
                         className="text-xs"
                       />
+                      {errors.formEmployee && (
+                        <p className="text-[10px] text-destructive mt-0.5">{errors.formEmployee}</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold">Subject *</Label>
                       <Input
                         placeholder="Letter subject"
                         value={formSubject}
-                        onChange={(e) => setFormSubject(e.target.value)}
+                        onChange={(e) => {
+                          setFormSubject(e.target.value)
+                          if (errors.formSubject) setErrors(prev => ({ ...prev, formSubject: "" }))
+                        }}
                         required
                         className="text-xs"
                       />
+                      {errors.formSubject && (
+                        <p className="text-[10px] text-destructive mt-0.5">{errors.formSubject}</p>
+                      )}
                     </div>
                   </div>
 
@@ -582,20 +633,32 @@ export default function LettersPage() {
                       <Input
                         type="date"
                         value={formIssueDate}
-                        onChange={(e) => setFormIssueDate(e.target.value)}
+                        onChange={(e) => {
+                          setFormIssueDate(e.target.value)
+                          if (errors.formIssueDate) setErrors(prev => ({ ...prev, formIssueDate: "" }))
+                        }}
                         required
                         className="text-xs"
                       />
+                      {errors.formIssueDate && (
+                        <p className="text-[10px] text-destructive mt-0.5">{errors.formIssueDate}</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold">Effective Date *</Label>
                       <Input
                         type="date"
                         value={formEffectiveDate}
-                        onChange={(e) => setFormEffectiveDate(e.target.value)}
+                        onChange={(e) => {
+                          setFormEffectiveDate(e.target.value)
+                          if (errors.formEffectiveDate) setErrors(prev => ({ ...prev, formEffectiveDate: "" }))
+                        }}
                         required
                         className="text-xs"
                       />
+                      {errors.formEffectiveDate && (
+                        <p className="text-[10px] text-destructive mt-0.5">{errors.formEffectiveDate}</p>
+                      )}
                     </div>
                   </div>
 
@@ -625,10 +688,16 @@ export default function LettersPage() {
                     <Textarea
                       placeholder="Enter letter content..."
                       value={formBody}
-                      onChange={(e) => setFormBody(e.target.value)}
+                      onChange={(e) => {
+                        setFormBody(e.target.value)
+                        if (errors.formBody) setErrors(prev => ({ ...prev, formBody: "" }))
+                      }}
                       required
                       className="text-xs min-h-[120px] resize-y"
                     />
+                    {errors.formBody && (
+                      <p className="text-[10px] text-destructive mt-0.5">{errors.formBody}</p>
+                    )}
                   </div>
 
                   {/* Status */}
