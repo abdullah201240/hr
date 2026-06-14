@@ -36,7 +36,7 @@ export class HealthController {
     } catch (error) {
       throw new ServiceUnavailableException({
         database: 'disconnected',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Database connection failed',
         timestamp: new Date().toISOString(),
       });
     }

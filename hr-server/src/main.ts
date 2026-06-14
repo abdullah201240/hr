@@ -49,6 +49,8 @@ async function bootstrap() {
   });
 
   // ── CORS ──────────────────────────────────────────────────────
+  // Uses process.env directly because CORS must be configured before
+  // the app is fully initialized and ConfigService is available.
   const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim());
   app.enableCors({
     origin: nodeEnv === 'production' ? (corsOrigins ?? []) : true,

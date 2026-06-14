@@ -10,7 +10,7 @@ import { eq, and, or, like, desc, asc, count } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { departments, employees } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
-import { CacheKeys, resolveKey, patternOf } from '../../common/cache/cache-keys';
+import { CacheKeys } from '../../common/cache/cache-keys';
 import type { CreateDepartmentDto, UpdateDepartmentDto } from './dto/create-department.dto';
 import type { DepartmentQueryDto } from './dto/department-query.dto';
 

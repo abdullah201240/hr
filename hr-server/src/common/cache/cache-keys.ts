@@ -34,10 +34,10 @@ export const CacheKeys = {
     description: 'Paginated employee list',
   },
 
-  /** Single employee by ID */
+  /** Single employee by ID — TTL kept short to limit stale window after direct DB changes */
   employeeById: {
     key: key('employees:id:*'),
-    ttl: 600, // 10 min
+    ttl: 300, // 5 min
     description: 'Employee record by ID',
   },
 

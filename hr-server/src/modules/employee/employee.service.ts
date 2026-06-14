@@ -202,6 +202,11 @@ export class EmployeeService {
       sortOrder = 'desc',
     } = query;
 
+    // Build a deterministic cache key from query params
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${departmentId ?? ''}:${designationId ?? ''}:${status}:${employeeType ?? ''}:${sortBy}:${sortOrder}`;
+    const cached = await this.cache.getByKey<any>(CacheKeys.employeeList, cacheKeyParts);
+    if (cached) return cached;
+
     const conditions = [];
 
     if (status) conditions.push(eq(employees.status, status));
@@ -268,7 +273,7 @@ export class EmployeeService {
       .limit(limit)
       .offset(offset);
 
-    return {
+    const result = {
       data,
       meta: {
         total,
@@ -277,6 +282,10 @@ export class EmployeeService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    await this.cache.setByKey(CacheKeys.employeeList, result, cacheKeyParts);
+
+    return result;
   }
 
   // ─── Soft delete ────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { Readable } from 'node:stream';
@@ -218,17 +218,17 @@ export class CloudinaryService implements OnModuleInit {
   private validateMimeType(mimeType: string): void {
     const allowed = new Set([...IMAGE_MIMES, ...DOCUMENT_MIMES, ...VIDEO_MIMES]);
     if (!allowed.has(mimeType)) {
-      throw new Error(`File type "${mimeType}" is not allowed`);
+      throw new BadRequestException(`File type "${mimeType}" is not allowed`);
     }
   }
 
   private validateFileSize(size: number): void {
     if (size > this.config.maxFileSize) {
       const maxMB = (this.config.maxFileSize / 1048576).toFixed(1);
-      throw new Error(`File size exceeds the maximum allowed (${maxMB} MB)`);
+      throw new BadRequestException(`File size exceeds the maximum allowed (${maxMB} MB)`);
     }
     if (size === 0) {
-      throw new Error('File is empty');
+      throw new BadRequestException('File is empty');
     }
   }
 

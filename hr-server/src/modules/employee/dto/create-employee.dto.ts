@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   Matches,
   MinLength,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -286,13 +287,11 @@ export class CreateEmployeeDto {
 
   // Employment
   @ApiProperty({ description: 'UUID of the designation' })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   designationId!: string;
 
   @ApiProperty({ description: 'UUID of the department' })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   departmentId!: string;
 
   @ApiProperty({ example: 'Full-time', enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'] })
@@ -307,7 +306,7 @@ export class CreateEmployeeDto {
 
   @ApiPropertyOptional({ description: 'UUID of line manager employee' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   lineManagerId?: string;
 
   // Nested objects

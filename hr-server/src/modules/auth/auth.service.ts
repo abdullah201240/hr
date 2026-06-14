@@ -49,7 +49,16 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<LoginResponse> {
     const [user] = await this.db
-      .select()
+      .select({
+        id: employees.id,
+        email: employees.email,
+        role: employees.role,
+        fullNameEnglish: employees.fullNameEnglish,
+        employeePhotoUrl: employees.employeePhotoUrl,
+        status: employees.status,
+        passwordHash: employees.passwordHash,
+        refreshTokenVersion: employees.refreshTokenVersion,
+      })
       .from(employees)
       .where(eq(employees.email, dto.email))
       .limit(1);

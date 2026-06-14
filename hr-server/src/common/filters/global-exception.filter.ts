@@ -30,9 +30,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const conflict = new ConflictException('A record with this value already exists');
       status = conflict.getStatus();
       message = conflict.getResponse() as string;
-    }
-
-    if (exception instanceof HttpException) {
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
