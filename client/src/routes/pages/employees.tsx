@@ -25,6 +25,7 @@ import {
   Phone,
   Calendar,
   IdCard,
+  UserCheck,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -38,12 +39,12 @@ import Swal from "sweetalert2"
 import { cn } from "@/lib/utils"
 
 const initialEmployees = [
-  { employeeId: "EMP-001", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", phone: "+880 1711-234567", role: "Senior Engineer", dept: "Engineering", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B+", joinDate: "2023-03-15", dateOfBirth: "1992-07-22", initials: "SM" },
-  { employeeId: "EMP-002", name: "James Cooper", email: "james.c@sadoshima.com", phone: "+880 1722-345678", role: "Product Manager", dept: "Product", status: "Active", employeeType: "Permanent", gender: "Male", bloodGroup: "A+", joinDate: "2022-08-01", dateOfBirth: "1990-01-10", initials: "JC" },
-  { employeeId: "EMP-003", name: "Emily Zhang", email: "emily.z@sadoshima.com", phone: "+880 1733-456789", role: "HR Specialist", dept: "HR", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "O+", joinDate: "2024-01-10", dateOfBirth: "1995-11-05", initials: "EZ" },
-  { employeeId: "EMP-004", name: "David Kim", email: "david.k@sadoshima.com", phone: "+880 1744-567890", role: "Finance Analyst", dept: "Finance", status: "On Leave", employeeType: "Contractual", gender: "Male", bloodGroup: "AB+", joinDate: "2023-06-20", dateOfBirth: "1988-04-18", initials: "DK" },
-  { employeeId: "EMP-005", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", phone: "+880 1755-678901", role: "Marketing Lead", dept: "Marketing", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B-", joinDate: "2021-11-05", dateOfBirth: "1993-09-30", initials: "LJ" },
-  { employeeId: "EMP-006", name: "Marcus Brown", email: "marcus.b@sadoshima.com", phone: "+880 1766-789012", role: "Sales Rep", dept: "Sales", status: "Active", employeeType: "Probation", gender: "Male", bloodGroup: "A-", joinDate: "2025-02-01", dateOfBirth: "1997-06-14", initials: "MB" },
+  { employeeId: "EMP-001", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", phone: "+880 1711-234567", role: "Senior Engineer", dept: "Engineering", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B+", joinDate: "2023-03-15", dateOfBirth: "1992-07-22", lineManager: "James Cooper", initials: "SM" },
+  { employeeId: "EMP-002", name: "James Cooper", email: "james.c@sadoshima.com", phone: "+880 1722-345678", role: "Product Manager", dept: "Product", status: "Active", employeeType: "Permanent", gender: "Male", bloodGroup: "A+", joinDate: "2022-08-01", dateOfBirth: "1990-01-10", lineManager: "", initials: "JC" },
+  { employeeId: "EMP-003", name: "Emily Zhang", email: "emily.z@sadoshima.com", phone: "+880 1733-456789", role: "HR Specialist", dept: "HR", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "O+", joinDate: "2024-01-10", dateOfBirth: "1995-11-05", lineManager: "Lisa Johnson", initials: "EZ" },
+  { employeeId: "EMP-004", name: "David Kim", email: "david.k@sadoshima.com", phone: "+880 1744-567890", role: "Finance Analyst", dept: "Finance", status: "On Leave", employeeType: "Contractual", gender: "Male", bloodGroup: "AB+", joinDate: "2023-06-20", dateOfBirth: "1988-04-18", lineManager: "James Cooper", initials: "DK" },
+  { employeeId: "EMP-005", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", phone: "+880 1755-678901", role: "Marketing Lead", dept: "Marketing", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B-", joinDate: "2021-11-05", dateOfBirth: "1993-09-30", lineManager: "", initials: "LJ" },
+  { employeeId: "EMP-006", name: "Marcus Brown", email: "marcus.b@sadoshima.com", phone: "+880 1766-789012", role: "Sales Rep", dept: "Sales", status: "Active", employeeType: "Probation", gender: "Male", bloodGroup: "A-", joinDate: "2025-02-01", dateOfBirth: "1997-06-14", lineManager: "Lisa Johnson", initials: "MB" },
 ]
 
 export default function EmployeesPage() {
@@ -185,6 +186,7 @@ export default function EmployeesPage() {
                 <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Designation</TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Line Manager</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Phone</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Join Date</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Type</TableHead>
@@ -197,7 +199,7 @@ export default function EmployeesPage() {
             <TableBody>
               {filteredEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-24 text-center border-b-0">
+                  <TableCell colSpan={12} className="h-24 text-center border-b-0">
                     <p className="text-sm text-muted-foreground">No employees found matching &quot;{searchTerm}&quot;.</p>
                   </TableCell>
                 </TableRow>
@@ -228,6 +230,16 @@ export default function EmployeesPage() {
                     </TableCell>
                     <TableCell className="py-3">
                       <span className="text-xs text-muted-foreground">{emp.role}</span>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell py-3">
+                      {emp.lineManager ? (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <UserCheck className="h-3 w-3 shrink-0" />
+                          <span>{emp.lineManager}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell py-3">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

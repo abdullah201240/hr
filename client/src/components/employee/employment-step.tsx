@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, EyeOff, FileText, X, Briefcase, Lock, FileCheck } from "lucide-react"
+import { Eye, EyeOff, FileText, X, Briefcase, Lock, FileCheck, UserCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Field, SectionTitle, SectionCard, StepHeader } from "./form-ui"
 import type { EmployeeFormInput } from "./form-schema"
@@ -158,6 +158,20 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
                 </SelectContent>
               </Select>
             )} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <Field label="Line Manager" hint="Reporting manager name (optional)">
+            <div className="relative">
+              <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="lineManager"
+                placeholder="Enter line manager name"
+                className="pl-9"
+                disabled={isView}
+                {...register("lineManager")}
+              />
+            </div>
           </Field>
         </div>
       </SectionCard>

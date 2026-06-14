@@ -46,6 +46,7 @@ export const employeeFormSchema = z
     nidPdf: z.any().optional(),
     bloodGroup: z.string().default("Not Specified"),
     employeeType: z.string().min(1, "Required"),
+    lineManager: z.string().default(""),
     // Family
     maritalStatus: z.string().default("Single"),
     spouses: z
@@ -132,7 +133,7 @@ export const PERSONAL_FIELDS: (keyof EmployeeFormInput)[] = [
 ]
 
 export const WORK_FIELDS: (keyof EmployeeFormInput)[] = [
-  "designation", "department", "password", "confirmPassword", "employeeType",
+  "designation", "department", "password", "confirmPassword", "employeeType", "lineManager",
 ]
 
 export const FAMILY_FIELDS: (keyof EmployeeFormInput)[] = [
@@ -182,6 +183,7 @@ export const DEFAULT_VALUES: EmployeeFormInput = {
   nidPdf: null,
   bloodGroup: "Not Specified",
   employeeType: "Probation",
+  lineManager: "",
   maritalStatus: "Single",
   spouses: [],
   children: [],

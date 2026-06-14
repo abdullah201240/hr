@@ -42,6 +42,7 @@ export default function EditEmployeePage() {
     designation: employee.role,
     department: employee.dept,
     employeeType: employee.status === "Active" ? "Permanent" : "Probation",
+    lineManager: employee.lineManager || "",
   }
 
   const handleEditEmployee = (data: any) => {
@@ -61,6 +62,7 @@ export default function EditEmployeePage() {
       role: data.designation,
       dept: data.department,
       status: data.employeeType,
+      lineManager: data.lineManager || "",
       initials,
       formData: data, // Keep full updated form state
     }

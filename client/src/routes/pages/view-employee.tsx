@@ -41,6 +41,7 @@ export default function ViewEmployeePage() {
     designation: employee.role,
     department: employee.dept,
     employeeType: employee.status === "Active" ? "Permanent" : "Probation",
+    lineManager: employee.lineManager || "",
   }
 
   return (

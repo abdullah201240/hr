@@ -30,6 +30,7 @@ export default function CreateEmployeePage() {
       role: data.designation,
       dept: data.department,
       status: data.employeeType,
+      lineManager: data.lineManager || "",
       initials,
     }
 
