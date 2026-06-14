@@ -103,6 +103,20 @@ export const CacheKeys = {
     ttl: 120, // 2 min
     description: 'Cloudinary folder listing cache',
   },
+
+  /** Login rate limiting */
+  loginRateLimit: {
+    key: key('auth:rate:login:*'),
+    ttl: 60, // 1 min window
+    description: 'Login rate limit counter by IP and email',
+  },
+
+  /** Token blacklist */
+  tokenBlacklist: {
+    key: key('auth:blacklist:*'),
+    ttl: 0, // dynamic TTL based on token expiry
+    description: 'Revoked JWT blacklist',
+  },
 } as const;
 
 export type CacheKeyDefinition = (typeof CacheKeys)[keyof typeof CacheKeys];

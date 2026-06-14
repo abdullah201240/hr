@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { sql } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { CacheService } from '../../common/cache/cache.service';
+import { Public } from '../auth/guards/public.decorator';
 
 @ApiTags('Health')
 @Controller('health')
@@ -14,6 +15,7 @@ export class HealthController {
     private readonly cache: CacheService,
   ) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Basic health check' })
   check() {
@@ -24,6 +26,7 @@ export class HealthController {
     };
   }
 
+  @Public()
   @Get('db')
   @ApiOperation({ summary: 'Database health check' })
   async checkDb() {
@@ -39,6 +42,7 @@ export class HealthController {
     }
   }
 
+  @Public()
   @Get('redis')
   @ApiOperation({ summary: 'Redis health check' })
   async checkRedis() {

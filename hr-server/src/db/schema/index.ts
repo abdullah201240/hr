@@ -11,11 +11,6 @@ export const baseTable = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Domain tables go here. Example:
-//
-// export const users = pgTable('users', {
-//   ...baseTable,
-//   email: varchar('email', { length: 255 }).notNull().unique(),
-//   name: varchar('name', { length: 255 }).notNull(),
-// });
+// Domain tables
 // ─────────────────────────────────────────────────────────────
+export * from './employee';
