@@ -1,24 +1,17 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  CalendarClock,
-  CheckCircle2,
-  Clock,
   ChevronLeft,
   ChevronRight,
   MapPin,
   Laptop,
-  AlertCircle,
-  FileText,
   Search,
   Filter,
   BarChart3,
   CalendarDays,
   Info,
-  Settings,
 } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ReferenceLine } from "recharts"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
@@ -90,7 +83,6 @@ export interface SetupHoliday {
 }
 
 export default function AttendancePage() {
-  const navigate = useNavigate()
   const [selectedMonth] = useState("June 2026")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -236,25 +228,14 @@ export default function AttendancePage() {
           <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/40 bg-card hover:bg-muted/50">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          
-          {/* Configure Calendar Navigation Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate("/attendance/setup")}
-            title="Configure Weekly & Calendar Holidays"
-            className="h-9 w-9 rounded-xl border-border/40 bg-card hover:bg-muted/50 text-muted-foreground hover:text-primary ml-1"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
-      {/* ─── Main Content Grid ─── */}
-      <div className="grid gap-6 lg:grid-cols-4 px-1">
+      {/* ─── Main Content ─── */}
+      <div className="space-y-6 px-1">
 
-        {/* Centerpiece Calendar Grid (3 Columns) */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Calendar Grid */}
+        <div className="space-y-6">
           <div className="rounded-2xl overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 px-0">
               <div>
@@ -420,133 +401,6 @@ export default function AttendancePage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Selected Day Detail Sidebar (1 Column) */}
-        <div className="lg:col-span-1">
-          {selectedDay ? (
-            <div className="rounded-2xl bg-card sticky top-6 overflow-hidden p-1">
-              <div className="p-5 bg-muted/20 rounded-xl">
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="font-semibold text-xs border-border/40">
-                    {selectedDay.dayName}
-                  </Badge>
-                  <Badge className={`font-semibold capitalize ${
-                    selectedDay.status === "present" ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10" :
-                    selectedDay.status === "late" ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/10" :
-                    selectedDay.status === "absent" ? "bg-red-500/10 text-red-500 hover:bg-red-500/10" :
-                    selectedDay.status === "leave" ? "bg-sky-500/10 text-sky-500 hover:bg-sky-500/10" :
-                    selectedDay.status === "holiday" ? "bg-violet-500/10 text-violet-500 hover:bg-violet-500/10" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
-                    {selectedDay.status}
-                  </Badge>
-                </div>
-                <h3 className="text-xl font-bold mt-2">{selectedDay.dateStr}, 2026</h3>
-                {selectedDay.day === 11 && (
-                  <Badge className="mt-1.5 bg-primary/20 text-primary border-primary/20 hover:bg-primary/20">
-                    Today
-                  </Badge>
-                )}
-              </div>
-
-              <div className="p-4 space-y-5">
-                {/* Punch info timeline */}
-                {selectedDay.status !== "weekend" && selectedDay.status !== "holiday" && selectedDay.status !== "leave" && selectedDay.status !== "absent" ? (
-                  <div className="space-y-4">
-                    <div className="relative pl-6 border-l border-border/60 space-y-4">
-                      {/* Check-In */}
-                      <div className="relative">
-                        <span className="absolute -left-[30px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-4 ring-background">
-                          <CheckCircle2 className="h-2.5 w-2.5 text-white" />
-                        </span>
-                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Check In</div>
-                        <div className="text-lg font-bold text-foreground mt-0.5">{selectedDay.checkIn}</div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                          {selectedDay.location === "Remote" ? <Laptop className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
-                          <span>{selectedDay.location} ({selectedDay.ipAddress})</span>
-                        </div>
-                      </div>
-
-                      {/* Check-Out */}
-                      <div className="relative">
-                        <span className={`absolute -left-[30px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-background ${selectedDay.checkOut ? "bg-primary" : "bg-muted"}`}>
-                          <Clock className="h-2.5 w-2.5 text-white" />
-                        </span>
-                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Check Out</div>
-                        <div className="text-lg font-bold text-foreground mt-0.5">
-                          {selectedDay.checkOut || <span className="text-sm font-medium italic text-muted-foreground">Active session</span>}
-                        </div>
-                        {selectedDay.checkOut && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-                            {selectedDay.location === "Remote" ? <Laptop className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
-                            <span>{selectedDay.location} ({selectedDay.ipAddress})</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-border/20 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Active Hours</span>
-                        <span className="font-semibold">{selectedDay.hours} hrs</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Break Hours</span>
-                        <span className="font-semibold">{selectedDay.breakHours} hr</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Punctuality</span>
-                        <span className={`font-semibold ${selectedDay.status === "late" ? "text-amber-500" : "text-emerald-500"}`}>
-                          {selectedDay.status === "late" ? "Late" : "On Time"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center py-6 px-4 bg-muted/15 rounded-xl border border-border/20">
-                    <AlertCircle className="h-8 w-8 text-muted-foreground/60 mb-2" />
-                    <h4 className="text-sm font-bold capitalize">{selectedDay.status} Day</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedDay.notes || "No time logs recorded for this day."}
-                    </p>
-                  </div>
-                )}
-
-                {/* Additional Info / Notes */}
-                {selectedDay.notes && (
-                  <div className="p-3 bg-muted/40 rounded-xl text-xs text-muted-foreground flex gap-2">
-                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold text-foreground">Day Note: </span>
-                      {selectedDay.notes}
-                    </div>
-                  </div>
-                )}
-
-                {/* Request correction */}
-                {(selectedDay.status === "absent" || selectedDay.status === "late" || (selectedDay.dayName !== "Saturday" && selectedDay.dayName !== "Sunday" && !selectedDay.checkOut)) && (
-                  <div className="pt-2">
-                    <Button
-                      onClick={() => handleRequestCorrection(selectedDay)}
-                      className="w-full rounded-xl gap-2 text-xs font-semibold bg-primary hover:bg-primary/90"
-                    >
-                      <FileText className="h-4 w-4" /> Request Regularization
-                    </Button>
-                    <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-                      Submit missing check-in/out logs for manager approval.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-card p-6 text-center">
-              <CalendarClock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <h3 className="font-bold">No Day Selected</h3>
-              <p className="text-sm text-muted-foreground mt-1">Click a day on the calendar to see complete punch and log details.</p>
-            </div>
-          )}
         </div>
       </div>
 
