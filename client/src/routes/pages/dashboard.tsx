@@ -30,6 +30,7 @@ import {
   Trash2,
   Briefcase,
   AlertTriangle,
+  Megaphone,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -161,6 +162,54 @@ export interface LeaveApplication {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date())
+  
+  // Load Announcements from localStorage
+  const [announcements] = useState<any[]>(() => {
+    const saved = localStorage.getItem("hr_announcements")
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        return parsed.filter((a: any) => a.status === "Published")
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    return [
+      {
+        id: "ann-1",
+        title: "Annual Company Picnic scheduled for June 29",
+        content: "We are excited to announce that our Annual Company Picnic will be held on Monday, June 29th at Golden Gate Park. The picnic will feature food trucks, team-building activities, and live music. Families are welcome! Please RSVP by June 20th.",
+        category: "event",
+        department: "All Departments",
+        date: "2026-06-10",
+        author: "Alex Johnson",
+        status: "Published",
+      },
+      {
+        id: "ann-2",
+        title: "Updated Remote Work & Hybrid Schedule Policy",
+        content: "Starting next month, all employees are requested to sync their core working days (Tuesday & Thursday) in the office. Remote work request configurations can be managed in the settings area. Please read the document in the Policies folder for further details.",
+        category: "policy",
+        department: "All Departments",
+        date: "2026-06-08",
+        author: "Alex Johnson",
+        status: "Published",
+      },
+      {
+        id: "ann-3",
+        title: "Scheduled Server Maintenance: Saturday Night",
+        content: "The internal IT systems and HR portal will be offline for scheduled database maintenance this Saturday, June 20th, from 10:00 PM to 2:00 AM. Please ensure you save all pending tasks and reports before then.",
+        category: "warning",
+        department: "All Departments",
+        date: "2026-06-12",
+        author: "IT Infrastructure Team",
+        status: "Published",
+      },
+    ]
+  })
+  const [isViewAnnOpen, setIsViewAnnOpen] = useState(false)
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null)
+
   const [tasks, setTasks] = useState(initialTasks)
   const [calMonth, setCalMonth] = useState(5) // June (0-indexed)
   const [calYear] = useState(2026)
@@ -451,7 +500,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-     
 
       {/* ══ Full-Width Layout: Calendar + Tasks ═══════════════════════════════════ */}
       <div className="space-y-6">
@@ -988,110 +1036,204 @@ export default function DashboardPage() {
       </Card>
     </div>
 
-        {/* ── My Tasks (2nd Row - Full Width) ──────────────────────────────── */}
-        <Card className="shadow-none border-border/40">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
+        {/* ── Two-Column Row: My Tasks + Announcements ───────────────────────── */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Column 1: My Tasks */}
+          <Card className="shadow-none border-border/40 flex flex-col justify-between">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm">My Tasks</CardTitle>
+                    <p className="text-[10px] text-muted-foreground">{doneTasks}/{totalTasks} completed</p>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-sm">My Tasks</CardTitle>
-                  <p className="text-[10px] text-muted-foreground">{doneTasks}/{totalTasks} completed</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold">
+                    <span className="text-muted-foreground">{taskPct}%</span>
+                    <Progress value={taskPct} className="h-1.5 w-20 rounded-full" />
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] font-bold">
+                    {tasks.filter(t => !t.done).length} Pending
+                  </Badge>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-[11px] font-semibold">
-                  <span className="text-muted-foreground">{taskPct}%</span>
-                  <Progress value={taskPct} className="h-1.5 w-20 rounded-full" />
-                </div>
-                <Badge variant="secondary" className="text-[10px] font-bold">
-                  {tasks.filter(t => !t.done).length} Pending
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/10 border-b border-border/30">
-                  <TableHead className="w-12 border-b-0 hover:bg-transparent">
-                    <Checkbox
-                      checked={doneTasks === totalTasks && totalTasks > 0}
-                      onCheckedChange={(checked) => {
-                        if (checked) setTasks(ts => ts.map(t => ({ ...t, done: true })))
-                        else setTasks(ts => ts.map(t => ({ ...t, done: false })))
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead className="border-b-0 hover:bg-transparent">Task</TableHead>
-                  <TableHead className="w-24 border-b-0 hover:bg-transparent">Priority</TableHead>
-                  <TableHead className="w-24 border-b-0 hover:bg-transparent">Due</TableHead>
-                  <TableHead className="w-20 border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="w-12 border-b-0 hover:bg-transparent"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks.map(task => (
-                  <TableRow
-                    key={task.id}
-                    className="border-b border-border/20 hover:bg-muted/10 transition-colors"
-                  >
-                    <TableCell className="py-3">
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/10 border-b border-border/30">
+                    <TableHead className="w-12 border-b-0 hover:bg-transparent">
                       <Checkbox
-                        checked={task.done}
-                        onCheckedChange={() => toggleTask(task.id)}
+                        checked={doneTasks === totalTasks && totalTasks > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) setTasks(ts => ts.map(t => ({ ...t, done: true })))
+                          else setTasks(ts => ts.map(t => ({ ...t, done: false })))
+                        }}
                       />
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <span className={cn(
-                        "text-xs font-medium",
-                        task.done && "line-through text-muted-foreground"
-                      )}>{task.text}</span>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Badge className={cn("text-[9px] border-none font-semibold", priorityStyle[task.priority])}>
-                        {task.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <span className="text-xs text-muted-foreground">{task.due}</span>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <Badge className={cn("text-[9px] font-bold border-none",
-                        task.done
-                          ? "bg-emerald-500/10 text-emerald-600"
-                          : "bg-amber-500/10 text-amber-600"
-                      )}>
-                        {task.done ? "Done" : "Pending"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-3">
+                    </TableHead>
+                    <TableHead className="border-b-0 hover:bg-transparent">Task</TableHead>
+                    <TableHead className="w-24 border-b-0 hover:bg-transparent">Priority</TableHead>
+                    <TableHead className="w-24 border-b-0 hover:bg-transparent">Due</TableHead>
+                    <TableHead className="w-20 border-b-0 hover:bg-transparent">Status</TableHead>
+                    <TableHead className="w-12 border-b-0 hover:bg-transparent"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tasks.map(task => (
+                    <TableRow
+                      key={task.id}
+                      className="border-b border-border/20 hover:bg-muted/10 transition-colors"
+                    >
+                      <TableCell className="py-3">
+                        <Checkbox
+                          checked={task.done}
+                          onCheckedChange={() => toggleTask(task.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className={cn(
+                          "text-xs font-medium",
+                          task.done && "line-through text-muted-foreground"
+                        )}>{task.text}</span>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge className={cn("text-[9px] border-none font-semibold", priorityStyle[task.priority])}>
+                          {task.priority}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <span className="text-xs text-muted-foreground">{task.due}</span>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge className={cn("text-[9px] font-bold border-none",
+                          task.done
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : "bg-amber-500/10 text-amber-600"
+                        )}>
+                          {task.done ? "Done" : "Pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <button
+                          onClick={() => setTasks(ts => ts.filter(t => t.id !== task.id))}
+                          className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Add Task Row */}
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableCell colSpan={6} className="py-3">
                       <button
-                        onClick={() => setTasks(ts => ts.filter(t => t.id !== task.id))}
-                        className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                        className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Plus className="h-3.5 w-3.5" /> Add Task
                       </button>
                     </TableCell>
                   </TableRow>
-                ))}
-                {/* Add Task Row */}
-                <TableRow className="border-b-0 hover:bg-transparent">
-                  <TableCell colSpan={6} className="py-3">
-                    <button
-                      className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Add Task
-                    </button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Column 2: Announcements */}
+          <Card className="shadow-none border-border/40 flex flex-col justify-between">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Megaphone className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-sm font-bold">Latest Announcements</CardTitle>
+                    <p className="text-[10px] text-muted-foreground">Recent updates and notices</p>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 flex-1">
+              <div className="divide-y divide-border/20">
+                {announcements.length > 0 ? (
+                  announcements.slice(0, 4).map((ann) => {
+                    return (
+                      <div
+                        key={ann.id}
+                        onClick={() => {
+                          setSelectedAnnouncement(ann)
+                          setIsViewAnnOpen(true)
+                        }}
+                        className="p-4 hover:bg-muted/10 transition-colors cursor-pointer flex items-start justify-between gap-3 group"
+                      >
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] text-muted-foreground">{ann.date}</span>
+                            <span className="text-[10px] font-medium text-muted-foreground/85">by {ann.author}</span>
+                          </div>
+                          <h5 className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                            {ann.title}
+                          </h5>
+                          <p className="text-[11px] text-muted-foreground line-clamp-1">
+                            {ann.content}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className="py-12 text-center space-y-2">
+                    <Megaphone className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                    <p className="text-xs text-muted-foreground">No announcements found</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* Announcement View Dialog */}
+      <Dialog open={isViewAnnOpen} onOpenChange={setIsViewAnnOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          {selectedAnnouncement && (
+            <>
+              <DialogHeader className="space-y-3">
+                <div className="flex items-center justify-end">
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-1.5 font-medium">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Published: {selectedAnnouncement.date}
+                  </span>
+                </div>
+                <DialogTitle className="text-base font-bold leading-snug">
+                  {selectedAnnouncement.title}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2 border-t border-border/40 mt-2">
+                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {selectedAnnouncement.content}
+                </p>
+                <div className="bg-muted/30 border border-border/20 rounded-xl p-3 flex justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    <Clock className="h-4 w-4" />
+                    Author: {selectedAnnouncement.author}
+                  </span>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setIsViewAnnOpen(false)} className="text-xs">
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

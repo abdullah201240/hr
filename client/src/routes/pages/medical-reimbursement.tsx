@@ -37,7 +37,7 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertCircle,
-  CircleDollarSign,
+  Coins,
   Calendar,
   FileText,
   Upload
@@ -195,7 +195,7 @@ export default function MedicalReimbursementPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount ($) *</Label>
+                  <Label htmlFor="amount">Amount (৳) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -251,51 +251,61 @@ export default function MedicalReimbursementPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CircleDollarSign className="h-4 w-4 text-emerald-500" /> Total Claims
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{totalAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{claims.length} total claims</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Claims</p>
+                <p className="text-2xl font-bold mt-1">৳{totalAmount.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{claims.length} total claims</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Coins className="h-5 w-5 text-emerald-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" /> Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingClaims}</div>
-            <Progress value={(pendingClaims / claims.length) * 100} className="h-1.5 mt-2" />
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-2xl font-bold mt-1">{pendingClaims}</p>
+                <Progress value={(pendingClaims / claims.length) * 100} className="h-1 mt-1.5 w-16" />
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Approved
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">৳{approvedAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">{approvedClaims} claims</p>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Approved</p>
+                <p className="text-2xl font-bold mt-1">৳{approvedAmount.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{approvedClaims} claims</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-red-500" /> Rejected
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{rejectedClaims}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {((rejectedClaims / claims.length) * 100).toFixed(1)}% rejection rate
-            </p>
+        <Card className="p-4">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Rejected</p>
+                <p className="text-2xl font-bold mt-1">{rejectedClaims}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rate</p>
+              </div>
+              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <XCircle className="h-5 w-5 text-red-500" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

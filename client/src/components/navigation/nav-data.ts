@@ -4,7 +4,7 @@ import {
   UserPlus,
   CalendarClock,
   CalendarOff,
-  DollarSign,
+  Coins,
   CheckSquare,
   FolderKanban,
   Building2,
@@ -13,6 +13,11 @@ import {
   HeartPulse,
   Car,
   Plane,
+  Megaphone,
+  FileText,
+  UserMinus,
+  Scale,
+  Target,
 } from "lucide-react"
 import type { NavGroup } from "@/types"
 
@@ -53,9 +58,25 @@ export const navGroups: NavGroup[] = [
         badge: "3",
       },
       {
-        title: "Payroll",
-        href: "/payroll",
-        icon: DollarSign,
+        title: "HR Letters",
+        href: "/letters",
+        icon: FileText,
+        badge: "10",
+      },
+      {
+        title: "Separation",
+        href: "/separation",
+        icon: UserMinus,
+      },
+      {
+        title: "Disciplinary",
+        href: "/disciplinary",
+        icon: Scale,
+      },
+      {
+        title: "KPI & Performance",
+        href: "/performance",
+        icon: Target,
       },
     ],
   },
@@ -65,7 +86,7 @@ export const navGroups: NavGroup[] = [
       {
         title: "Payroll",
         href: "/payroll",
-        icon: DollarSign,
+        icon: Coins,
       },
       {
         title: "Claims & Reimbursement",
@@ -115,6 +136,11 @@ export const navGroups: NavGroup[] = [
         title: "Org Structure",
         href: "/departments",
         icon: Building2,
+      },
+      {
+        title: "Announcements",
+        href: "/announcements",
+        icon: Megaphone,
       },
       {
         title: "Reports",
