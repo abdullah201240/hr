@@ -22,8 +22,6 @@ import ViewDepartmentPage from "@/routes/pages/view-department"
 import CreateDesignationPage from "@/routes/pages/create-designation"
 import EditDesignationPage from "@/routes/pages/edit-designation"
 import ViewDesignationPage from "@/routes/pages/view-designation"
-import TasksPage from "@/routes/pages/tasks"
-import ProjectsPage from "@/routes/pages/projects"
 import DocumentsPage from "@/routes/pages/documents"
 import ReportsPage from "@/routes/pages/reports"
 import SettingsPage from "@/routes/pages/settings"
@@ -95,8 +93,6 @@ function App() {
               <Route path="designations/create" element={<CreateDesignationPage />} />
               <Route path="designations/edit/:name" element={<EditDesignationPage />} />
               <Route path="designations/view/:name" element={<ViewDesignationPage />} />
-              <Route path="tasks" element={<TasksPage />} />
-              <Route path="projects" element={<ProjectsPage />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="recruitment" element={<RecruitmentPage />} />
               <Route path="announcements" element={<AnnouncementsPage />} />
