@@ -30,9 +30,25 @@ import {
   Calendar,
   ClipboardList,
   X,
-  Pencil,
+  Edit2,
+  MoreHorizontal,
   Printer,
 } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
 import { useSearchParams, useNavigate } from "react-router"
@@ -610,125 +626,117 @@ export default function RecruitmentPage() {
         const paginatedJobs = filteredJobs.slice(startIndex, startIndex + JOBS_PER_PAGE)
 
         return (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle className="text-lg font-bold">Open Requisitions</CardTitle>
-                  <CardDescription>Monitor currently active and filled job requisitions</CardDescription>
-                </div>
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search job roles..." 
-                    className="pl-9" 
-                    value={jobsSearch}
-                    onChange={e => setJobsSearch(e.target.value)}
-                  />
-                </div>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold">Open Requisitions</h3>
+                <p className="text-sm text-muted-foreground">Monitor currently active and filled job requisitions</p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-muted/50 border-b border-border font-bold text-muted-foreground">
-                      <th className="p-3">Job Title</th>
-                      <th className="p-3">Department</th>
-                      <th className="p-3">Type / Location</th>
-                      <th className="p-3">Experience</th>
-                      <th className="p-3">Date Opened</th>
-                      <th className="p-3 text-center">Applicants</th>
-                      <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {paginatedJobs.map(job => (
-                      <tr key={job.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="p-3 font-semibold text-foreground">{job.title}</td>
-                        <td className="p-3">{job.department}</td>
-                        <td className="p-3 text-muted-foreground">
-                          <span className="font-medium">{job.type}</span> • {job.location}
-                        </td>
-                        <td className="p-3">{job.experience}</td>
-                        <td className="p-3">{job.dateOpened}</td>
-                        <td className="p-3 text-center font-bold">{job.applicants}</td>
-                        <td className="p-3">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border",
-                              job.status === "Open"
-                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                : "bg-muted text-muted-foreground border-border/80"
-                            )}
-                          >
-                            {job.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right flex items-center justify-end gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                            onClick={() => handleEditJobClick(job)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteJob(job.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {paginatedJobs.length === 0 && (
-                      <tr>
-                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                          No jobs found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input 
+                  placeholder="Search job roles..." 
+                  className="pl-9" 
+                  value={jobsSearch}
+                  onChange={e => setJobsSearch(e.target.value)}
+                />
               </div>
+            </div>
 
-              {/* Pagination Controls */}
-              {totalJobsPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
-                  <span className="text-xs text-muted-foreground">
-                    Showing {startIndex + 1} to {Math.min(startIndex + JOBS_PER_PAGE, filteredJobs.length)} of {filteredJobs.length} entries
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setJobsPage(prev => Math.max(prev - 1, 1))}
-                      disabled={jobsPage === 1}
-                      className="h-8 text-xs cursor-pointer"
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setJobsPage(prev => Math.min(prev + 1, totalJobsPages))}
-                      disabled={jobsPage === totalJobsPages}
-                      className="h-8 text-xs cursor-pointer"
-                    >
-                      Next
-                    </Button>
-                  </div>
+            <div className="w-full overflow-x-auto bg-transparent">
+              <Table>
+                <TableHeader className="bg-muted/10 border-b border-border/30">
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Job Title</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
+                    <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Type / Location</TableHead>
+                    <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Experience</TableHead>
+                    <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Date Opened</TableHead>
+                    <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground text-center">Applicants</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                    <TableHead className="w-12 font-semibold text-xs text-muted-foreground" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedJobs.map(job => (
+                    <TableRow key={job.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      <TableCell className="py-3 font-semibold text-sm text-foreground">{job.title}</TableCell>
+                      <TableCell className="py-3 text-sm text-muted-foreground">{job.department}</TableCell>
+                      <TableCell className="hidden md:table-cell py-3 text-sm text-muted-foreground">
+                        <span className="font-medium">{job.type}</span> • {job.location}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell py-3 text-sm">{job.experience}</TableCell>
+                      <TableCell className="hidden md:table-cell py-3 text-sm">{job.dateOpened}</TableCell>
+                      <TableCell className="hidden lg:table-cell py-3 text-center font-bold text-sm">{job.applicants}</TableCell>
+                      <TableCell className="py-3">
+                        <Badge
+                          variant={job.status === "Open" ? "default" : "secondary"}
+                          className={job.status === "Open" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : ""}
+                        >
+                          {job.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-36">
+                            <DropdownMenuItem onClick={() => handleEditJobClick(job)}>
+                              <Edit2 className="mr-2 h-3.5 w-3.5" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onClick={() => deleteJob(job.id)}>
+                              <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {paginatedJobs.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center border-b-0">
+                        <p className="text-sm text-muted-foreground">No jobs found.</p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {totalJobsPages > 1 && (
+              <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+                <span className="text-xs text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(startIndex + JOBS_PER_PAGE, filteredJobs.length)} of {filteredJobs.length} entries
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setJobsPage(prev => Math.max(prev - 1, 1))}
+                    disabled={jobsPage === 1}
+                    className="h-8 text-xs cursor-pointer"
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setJobsPage(prev => Math.min(prev + 1, totalJobsPages))}
+                    disabled={jobsPage === totalJobsPages}
+                    className="h-8 text-xs cursor-pointer"
+                  >
+                    Next
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         )
       })()}
 
