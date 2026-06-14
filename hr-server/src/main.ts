@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -12,7 +14,11 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: false }),
+    new FastifyAdapter({
+      logger: false,
+      requestIdHeader: 'x-request-id',
+      genReqId: () => randomUUID(),
+    }),
     { bufferLogs: true },
   );
 
@@ -24,6 +30,13 @@ async function bootstrap() {
   // ── Security ──────────────────────────────────────────────────
   await app.register(helmet, {
     contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+  });
+
+  // ── Rate limiting ─────────────────────────────────────────────
+  await app.register(rateLimit, {
+    global: true,
+    max: 100,
+    timeWindow: '1 minute',
   });
 
   // ── CORS ──────────────────────────────────────────────────────
@@ -66,6 +79,9 @@ async function bootstrap() {
       swaggerOptions: { persistAuthorization: true },
     });
   }
+
+  // ── Graceful shutdown ─────────────────────────────────────────
+  app.enableShutdownHooks();
 
   await app.listen(port, '0.0.0.0');
 

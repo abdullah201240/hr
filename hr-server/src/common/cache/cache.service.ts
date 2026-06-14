@@ -42,9 +42,15 @@ export class CacheService {
 
   async delPattern(pattern: string): Promise<void> {
     try {
-      const keys = await this.redis.keys(pattern);
-      if (keys.length > 0) {
-        await this.redis.del(...keys);
+      const stream = this.redis.scanStream({ match: pattern, count: 100 });
+      for await (const keys of stream) {
+        if (keys.length > 0) {
+          const pipeline = this.redis.pipeline();
+          for (const key of keys) {
+            pipeline.del(key);
+          }
+          await pipeline.exec();
+        }
       }
     } catch (error) {
       this.logger.error(`Cache DEL pattern error [${pattern}]`, error);

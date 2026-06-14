@@ -1,4 +1,4 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, HttpCode, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { sql } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
@@ -31,11 +31,11 @@ export class HealthController {
       await this.db.execute(sql`SELECT 1`);
       return { database: 'connected', timestamp: new Date().toISOString() };
     } catch (error) {
-      return {
+      throw new ServiceUnavailableException({
         database: 'disconnected',
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
-      };
+      });
     }
   }
 
@@ -43,9 +43,12 @@ export class HealthController {
   @ApiOperation({ summary: 'Redis health check' })
   async checkRedis() {
     const isAlive = await this.cache.ping();
-    return {
-      redis: isAlive ? 'connected' : 'disconnected',
-      timestamp: new Date().toISOString(),
-    };
+    if (!isAlive) {
+      throw new ServiceUnavailableException({
+        redis: 'disconnected',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return { redis: 'connected', timestamp: new Date().toISOString() };
   }
 }
