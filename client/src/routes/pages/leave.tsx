@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -12,23 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
   CalendarOff,
   CheckCircle2,
   XCircle,
   AlertCircle,
   Search,
   Filter,
-  CalendarDays,
-  Plus,
 } from "lucide-react"
 import Swal from "sweetalert2"
 
@@ -43,41 +38,24 @@ interface LeaveRequest {
   reason: string
   status: "Pending" | "Approved" | "Rejected"
   appliedDate: string
+  attachments?: { id: string; title: string; fileName: string }[]
 }
 
 const INITIAL_REQUESTS: LeaveRequest[] = [
-  { id: "req-1", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", type: "Vacation", from: "2026-06-15", to: "2026-06-17", days: 3, reason: "Family trip out of town", status: "Pending", appliedDate: "2026-06-10" },
-  { id: "req-2", name: "David Kim", email: "david.k@sadoshima.com", type: "Sick Leave", from: "2026-06-10", to: "2026-06-12", days: 3, reason: "Severe flu and recovery", status: "Approved", appliedDate: "2026-06-08" },
+  { id: "req-1", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", type: "Vacation", from: "2026-06-15", to: "2026-06-17", days: 3, reason: "Family trip out of town", status: "Pending", appliedDate: "2026-06-10", attachments: [{ id: "att-1", title: "Flight Tickets", fileName: "flight_booking_pdf_1.pdf" }] },
+  { id: "req-2", name: "David Kim", email: "david.k@sadoshima.com", type: "Sick Leave", from: "2026-06-10", to: "2026-06-12", days: 3, reason: "Severe flu and recovery", status: "Approved", appliedDate: "2026-06-08", attachments: [{ id: "att-2", title: "Doctor Certificate", fileName: "medical_report_june.png" }] },
   { id: "req-3", name: "Marcus Brown", email: "marcus.b@sadoshima.com", type: "Personal Leave", from: "2026-06-20", to: "2026-06-20", days: 1, reason: "Bank and registration appointments", status: "Pending", appliedDate: "2026-06-12" },
   { id: "req-4", name: "Emily Zhang", email: "emily.z@sadoshima.com", type: "Vacation", from: "2026-06-25", to: "2026-06-30", days: 5, reason: "Summer vacation plans", status: "Pending", appliedDate: "2026-06-11" },
-  { id: "req-5", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", type: "Maternity Leave", from: "2026-07-01", to: "2026-09-28", days: 90, reason: "Maternity and post-natal care", status: "Approved", appliedDate: "2026-05-15" },
-]
-
-const DEFAULT_EMPLOYEES = [
-  { name: "Sarah Mitchell", email: "sarah.m@sadoshima.com" },
-  { name: "James Cooper", email: "james.c@sadoshima.com" },
-  { name: "Emily Zhang", email: "emily.z@sadoshima.com" },
-  { name: "David Kim", email: "david.k@sadoshima.com" },
-  { name: "Lisa Johnson", email: "lisa.j@sadoshima.com" },
-  { name: "Marcus Brown", email: "marcus.b@sadoshima.com" },
+  { id: "req-5", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", type: "Maternity Leave", from: "2026-07-01", to: "2026-09-28", days: 90, reason: "Maternity and post-natal care", status: "Approved", appliedDate: "2026-05-15", attachments: [{ id: "att-3", title: "Hospital Admittance", fileName: "maternity_notice.pdf" }] },
 ]
 
 export default function LeavePage() {
   // Core State
   const [requests, setRequests] = useState<LeaveRequest[]>([])
-  const [employees, setEmployees] = useState<{ name: string; email: string }[]>([])
   
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All")
-  
-  // Dialog/Form States
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState("")
-  const [leaveType, setLeaveType] = useState("Vacation")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [reason, setReason] = useState("")
 
   // Load Initial Data
   useEffect(() => {
@@ -91,18 +69,6 @@ export default function LeavePage() {
     } else {
       setRequests(INITIAL_REQUESTS)
       localStorage.setItem("hr_leave_requests", JSON.stringify(INITIAL_REQUESTS))
-    }
-
-    const storedEmployees = localStorage.getItem("employees_list")
-    if (storedEmployees) {
-      try {
-        const parsed = JSON.parse(storedEmployees)
-        setEmployees(parsed.map((e: any) => ({ name: e.name, email: e.email })))
-      } catch (e) {
-        setEmployees(DEFAULT_EMPLOYEES)
-      }
-    } else {
-      setEmployees(DEFAULT_EMPLOYEES)
     }
   }, [])
 
@@ -155,57 +121,6 @@ export default function LeavePage() {
     })
   }
 
-  const handleCreateRequest = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedEmployeeEmail || !startDate || !endDate || !reason.trim()) {
-      Swal.fire("Error", "Please fill in all details.", "error")
-      return
-    }
-
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    if (end < start) {
-      Swal.fire("Error", "End date cannot be earlier than start date.", "error")
-      return
-    }
-
-    const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-    const emp = employees.find(e => e.email === selectedEmployeeEmail)
-    const empName = emp ? emp.name : "Unknown Employee"
-
-    const newRequest: LeaveRequest = {
-      id: `req-${Date.now()}`,
-      name: empName,
-      email: selectedEmployeeEmail,
-      type: leaveType,
-      from: startDate,
-      to: endDate,
-      days: durationDays,
-      reason: reason.trim(),
-      status: "Pending",
-      appliedDate: new Date().toISOString().split("T")[0]
-    }
-
-    saveRequests([newRequest, ...requests])
-    setIsDialogOpen(false)
-
-    // Reset Form
-    setSelectedEmployeeEmail("")
-    setLeaveType("Vacation")
-    setStartDate("")
-    setEndDate("")
-    setReason("")
-
-    Swal.fire({
-      title: "Submitted!",
-      text: "New leave request was registered successfully.",
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: { confirmButton: "swal2-confirm swal2-styled" }
-    })
-  }
-
   // Filter & Search Logic
   const filteredRequests = requests.filter(req => {
     const matchesSearch =
@@ -230,151 +145,36 @@ export default function LeavePage() {
           <h2 className="text-3xl font-bold tracking-tight">Leave Management</h2>
           <p className="text-sm text-muted-foreground mt-1">Review, authorize, and log employee leave requests</p>
         </div>
-
-        {/* Dialog for New Request */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shadow-sm">
-              <Plus className="h-4 w-4" />
-              New Leave Request
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[420px]">
-            <form onSubmit={handleCreateRequest}>
-              <DialogHeader>
-                <DialogTitle className="text-base font-bold">New Leave Request</DialogTitle>
-                <DialogDescription className="text-xs">
-                  Provide details to log a new employee leave request.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                {/* Employee Selector */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="req-employee" className="text-xs font-semibold">Employee *</Label>
-                  <Select value={selectedEmployeeEmail} onValueChange={setSelectedEmployeeEmail}>
-                    <SelectTrigger id="req-employee" className="w-full text-xs h-9">
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {employees.map(emp => (
-                        <SelectItem key={emp.email} value={emp.email} className="text-xs">
-                          {emp.name} ({emp.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Leave Type */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="req-type" className="text-xs font-semibold">Leave Type *</Label>
-                  <Select value={leaveType} onValueChange={setLeaveType}>
-                    <SelectTrigger id="req-type" className="w-full text-xs h-9">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Vacation" className="text-xs">Vacation</SelectItem>
-                      <SelectItem value="Sick Leave" className="text-xs">Sick Leave</SelectItem>
-                      <SelectItem value="Personal Leave" className="text-xs">Personal Leave</SelectItem>
-                      <SelectItem value="Maternity Leave" className="text-xs">Maternity Leave</SelectItem>
-                      <SelectItem value="Paternity Leave" className="text-xs">Paternity Leave</SelectItem>
-                      <SelectItem value="Unpaid Leave" className="text-xs">Unpaid Leave</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date Ranges */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="req-start" className="text-xs font-semibold">Start Date *</Label>
-                    <Input
-                      id="req-start"
-                      type="date"
-                      value={startDate}
-                      onChange={e => {
-                        setStartDate(e.target.value)
-                        if (!endDate || endDate < e.target.value) {
-                          setEndDate(e.target.value)
-                        }
-                      }}
-                      className="text-xs h-9"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="req-end" className="text-xs font-semibold">End Date *</Label>
-                    <Input
-                      id="req-end"
-                      type="date"
-                      min={startDate}
-                      value={endDate}
-                      onChange={e => setEndDate(e.target.value)}
-                      className="text-xs h-9"
-                    />
-                  </div>
-                </div>
-
-                {/* Duration Badge */}
-                {startDate && endDate && endDate >= startDate && (
-                  <div className="text-[10px] text-sky-600 dark:text-sky-400 font-bold bg-sky-500/10 px-2 py-1 rounded w-fit">
-                    Duration: {Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1} days
-                  </div>
-                )}
-
-                {/* Reason */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="req-reason" className="text-xs font-semibold">Reason *</Label>
-                  <Textarea
-                    id="req-reason"
-                    placeholder="Enter reason for leave..."
-                    value={reason}
-                    onChange={e => setReason(e.target.value)}
-                    className="text-xs min-h-[70px] resize-none"
-                  />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" size="sm" onClick={() => setIsDialogOpen(false)} className="text-xs">
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" className="text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Submit Request
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      {/* KPI Cards (Clean borderless aesthetic styling) */}
+      {/* KPI Cards section (Subtle styling, strictly borderless and shadowless) */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="p-5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/[0.04] transition-all duration-300 hover:bg-amber-500/15 flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider">Pending Approval</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending Approval</span>
             <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{countPending}</p>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
             <AlertCircle className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/[0.04] transition-all duration-300 hover:bg-emerald-500/15 flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-500 uppercase tracking-wider">Approved Requests</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approved Requests</span>
             <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">{countApproved}</p>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-red-500/10 dark:bg-red-500/[0.04] transition-all duration-300 hover:bg-red-500/15 flex items-center justify-between">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-red-600 dark:text-red-500 uppercase tracking-wider">Rejected Requests</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rejected Requests</span>
             <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{countRejected}</p>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-red-500/20 text-red-600 dark:text-red-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
             <XCircle className="h-5 w-5" />
           </div>
         </div>
@@ -410,8 +210,8 @@ export default function LeavePage() {
           </div>
         </div>
 
-        {/* Requests List */}
-        <div className="space-y-3.5">
+        {/* Requests Table */}
+        <div className="w-full overflow-x-auto bg-transparent">
           {filteredRequests.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
               <CalendarOff className="h-8 w-8 text-muted-foreground/35 mx-auto mb-2" />
@@ -419,66 +219,96 @@ export default function LeavePage() {
               <p className="text-xs text-muted-foreground/60 mt-1">Try modifying your search or filter keywords</p>
             </div>
           ) : (
-            filteredRequests.map((req) => (
-              <div
-                key={req.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/40 hover:border-border/80 transition-all duration-200 bg-card"
-              >
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-sm text-foreground">{req.name}</span>
-                    <span className="text-[10px] text-muted-foreground truncate">{req.email}</span>
-                    <Badge variant="secondary" className="text-[9px] font-bold tracking-wide uppercase px-1.5 py-0.5">
-                      {req.type}
-                    </Badge>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3 text-primary shrink-0" />
-                      {new Date(req.from).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — {new Date(req.to).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <span className="font-semibold text-primary/80">({req.days} {req.days === 1 ? "day" : "days"})</span>
-                  </div>
-
-                  {req.reason && (
-                    <p className="text-xs text-muted-foreground/80 leading-relaxed max-w-2xl bg-muted/20 p-2 rounded-lg mt-1 border border-border/10">
-                      <span className="font-bold text-foreground/75 block text-[10px] uppercase tracking-wide mb-0.5">Reason:</span>
+            <Table>
+              <TableHeader className="bg-muted/10 border-b border-border/30">
+                <TableRow className="border-b-0 hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Type</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Duration</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Reason</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Attachments</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                  <TableHead className="w-36 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRequests.map((req) => (
+                  <TableRow key={req.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                    <TableCell className="py-3">
+                      <div>
+                        <p className="font-semibold text-sm">{req.name}</p>
+                        <p className="text-xs text-muted-foreground">{req.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Badge variant="secondary" className="text-[10px] font-bold tracking-wide uppercase">
+                        {req.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="text-xs">
+                        <p className="font-semibold text-primary">
+                          {new Date(req.from).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — {new Date(req.to).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                        <p className="text-muted-foreground text-[10px]">{req.days} {req.days === 1 ? "day" : "days"}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 max-w-xs truncate text-xs text-muted-foreground" title={req.reason}>
                       {req.reason}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                  {req.status === "Pending" ? (
-                    <>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleApprove(req.id)}
-                        className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                    </TableCell>
+                    <TableCell className="py-3">
+                      {req.attachments && req.attachments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {req.attachments.map((att) => (
+                            <Badge
+                              key={att.id}
+                              variant="outline"
+                              className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 max-w-[120px] truncate"
+                              title={`${att.title}: ${att.fileName}`}
+                            >
+                              {att.title}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/40 italic">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Badge
+                        className={req.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : req.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
                       >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReject(req.id)}
-                        className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
-                      >
-                        Reject
-                      </Button>
-                    </>
-                  ) : (
-                    <Badge
-                      className={req.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
-                    >
-                      {req.status}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))
+                        {req.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      {req.status === "Pending" ? (
+                        <div className="inline-flex gap-2 justify-end">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleApprove(req.id)}
+                            className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReject(req.id)}
+                            className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Processed</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>
