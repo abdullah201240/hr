@@ -880,123 +880,125 @@ export default function LettersPage() {
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="flex items-center gap-2">
-                  {(() => {
-                    const tc = getLetterTypeConfig(previewLetter?.type || "")
-                    const PIcon = tc?.icon || FileText
-                    return <><PIcon className={`h-5 w-5 ${tc?.color}`} />{tc?.name || "HR Letter"}</>
-                  })()}
-                </DialogTitle>
-                <DialogDescription className="mt-1">{previewLetter?.subject}</DialogDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => handlePrintLetter(previewLetter!.id)}>
-                  <Printer className="h-4 w-4" />
-                  Print
-                </Button>
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => handlePrintLetter(previewLetter!.id)}>
-                  <Download className="h-4 w-4" />
-                  PDF
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-
           {previewLetter && (
-            <div className="mt-2">
-              {/* Status + Meta Bar */}
-              <div className="flex items-center gap-2 mb-4 flex-wrap">
-                <Badge className={`text-[10px] ${getStatusStyle(previewLetter.status)}`}>{previewLetter.status}</Badge>
-                <span className="text-[10px] text-muted-foreground font-mono">{previewLetter.id}</span>
-                <span className="text-[10px] text-muted-foreground">|</span>
-                <span className="text-[10px] text-muted-foreground">Issued: {new Date(previewLetter.issueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
-                <span className="text-[10px] text-muted-foreground">|</span>
-                <span className="text-[10px] text-muted-foreground">Effective: {new Date(previewLetter.effectiveDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
-              </div>
-
-              {/* Letter Preview (printable area) */}
-              <div className="rounded-lg border border-border bg-background p-8">
-                {/* Company Letterhead */}
-                <div className="letterhead flex items-start justify-between border-b-[3px] border-indigo-500 pb-4 mb-6">
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-xl font-bold text-indigo-600">Sadoshima HR</h1>
-                    <p className="text-[10px] text-muted-foreground">Management System</p>
+                    <DialogTitle className="flex items-center gap-2">
+                      {(() => {
+                        const tc = getLetterTypeConfig(previewLetter.type)
+                        const PIcon = tc?.icon || FileText
+                        return <><PIcon className={`h-5 w-5 ${tc?.color || ""}`} />{tc?.name || "HR Letter"}</>
+                      })()}
+                    </DialogTitle>
+                    <DialogDescription className="mt-1">{previewLetter.subject}</DialogDescription>
                   </div>
-                  <div className="address text-right text-[10px] text-muted-foreground space-y-0.5">
-                    <p>123 Business Avenue</p>
-                    <p>New York, NY 10001</p>
-                    <p>contact@sadoshimahr.com</p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => handlePrintLetter(previewLetter.id)}>
+                      <Printer className="h-4 w-4" />
+                      Print
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => handlePrintLetter(previewLetter.id)}>
+                      <Download className="h-4 w-4" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="mt-2">
+                {/* Status + Meta Bar */}
+                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                  <Badge className={`text-[10px] ${getStatusStyle(previewLetter.status)}`}>{previewLetter.status}</Badge>
+                  <span className="text-[10px] text-muted-foreground font-mono">{previewLetter.id}</span>
+                  <span className="text-[10px] text-muted-foreground">|</span>
+                  <span className="text-[10px] text-muted-foreground">Issued: {new Date(previewLetter.issueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                  <span className="text-[10px] text-muted-foreground">|</span>
+                  <span className="text-[10px] text-muted-foreground">Effective: {new Date(previewLetter.effectiveDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                </div>
+
+                {/* Letter Preview (printable area) */}
+                <div className="rounded-lg border border-border bg-background p-8">
+                  {/* Company Letterhead */}
+                  <div className="letterhead flex items-start justify-between border-b-[3px] border-indigo-500 pb-4 mb-6">
+                    <div>
+                      <h1 className="text-xl font-bold text-indigo-600">Sadoshima HR</h1>
+                      <p className="text-[10px] text-muted-foreground">Management System</p>
+                    </div>
+                    <div className="address text-right text-[10px] text-muted-foreground space-y-0.5">
+                      <p>123 Business Avenue</p>
+                      <p>New York, NY 10001</p>
+                      <p>contact@sadoshimahr.com</p>
+                    </div>
+                  </div>
+
+                  {/* Date + Ref */}
+                  <div className="meta mb-5 space-y-0.5 text-xs">
+                    <p><span className="text-muted-foreground">Date:</span> {new Date(previewLetter.issueDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+                    <p><span className="text-muted-foreground">Ref:</span> <span className="font-mono">{previewLetter.id}</span></p>
+                  </div>
+
+                  {/* Subject */}
+                  <p className="subject font-bold text-sm mb-5">Subject: {previewLetter.subject}</p>
+
+                  {/* Recipient */}
+                  <div className="recipient mb-5">
+                    <p className="text-sm font-medium">To: {previewLetter.employeeName}</p>
+                    <p className="dept text-[11px] text-muted-foreground">{previewLetter.employeeDepartment} Department</p>
+                  </div>
+
+                  {/* Letter Body */}
+                  <div className="body mb-6">
+                    {previewLetter.body.split("\n").filter(Boolean).map((paragraph, idx) => (
+                      <p key={idx} className="text-xs leading-relaxed mb-3">{paragraph}</p>
+                    ))}
+                  </div>
+
+                  {/* Dynamic Fields Table */}
+                  {Object.keys(previewLetter.fields).length > 0 && (
+                    <table className="fields-table w-full border-collapse mb-6 text-xs">
+                      <tbody>
+                        {Object.entries(previewLetter.fields).map(([key, value]) => (
+                          <tr key={key}>
+                            <td className="py-1.5 px-3 border border-border/50 bg-muted/30 text-muted-foreground capitalize w-[40%]">
+                              {key.replace(/([A-Z])/g, " $1").trim()}
+                            </td>
+                            <td className="py-1.5 px-3 border border-border/50 font-semibold">
+                              {value || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {/* Signature */}
+                  <div className="signature mt-10 pt-4 border-t border-border">
+                    <p className="name text-sm font-semibold">{previewLetter.createdBy}</p>
+                    <p className="dept text-[11px] text-muted-foreground">Human Resources Department</p>
+                    <p className="dept text-[11px] text-muted-foreground">Sadoshima HR Management</p>
                   </div>
                 </div>
 
-                {/* Date + Ref */}
-                <div className="meta mb-5 space-y-0.5 text-xs">
-                  <p><span className="text-muted-foreground">Date:</span> {new Date(previewLetter.issueDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-                  <p><span className="text-muted-foreground">Ref:</span> <span className="font-mono">{previewLetter.id}</span></p>
-                </div>
-
-                {/* Subject */}
-                <p className="subject font-bold text-sm mb-5">Subject: {previewLetter.subject}</p>
-
-                {/* Recipient */}
-                <div className="recipient mb-5">
-                  <p className="text-sm font-medium">To: {previewLetter.employeeName}</p>
-                  <p className="dept text-[11px] text-muted-foreground">{previewLetter.employeeDepartment} Department</p>
-                </div>
-
-                {/* Letter Body */}
-                <div className="body mb-6">
-                  {previewLetter.body.split("\n").filter(Boolean).map((paragraph, idx) => (
-                    <p key={idx} className="text-xs leading-relaxed mb-3">{paragraph}</p>
-                  ))}
-                </div>
-
-                {/* Dynamic Fields Table */}
-                {Object.keys(previewLetter.fields).length > 0 && (
-                  <table className="fields-table w-full border-collapse mb-6 text-xs">
-                    <tbody>
-                      {Object.entries(previewLetter.fields).map(([key, value]) => (
-                        <tr key={key}>
-                          <td className="py-1.5 px-3 border border-border/50 bg-muted/30 text-muted-foreground capitalize w-[40%]">
-                            {key.replace(/([A-Z])/g, " $1").trim()}
-                          </td>
-                          <td className="py-1.5 px-3 border border-border/50 font-semibold">
-                            {value || "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-
-                {/* Signature */}
-                <div className="signature mt-10 pt-4 border-t border-border">
-                  <p className="name text-sm font-semibold">{previewLetter.createdBy}</p>
-                  <p className="dept text-[11px] text-muted-foreground">Human Resources Department</p>
-                  <p className="dept text-[11px] text-muted-foreground">Sadoshima HR Management</p>
+                {/* Letter Details Sidebar Info (below preview on small screens) */}
+                <div className="grid gap-3 sm:grid-cols-3 mt-4">
+                  <Card className="p-3">
+                    <p className="text-[10px] text-muted-foreground">Letter Type</p>
+                    <p className="text-xs font-semibold mt-0.5">{getLetterTypeConfig(previewLetter.type)?.name}</p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-[10px] text-muted-foreground">Employee</p>
+                    <p className="text-xs font-semibold mt-0.5">{previewLetter.employeeName}</p>
+                    <p className="text-[10px] text-muted-foreground">{previewLetter.employeeDepartment}</p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-[10px] text-muted-foreground">Created</p>
+                    <p className="text-xs font-semibold mt-0.5">{new Date(previewLetter.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                  </Card>
                 </div>
               </div>
-
-              {/* Letter Details Sidebar Info (below preview on small screens) */}
-              <div className="grid gap-3 sm:grid-cols-3 mt-4">
-                <Card className="p-3">
-                  <p className="text-[10px] text-muted-foreground">Letter Type</p>
-                  <p className="text-xs font-semibold mt-0.5">{getLetterTypeConfig(previewLetter.type)?.name}</p>
-                </Card>
-                <Card className="p-3">
-                  <p className="text-[10px] text-muted-foreground">Employee</p>
-                  <p className="text-xs font-semibold mt-0.5">{previewLetter.employeeName}</p>
-                  <p className="text-[10px] text-muted-foreground">{previewLetter.employeeDepartment}</p>
-                </Card>
-                <Card className="p-3">
-                  <p className="text-[10px] text-muted-foreground">Created</p>
-                  <p className="text-xs font-semibold mt-0.5">{new Date(previewLetter.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                </Card>
-              </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

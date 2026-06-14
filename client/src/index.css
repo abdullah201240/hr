@@ -249,3 +249,48 @@ html.theme-transition *::after {
   border: 4px solid oklch(0.627 0.265 303.9 / 20%) !important;
 }
 
+/* Global Shadow Removal */
+*, *::before, *::after {
+  box-shadow: none !important;
+}
+
+/* Card, Dialog, Popover, Select, and Dialog Content Radius/Border Customization */
+[data-slot="card"],
+[data-slot="dialog-content"],
+[data-slot="popover"],
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="tabs-list"],
+[data-slot="accordion-item"] {
+  border: none !important;
+  border-radius: 1rem !important; /* rounded-2xl */
+}
+
+/* Table Border Customization */
+[data-slot="table"],
+[data-slot="table-header"] tr,
+[data-slot="table-row"],
+[data-slot="table-cell"],
+[data-slot="table-head"] {
+  border: none !important;
+}
+
+/* Button, Input, Select, Separator Border Customization */
+[data-slot="badge"],
+[data-slot="button"],
+[data-slot="input"],
+[data-slot="select-trigger"],
+[data-slot="textarea"],
+[data-slot="separator"] {
+  border: none !important;
+}
+
+/* Ensure Inputs and Select fields look premium with standard background colors */
+[data-slot="input"],
+[data-slot="select-trigger"],
+[data-slot="textarea"] {
+  background-color: var(--secondary) !important;
+  border-radius: 0.5rem !important; /* rounded-lg */
+}
+
+
