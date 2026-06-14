@@ -1064,8 +1064,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/10 border-b border-border/30">
+                <TableHeader className="bg-muted/10 border-b border-border/30">
+                  <TableRow className="border-b-0 hover:bg-transparent">
                     <TableHead className="w-12 border-b-0 hover:bg-transparent">
                       <Checkbox
                         checked={doneTasks === totalTasks && totalTasks > 0}
@@ -1075,10 +1075,10 @@ export default function DashboardPage() {
                         }}
                       />
                     </TableHead>
-                    <TableHead className="border-b-0 hover:bg-transparent">Task</TableHead>
-                    <TableHead className="w-24 border-b-0 hover:bg-transparent">Priority</TableHead>
-                    <TableHead className="w-24 border-b-0 hover:bg-transparent">Due</TableHead>
-                    <TableHead className="w-20 border-b-0 hover:bg-transparent">Status</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Task</TableHead>
+                    <TableHead className="w-24 font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Priority</TableHead>
+                    <TableHead className="w-24 font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Due</TableHead>
+                    <TableHead className="w-24 font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
                     <TableHead className="w-12 border-b-0 hover:bg-transparent"></TableHead>
                   </TableRow>
                 </TableHeader>

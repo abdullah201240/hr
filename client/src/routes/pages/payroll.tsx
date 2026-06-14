@@ -528,21 +528,21 @@ export default function PayrollPage() {
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/10 border-b border-border/30">
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employee</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Basic Salary</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Bonus</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Allowances</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Deductions</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Net Payable</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Payout Status</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent text-right w-36">Action</TableHead>
+                <TableHeader className="bg-muted/10 border-b border-border/30">
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Basic Salary</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Bonus</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Allowances</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Deductions</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Net Payable</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Payout Status</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-36">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {currentCycle.payslips.map(payslip => (
-                    <TableRow key={payslip.employeeEmail} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                    <TableRow key={payslip.employeeEmail} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                       <TableCell className="py-3">
                         <div>
                           <p className="text-xs font-semibold text-foreground">{payslip.name}</p>
@@ -622,21 +622,21 @@ export default function PayrollPage() {
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/10 border-b border-border/30">
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employee Name</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Basic Salary</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employee Share ({empPfRate}%)</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employer Match ({employerPfRate}%)</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Tenure Seed</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Accrued PF Balance</TableHead>
+                <TableHeader className="bg-muted/10 border-b border-border/30">
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee Name</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Basic Salary</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee Share ({empPfRate}%)</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employer Match ({employerPfRate}%)</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Tenure Seed</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Accrued PF Balance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {employees.map(emp => {
                     const stats = getEmployeePfStats(emp)
                     return (
-                      <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                      <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
                           <div>
                             <p className="text-xs font-semibold text-foreground">{emp.name}</p>
@@ -682,19 +682,19 @@ export default function PayrollPage() {
             <CardContent className="p-0">
               {disbursements.length > 0 ? (
                 <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/10 border-b border-border/30">
-                      <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Payout Month</TableHead>
-                      <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Disbursement Date</TableHead>
-                      <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Method</TableHead>
-                      <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Transaction Reference</TableHead>
-                      <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employees</TableHead>
-                      <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Total Disbursed</TableHead>
+                  <TableHeader className="bg-muted/10 border-b border-border/30">
+                    <TableRow className="border-b-0 hover:bg-transparent">
+                      <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Payout Month</TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Disbursement Date</TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Method</TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Transaction Reference</TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employees</TableHead>
+                      <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Total Disbursed</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {disbursements.map((rec, i) => (
-                      <TableRow key={i} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                      <TableRow key={i} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3 text-xs font-semibold">{rec.monthKey}</TableCell>
                         <TableCell className="py-3 text-xs text-muted-foreground">{rec.disbursementDate}</TableCell>
                         <TableCell className="py-3">

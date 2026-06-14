@@ -422,14 +422,14 @@ export default function PerformancePage() {
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/10 border-b border-border/30">
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employee Name</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Department / Role</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">KPI Setup Status</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Overall score</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Performance Grade</TableHead>
-                    <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent text-right w-24">Evaluate</TableHead>
+                <TableHeader className="bg-muted/10 border-b border-border/30">
+                  <TableRow className="border-b-0 hover:bg-transparent">
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee Name</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Department / Role</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">KPI Setup Status</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Overall score</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Performance Grade</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Evaluate</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -440,7 +440,7 @@ export default function PerformancePage() {
                     const rating = getPerformanceRating(weightedScore)
 
                     return (
-                      <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                      <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
                           <p className="text-xs font-semibold text-foreground">{emp.name}</p>
                           <p className="text-[10px] text-muted-foreground">{emp.email}</p>

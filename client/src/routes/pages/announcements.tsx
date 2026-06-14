@@ -244,20 +244,20 @@ export default function AnnouncementsPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/10 border-b border-border/30">
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Title</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Posted By</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Published Date</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
+              <TableHeader className="bg-muted/10 border-b border-border/30">
+                <TableRow className="border-b-0 hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Title</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Posted By</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Published Date</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAnnouncements.length > 0 ? (
                   filteredAnnouncements.map(ann => {
                     return (
-                      <TableRow key={ann.id} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                      <TableRow key={ann.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
                           <div className="space-y-0.5 max-w-[320px] sm:max-w-[400px]">
                             <p className="text-xs font-semibold text-foreground hover:text-primary cursor-pointer truncate" onClick={() => openViewModal(ann)}>

@@ -313,14 +313,14 @@ export default function SeparationPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/10 border-b border-border/30">
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employee</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Department</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Last Working Day</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Clearance Checklist</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
+              <TableHeader className="bg-muted/10 border-b border-border/30">
+                <TableRow className="border-b-0 hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Department</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Last Working Day</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Clearance Checklist</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -328,7 +328,7 @@ export default function SeparationPage() {
                   filtered.map(sep => {
                     const totalClearances = Object.values(sep.clearances).filter(Boolean).length
                     return (
-                      <TableRow key={sep.id} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                      <TableRow key={sep.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
                           <div>
                             <p className="text-xs font-semibold text-foreground">{sep.employeeName}</p>

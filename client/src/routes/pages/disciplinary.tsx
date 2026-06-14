@@ -283,19 +283,19 @@ export default function DisciplinaryPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/10 border-b border-border/30">
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Employee</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Offense Type</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Date Reported</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="text-xs font-bold border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
+              <TableHeader className="bg-muted/10 border-b border-border/30">
+                <TableRow className="border-b-0 hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Offense Type</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Date Reported</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length > 0 ? (
                   filtered.map(c => (
-                    <TableRow key={c.id} className="border-b border-border/20 hover:bg-muted/5 transition-colors">
+                    <TableRow key={c.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                       <TableCell className="py-3">
                         <div>
                           <p className="text-xs font-semibold text-foreground">{c.employeeName}</p>
