@@ -36,7 +36,9 @@ export class EmployeeCreateProcessor extends WorkerHost {
 
   async process(job: Job<CreateEmployeeDto>): Promise<{ employeeId: string }> {
     const dto = job.data;
-    this.logger.log(`Processing employee creation: ${dto.employeeId} (job: ${job.id})`);
+    this.logger.log(
+      `Processing employee creation: ${dto.employeeId} (job: ${job.id})`,
+    );
 
     try {
       // 1. Hash password
@@ -83,7 +85,7 @@ export class EmployeeCreateProcessor extends WorkerHost {
           })
           .returning({ id: employees.id });
 
-        const employeeId = employee!.id;
+        const employeeId = employee.id;
 
         // Insert spouses
         if (dto.spouses?.length) {
@@ -184,7 +186,9 @@ export class EmployeeUpdateProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<UpdateEmployeeDto & { id: string }>): Promise<{ employeeId: string }> {
+  async process(
+    job: Job<UpdateEmployeeDto & { id: string }>,
+  ): Promise<{ employeeId: string }> {
     const { id, ...dto } = job.data;
     this.logger.log(`Processing employee update: ${id} (job: ${job.id})`);
 
@@ -194,13 +198,36 @@ export class EmployeeUpdateProcessor extends WorkerHost {
         const updateData: Record<string, any> = {};
 
         const directFields = [
-          'employeeId', 'email', 'personalEmail', 'fullNameEnglish', 'fullNameBangla',
-          'phone', 'personalMobileNumber', 'religion', 'gender', 'dateOfBirth',
-          'bloodGroup', 'maritalStatus', 'employeePhotoUrl', 'nidNumber', 'nidPdfUrl',
-          'tinNumber', 'fatherNameEnglish', 'fatherNameBangla', 'motherNameEnglish',
-          'motherNameBangla', 'currentAddress', 'permanentAddress',
-          'emergencyContactName', 'emergencyContactRelation', 'emergencyContactNumber',
-          'designationId', 'departmentId', 'employeeType', 'joinDate', 'lineManagerId',
+          'employeeId',
+          'email',
+          'personalEmail',
+          'fullNameEnglish',
+          'fullNameBangla',
+          'phone',
+          'personalMobileNumber',
+          'religion',
+          'gender',
+          'dateOfBirth',
+          'bloodGroup',
+          'maritalStatus',
+          'employeePhotoUrl',
+          'nidNumber',
+          'nidPdfUrl',
+          'tinNumber',
+          'fatherNameEnglish',
+          'fatherNameBangla',
+          'motherNameEnglish',
+          'motherNameBangla',
+          'currentAddress',
+          'permanentAddress',
+          'emergencyContactName',
+          'emergencyContactRelation',
+          'emergencyContactNumber',
+          'designationId',
+          'departmentId',
+          'employeeType',
+          'joinDate',
+          'lineManagerId',
         ] as const;
 
         for (const field of directFields) {
@@ -219,7 +246,9 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
         // Replace spouses (delete + re-insert)
         if (dto.spouses !== undefined) {
-          await tx.delete(employeeSpouses).where(eq(employeeSpouses.employeeId, id));
+          await tx
+            .delete(employeeSpouses)
+            .where(eq(employeeSpouses.employeeId, id));
           if (dto.spouses.length > 0) {
             await tx.insert(employeeSpouses).values(
               dto.spouses.map((s) => ({
@@ -236,7 +265,9 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
         // Replace children
         if (dto.children !== undefined) {
-          await tx.delete(employeeChildren).where(eq(employeeChildren.employeeId, id));
+          await tx
+            .delete(employeeChildren)
+            .where(eq(employeeChildren.employeeId, id));
           if (dto.children.length > 0) {
             await tx.insert(employeeChildren).values(
               dto.children.map((c) => ({
@@ -251,7 +282,9 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
         // Replace nominees
         if (dto.nominees !== undefined) {
-          await tx.delete(employeeNominees).where(eq(employeeNominees.employeeId, id));
+          await tx
+            .delete(employeeNominees)
+            .where(eq(employeeNominees.employeeId, id));
           if (dto.nominees.length > 0) {
             await tx.insert(employeeNominees).values(
               dto.nominees.map((n) => ({
@@ -268,7 +301,9 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
         // Upsert bank details
         if (dto.bankDetails !== undefined) {
-          await tx.delete(employeeBankDetails).where(eq(employeeBankDetails.employeeId, id));
+          await tx
+            .delete(employeeBankDetails)
+            .where(eq(employeeBankDetails.employeeId, id));
           await tx.insert(employeeBankDetails).values({
             employeeId: id,
             bankName: dto.bankDetails.bankName || '',
@@ -284,7 +319,9 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
         // Replace documents
         if (dto.documents !== undefined) {
-          await tx.delete(employeeDocuments).where(eq(employeeDocuments.employeeId, id));
+          await tx
+            .delete(employeeDocuments)
+            .where(eq(employeeDocuments.employeeId, id));
           if (dto.documents.length > 0) {
             await tx.insert(employeeDocuments).values(
               dto.documents.map((d) => ({

@@ -1,6 +1,15 @@
-import { Injectable, OnModuleInit, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from 'cloudinary';
 import { Readable } from 'node:stream';
 import type { CloudinaryConfig } from '../../config/cloudinary.config';
 
@@ -103,7 +112,10 @@ export class CloudinaryService implements OnModuleInit {
     this.validateMimeType(mimeType);
     this.validateFileSize(buffer.length);
 
-    const resourceType = this.resolveResourceType(mimeType, options.resourceType);
+    const resourceType = this.resolveResourceType(
+      mimeType,
+      options.resourceType,
+    );
 
     return new Promise<UploadResult>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -117,7 +129,10 @@ export class CloudinaryService implements OnModuleInit {
             transformation: this.buildTransformation(options.transformation),
           }),
         },
-        (error: UploadApiErrorResponse | undefined, result?: UploadApiResponse) => {
+        (
+          error: UploadApiErrorResponse | undefined,
+          result?: UploadApiResponse,
+        ) => {
           if (error) {
             this.logger.error(`Upload failed: ${error.message}`);
             return reject(error);
@@ -138,7 +153,10 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Upload from URL ─────────────────────────────────────────────────────────
 
-  async uploadUrl(url: string, options: UploadOptions = {}): Promise<UploadResult> {
+  async uploadUrl(
+    url: string,
+    options: UploadOptions = {},
+  ): Promise<UploadResult> {
     const result = await cloudinary.uploader.upload(url, {
       resource_type: options.resourceType ?? 'auto',
       folder: options.folder ?? this.config.defaultFolder,
@@ -152,7 +170,10 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Delete ──────────────────────────────────────────────────────────────────
 
-  async delete(publicId: string, resourceType: 'image' | 'raw' | 'video' = 'image'): Promise<boolean> {
+  async delete(
+    publicId: string,
+    resourceType: 'image' | 'raw' | 'video' = 'image',
+  ): Promise<boolean> {
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
@@ -161,7 +182,10 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Bulk delete by prefix ───────────────────────────────────────────────────
 
-  async deleteByPrefix(prefix: string, resourceType: 'image' | 'raw' | 'video' = 'image'): Promise<number> {
+  async deleteByPrefix(
+    prefix: string,
+    resourceType: 'image' | 'raw' | 'video' = 'image',
+  ): Promise<number> {
     const result = await cloudinary.api.delete_resources_by_prefix(prefix, {
       type: 'upload',
       resource_type: resourceType,
@@ -173,7 +197,10 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Generate signed URL (private resources) ─────────────────────────────────
 
-  generateSignedUrl(publicId: string, expiresInSeconds = 3600): SignedUrlResult {
+  generateSignedUrl(
+    publicId: string,
+    expiresInSeconds = 3600,
+  ): SignedUrlResult {
     const expiresAt = Math.round(Date.now() / 1000) + expiresInSeconds;
     const url = cloudinary.utils.private_download_url(publicId, '', {
       expires_at: expiresAt,
@@ -185,7 +212,10 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Get resource info ───────────────────────────────────────────────────────
 
-  async getResourceInfo(publicId: string, resourceType: 'image' | 'raw' | 'video' = 'image') {
+  async getResourceInfo(
+    publicId: string,
+    resourceType: 'image' | 'raw' | 'video' = 'image',
+  ) {
     return cloudinary.api.resource(publicId, {
       resource_type: resourceType,
     });
@@ -196,7 +226,14 @@ export class CloudinaryService implements OnModuleInit {
   async listResources(
     folder: string,
     maxResults = 30,
-  ): Promise<{ resources: Array<{ publicId: string; url: string; format: string; bytes: number }> }> {
+  ): Promise<{
+    resources: Array<{
+      publicId: string;
+      url: string;
+      format: string;
+      bytes: number;
+    }>;
+  }> {
     const result = await cloudinary.api.resources({
       type: 'upload',
       prefix: folder,
@@ -204,19 +241,30 @@ export class CloudinaryService implements OnModuleInit {
     });
 
     return {
-      resources: (result.resources ?? []).map((r: { public_id: string; secure_url: string; format: string; bytes: number }) => ({
-        publicId: r.public_id,
-        url: r.secure_url,
-        format: r.format,
-        bytes: r.bytes,
-      })),
+      resources: (result.resources ?? []).map(
+        (r: {
+          public_id: string;
+          secure_url: string;
+          format: string;
+          bytes: number;
+        }) => ({
+          publicId: r.public_id,
+          url: r.secure_url,
+          format: r.format,
+          bytes: r.bytes,
+        }),
+      ),
     };
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   private validateMimeType(mimeType: string): void {
-    const allowed = new Set([...IMAGE_MIMES, ...DOCUMENT_MIMES, ...VIDEO_MIMES]);
+    const allowed = new Set([
+      ...IMAGE_MIMES,
+      ...DOCUMENT_MIMES,
+      ...VIDEO_MIMES,
+    ]);
     if (!allowed.has(mimeType)) {
       throw new BadRequestException(`File type "${mimeType}" is not allowed`);
     }
@@ -225,7 +273,9 @@ export class CloudinaryService implements OnModuleInit {
   private validateFileSize(size: number): void {
     if (size > this.config.maxFileSize) {
       const maxMB = (this.config.maxFileSize / 1048576).toFixed(1);
-      throw new BadRequestException(`File size exceeds the maximum allowed (${maxMB} MB)`);
+      throw new BadRequestException(
+        `File size exceeds the maximum allowed (${maxMB} MB)`,
+      );
     }
     if (size === 0) {
       throw new BadRequestException('File is empty');
@@ -242,7 +292,9 @@ export class CloudinaryService implements OnModuleInit {
     return 'raw';
   }
 
-  private buildTransformation(t: TransformationOptions): Record<string, unknown>[] {
+  private buildTransformation(
+    t: TransformationOptions,
+  ): Record<string, unknown>[] {
     const transform: Record<string, unknown> = {};
     if (t.width) transform.width = t.width;
     if (t.height) transform.height = t.height;

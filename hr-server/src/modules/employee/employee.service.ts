@@ -44,7 +44,9 @@ export class EmployeeService {
 
   // ─── Enqueue create ─────────────────────────────────────────────────────
 
-  async createAsync(dto: CreateEmployeeDto): Promise<{ jobId: string; status: string }> {
+  async createAsync(
+    dto: CreateEmployeeDto,
+  ): Promise<{ jobId: string; status: string }> {
     // Pre-check uniqueness before queuing
     const existing = await this.db
       .select({ id: employees.id })
@@ -90,12 +92,16 @@ export class EmployeeService {
       throw new NotFoundException(`Employee with ID "${id}" not found`);
     }
 
-    const job = await this.updateQueue.add('update-employee', { ...dto, id }, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: { count: 100 },
-      removeOnFail: { count: 500 },
-    });
+    const job = await this.updateQueue.add(
+      'update-employee',
+      { ...dto, id },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 500 },
+      },
+    );
 
     this.logger.log(`Enqueued employee update job: ${job.id}`);
     return { jobId: job.id!, status: 'queued' };
@@ -161,10 +167,22 @@ export class EmployeeService {
     }
 
     const [spouses, children, nominees, documents] = await Promise.all([
-      this.db.select().from(employeeSpouses).where(eq(employeeSpouses.employeeId, id)),
-      this.db.select().from(employeeChildren).where(eq(employeeChildren.employeeId, id)),
-      this.db.select().from(employeeNominees).where(eq(employeeNominees.employeeId, id)),
-      this.db.select().from(employeeDocuments).where(eq(employeeDocuments.employeeId, id)),
+      this.db
+        .select()
+        .from(employeeSpouses)
+        .where(eq(employeeSpouses.employeeId, id)),
+      this.db
+        .select()
+        .from(employeeChildren)
+        .where(eq(employeeChildren.employeeId, id)),
+      this.db
+        .select()
+        .from(employeeNominees)
+        .where(eq(employeeNominees.employeeId, id)),
+      this.db
+        .select()
+        .from(employeeDocuments)
+        .where(eq(employeeDocuments.employeeId, id)),
     ]);
 
     const [bankDetail] = await this.db
@@ -204,14 +222,18 @@ export class EmployeeService {
 
     // Build a deterministic cache key from query params
     const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${departmentId ?? ''}:${designationId ?? ''}:${status}:${employeeType ?? ''}:${sortBy}:${sortOrder}`;
-    const cached = await this.cache.getByKey<any>(CacheKeys.employeeList, cacheKeyParts);
+    const cached = await this.cache.getByKey<any>(
+      CacheKeys.employeeList,
+      cacheKeyParts,
+    );
     if (cached) return cached;
 
     const conditions = [];
 
     if (status) conditions.push(eq(employees.status, status));
     if (departmentId) conditions.push(eq(employees.departmentId, departmentId));
-    if (designationId) conditions.push(eq(employees.designationId, designationId));
+    if (designationId)
+      conditions.push(eq(employees.designationId, designationId));
     if (employeeType) conditions.push(eq(employees.employeeType, employeeType));
 
     if (search) {
@@ -241,10 +263,7 @@ export class EmployeeService {
 
     // Run count + data in parallel for faster response
     const [[totalRow], data] = await Promise.all([
-      this.db
-        .select({ count: count() })
-        .from(employees)
-        .where(where),
+      this.db.select({ count: count() }).from(employees).where(where),
       this.db
         .select({
           id: employees.id,
@@ -323,7 +342,12 @@ export class EmployeeService {
   async getJobStatus(
     queueName: string,
     jobId: string,
-  ): Promise<{ jobId: string; status: string; progress?: number; result?: any }> {
+  ): Promise<{
+    jobId: string;
+    status: string;
+    progress?: number;
+    result?: any;
+  }> {
     const queue = queueName === 'create' ? this.createQueue : this.updateQueue;
     const job = await queue.getJob(jobId);
 

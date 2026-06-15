@@ -96,7 +96,8 @@ describe('Auth Module (e2e)', () => {
 
     it('should reject expired refresh token', async () => {
       const res = await publicPost(ctx, '/auth/refresh', {
-        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJleHAiOjF9.expired',
+        refreshToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJleHAiOjF9.expired',
       });
       expect(res.status).toBe(401);
     });

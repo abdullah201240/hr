@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarOff, Plus } from "lucide-react"
+import { CalendarOff, Plus, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useState } from "react"
 import { useSearchParams } from "react-router"
@@ -11,149 +11,62 @@ import { AttendanceSetup } from "@/components/settings/attendance-setup"
 import { OfficeHours } from "@/components/settings/office-hours"
 import { ThemeSettings } from "@/components/settings/theme-settings"
 import { SalarySetup } from "@/components/settings/salary-setup"
-
-// ─── Leave Type Interface ─────────────────────────────────────────────────────
-interface LeaveType {
-  id: string
-  name: string
-  icon: any
-  color: string
-  days: number
-  paid: boolean
-  carryForward: boolean
-  maxCarryOver: number
-  requiresApproval: boolean
-  requiresDocument: boolean
-  description: string
-}
+import Swal from "sweetalert2"
+import {
+  useLeaveTypesQuery,
+  useCreateLeaveTypeMutation,
+  useUpdateLeaveTypeMutation,
+  useDeleteLeaveTypeMutation,
+} from "@/hooks/useLeaveTypes"
+import type { LeaveType } from "@/types"
 
 export default function SettingsPage() {
-  // Leave Management States
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([
-    {
-      id: "annual",
-      name: "Annual Leave",
-      icon: "Plane",
-      color: "bg-sky-500",
-      days: 18,
-      paid: true,
-      carryForward: true,
-      maxCarryOver: 5,
-      requiresApproval: true,
-      requiresDocument: false,
-      description: "Paid time off for vacation and personal rest"
-    },
-    {
-      id: "sick",
-      name: "Sick Leave",
-      icon: "Heart",
-      color: "bg-rose-500",
-      days: 10,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for illness or medical appointments"
-    },
-    {
-      id: "casual",
-      name: "Casual Leave",
-      icon: "CalendarOff",
-      color: "bg-amber-500",
-      days: 5,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: false,
-      description: "Short-term leave for personal matters"
-    },
-    {
-      id: "maternity",
-      name: "Maternity Leave",
-      icon: "Baby",
-      color: "bg-pink-500",
-      days: 90,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for new mothers (ILO standard)"
-    },
-    {
-      id: "paternity",
-      name: "Paternity Leave",
-      icon: "Users",
-      color: "bg-blue-500",
-      days: 15,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for new fathers"
-    },
-    {
-      id: "training",
-      name: "Training Leave",
-      icon: "GraduationCap",
-      color: "bg-violet-500",
-      days: 3,
-      paid: true,
-      carryForward: true,
-      maxCarryOver: 3,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for professional development"
-    },
-    {
-      id: "bereavement",
-      name: "Bereavement Leave",
-      icon: "AlertCircle",
-      color: "bg-gray-500",
-      days: 5,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: false,
-      requiresDocument: false,
-      description: "Paid leave for loss of immediate family member"
-    },
-    {
-      id: "remote",
-      name: "Work From Home",
-      icon: "Home",
-      color: "bg-emerald-500",
-      days: 12,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: false,
-      description: "Remote work days per year"
-    }
-  ])
-
   const [editingLeave, setEditingLeave] = useState<LeaveType | null>(null)
   const [showAddLeave, setShowAddLeave] = useState(false)
 
+  // TanStack Query
+  const { data: leaveTypesData, isLoading: isLoadingLeaveTypes } = useLeaveTypesQuery({
+    page: 1,
+    limit: 100, // Fetch all leave types for listing
+  })
+
+  const createLeaveMutation = useCreateLeaveTypeMutation()
+  const updateLeaveMutation = useUpdateLeaveTypeMutation(editingLeave?.id || "")
+  const deleteLeaveMutation = useDeleteLeaveTypeMutation()
+
+  const leaveTypes = leaveTypesData?.data || []
+
   const handleSaveLeaveType = (leaveType: LeaveType) => {
-    const exists = leaveTypes.find(l => l.id === leaveType.id)
-    if (exists) {
-      setLeaveTypes(leaveTypes.map(l => l.id === leaveType.id ? leaveType : l))
-      toast.success("Leave type updated!", {
-        description: `${leaveType.name} configuration saved.`
+    if (editingLeave) {
+      // Update
+      updateLeaveMutation.mutate(leaveType, {
+        onSuccess: () => {
+          toast.success("Leave type updated!", {
+            description: `${leaveType.name} configuration saved.`
+          })
+          setEditingLeave(null)
+          setShowAddLeave(false)
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to update leave type")
+        }
       })
     } else {
-      setLeaveTypes([...leaveTypes, leaveType])
-      toast.success("Leave type added!", {
-        description: `${leaveType.name} is now available.`
+      // Create
+      const { id, ...createPayload } = leaveType
+      createLeaveMutation.mutate(createPayload, {
+        onSuccess: () => {
+          toast.success("Leave type added!", {
+            description: `${leaveType.name} is now available.`
+          })
+          setEditingLeave(null)
+          setShowAddLeave(false)
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to add leave type")
+        }
       })
     }
-    setEditingLeave(null)
-    setShowAddLeave(false)
   }
 
   const handleOpenEdit = (leave: LeaveType) => {
@@ -163,9 +76,31 @@ export default function SettingsPage() {
 
   const handleDeleteLeaveType = (id: string) => {
     const leaveType = leaveTypes.find(l => l.id === id)
-    setLeaveTypes(leaveTypes.filter(l => l.id !== id))
-    toast.success("Leave type removed", {
-      description: `${leaveType?.name} has been deleted.`
+    if (!leaveType) return
+
+    Swal.fire({
+      title: "Are you sure?",
+      text: `Deactivate leave type "${leaveType.name}"? This cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, deactivate",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteLeaveMutation.mutate(id, {
+          onSuccess: () => {
+            Swal.fire("Deactivated!", "Leave type has been deactivated.", "success")
+          },
+          onError: (err: any) => {
+            Swal.fire("Error", err.message || "Failed to deactivate leave type", "error")
+          }
+        })
+      }
     })
   }
 
@@ -217,13 +152,21 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            {/* Use Leave Components */}
-            <LeaveSummaryCards leaveTypes={leaveTypes} />
-            <LeaveTypesList
-              leaveTypes={leaveTypes}
-              onEdit={handleOpenEdit}
-              onDelete={handleDeleteLeaveType}
-            />
+            {isLoadingLeaveTypes ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                {/* Use Leave Components */}
+                <LeaveSummaryCards leaveTypes={leaveTypes} />
+                <LeaveTypesList
+                  leaveTypes={leaveTypes}
+                  onEdit={handleOpenEdit}
+                  onDelete={handleDeleteLeaveType}
+                />
+              </>
+            )}
 
           </div>
         </TabsContent>

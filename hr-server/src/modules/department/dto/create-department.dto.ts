@@ -8,7 +8,10 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateDepartmentDto {
-  @ApiProperty({ example: 'Engineering', description: 'Department name (unique)' })
+  @ApiProperty({
+    example: 'Engineering',
+    description: 'Department name (unique)',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
@@ -26,7 +29,9 @@ export class CreateDepartmentDto {
   @MaxLength(2000)
   description?: string;
 
-  @ApiPropertyOptional({ description: 'UUID of the head of department employee' })
+  @ApiPropertyOptional({
+    description: 'UUID of the head of department employee',
+  })
   @IsOptional()
   @IsString()
   headEmployeeId?: string;

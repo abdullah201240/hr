@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsInt, Min, Max, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  Max,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,7 +36,10 @@ export class DesignationQueryDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ enum: ['name', 'code', 'grade', 'createdAt'], default: 'name' })
+  @ApiPropertyOptional({
+    enum: ['name', 'code', 'grade', 'createdAt'],
+    default: 'name',
+  })
   @IsOptional()
   @IsString()
   sortBy?: string = 'name';

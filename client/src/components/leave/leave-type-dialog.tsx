@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,22 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CalendarOff } from "lucide-react"
 import { toast } from "sonner"
-
-interface LeaveType {
-  id: string
-  name: string
-  icon: any
-  color: string
-  days: number
-  paid: boolean
-  carryForward: boolean
-  maxCarryOver: number
-  requiresApproval: boolean
-  requiresDocument: boolean
-  description: string
-}
+import type { LeaveType } from "@/types"
 
 interface LeaveTypeDialogProps {
   open: boolean
@@ -47,43 +33,8 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
     requiresDocument: false,
     description: "",
     color: "bg-sky-500",
-    icon: CalendarOff
+    icon: "CalendarOff"
   })
-
-  // Reset form when dialog opens
-  useState(() => {
-    if (editingLeave) {
-      setLeaveForm(editingLeave)
-    }
-  })
-
-  const handleSave = () => {
-    if (!leaveForm.name || leaveForm.name.trim() === '') {
-      toast.error('Please enter a leave type name')
-      return
-    }
-    if (!leaveForm.days || leaveForm.days! <= 0) {
-      toast.error('Please enter valid number of days')
-      return
-    }
-
-    const newLeaveType: LeaveType = {
-      id: editingLeave?.id || `leave-${Date.now()}`,
-      name: leaveForm.name!,
-      description: leaveForm.description || '',
-      days: leaveForm.days!,
-      paid: leaveForm.paid!,
-      carryForward: leaveForm.carryForward!,
-      maxCarryOver: leaveForm.maxCarryOver!,
-      requiresApproval: leaveForm.requiresApproval!,
-      requiresDocument: leaveForm.requiresDocument!,
-      color: leaveForm.color!,
-      icon: leaveForm.icon!
-    }
-
-    onSave(newLeaveType)
-    handleReset()
-  }
 
   const handleReset = () => {
     setLeaveForm({
@@ -96,8 +47,47 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
       requiresDocument: false,
       description: "",
       color: "bg-sky-500",
-      icon: CalendarOff
+      icon: "CalendarOff"
     })
+  }
+
+  // Reset form when dialog opens or editingLeave changes
+  useEffect(() => {
+    if (open) {
+      if (editingLeave) {
+        setLeaveForm(editingLeave)
+      } else {
+        handleReset()
+      }
+    }
+  }, [editingLeave, open])
+
+  const handleSave = () => {
+    if (!leaveForm.name || leaveForm.name.trim() === '') {
+      toast.error('Please enter a leave type name')
+      return
+    }
+    if (leaveForm.days === undefined || leaveForm.days < 0) {
+      toast.error('Please enter valid number of days')
+      return
+    }
+
+    const newLeaveType: LeaveType = {
+      id: editingLeave?.id || '',
+      name: leaveForm.name!,
+      description: leaveForm.description || '',
+      days: leaveForm.days!,
+      paid: leaveForm.paid ?? true,
+      carryForward: leaveForm.carryForward ?? false,
+      maxCarryOver: leaveForm.maxCarryOver ?? 0,
+      requiresApproval: leaveForm.requiresApproval ?? true,
+      requiresDocument: leaveForm.requiresDocument ?? false,
+      color: leaveForm.color || 'bg-sky-500',
+      icon: leaveForm.icon || 'CalendarOff'
+    }
+
+    onSave(newLeaveType)
+    handleReset()
   }
 
   return (

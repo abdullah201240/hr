@@ -8,7 +8,10 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateDesignationDto {
-  @ApiProperty({ example: 'Software Engineer', description: 'Designation title (unique)' })
+  @ApiProperty({
+    example: 'Software Engineer',
+    description: 'Designation title (unique)',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
@@ -26,7 +29,10 @@ export class CreateDesignationDto {
   @MaxLength(2000)
   description?: string;
 
-  @ApiPropertyOptional({ example: 'L3', description: 'Grade / level for hierarchy' })
+  @ApiPropertyOptional({
+    example: 'L3',
+    description: 'Grade / level for hierarchy',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)

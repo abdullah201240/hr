@@ -11,7 +11,10 @@ import { DB_CONNECTION, type Database } from '../../db';
 import { departments, employees } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
-import type { CreateDepartmentDto, UpdateDepartmentDto } from './dto/create-department.dto';
+import type {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dto/create-department.dto';
 import type { DepartmentQueryDto } from './dto/department-query.dto';
 
 @Injectable()
@@ -32,10 +35,7 @@ export class DepartmentService {
         .select({ id: departments.id })
         .from(departments)
         .where(
-          or(
-            eq(departments.name, dto.name),
-            eq(departments.code, dto.code),
-          ),
+          or(eq(departments.name, dto.name), eq(departments.code, dto.code)),
         )
         .limit(1);
 
@@ -72,8 +72,10 @@ export class DepartmentService {
 
       await this.invalidateListCache();
 
-      this.logger.log(`Department created: ${department!.name} (${department!.code})`);
-      return department!;
+      this.logger.log(
+        `Department created: ${department.name} (${department.code})`,
+      );
+      return department;
     });
   }
 
@@ -108,7 +110,10 @@ export class DepartmentService {
 
     // Build a deterministic cache key from query params
     const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${isActive ?? ''}:${sortBy}:${sortOrder}`;
-    const cached = await this.cache.getByKey<any>(CacheKeys.departmentListPaginated, cacheKeyParts);
+    const cached = await this.cache.getByKey<any>(
+      CacheKeys.departmentListPaginated,
+      cacheKeyParts,
+    );
     if (cached) return cached;
 
     // Sort
@@ -125,10 +130,7 @@ export class DepartmentService {
 
     // Run count + data in parallel for faster response
     const [[totalRow], data] = await Promise.all([
-      this.db
-        .select({ count: count() })
-        .from(departments)
-        .where(where),
+      this.db.select({ count: count() }).from(departments).where(where),
       this.db
         .select({
           id: departments.id,
@@ -159,7 +161,11 @@ export class DepartmentService {
       },
     };
 
-    await this.cache.setByKey(CacheKeys.departmentListPaginated, result, cacheKeyParts);
+    await this.cache.setByKey(
+      CacheKeys.departmentListPaginated,
+      result,
+      cacheKeyParts,
+    );
 
     return result;
   }
@@ -219,7 +225,7 @@ export class DepartmentService {
           .limit(1);
 
         // Filter out self-match
-        if (conflict.length > 0 && conflict[0]!.id !== id) {
+        if (conflict.length > 0 && conflict[0].id !== id) {
           throw new ConflictException(
             `Another department already uses this name or code`,
           );
@@ -245,8 +251,10 @@ export class DepartmentService {
 
       if (dto.name !== undefined) updateData.name = dto.name;
       if (dto.code !== undefined) updateData.code = dto.code;
-      if (dto.description !== undefined) updateData.description = dto.description;
-      if (dto.headEmployeeId !== undefined) updateData.headEmployeeId = dto.headEmployeeId || null;
+      if (dto.description !== undefined)
+        updateData.description = dto.description;
+      if (dto.headEmployeeId !== undefined)
+        updateData.headEmployeeId = dto.headEmployeeId || null;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
       const [updated] = await tx
@@ -257,8 +265,8 @@ export class DepartmentService {
 
       await this.invalidateListCache();
 
-      this.logger.log(`Department updated: ${updated!.name} (${updated!.code})`);
-      return updated!;
+      this.logger.log(`Department updated: ${updated.name} (${updated.code})`);
+      return updated;
     });
   }
 
@@ -288,7 +296,7 @@ export class DepartmentService {
 
     if ((empCount?.count ?? 0) > 0) {
       throw new BadRequestException(
-        `Cannot deactivate department "${existing.name}": ${empCount!.count} active employee(s) assigned. Reassign them first.`,
+        `Cannot deactivate department "${existing.name}": ${empCount.count} active employee(s) assigned. Reassign them first.`,
       );
     }
 

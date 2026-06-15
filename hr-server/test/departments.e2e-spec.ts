@@ -27,7 +27,11 @@ describe('Departments Module (e2e)', () => {
 
   afterAll(async () => {
     if (createdDeptId) {
-      try { await authDelete(ctx, `/departments/${createdDeptId}`); } catch { /* ignore */ }
+      try {
+        await authDelete(ctx, `/departments/${createdDeptId}`);
+      } catch {
+        /* ignore */
+      }
     }
     await teardownApp(ctx);
   });
@@ -97,7 +101,10 @@ describe('Departments Module (e2e)', () => {
     });
 
     it('should support search', async () => {
-      const res = await authGet(ctx, `/departments?search=${encodeURIComponent(testDept.name)}`);
+      const res = await authGet(
+        ctx,
+        `/departments?search=${encodeURIComponent(testDept.name)}`,
+      );
       expect(res.status).toBe(200);
       expect(res.body.data.data.length).toBeGreaterThan(0);
     });
@@ -129,7 +136,10 @@ describe('Departments Module (e2e)', () => {
     });
 
     it('should return 404 for non-existent ID', async () => {
-      const res = await authGet(ctx, '/departments/00000000-0000-0000-0000-000000000000');
+      const res = await authGet(
+        ctx,
+        '/departments/00000000-0000-0000-0000-000000000000',
+      );
       expect(res.status).toBe(404);
     });
 
@@ -142,7 +152,9 @@ describe('Departments Module (e2e)', () => {
   describe('PATCH /departments/:id (update)', () => {
     it('should update department name', async () => {
       const newName = `Updated Dept ${Date.now()}`;
-      const res = await authPatch(ctx, `/departments/${createdDeptId}`, { name: newName });
+      const res = await authPatch(ctx, `/departments/${createdDeptId}`, {
+        name: newName,
+      });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveProperty('name', newName);

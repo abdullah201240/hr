@@ -78,7 +78,9 @@ export const employees = pgTable(
     fullNameEnglish: varchar('full_name_english', { length: 255 }).notNull(),
     fullNameBangla: varchar('full_name_bangla', { length: 255 }).default(''),
     phone: varchar('phone', { length: 30 }).notNull(),
-    personalMobileNumber: varchar('personal_mobile_number', { length: 30 }).default(''),
+    personalMobileNumber: varchar('personal_mobile_number', {
+      length: 30,
+    }).default(''),
     religion: varchar('religion', { length: 50 }).notNull(),
     gender: varchar('gender', { length: 30 }).notNull(),
     dateOfBirth: date('date_of_birth').notNull(),
@@ -90,19 +92,33 @@ export const employees = pgTable(
     tinNumber: varchar('tin_number', { length: 50 }).default(''),
 
     // Family lineage
-    fatherNameEnglish: varchar('father_name_english', { length: 255 }).default(''),
-    fatherNameBangla: varchar('father_name_bangla', { length: 255 }).default(''),
-    motherNameEnglish: varchar('mother_name_english', { length: 255 }).default(''),
-    motherNameBangla: varchar('mother_name_bangla', { length: 255 }).default(''),
+    fatherNameEnglish: varchar('father_name_english', { length: 255 }).default(
+      '',
+    ),
+    fatherNameBangla: varchar('father_name_bangla', { length: 255 }).default(
+      '',
+    ),
+    motherNameEnglish: varchar('mother_name_english', { length: 255 }).default(
+      '',
+    ),
+    motherNameBangla: varchar('mother_name_bangla', { length: 255 }).default(
+      '',
+    ),
 
     // Address
     currentAddress: text('current_address').default(''),
     permanentAddress: text('permanent_address').default(''),
 
     // Emergency contact
-    emergencyContactName: varchar('emergency_contact_name', { length: 255 }).default(''),
-    emergencyContactRelation: varchar('emergency_contact_relation', { length: 100 }).default(''),
-    emergencyContactNumber: varchar('emergency_contact_number', { length: 30 }).default(''),
+    emergencyContactName: varchar('emergency_contact_name', {
+      length: 255,
+    }).default(''),
+    emergencyContactRelation: varchar('emergency_contact_relation', {
+      length: 100,
+    }).default(''),
+    emergencyContactNumber: varchar('emergency_contact_number', {
+      length: 30,
+    }).default(''),
 
     // Employment
     designationId: uuid('designation_id')
@@ -193,24 +209,21 @@ export const employeeNominees = pgTable(
 
 // ─── Bank Details ───────────────────────────────────────────────────────────
 
-export const employeeBankDetails = pgTable(
-  'employee_bank_details',
-  {
-    ...baseTable,
-    employeeId: uuid('employee_id')
-      .notNull()
-      .unique()
-      .references(() => employees.id, { onDelete: 'cascade' }),
-    bankName: varchar('bank_name', { length: 255 }).default(''),
-    branch: varchar('branch', { length: 255 }).default(''),
-    accountNumber: varchar('account_number', { length: 100 }).default(''),
-    accountType: varchar('account_type', { length: 50 }).default(''),
-    routingNumber: varchar('routing_number', { length: 50 }).default(''),
-    swiftCode: varchar('swift_code', { length: 50 }).default(''),
-    ibanNumber: varchar('iban_number', { length: 100 }).default(''),
-    bankStatementPdfUrl: text('bank_statement_pdf_url'),
-  },
-);
+export const employeeBankDetails = pgTable('employee_bank_details', {
+  ...baseTable,
+  employeeId: uuid('employee_id')
+    .notNull()
+    .unique()
+    .references(() => employees.id, { onDelete: 'cascade' }),
+  bankName: varchar('bank_name', { length: 255 }).default(''),
+  branch: varchar('branch', { length: 255 }).default(''),
+  accountNumber: varchar('account_number', { length: 100 }).default(''),
+  accountType: varchar('account_type', { length: 50 }).default(''),
+  routingNumber: varchar('routing_number', { length: 50 }).default(''),
+  swiftCode: varchar('swift_code', { length: 50 }).default(''),
+  ibanNumber: varchar('iban_number', { length: 100 }).default(''),
+  bankStatementPdfUrl: text('bank_statement_pdf_url'),
+});
 
 // ─── Documents ──────────────────────────────────────────────────────────────
 
@@ -264,37 +277,52 @@ export const employeesRelations = relations(employees, ({ many, one }) => ({
   }),
 }));
 
-export const employeeSpousesRelations = relations(employeeSpouses, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeSpouses.employeeId],
-    references: [employees.id],
+export const employeeSpousesRelations = relations(
+  employeeSpouses,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeSpouses.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeChildrenRelations = relations(employeeChildren, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeChildren.employeeId],
-    references: [employees.id],
+export const employeeChildrenRelations = relations(
+  employeeChildren,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeChildren.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeNomineesRelations = relations(employeeNominees, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeNominees.employeeId],
-    references: [employees.id],
+export const employeeNomineesRelations = relations(
+  employeeNominees,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeNominees.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeBankDetailsRelations = relations(employeeBankDetails, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeBankDetails.employeeId],
-    references: [employees.id],
+export const employeeBankDetailsRelations = relations(
+  employeeBankDetails,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeBankDetails.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeDocumentsRelations = relations(employeeDocuments, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeDocuments.employeeId],
-    references: [employees.id],
+export const employeeDocumentsRelations = relations(
+  employeeDocuments,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeDocuments.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);

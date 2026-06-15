@@ -9,7 +9,13 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiConsumes, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiConsumes,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumberString } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
 import { CloudinaryService, UploadResult } from './cloudinary.service';
@@ -68,11 +74,15 @@ export class UploadController {
     });
 
     if (!file) {
-      throw new BadRequestException('No file provided. Send a file in the "file" field.');
+      throw new BadRequestException(
+        'No file provided. Send a file in the "file" field.',
+      );
     }
 
     const buffer = await file.toBuffer();
-    const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
+    const tags = query.tags
+      ? query.tags.split(',').map((t) => t.trim())
+      : undefined;
 
     const result = await this.cloudinary.uploadBuffer(buffer, file.mimetype, {
       folder: query.folder,
@@ -80,7 +90,9 @@ export class UploadController {
       publicId: query.publicId,
     });
 
-    this.logger.log(`Uploaded: ${result.publicId} (${result.format}, ${result.bytes} bytes)`);
+    this.logger.log(
+      `Uploaded: ${result.publicId} (${result.format}, ${result.bytes} bytes)`,
+    );
     return result;
   }
 
@@ -98,7 +110,9 @@ export class UploadController {
     });
 
     const results: UploadResult[] = [];
-    const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
+    const tags = query.tags
+      ? query.tags.split(',').map((t) => t.trim())
+      : undefined;
     let count = 0;
 
     for await (const part of parts) {
@@ -140,7 +154,9 @@ export class UploadController {
     // SSRF protection: only allow https and block private IPs
     this.validateUrl(url);
 
-    const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
+    const tags = query.tags
+      ? query.tags.split(',').map((t) => t.trim())
+      : undefined;
 
     const result = await this.cloudinary.uploadUrl(url, {
       folder: query.folder,
@@ -169,11 +185,16 @@ export class UploadController {
 
   @Delete()
   @ApiOperation({ summary: 'Delete all files matching a prefix' })
-  async deleteByPrefix(@Query() query: DeleteByPrefixQueryDto): Promise<{ deleted: number }> {
+  async deleteByPrefix(
+    @Query() query: DeleteByPrefixQueryDto,
+  ): Promise<{ deleted: number }> {
     if (!query.prefix) {
       throw new BadRequestException('prefix query parameter is required');
     }
-    const deleted = await this.cloudinary.deleteByPrefix(query.prefix, query.resourceType);
+    const deleted = await this.cloudinary.deleteByPrefix(
+      query.prefix,
+      query.resourceType,
+    );
     return { deleted };
   }
 
@@ -204,7 +225,9 @@ export class UploadController {
   // ── Generate signed URL ────────────────────────────────────────────────────
 
   @Get(':publicId/signed-url')
-  @ApiOperation({ summary: 'Generate a time-limited signed URL for a private resource' })
+  @ApiOperation({
+    summary: 'Generate a time-limited signed URL for a private resource',
+  })
   async getSignedUrl(
     @Param('publicId') publicId: string,
     @Query('expiresIn') expiresIn?: number,
@@ -245,7 +268,9 @@ export class UploadController {
 
     for (const pattern of blockedPatterns) {
       if (pattern.test(hostname)) {
-        throw new BadRequestException('URLs pointing to private or reserved addresses are not allowed');
+        throw new BadRequestException(
+          'URLs pointing to private or reserved addresses are not allowed',
+        );
       }
     }
   }

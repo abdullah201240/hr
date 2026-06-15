@@ -35,7 +35,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(LoginThrottleGuard)
   @ApiOperation({ summary: 'Login with email and password' })
-  @ApiResponse({ status: 200, description: 'Login successful, tokens returned' })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful, tokens returned',
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
@@ -85,7 +88,10 @@ export class AuthController {
   @Patch('change-password')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change password (invalidates all sessions)' })
-  @ApiResponse({ status: 200, description: 'Password changed, all sessions invalidated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed, all sessions invalidated',
+  })
   @ApiResponse({ status: 400, description: 'Current password is incorrect' })
   async changePassword(
     @Req() req: FastifyRequest & { user: { id: string } },

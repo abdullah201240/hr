@@ -1,4 +1,11 @@
-import { Controller, Get, Inject, HttpCode, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Inject,
+  HttpCode,
+  HttpStatus,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { sql } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';

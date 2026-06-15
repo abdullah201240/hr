@@ -37,7 +37,10 @@ export class EmployeeController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Create a new employee (queued)' })
   @ApiResponse({ status: 202, description: 'Employee creation job enqueued' })
-  @ApiResponse({ status: 409, description: 'Employee ID or email already exists' })
+  @ApiResponse({
+    status: 409,
+    description: 'Employee ID or email already exists',
+  })
   async create(@Body() dto: CreateEmployeeDto) {
     return this.employeeService.createAsync(dto);
   }

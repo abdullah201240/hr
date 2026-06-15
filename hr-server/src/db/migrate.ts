@@ -15,7 +15,7 @@ export async function runDatabaseMigrations() {
   }
 
   logger.log('Starting programmatic database migrations check...');
-  
+
   // Single-use client for migration execution
   const migrationClient = postgres(connectionString, { max: 1 });
   const db = drizzle(migrationClient);

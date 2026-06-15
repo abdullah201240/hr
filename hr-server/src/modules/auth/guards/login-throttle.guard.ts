@@ -50,7 +50,9 @@ export class LoginThrottleGuard implements CanActivate {
       if (error instanceof HttpException) throw error;
 
       // If Redis is down, allow the request (fail open)
-      this.logger.warn('Login throttle guard: Redis unavailable, allowing request');
+      this.logger.warn(
+        'Login throttle guard: Redis unavailable, allowing request',
+      );
       return true;
     }
   }

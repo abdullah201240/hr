@@ -21,8 +21,13 @@ describe('Upload Module (e2e)', () => {
   afterAll(async () => {
     if (uploadedPublicId) {
       try {
-        await authDelete(ctx, `/upload/${encodeURIComponent(uploadedPublicId)}`);
-      } catch { /* ignore */ }
+        await authDelete(
+          ctx,
+          `/upload/${encodeURIComponent(uploadedPublicId)}`,
+        );
+      } catch {
+        /* ignore */
+      }
     }
     await teardownApp(ctx);
   });
@@ -33,7 +38,9 @@ describe('Upload Module (e2e)', () => {
       const blob = new Blob(['Hello E2E Test'], { type: 'text/plain' });
       formData.append('file', blob, 'test.txt');
 
-      const res = await authUpload(ctx, '/upload', formData, { folder: 'hr-test/e2e' });
+      const res = await authUpload(ctx, '/upload', formData, {
+        folder: 'hr-test/e2e',
+      });
 
       // Cloudinary may reject text/plain
       expect([200, 201, 400, 500]).toContain(res.status);
@@ -149,7 +156,10 @@ describe('Upload Module (e2e)', () => {
 
   describe('GET /upload/:publicId (resource info)', () => {
     it('should return 404 or error for non-existent resource', async () => {
-      const res = await authGet(ctx, `/upload/${encodeURIComponent('non-existent-resource-id')}`);
+      const res = await authGet(
+        ctx,
+        `/upload/${encodeURIComponent('non-existent-resource-id')}`,
+      );
       expect([404, 400, 500]).toContain(res.status);
     });
   });
@@ -166,7 +176,10 @@ describe('Upload Module (e2e)', () => {
 
   describe('DELETE /upload/:publicId', () => {
     it('should handle deletion of non-existent file gracefully', async () => {
-      const res = await authDelete(ctx, `/upload/${encodeURIComponent('non-existent-id')}`);
+      const res = await authDelete(
+        ctx,
+        `/upload/${encodeURIComponent('non-existent-id')}`,
+      );
       expect([200, 404]).toContain(res.status);
     });
   });

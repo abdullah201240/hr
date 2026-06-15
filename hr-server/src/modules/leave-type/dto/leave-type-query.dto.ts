@@ -9,7 +9,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-export class DepartmentQueryDto {
+export class LeaveTypeQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @Type(() => Number)
@@ -25,7 +25,7 @@ export class DepartmentQueryDto {
   @Max(100)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ description: 'Search by name or code' })
+  @ApiPropertyOptional({ description: 'Search by name' })
   @IsOptional()
   @IsString()
   search?: string;
@@ -36,7 +36,7 @@ export class DepartmentQueryDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ enum: ['name', 'code', 'createdAt'], default: 'name' })
+  @ApiPropertyOptional({ enum: ['name', 'days', 'createdAt'], default: 'name' })
   @IsOptional()
   @IsString()
   sortBy?: string = 'name';

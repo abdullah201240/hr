@@ -27,7 +27,10 @@ export default registerAs<CloudinaryConfig>('cloudinary', () => {
     apiKey,
     apiSecret,
     secure: process.env.CLOUDINARY_SECURE !== 'false',
-    maxFileSize: parseInt(process.env.CLOUDINARY_MAX_FILE_SIZE || '10485760', 10), // 10 MB
+    maxFileSize: parseInt(
+      process.env.CLOUDINARY_MAX_FILE_SIZE || '10485760',
+      10,
+    ), // 10 MB
     defaultFolder: process.env.CLOUDINARY_DEFAULT_FOLDER || 'hr-system',
   };
 });

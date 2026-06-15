@@ -25,7 +25,9 @@ describe('Employees Module (e2e)', () => {
     expect(deptRes.status).toBe(200);
     const activeDepts = deptRes.body.data;
     if (activeDepts.length === 0) {
-      throw new Error('No active departments — create one before running employee tests');
+      throw new Error(
+        'No active departments — create one before running employee tests',
+      );
     }
     departmentId = activeDepts[0].id;
 
@@ -33,7 +35,9 @@ describe('Employees Module (e2e)', () => {
     expect(desigRes.status).toBe(200);
     const activeDesigs = desigRes.body.data;
     if (activeDesigs.length === 0) {
-      throw new Error('No active designations — create one before running employee tests');
+      throw new Error(
+        'No active designations — create one before running employee tests',
+      );
     }
     designationId = activeDesigs[0].id;
   });
@@ -189,7 +193,10 @@ describe('Employees Module (e2e)', () => {
     });
 
     it('should sort by joinDate ascending', async () => {
-      const res = await authGet(ctx, '/employees?sortBy=joinDate&sortOrder=asc');
+      const res = await authGet(
+        ctx,
+        '/employees?sortBy=joinDate&sortOrder=asc',
+      );
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data.data)).toBe(true);
     });
@@ -218,7 +225,10 @@ describe('Employees Module (e2e)', () => {
     });
 
     it('should return 404 for non-existent ID', async () => {
-      const res = await authGet(ctx, '/employees/00000000-0000-0000-0000-000000000000');
+      const res = await authGet(
+        ctx,
+        '/employees/00000000-0000-0000-0000-000000000000',
+      );
       expect(res.status).toBe(404);
     });
 
@@ -246,9 +256,13 @@ describe('Employees Module (e2e)', () => {
     });
 
     it('should return 404 for non-existent employee update', async () => {
-      const res = await authPatch(ctx, '/employees/00000000-0000-0000-0000-000000000000', {
-        fullNameEnglish: 'Ghost',
-      });
+      const res = await authPatch(
+        ctx,
+        '/employees/00000000-0000-0000-0000-000000000000',
+        {
+          fullNameEnglish: 'Ghost',
+        },
+      );
       expect(res.status).toBe(404);
     });
   });
@@ -286,7 +300,10 @@ describe('Employees Module (e2e)', () => {
     });
 
     it('should return not-found for invalid job ID', async () => {
-      const res = await authGet(ctx, '/employees/jobs/non-existent-id?queue=create');
+      const res = await authGet(
+        ctx,
+        '/employees/jobs/non-existent-id?queue=create',
+      );
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveProperty('status', 'not-found');
     });
@@ -294,7 +311,10 @@ describe('Employees Module (e2e)', () => {
 
   describe('DELETE /employees/:id (soft delete)', () => {
     it('should return 404 for non-existent employee', async () => {
-      const res = await authDelete(ctx, '/employees/00000000-0000-0000-0000-000000000000');
+      const res = await authDelete(
+        ctx,
+        '/employees/00000000-0000-0000-0000-000000000000',
+      );
       expect(res.status).toBe(404);
     });
 

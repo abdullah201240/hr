@@ -69,10 +69,15 @@ export class AuthService {
     }
 
     if (user.status !== 'active') {
-      throw new UnauthorizedException('Account is not active. Contact your administrator.');
+      throw new UnauthorizedException(
+        'Account is not active. Contact your administrator.',
+      );
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -115,7 +120,9 @@ export class AuthService {
       });
     } catch (error: any) {
       if (error.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Refresh token has expired. Please login again.');
+        throw new UnauthorizedException(
+          'Refresh token has expired. Please login again.',
+        );
       }
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -163,10 +170,13 @@ export class AuthService {
 
   // ─── Logout ─────────────────────────────────────────────────────────────
 
-  async logout(accessToken: string, refreshToken?: string): Promise<{ message: string }> {
+  async logout(
+    accessToken: string,
+    refreshToken?: string,
+  ): Promise<{ message: string }> {
     try {
       // Decode access token (don't verify — it might be expired but we still want to blacklist)
-      const accessPayload = this.jwtService.decode(accessToken) as any;
+      const accessPayload = this.jwtService.decode(accessToken);
       if (accessPayload?.jti) {
         const ttl = accessPayload.exp - Math.floor(Date.now() / 1000);
         if (ttl > 0) {
@@ -240,7 +250,10 @@ export class AuthService {
     dto: ChangePasswordDto,
   ): Promise<{ message: string }> {
     const [user] = await this.db
-      .select({ passwordHash: employees.passwordHash, refreshTokenVersion: employees.refreshTokenVersion })
+      .select({
+        passwordHash: employees.passwordHash,
+        refreshTokenVersion: employees.refreshTokenVersion,
+      })
       .from(employees)
       .where(eq(employees.id, userId))
       .limit(1);
@@ -249,7 +262,10 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const isValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    const isValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
     if (!isValid) {
       throw new BadRequestException('Current password is incorrect');
     }
@@ -266,7 +282,10 @@ export class AuthService {
       .where(eq(employees.id, userId));
 
     this.logger.log(`Password changed for user: ${userId}`);
-    return { message: 'Password changed successfully. All sessions have been invalidated.' };
+    return {
+      message:
+        'Password changed successfully. All sessions have been invalidated.',
+    };
   }
 
   // ─── Token Generation ───────────────────────────────────────────────────
@@ -277,8 +296,14 @@ export class AuthService {
     role: string,
     version: number,
   ): Promise<TokenPair> {
-    const accessExpiry = this.configService.get<string>('jwt.accessTokenExpiry', '15m') as any;
-    const refreshExpiry = this.configService.get<string>('jwt.refreshTokenExpiry', '7d') as any;
+    const accessExpiry = this.configService.get<string>(
+      'jwt.accessTokenExpiry',
+      '15m',
+    ) as any;
+    const refreshExpiry = this.configService.get<string>(
+      'jwt.refreshTokenExpiry',
+      '7d',
+    ) as any;
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -291,7 +316,7 @@ export class AuthService {
         },
         {
           secret: this.configService.get<string>('jwt.accessTokenSecret')!,
-          expiresIn: accessExpiry as any,
+          expiresIn: accessExpiry,
         },
       ),
       this.jwtService.signAsync(
@@ -304,7 +329,7 @@ export class AuthService {
         },
         {
           secret: this.configService.get<string>('jwt.refreshTokenSecret')!,
-          expiresIn: refreshExpiry as any,
+          expiresIn: refreshExpiry,
         },
       ),
     ]);

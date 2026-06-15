@@ -11,7 +11,10 @@ import { DB_CONNECTION, type Database } from '../../db';
 import { designations, employees } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
-import type { CreateDesignationDto, UpdateDesignationDto } from './dto/create-designation.dto';
+import type {
+  CreateDesignationDto,
+  UpdateDesignationDto,
+} from './dto/create-designation.dto';
 import type { DesignationQueryDto } from './dto/designation-query.dto';
 
 @Injectable()
@@ -32,10 +35,7 @@ export class DesignationService {
         .select({ id: designations.id })
         .from(designations)
         .where(
-          or(
-            eq(designations.name, dto.name),
-            eq(designations.code, dto.code),
-          ),
+          or(eq(designations.name, dto.name), eq(designations.code, dto.code)),
         )
         .limit(1);
 
@@ -57,8 +57,10 @@ export class DesignationService {
 
       await this.invalidateListCache();
 
-      this.logger.log(`Designation created: ${designation!.name} (${designation!.code})`);
-      return designation!;
+      this.logger.log(
+        `Designation created: ${designation.name} (${designation.code})`,
+      );
+      return designation;
     });
   }
 
@@ -194,7 +196,7 @@ export class DesignationService {
           )
           .limit(1);
 
-        if (conflict.length > 0 && conflict[0]!.id !== id) {
+        if (conflict.length > 0 && conflict[0].id !== id) {
           throw new ConflictException(
             `Another designation already uses this name or code`,
           );
@@ -205,7 +207,8 @@ export class DesignationService {
 
       if (dto.name !== undefined) updateData.name = dto.name;
       if (dto.code !== undefined) updateData.code = dto.code;
-      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.description !== undefined)
+        updateData.description = dto.description;
       if (dto.grade !== undefined) updateData.grade = dto.grade;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
@@ -217,8 +220,8 @@ export class DesignationService {
 
       await this.invalidateListCache();
 
-      this.logger.log(`Designation updated: ${updated!.name} (${updated!.code})`);
-      return updated!;
+      this.logger.log(`Designation updated: ${updated.name} (${updated.code})`);
+      return updated;
     });
   }
 
@@ -248,7 +251,7 @@ export class DesignationService {
 
     if ((empCount?.count ?? 0) > 0) {
       throw new BadRequestException(
-        `Cannot deactivate designation "${existing.name}": ${empCount!.count} active employee(s) hold it. Reassign them first.`,
+        `Cannot deactivate designation "${existing.name}": ${empCount.count} active employee(s) hold it. Reassign them first.`,
       );
     }
 

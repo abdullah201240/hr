@@ -82,7 +82,10 @@ export class CacheService {
   /**
    * Delete by CacheKeyDefinition + dynamic parts.
    */
-  async delByKey(definition: CacheKeyDefinition, ...parts: string[]): Promise<void> {
+  async delByKey(
+    definition: CacheKeyDefinition,
+    ...parts: string[]
+  ): Promise<void> {
     return this.del(resolveKey(definition, ...parts));
   }
 

@@ -6,7 +6,10 @@
  */
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import helmet from '@fastify/helmet';
@@ -128,10 +131,7 @@ async function loginAsAdmin(
 // ── Fetch-based request helpers ───────────────────────────────────────────
 
 /** Internal: perform a fetch and parse JSON body */
-async function doFetch(
-  url: string,
-  init?: RequestInit,
-): Promise<TestResponse> {
+async function doFetch(url: string, init?: RequestInit): Promise<TestResponse> {
   const res = await fetch(url, init);
   let body: any;
   const contentType = res.headers.get('content-type') || '';
@@ -152,12 +152,19 @@ function authHeaders(ctx: TestContext): Record<string, string> {
 }
 
 /** Authenticated GET */
-export async function authGet(ctx: TestContext, path: string): Promise<TestResponse> {
+export async function authGet(
+  ctx: TestContext,
+  path: string,
+): Promise<TestResponse> {
   return doFetch(url(ctx, path), { headers: authHeaders(ctx) });
 }
 
 /** Authenticated POST */
-export async function authPost(ctx: TestContext, path: string, body?: any): Promise<TestResponse> {
+export async function authPost(
+  ctx: TestContext,
+  path: string,
+  body?: any,
+): Promise<TestResponse> {
   return doFetch(url(ctx, path), {
     method: 'POST',
     headers: { ...authHeaders(ctx), 'Content-Type': 'application/json' },
@@ -166,7 +173,11 @@ export async function authPost(ctx: TestContext, path: string, body?: any): Prom
 }
 
 /** Authenticated PATCH */
-export async function authPatch(ctx: TestContext, path: string, body?: any): Promise<TestResponse> {
+export async function authPatch(
+  ctx: TestContext,
+  path: string,
+  body?: any,
+): Promise<TestResponse> {
   return doFetch(url(ctx, path), {
     method: 'PATCH',
     headers: { ...authHeaders(ctx), 'Content-Type': 'application/json' },
@@ -175,7 +186,10 @@ export async function authPatch(ctx: TestContext, path: string, body?: any): Pro
 }
 
 /** Authenticated DELETE */
-export async function authDelete(ctx: TestContext, path: string): Promise<TestResponse> {
+export async function authDelete(
+  ctx: TestContext,
+  path: string,
+): Promise<TestResponse> {
   return doFetch(url(ctx, path), {
     method: 'DELETE',
     headers: authHeaders(ctx),
@@ -183,12 +197,19 @@ export async function authDelete(ctx: TestContext, path: string): Promise<TestRe
 }
 
 /** Unauthenticated GET */
-export async function publicGet(ctx: TestContext, path: string): Promise<TestResponse> {
+export async function publicGet(
+  ctx: TestContext,
+  path: string,
+): Promise<TestResponse> {
   return doFetch(url(ctx, path));
 }
 
 /** Unauthenticated POST */
-export async function publicPost(ctx: TestContext, path: string, body?: any): Promise<TestResponse> {
+export async function publicPost(
+  ctx: TestContext,
+  path: string,
+  body?: any,
+): Promise<TestResponse> {
   return doFetch(url(ctx, path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -248,7 +269,9 @@ async function clearRateLimitKeys(): Promise<void> {
 export async function teardownApp(ctx: TestContext | undefined): Promise<void> {
   if (!ctx?.app) return;
   try {
-    await authPost(ctx, '/auth/logout', { refreshToken: ctx.tokens.refreshToken });
+    await authPost(ctx, '/auth/logout', {
+      refreshToken: ctx.tokens.refreshToken,
+    });
   } catch {
     // non-critical
   }

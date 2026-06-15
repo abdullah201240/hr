@@ -20,7 +20,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { DepartmentService } from './department.service';
-import { CreateDepartmentDto, UpdateDepartmentDto } from './dto/create-department.dto';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dto/create-department.dto';
 import { DepartmentQueryDto } from './dto/department-query.dto';
 import { Roles } from '../auth/guards/roles.decorator';
 
@@ -55,7 +58,10 @@ export class DepartmentController {
   @Get('options')
   @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active departments as dropdown options' })
-  @ApiResponse({ status: 200, description: 'Department options for select inputs' })
+  @ApiResponse({
+    status: 200,
+    description: 'Department options for select inputs',
+  })
   async getOptions() {
     return this.departmentService.getDropdownOptions();
   }

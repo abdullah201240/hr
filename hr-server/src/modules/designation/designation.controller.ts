@@ -20,7 +20,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { DesignationService } from './designation.service';
-import { CreateDesignationDto, UpdateDesignationDto } from './dto/create-designation.dto';
+import {
+  CreateDesignationDto,
+  UpdateDesignationDto,
+} from './dto/create-designation.dto';
 import { DesignationQueryDto } from './dto/designation-query.dto';
 import { Roles } from '../auth/guards/roles.decorator';
 
@@ -56,7 +59,10 @@ export class DesignationController {
   @Get('options')
   @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active designations as dropdown options' })
-  @ApiResponse({ status: 200, description: 'Designation options for select inputs' })
+  @ApiResponse({
+    status: 200,
+    description: 'Designation options for select inputs',
+  })
   async getOptions() {
     return this.designationService.getDropdownOptions();
   }
@@ -96,7 +102,10 @@ export class DesignationController {
   @ApiOperation({ summary: 'Deactivate a designation (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Designation deactivated' })
-  @ApiResponse({ status: 400, description: 'Active employees still hold this designation' })
+  @ApiResponse({
+    status: 400,
+    description: 'Active employees still hold this designation',
+  })
   @ApiResponse({ status: 404, description: 'Designation not found' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.designationService.remove(id);

@@ -53,10 +53,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // 2. Check cache for validated user (avoids DB hit on every request)
-    const cached = await this.cache.getByKey<JwtUser & { ver: number; status: string }>(
-      CacheKeys.jwtValidate,
-      payload.sub,
-    );
+    const cached = await this.cache.getByKey<
+      JwtUser & { ver: number; status: string }
+    >(CacheKeys.jwtValidate, payload.sub);
 
     if (cached) {
       // Verify version from cache

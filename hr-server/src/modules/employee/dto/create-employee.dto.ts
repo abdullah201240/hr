@@ -294,7 +294,10 @@ export class CreateEmployeeDto {
   @IsUUID()
   departmentId!: string;
 
-  @ApiProperty({ example: 'Full-time', enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'] })
+  @ApiProperty({
+    example: 'Full-time',
+    enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'],
+  })
   @IsString()
   @IsNotEmpty()
   employeeType!: string;

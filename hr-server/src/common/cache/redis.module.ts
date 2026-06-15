@@ -1,4 +1,10 @@
-import { Module, Global, Logger, OnModuleDestroy, Inject } from '@nestjs/common';
+import {
+  Module,
+  Global,
+  Logger,
+  OnModuleDestroy,
+  Inject,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { REDIS_CLIENT, CacheService } from './cache.service';
@@ -16,7 +22,9 @@ import { REDIS_CLIENT, CacheService } from './cache.service';
           maxRetriesPerRequest: 3,
           retryStrategy(times) {
             if (times > 10) {
-              logger.warn('Redis: max reconnection attempts reached, giving up');
+              logger.warn(
+                'Redis: max reconnection attempts reached, giving up',
+              );
               return null;
             }
             return Math.min(times * 200, 2000);
@@ -29,7 +37,9 @@ import { REDIS_CLIENT, CacheService } from './cache.service';
 
         // Non-blocking connect
         redis.connect().catch((err) => {
-          logger.warn(`Redis initial connection failed: ${err.message}. Will retry in background.`);
+          logger.warn(
+            `Redis initial connection failed: ${err.message}. Will retry in background.`,
+          );
         });
 
         return redis;

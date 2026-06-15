@@ -17,6 +17,7 @@ import { EmployeeModule } from './modules/employee/employee.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { DesignationModule } from './modules/designation/designation.module';
+import { LeaveTypeModule } from './modules/leave-type/leave-type.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -24,7 +25,14 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig, cloudinaryConfig, jwtConfig, bullmqConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        redisConfig,
+        cloudinaryConfig,
+        jwtConfig,
+        bullmqConfig,
+      ],
       envFilePath: '.env',
     }),
     LoggerModule.forRoot({
@@ -46,6 +54,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     AuthModule,
     DepartmentModule,
     DesignationModule,
+    LeaveTypeModule,
   ],
   providers: [
     {

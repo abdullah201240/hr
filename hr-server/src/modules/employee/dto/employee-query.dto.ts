@@ -38,12 +38,16 @@ export class EmployeeQueryDto {
   @IsString()
   status?: string;
 
-  @ApiPropertyOptional({ enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'] })
+  @ApiPropertyOptional({
+    enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'],
+  })
   @IsOptional()
   @IsString()
   employeeType?: string;
 
-  @ApiPropertyOptional({ enum: ['joinDate', 'fullNameEnglish', 'employeeId', 'createdAt'] })
+  @ApiPropertyOptional({
+    enum: ['joinDate', 'fullNameEnglish', 'employeeId', 'createdAt'],
+  })
   @IsOptional()
   @IsString()
   sortBy?: string = 'createdAt';
