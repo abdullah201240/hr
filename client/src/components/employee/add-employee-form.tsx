@@ -401,6 +401,7 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
                 nidPdfName={nidPdfName}
                 setNidPdfName={setNidPdfName}
                 isView={isView}
+                isEdit={isEdit}
               />
             )}
             {activeTab === "family" && <FamilyInfoStep isView={isView} />}

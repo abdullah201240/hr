@@ -44,6 +44,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           message = 'Validation failed';
         }
       }
+    } else if (exception && typeof exception === 'object') {
+      const exc = exception as any;
+      if (typeof exc.statusCode === 'number') {
+        status = exc.statusCode;
+        message = exc.message || message;
+      } else if (typeof exc.status === 'number') {
+        status = exc.status;
+        message = exc.message || message;
+      }
     }
 
     if (status >= 500) {

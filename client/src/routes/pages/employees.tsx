@@ -25,7 +25,10 @@ import {
   Phone,
   Calendar,
   IdCard,
-  UserCheck,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  FilterX,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -35,33 +38,69 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import Swal from "sweetalert2"
 import { cn } from "@/lib/utils"
-
-const initialEmployees = [
-  { employeeId: "EMP-001", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", phone: "+880 1711-234567", role: "Senior Engineer", dept: "Engineering", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B+", joinDate: "2023-03-15", dateOfBirth: "1992-07-22", lineManager: "James Cooper", initials: "SM" },
-  { employeeId: "EMP-002", name: "James Cooper", email: "james.c@sadoshima.com", phone: "+880 1722-345678", role: "Product Manager", dept: "Product", status: "Active", employeeType: "Permanent", gender: "Male", bloodGroup: "A+", joinDate: "2022-08-01", dateOfBirth: "1990-01-10", lineManager: "", initials: "JC" },
-  { employeeId: "EMP-003", name: "Emily Zhang", email: "emily.z@sadoshima.com", phone: "+880 1733-456789", role: "HR Specialist", dept: "HR", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "O+", joinDate: "2024-01-10", dateOfBirth: "1995-11-05", lineManager: "Lisa Johnson", initials: "EZ" },
-  { employeeId: "EMP-004", name: "David Kim", email: "david.k@sadoshima.com", phone: "+880 1744-567890", role: "Finance Analyst", dept: "Finance", status: "On Leave", employeeType: "Contractual", gender: "Male", bloodGroup: "AB+", joinDate: "2023-06-20", dateOfBirth: "1988-04-18", lineManager: "James Cooper", initials: "DK" },
-  { employeeId: "EMP-005", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", phone: "+880 1755-678901", role: "Marketing Lead", dept: "Marketing", status: "Active", employeeType: "Permanent", gender: "Female", bloodGroup: "B-", joinDate: "2021-11-05", dateOfBirth: "1993-09-30", lineManager: "", initials: "LJ" },
-  { employeeId: "EMP-006", name: "Marcus Brown", email: "marcus.b@sadoshima.com", phone: "+880 1766-789012", role: "Sales Rep", dept: "Sales", status: "Active", employeeType: "Probation", gender: "Male", bloodGroup: "A-", joinDate: "2025-02-01", dateOfBirth: "1997-06-14", lineManager: "Lisa Johnson", initials: "MB" },
-]
+import { useEmployeesQuery, useDeleteEmployeeMutation } from "@/hooks/useEmployees"
+import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
+import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
+import { toast } from "sonner"
 
 export default function EmployeesPage() {
   const navigate = useNavigate()
-  const [employees, setEmployees] = useState<any[]>(() => {
-    const stored = localStorage.getItem("employees_list")
-    return stored ? JSON.parse(stored) : initialEmployees
-  })
-  const [searchTerm, setSearchTerm] = useState("")
 
-  const handleDelete = (email: string) => {
+  // Filter and pagination states
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
+  const [search, setSearch] = useState("")
+  const [departmentId, setDepartmentId] = useState<string>("all")
+  const [designationId, setDesignationId] = useState<string>("all")
+  const [status, setStatus] = useState<string>("active")
+  const [employeeType, setEmployeeType] = useState<string>("all")
+  const [sortBy, setSortBy] = useState<string>("createdAt")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
+  // API Hooks
+  const { data: deptOptions } = useDepartmentOptionsQuery()
+  const { data: desigOptions } = useDesignationOptionsQuery()
+
+  const { data, isLoading, isError, error } = useEmployeesQuery({
+    page,
+    limit,
+    search: search || undefined,
+    departmentId: departmentId === "all" ? undefined : departmentId,
+    designationId: designationId === "all" ? undefined : designationId,
+    status: status === "all" ? undefined : status,
+    employeeType: employeeType === "all" ? undefined : employeeType,
+    sortBy,
+    sortOrder,
+  })
+
+  const deleteMutation = useDeleteEmployeeMutation()
+
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortBy(field)
+      setSortOrder("desc")
+    }
+    setPage(1)
+  }
+
+  const handleDelete = (id: string, name: string) => {
     Swal.fire({
       title: "Are you sure?",
-      text: "This employee profile will be permanently deleted.",
+      text: `Are you sure you want to terminate ${name}?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete it",
+      confirmButtonText: "Yes, terminate",
       cancelButtonText: "Cancel",
       buttonsStyling: false,
       customClass: {
@@ -70,41 +109,42 @@ export default function EmployeesPage() {
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        const updated = employees.filter((emp: any) => emp.email !== email)
-        setEmployees(updated)
-        localStorage.setItem("employees_list", JSON.stringify(updated))
-        
-        Swal.fire({
-          title: "Deleted!",
-          text: "Employee profile has been deleted.",
-          icon: "success",
-          confirmButtonText: "Done",
-          buttonsStyling: false,
-          customClass: {
-            confirmButton: "swal2-confirm swal2-styled"
+        deleteMutation.mutate(id, {
+          onSuccess: () => {
+            toast.success("Employee terminated successfully")
+          },
+          onError: (err: any) => {
+            toast.error(err.message || "Failed to terminate employee")
           }
         })
       }
     })
   }
 
-  const filteredEmployees = employees.filter((emp: any) => {
-    const term = searchTerm.toLowerCase()
-    return (
-      (emp.name || "").toLowerCase().includes(term) ||
-      (emp.email || "").toLowerCase().includes(term) ||
-      (emp.role || "").toLowerCase().includes(term) ||
-      (emp.dept || "").toLowerCase().includes(term) ||
-      (emp.employeeId || "").toLowerCase().includes(term) ||
-      (emp.phone || "").toLowerCase().includes(term)
-    )
-  })
+  const resetFilters = () => {
+    setSearch("")
+    setDepartmentId("all")
+    setDesignationId("all")
+    setStatus("active")
+    setEmployeeType("all")
+    setPage(1)
+  }
 
-  // KPI calculations
-  const totalEmployees = employees.length
-  const activeEmployees = employees.filter((emp: any) => emp.status === "Active").length
-  const onLeaveEmployees = employees.filter((emp: any) => emp.status === "On Leave").length
-  const totalDepartments = new Set(employees.map((emp: any) => emp.dept)).size
+  // Get data fields
+  const employeesList = data?.data || []
+  const meta = data?.meta || { total: 0, page: 1, limit: 20, totalPages: 1 }
+
+  // Initials generator
+  const getInitials = (name: string) => {
+    return name
+      ? name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
+      : "EM"
+  }
 
   return (
     <div className="space-y-8">
@@ -120,12 +160,12 @@ export default function EmployeesPage() {
         </Button>
       </div>
 
-      {/* KPI Cards section (Subtle styling, strictly borderless and shadowless) */}
+      {/* KPI Cards section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Workforce</span>
-            <p className="text-3xl font-bold tracking-tight">{totalEmployees}</p>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Active</span>
+            <p className="text-3xl font-bold tracking-tight">{status === "active" ? meta.total : "—"}</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
             <Users className="h-5 w-5" />
@@ -134,8 +174,8 @@ export default function EmployeesPage() {
 
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Members</span>
-            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">{activeEmployees}</p>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Workforce Filters</span>
+            <p className="text-sm font-medium text-muted-foreground mt-2">Showing page {meta.page} of {meta.totalPages}</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
             <CheckCircle className="h-5 w-5" />
@@ -144,102 +184,253 @@ export default function EmployeesPage() {
 
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">On Leave</span>
-            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{onLeaveEmployees}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-            <Clock className="h-5 w-5" />
-          </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
-          <div className="space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Departments</span>
-            <p className="text-3xl font-bold tracking-tight">{totalDepartments}</p>
+            <p className="text-3xl font-bold tracking-tight">{deptOptions?.length || 0}</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
             <Building2 className="h-5 w-5" />
           </div>
         </div>
+
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Designations</span>
+            <p className="text-3xl font-bold tracking-tight">{desigOptions?.length || 0}</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <Clock className="h-5 w-5" />
+          </div>
+        </div>
       </div>
 
+      {/* Search and Filters Controls */}
       <div className="space-y-4">
-        {/* Search controls directly in flow without Card container */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="relative flex-1 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+          <div className="relative lg:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name, ID, email, department, or phone..."
+              placeholder="Search by name, ID, or email..."
               className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
             />
           </div>
+
+          <Select
+            value={departmentId}
+            onValueChange={(val) => {
+              setDepartmentId(val)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="bg-transparent border-border/60">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {deptOptions?.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={designationId}
+            onValueChange={(val) => {
+              setDesignationId(val)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="bg-transparent border-border/60">
+              <SelectValue placeholder="Designation" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Designations</SelectItem>
+              {desigOptions?.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={employeeType}
+            onValueChange={(val) => {
+              setEmployeeType(val)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="bg-transparent border-border/60">
+              <SelectValue placeholder="Job Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Full-time">Full-time</SelectItem>
+              <SelectItem value="Part-time">Part-time</SelectItem>
+              <SelectItem value="Contract">Contract</SelectItem>
+              <SelectItem value="Probation">Probation</SelectItem>
+              <SelectItem value="Intern">Intern</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={status}
+            onValueChange={(val) => {
+              setStatus(val)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="bg-transparent border-border/60">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="terminated">Terminated</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-xs">Show</span>
+            <Select
+              value={String(limit)}
+              onValueChange={(val) => {
+                setLimit(Number(val))
+                setPage(1)
+              }}
+            >
+              <SelectTrigger className="w-18 h-8 bg-transparent border-border/60 text-xs">
+                <SelectValue placeholder={String(limit)} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground text-xs">entries</span>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetFilters}
+            className="text-xs gap-1.5 h-8 hover:bg-muted text-muted-foreground"
+          >
+            <FilterX className="h-3.5 w-3.5" />
+            Reset Filters
+          </Button>
         </div>
 
         {/* Clean, borderless, shadowless Table Container */}
-        <div className="w-full overflow-x-auto bg-transparent">
+        <div className="w-full overflow-x-auto bg-transparent border border-border/30 rounded-2xl">
           <Table>
             <TableHeader className="bg-muted/10 border-b border-border/30">
               <TableRow className="border-b-0 hover:bg-transparent">
-                <TableHead className="w-24 font-semibold text-xs text-muted-foreground">ID</TableHead>
-                <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                <TableHead className="w-28 font-semibold text-xs text-muted-foreground">
+                  <button
+                    onClick={() => handleSort("employeeId")}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    ID <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">
+                  <button
+                    onClick={() => handleSort("fullNameEnglish")}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Employee <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Designation</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Line Manager</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Phone</TableHead>
-                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Join Date</TableHead>
+                <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">
+                  <button
+                    onClick={() => handleSort("joinDate")}
+                    className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  >
+                    Join Date <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Type</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Gender</TableHead>
-                <TableHead className="hidden xl:table-cell font-semibold text-xs text-muted-foreground">Blood</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
                 <TableHead className="w-12 font-semibold text-xs text-muted-foreground" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEmployees.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="h-24 text-center border-b-0">
-                    <p className="text-sm text-muted-foreground">No employees found matching &quot;{searchTerm}&quot;.</p>
+                  <TableCell colSpan={10} className="h-48 text-center border-b-0">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <p className="text-xs text-muted-foreground">Loading employees...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-48 text-center border-b-0">
+                    <p className="text-sm text-destructive font-medium">
+                      Error loading records: {error.message}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : employeesList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="h-32 text-center border-b-0">
+                    <p className="text-sm text-muted-foreground">No employees found matching query.</p>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredEmployees.map((emp: any) => (
-                  <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                employeesList.map((emp) => (
+                  <TableRow key={emp.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                     <TableCell className="py-3">
                       <div className="flex items-center gap-1.5">
                         <IdCard className="h-3 w-3 text-muted-foreground/50" />
-                        <span className="text-xs font-mono font-semibold text-muted-foreground">{emp.employeeId || "—"}</span>
+                        <span className="text-xs font-mono font-semibold text-muted-foreground">
+                          {emp.employeeId || "—"}
+                        </span>
                       </div>
                     </TableCell>
-                    <TableCell className="cursor-pointer py-3" onClick={() => navigate(`/employees/view/${encodeURIComponent(emp.email)}`)}>
+                    <TableCell className="cursor-pointer py-3" onClick={() => navigate(`/employees/view/${emp.id}`)}>
                       <div className="flex items-center gap-3 group">
                         <Avatar className="h-9 w-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                            {emp.initials}
-                          </AvatarFallback>
+                          {emp.employeePhotoUrl ? (
+                            <img src={emp.employeePhotoUrl} alt={emp.fullNameEnglish} className="object-cover h-full w-full" />
+                          ) : (
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                              {getInitials(emp.fullNameEnglish)}
+                            </AvatarFallback>
+                          )}
                         </Avatar>
                         <div>
-                          <p className="font-semibold text-sm group-hover:text-primary transition-colors duration-200">{emp.name}</p>
+                          <p className="font-semibold text-sm group-hover:text-primary transition-colors duration-200">
+                            {emp.fullNameEnglish}
+                          </p>
                           <p className="text-xs text-muted-foreground">{emp.email}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="py-3">
-                      <Badge variant="secondary" className="text-[10px] font-semibold">{emp.dept}</Badge>
+                      <Badge variant="secondary" className="text-[10px] font-semibold">
+                        {emp.departmentName || "—"}
+                      </Badge>
                     </TableCell>
                     <TableCell className="py-3">
-                      <span className="text-xs text-muted-foreground">{emp.role}</span>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell py-3">
-                      {emp.lineManager ? (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <UserCheck className="h-3 w-3 shrink-0" />
-                          <span>{emp.lineManager}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
+                      <span className="text-xs text-muted-foreground">{emp.designationName || "—"}</span>
                     </TableCell>
                     <TableCell className="hidden md:table-cell py-3">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -256,23 +447,20 @@ export default function EmployeesPage() {
                     <TableCell className="hidden md:table-cell py-3">
                       <Badge className={cn(
                         "text-[9px] font-bold border-none",
-                        emp.employeeType === "Permanent" ? "bg-emerald-500/10 text-emerald-600" :
-                        emp.employeeType === "Contractual" ? "bg-amber-500/10 text-amber-600" :
+                        emp.employeeType === "Full-time" ? "bg-emerald-500/10 text-emerald-600" :
+                        emp.employeeType === "Contract" ? "bg-amber-500/10 text-amber-600" :
                         "bg-sky-500/10 text-sky-600"
                       )}>
-                        {emp.employeeType || "Permanent"}
+                        {emp.employeeType || "Probation"}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell py-3">
                       <span className="text-xs text-muted-foreground">{emp.gender || "—"}</span>
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell py-3">
-                      <Badge variant="outline" className="text-[10px] font-bold">{emp.bloodGroup || "—"}</Badge>
-                    </TableCell>
                     <TableCell className="py-3">
                       <Badge
-                        variant={emp.status === "Active" ? "default" : "outline"}
-                        className={emp.status === "Active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : ""}
+                        variant={emp.status === "active" ? "default" : "outline"}
+                        className={emp.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : ""}
                       >
                         {emp.status}
                       </Badge>
@@ -286,21 +474,21 @@ export default function EmployeesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36">
-                          <DropdownMenuItem onClick={() => navigate(`/employees/view/${encodeURIComponent(emp.email)}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/employees/view/${emp.id}`)}>
                             <Eye className="mr-2 h-3.5 w-3.5" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/employees/edit/${encodeURIComponent(emp.email)}`)}>
+                          <DropdownMenuItem onClick={() => navigate(`/employees/edit/${emp.id}`)}>
                             <Edit2 className="mr-2 h-3.5 w-3.5" />
                             Edit Profile
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => handleDelete(emp.email)}
+                            onClick={() => handleDelete(emp.id, emp.fullNameEnglish)}
                           >
                             <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
-                            Delete
+                            Terminate
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -311,8 +499,50 @@ export default function EmployeesPage() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Server-Side Pagination Controls */}
+        {!isLoading && !isError && meta.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-border/20 pt-4">
+            <span className="text-xs text-muted-foreground">
+              Showing {(meta.page - 1) * meta.limit + 1} to{" "}
+              {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} entries
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: meta.totalPages }, (_, idx) => {
+                const pageNum = idx + 1
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={page === pageNum ? "default" : "outline"}
+                    className="h-8 w-8 text-xs font-semibold"
+                    onClick={() => setPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
+                disabled={page === meta.totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
-

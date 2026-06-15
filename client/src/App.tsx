@@ -77,8 +77,8 @@ function App() {
                 <Route index element={<DashboardPage />} />
                 <Route path="employees" element={<EmployeesPage />} />
                 <Route path="employees/create" element={<CreateEmployeePage />} />
-                <Route path="employees/edit/:email" element={<EditEmployeePage />} />
-                <Route path="employees/view/:email" element={<ViewEmployeePage />} />
+                <Route path="employees/edit/:id" element={<EditEmployeePage />} />
+                <Route path="employees/view/:id" element={<ViewEmployeePage />} />
                 <Route path="attendance" element={<AttendancePage />} />
                 <Route path="attendance/setup" element={<AttendanceSetupPage />} />
                 <Route path="leave" element={<LeavePage />} />

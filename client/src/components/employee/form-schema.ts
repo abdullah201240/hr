@@ -40,8 +40,8 @@ export const employeeFormSchema = z
     // Employment
     designation: z.string().min(1, "Required"),
     department: z.string().min(1, "Required"),
-    password: passwordSchema,
-    confirmPassword: z.string().min(1, "Required"),
+    password: passwordSchema.optional().or(z.literal("")),
+    confirmPassword: z.string().optional().or(z.literal("")),
     tinNumber: z.string().default(""),
     nidPdf: z.any().optional(),
     bloodGroup: z.string().default("Not Specified"),

@@ -3,10 +3,26 @@ import { apiClient } from "@/lib/api";
 
 interface UserProfile {
   id: string;
+  employeeId: string;
   email: string;
-  role: string; // admin | hr | employee
+  personalEmail?: string | null;
   fullNameEnglish: string;
+  phone?: string;
+  gender?: string;
+  role: string; // admin | hr | employee
+  departmentId?: string;
+  designationId?: string;
+  employeeType?: string;
   employeePhotoUrl: string | null;
+  joinDate?: string;
+  status?: string;
+  dateOfBirth?: string | null;
+  bloodGroup?: string | null;
+  currentAddress?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactRelation?: string | null;
+  emergencyContactNumber?: string | null;
+  lineManagerId?: string | null;
 }
 
 interface AuthState {
@@ -103,8 +119,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: token,
         isAuthenticated: true,
       });
-    } catch (error) {
-      get().logout();
+    } catch (error: any) {
+      console.warn("Auth background validation failed:", error);
+      // Only logout on explicit 401 Unauthorized errors (e.g. expired tokens).
+      // Keep cached session for other errors (network timeouts, offline, server 500s).
+      if (error?.status === 401) {
+        get().logout();
+      }
     } finally {
       set({ isLoading: false });
     }
