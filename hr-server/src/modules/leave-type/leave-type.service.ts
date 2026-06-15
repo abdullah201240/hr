@@ -50,8 +50,6 @@ export class LeaveTypeService {
           color: dto.color || 'bg-sky-500',
           days: dto.days,
           paid: dto.paid ?? true,
-          carryForward: dto.carryForward ?? false,
-          maxCarryOver: dto.maxCarryOver ?? 0,
           requiresApproval: dto.requiresApproval ?? true,
           requiresDocument: dto.requiresDocument ?? false,
           description: dto.description || '',
@@ -202,10 +200,6 @@ export class LeaveTypeService {
       if (dto.color !== undefined) updateData.color = dto.color;
       if (dto.days !== undefined) updateData.days = dto.days;
       if (dto.paid !== undefined) updateData.paid = dto.paid;
-      if (dto.carryForward !== undefined)
-        updateData.carryForward = dto.carryForward;
-      if (dto.maxCarryOver !== undefined)
-        updateData.maxCarryOver = dto.maxCarryOver;
       if (dto.requiresApproval !== undefined)
         updateData.requiresApproval = dto.requiresApproval;
       if (dto.requiresDocument !== undefined)

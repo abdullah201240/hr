@@ -46,18 +46,6 @@ export class CreateLeaveTypeDto {
   @IsBoolean()
   paid?: boolean;
 
-  @ApiPropertyOptional({ example: false, default: false })
-  @IsOptional()
-  @IsBoolean()
-  carryForward?: boolean;
-
-  @ApiPropertyOptional({ example: 0, default: 0 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(365)
-  maxCarryOver?: number;
-
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()
   @IsBoolean()
@@ -107,18 +95,6 @@ export class UpdateLeaveTypeDto {
   @IsOptional()
   @IsBoolean()
   paid?: boolean;
-
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  @IsBoolean()
-  carryForward?: boolean;
-
-  @ApiPropertyOptional({ example: 0 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(365)
-  maxCarryOver?: number;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()

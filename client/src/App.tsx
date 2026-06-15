@@ -15,7 +15,6 @@ const CreateEmployeePage = lazy(() => import("@/routes/pages/create-employee"))
 const EditEmployeePage = lazy(() => import("@/routes/pages/edit-employee"))
 const ViewEmployeePage = lazy(() => import("@/routes/pages/view-employee"))
 const AttendancePage = lazy(() => import("@/routes/pages/attendance"))
-const AttendanceSetupPage = lazy(() => import("@/routes/pages/attendance-setup"))
 const LeavePage = lazy(() => import("@/routes/pages/leave"))
 const PayrollPage = lazy(() => import("@/routes/pages/payroll"))
 const DepartmentsPage = lazy(() => import("@/routes/pages/departments"))
@@ -90,7 +89,7 @@ function App() {
                   <Route path="employees/edit/:id" element={<EditEmployeePage />} />
                   <Route path="employees/view/:id" element={<ViewEmployeePage />} />
                   <Route path="attendance" element={<AttendancePage />} />
-                  <Route path="attendance/setup" element={<AttendanceSetupPage />} />
+                  <Route path="attendance/setup" element={<Navigate to="/settings?tab=attendance" replace />} />
                   <Route path="leave" element={<LeavePage />} />
                   <Route path="payroll" element={<PayrollPage />} />
                   <Route path="claims" element={<Navigate to="/claims/medical" replace />} />

@@ -19,8 +19,6 @@ export const leaveTypes = pgTable(
     color: varchar('color', { length: 50 }).default('bg-sky-500').notNull(),
     days: integer('days').notNull(),
     paid: boolean('paid').default(true).notNull(),
-    carryForward: boolean('carry_forward').default(false).notNull(),
-    maxCarryOver: integer('max_carry_over').default(0).notNull(),
     requiresApproval: boolean('requires_approval').default(true).notNull(),
     requiresDocument: boolean('requires_document').default(false).notNull(),
     description: text('description').default(''),

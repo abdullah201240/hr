@@ -27,8 +27,6 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
     name: "",
     days: 0,
     paid: true,
-    carryForward: false,
-    maxCarryOver: 0,
     requiresApproval: true,
     requiresDocument: false,
     description: "",
@@ -41,8 +39,6 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
       name: "",
       days: 0,
       paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
       requiresApproval: true,
       requiresDocument: false,
       description: "",
@@ -78,8 +74,6 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
       description: leaveForm.description || '',
       days: leaveForm.days!,
       paid: leaveForm.paid ?? true,
-      carryForward: leaveForm.carryForward ?? false,
-      maxCarryOver: leaveForm.maxCarryOver ?? 0,
       requiresApproval: leaveForm.requiresApproval ?? true,
       requiresDocument: leaveForm.requiresDocument ?? false,
       color: leaveForm.color || 'bg-sky-500',
@@ -131,29 +125,16 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
           </div>
 
           {/* Days Allocation */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="leaveDays">Annual Days *</Label>
-              <Input
-                id="leaveDays"
-                type="number"
-                min="0"
-                max="365"
-                value={leaveForm.days || 0}
-                onChange={(e) => setLeaveForm({...leaveForm, days: parseInt(e.target.value) || 0})}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="maxCarry">Max Carry-Over</Label>
-              <Input
-                id="maxCarry"
-                type="number"
-                min="0"
-                disabled={!leaveForm.carryForward}
-                value={leaveForm.maxCarryOver || 0}
-                onChange={(e) => setLeaveForm({...leaveForm, maxCarryOver: parseInt(e.target.value) || 0})}
-              />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="leaveDays">Annual Days *</Label>
+            <Input
+              id="leaveDays"
+              type="number"
+              min="0"
+              max="365"
+              value={leaveForm.days || 0}
+              onChange={(e) => setLeaveForm({...leaveForm, days: parseInt(e.target.value) || 0})}
+            />
           </div>
 
           {/* Policy Switches */}
@@ -166,17 +147,6 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
               <Switch
                 checked={leaveForm.paid || false}
                 onCheckedChange={(checked) => setLeaveForm({...leaveForm, paid: checked})}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Carry Forward</Label>
-                <p className="text-xs text-muted-foreground">Unused days can be carried to next year</p>
-              </div>
-              <Switch
-                checked={leaveForm.carryForward || false}
-                onCheckedChange={(checked) => setLeaveForm({...leaveForm, carryForward: checked, maxCarryOver: checked ? 5 : 0})}
               />
             </div>
 

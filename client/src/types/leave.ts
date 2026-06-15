@@ -5,8 +5,6 @@ export interface LeaveType {
   color: string;
   days: number;
   paid: boolean;
-  carryForward: boolean;
-  maxCarryOver: number;
   requiresApproval: boolean;
   requiresDocument: boolean;
   description: string;
@@ -28,8 +26,6 @@ export interface CreateLeaveTypePayload {
   color?: string;
   days: number;
   paid?: boolean;
-  carryForward?: boolean;
-  maxCarryOver?: number;
   requiresApproval?: boolean;
   requiresDocument?: boolean;
   description?: string;
@@ -41,8 +37,6 @@ export interface UpdateLeaveTypePayload {
   color?: string;
   days?: number;
   paid?: boolean;
-  carryForward?: boolean;
-  maxCarryOver?: number;
   requiresApproval?: boolean;
   requiresDocument?: boolean;
   description?: string;

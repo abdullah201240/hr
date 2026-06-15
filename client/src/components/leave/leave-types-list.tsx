@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ArrowRight, AlertCircle, CheckCircle2, Trash2, MoreHorizontal, Edit2, CalendarOff } from "lucide-react"
+import { AlertCircle, CheckCircle2, Trash2, MoreHorizontal, Edit2, CalendarOff } from "lucide-react"
 import type { LeaveType } from "@/types"
 
 interface LeaveTypesListProps {
@@ -78,12 +78,6 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
                     <div className="space-y-1">
                       <p className="text-sm font-bold">{leave.days}</p>
                       <p className="text-[10px] text-muted-foreground">days/year</p>
-                      {leave.carryForward && (
-                        <div className="flex items-center gap-1 text-[10px] text-violet-600 dark:text-violet-400 mt-1">
-                          <ArrowRight className="h-2.5 w-2.5" />
-                          <span>{leave.maxCarryOver} carry-over</span>
-                        </div>
-                      )}
                     </div>
                   </TableCell>
 
@@ -115,19 +109,6 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
                   {/* Policy Details */}
                   <TableCell className="hidden lg:table-cell py-3">
                     <div className="space-y-1 text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        {leave.carryForward ? (
-                          <>
-                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                            <span>Carry Forward</span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="h-3 w-3 rounded-full bg-muted-foreground/20" />
-                            <span className="line-through opacity-50">No Carry Forward</span>
-                          </>
-                        )}
-                      </div>
                       <div className="flex items-center gap-1">
                         {leave.paid ? (
                           <>
