@@ -23,6 +23,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeQueryDto } from './dto/employee-query.dto';
 import { ChangeStatusDto } from './dto/change-status.dto';
+import { ResetEmployeePasswordDto } from './dto/reset-password.dto';
 import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Employees')
@@ -110,6 +111,22 @@ export class EmployeeController {
     @Body() dto: ChangeStatusDto,
   ) {
     return this.employeeService.changeStatus(id, dto);
+  }
+
+  // ─── Reset Password (Admin/HR only) ────────────────────────────────────
+
+  @Patch(':id/password')
+  @Roles('admin', 'hr')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset employee password (Admin/HR only)' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Password reset successful' })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  async resetPassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResetEmployeePasswordDto,
+  ) {
+    return this.employeeService.resetPassword(id, dto.password);
   }
 
   // ─── Soft delete ──────────────────────────────────────────────────────

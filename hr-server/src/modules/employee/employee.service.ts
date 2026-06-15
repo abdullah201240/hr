@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import * as bcrypt from 'bcrypt';
 import { eq, and, or, like, desc, asc, count } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
@@ -469,5 +470,36 @@ export class EmployeeService {
       progress: job.progress as number,
       result: job.returnvalue ?? undefined,
     };
+  }
+
+  // ─── Reset Password (Admin/HR only) ─────────────────────────────────────
+
+  async resetPassword(id: string, newPassword: string): Promise<{ message: string }> {
+    const [employee] = await this.db
+      .select({ id: employees.id, refreshTokenVersion: employees.refreshTokenVersion })
+      .from(employees)
+      .where(eq(employees.id, id))
+      .limit(1);
+
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID "${id}" not found`);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.db
+      .update(employees)
+      .set({
+        passwordHash,
+        refreshTokenVersion: employee.refreshTokenVersion + 1,
+      })
+      .where(eq(employees.id, id));
+
+    // Clear caches
+    await this.cache.delByKey(CacheKeys.employeeById, id);
+    await this.cache.delByPattern(CacheKeys.employeeList);
+
+    this.logger.log(`Password reset by administrator/HR for employee ID: ${id}`);
+    return { message: 'Employee password reset successfully. All active sessions have been invalidated.' };
   }
 }
