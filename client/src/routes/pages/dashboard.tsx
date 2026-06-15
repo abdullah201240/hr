@@ -42,7 +42,7 @@ export default function DashboardPage() {
   // ── Calendar State ─────────────────────────────────────────────────────────
   const todayDate = new Date()
   const [calMonth, setCalMonth] = useState(todayDate.getMonth())
-  const [calYear] = useState(todayDate.getFullYear())
+  const [calYear, setCalYear] = useState(todayDate.getFullYear())
   const [selectedDayNumber, setSelectedDayNumber] = useState<number>(todayDate.getDate())
 
   // ── Dialog State ───────────────────────────────────────────────────────────
@@ -213,7 +213,10 @@ export default function DashboardPage() {
           <AttendanceCalendar
             calMonth={calMonth}
             calYear={calYear}
-            onMonthChange={setCalMonth}
+            onMonthChange={(month, year) => {
+              setCalMonth(month)
+              setCalYear(year)
+            }}
             currentTime={todayDate}
             selectedDayNumber={selectedDayNumber}
             onSelectDay={setSelectedDayNumber}

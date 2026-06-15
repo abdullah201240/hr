@@ -11,7 +11,7 @@ import { LEAVE_TYPE_SHORT, MONTH_NAMES } from "./types"
 interface AttendanceCalendarProps {
   calMonth: number
   calYear: number
-  onMonthChange: (month: number) => void
+  onMonthChange: (month: number, year: number) => void
   currentTime: Date
   selectedDayNumber: number
   onSelectDay: (day: number) => void
@@ -66,7 +66,10 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onMonthChange(calMonth === 0 ? 11 : calMonth - 1)}
+              onClick={() => {
+                if (calMonth === 0) onMonthChange(11, calYear - 1)
+                else onMonthChange(calMonth - 1, calYear)
+              }}
               className="h-8 w-8 p-0"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -74,7 +77,10 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onMonthChange(calMonth === 11 ? 0 : calMonth + 1)}
+              onClick={() => {
+                if (calMonth === 11) onMonthChange(0, calYear + 1)
+                else onMonthChange(calMonth + 1, calYear)
+              }}
               className="h-8 w-8 p-0"
             >
               <ChevronRight className="h-4 w-4" />
@@ -98,9 +104,9 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
             {Array.from({ length: startOffset }).map((_, i) => <div key={`pad-${i}`} />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1
-              const record = calMonth === 5 ? finalAttendance.find(d => d.day === day) : null
+              const record = finalAttendance.find(d => d.day === day)
               const isToday = isCurrentMo && day === today
-              const isSel = day === selectedDayNumber && calMonth === 5
+              const isSel = day === selectedDayNumber
 
               let cellBg = "bg-transparent hover:bg-muted/30"
               let textColor = "text-foreground"
@@ -245,7 +251,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[200px] p-2 space-y-1">
-                    <p className="font-bold">June {day}, 2026</p>
+                    <p className="font-bold">{MONTH_NAMES[calMonth]} {day}, {calYear}</p>
                     {record && (
                       <p className="capitalize">Status: <span className="font-semibold">{record.status}</span></p>
                     )}

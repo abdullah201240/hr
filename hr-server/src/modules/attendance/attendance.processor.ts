@@ -30,11 +30,11 @@ export class AttendanceProcessor extends WorkerHost {
       }
 
       if (job.name === 'auto-checkin-attendance') {
-        return await this.autoCheckIn();
+        return await this.autoCheckIn(job);
       }
 
       if (job.name === 'auto-checkout-attendance') {
-        return await this.autoCheckout();
+        return await this.autoCheckout(job);
       }
 
       this.logger.warn(`Unknown job name: ${job.name}`);
@@ -153,9 +153,9 @@ export class AttendanceProcessor extends WorkerHost {
   }
 
   // ─── Auto Check-In ──────────────────────────────────────────────────────
-  private async autoCheckIn() {
-    const todayStr = this.attendanceService.getLocalTodayStr();
-    this.logger.log(`Running precise auto-checkin worker scan for ${todayStr}`);
+  private async autoCheckIn(job?: Job) {
+    const todayStr = job?.data?.date || this.attendanceService.getLocalTodayStr();
+    this.logger.log(`Running precise auto-checkin worker scan for target date ${todayStr}`);
 
     // 1. Get office settings (cached) to format the exact time string
     const settings = await this.settingsService.getSettings();
@@ -204,9 +204,9 @@ export class AttendanceProcessor extends WorkerHost {
   }
 
   // ─── Auto Check-Out ───────────────────────────────────────────────────────
-  private async autoCheckout() {
-    const todayStr = this.attendanceService.getLocalTodayStr();
-    this.logger.log(`Running precise auto-checkout worker scan for ${todayStr}`);
+  private async autoCheckout(job?: Job) {
+    const todayStr = job?.data?.date || this.attendanceService.getLocalTodayStr();
+    this.logger.log(`Running precise auto-checkout worker scan for target date ${todayStr}`);
 
     // 1. Get office settings (cached)
     const settings = await this.settingsService.getSettings();
