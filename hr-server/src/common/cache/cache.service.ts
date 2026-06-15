@@ -99,7 +99,7 @@ export class CacheService {
         if (keys.length > 0) {
           const pipeline = this.redis.pipeline();
           for (const key of keys) {
-            pipeline.del(key);
+            pipeline.unlink(key);
           }
           await pipeline.exec();
         }

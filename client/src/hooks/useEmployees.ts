@@ -9,7 +9,7 @@ import type {
   ChangeStatusPayload,
 } from "@/types";
 
-export function useEmployeesQuery(query: EmployeeQuery) {
+export function useEmployeesQuery(query: EmployeeQuery, options?: { enabled?: boolean }) {
   const params = new URLSearchParams();
   if (query.page) params.set("page", String(query.page));
   if (query.limit) params.set("limit", String(query.limit));
@@ -25,8 +25,9 @@ export function useEmployeesQuery(query: EmployeeQuery) {
   const endpoint = queryString ? `employees?${queryString}` : "employees";
 
   return useQuery<PaginatedResponse<Employee>>({
-    queryKey: ["employees", query],
+    queryKey: ["employees", queryString],
     queryFn: () => apiClient.get<PaginatedResponse<Employee>>(endpoint),
+    enabled: options?.enabled ?? true,
   });
 }
 

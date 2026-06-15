@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -132,10 +132,14 @@ export default function LeavePage() {
     return matchesSearch && matchesStatus
   })
 
-  // Counters
-  const countPending = requests.filter(r => r.status === "Pending").length
-  const countApproved = requests.filter(r => r.status === "Approved").length
-  const countRejected = requests.filter(r => r.status === "Rejected").length
+  // Counters (single-pass memoized)
+  const counts = useMemo(() => {
+    const c = { Pending: 0, Approved: 0, Rejected: 0 }
+    for (const r of requests) {
+      if (r.status in c) c[r.status as keyof typeof c]++
+    }
+    return c
+  }, [requests])
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -152,7 +156,7 @@ export default function LeavePage() {
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending Approval</span>
-            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{countPending}</p>
+            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{counts.Pending}</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
             <AlertCircle className="h-5 w-5" />
@@ -162,7 +166,7 @@ export default function LeavePage() {
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approved Requests</span>
-            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">{countApproved}</p>
+            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">{counts.Approved}</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5" />
@@ -172,7 +176,7 @@ export default function LeavePage() {
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rejected Requests</span>
-            <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{countRejected}</p>
+            <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{counts.Rejected}</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
             <XCircle className="h-5 w-5" />

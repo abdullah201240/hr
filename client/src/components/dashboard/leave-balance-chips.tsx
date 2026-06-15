@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -8,12 +9,22 @@ interface LeaveBalanceChipsProps {
 }
 
 export function LeaveBalanceChips({ balances }: LeaveBalanceChipsProps) {
+  const { remainingTotal, totalDays } = useMemo(() => {
+    let remaining = 0
+    let total = 0
+    for (const b of balances) {
+      total += b.total
+      remaining += b.total - b.used
+    }
+    return { remainingTotal: remaining, totalDays: total }
+  }, [balances])
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-wider">Leave Balance</p>
         <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">
-          {balances.reduce((acc, b) => acc + (b.total - b.used), 0)} / {balances.reduce((acc, b) => acc + b.total, 0)} days left
+          {remainingTotal} / {totalDays} days left
         </Badge>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2">

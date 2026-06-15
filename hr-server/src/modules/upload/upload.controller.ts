@@ -110,31 +110,32 @@ export class UploadController {
       limits: { fileSize: 10 * 1024 * 1024 },
     });
 
-    const results: UploadResult[] = [];
+    // Collect all file buffers first, then upload in parallel
+    const buffers: { buffer: Buffer; mimetype: string }[] = [];
     const tags = query.tags
       ? query.tags.split(',').map((t) => t.trim())
       : undefined;
-    let count = 0;
 
     for await (const part of parts) {
       if (part.type !== 'file') continue;
-      if (count >= 5) {
+      if (buffers.length >= 5) {
         throw new BadRequestException('Maximum 5 files per batch upload');
       }
-
-      const buffer = await part.toBuffer();
-      const result = await this.cloudinary.uploadBuffer(buffer, part.mimetype, {
-        folder: query.folder,
-        tags,
-      });
-
-      results.push(result);
-      count++;
+      buffers.push({ buffer: await part.toBuffer(), mimetype: part.mimetype });
     }
 
-    if (results.length === 0) {
+    if (buffers.length === 0) {
       throw new BadRequestException('No files provided');
     }
+
+    const results = await Promise.all(
+      buffers.map(({ buffer, mimetype }) =>
+        this.cloudinary.uploadBuffer(buffer, mimetype, {
+          folder: query.folder,
+          tags,
+        }),
+      ),
+    );
 
     this.logger.log(`Batch uploaded: ${results.length} files`);
     return results;

@@ -131,8 +131,8 @@ export default function AttendancePage() {
   const goNextMonth = useCallback(() => setViewMonth((m) => addMonths(m, 1)), [])
   const goPrevMonth = useCallback(() => setViewMonth((m) => subMonths(m, 1)), [])
 
-  // Filtered logs
-  const filteredLogs = attendanceRecords.filter((log) => {
+  // Filtered logs (memoized)
+  const filteredLogs = useMemo(() => attendanceRecords.filter((log) => {
     if (log.status === "upcoming") return false
     const matchesStatus = filterStatus === "all" || log.status === filterStatus
     const matchesSearch =
@@ -141,16 +141,16 @@ export default function AttendancePage() {
       (log.notes && log.notes.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (log.location && log.location.toLowerCase().includes(searchQuery.toLowerCase()))
     return matchesStatus && matchesSearch
-  })
+  }), [attendanceRecords, filterStatus, searchQuery])
 
-  // Chart data
-  const chartData = attendanceRecords
+  // Chart data (memoized)
+  const chartData = useMemo(() => attendanceRecords
     .filter((d) => (d.status === "present" || d.status === "late") && d.hours)
     .map((d) => ({
       name: d.dateStr,
       Hours: d.hours,
       Target: 8,
-    }))
+    })), [attendanceRecords])
 
   // Correction state & mutations
   const [isCorrectionDialogOpen, setIsCorrectionDialogOpen] = useState(false)
@@ -226,7 +226,7 @@ export default function AttendancePage() {
   // API Queries for Admin
   const { data: dailyLogs = [], isLoading: isLoadingDaily, refetch: refetchDaily } = useDailyAttendanceQuery(selectedDate)
   const { data: pendingCorrections = [], isLoading: isLoadingCorrections } = usePendingCorrectionsQuery()
-  const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 100, status: "active" })
+  const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 100, status: "active" }, { enabled: isAdminOrHR })
 
   // Mutations
   const overrideMut = useOverrideAttendanceMutation()

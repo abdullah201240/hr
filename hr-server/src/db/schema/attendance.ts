@@ -39,13 +39,20 @@ export const attendanceSettings = pgTable('attendance_settings', {
 
 // ─── Holidays ──────────────────────────────────────────────────────────────
 
-export const holidays = pgTable('holidays', {
-  ...baseTable,
+export const holidays = pgTable(
+  'holidays',
+  {
+    ...baseTable,
 
-  name: varchar('name', { length: 255 }).notNull(),
-  startDate: date('start_date').notNull(),
-  endDate: date('end_date').notNull(),
-});
+    name: varchar('name', { length: 255 }).notNull(),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date').notNull(),
+  },
+  (table) => [
+    index('holidays_start_date_idx').on(table.startDate),
+    index('holidays_end_date_idx').on(table.endDate),
+  ],
+);
 
 // ─── Attendance Logs ───────────────────────────────────────────────────────
 
@@ -78,6 +85,7 @@ export const attendanceLogs = pgTable(
     uniqueIndex('attendance_logs_employee_date_idx').on(table.employeeId, table.date),
     index('attendance_logs_date_idx').on(table.date),
     index('attendance_logs_status_idx').on(table.status),
+    index('attendance_logs_correction_status_idx').on(table.correctionStatus),
   ],
 );
 

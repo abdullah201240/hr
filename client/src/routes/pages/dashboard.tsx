@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, memo } from "react"
 import { AttendanceCalendar } from "@/components/dashboard/attendance-calendar"
 import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
@@ -34,10 +34,28 @@ import {
 } from "@/hooks/useAttendance"
 import { format } from "date-fns"
 
+// ─── Isolated Clock Component (re-renders only itself every second) ──────────
+const ClockDisplay = memo(function ClockDisplay() {
+  const [now, setNow] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div className="text-center py-4 bg-muted/30 rounded-2xl border border-border/20">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Current Time</p>
+      <p className="font-mono text-2xl font-extrabold text-primary tracking-widest mt-1">
+        {now.toLocaleTimeString("en-US", { hour12: true })}
+      </p>
+      <p className="text-xs text-muted-foreground mt-1">
+        {now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+      </p>
+    </div>
+  )
+})
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [currentTime, setCurrentTime] = useState(new Date())
-
   // ── Announcements ──────────────────────────────────────────────────────────
   const [announcements] = useState(() => {
     const saved = localStorage.getItem("hr_announcements")
@@ -126,10 +144,7 @@ export default function DashboardPage() {
   }, [])
 
   // ── Clock Timer ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
+  // (Clock is now isolated in ClockDisplay component — no re-render cascade)
 
   // ── Apply Leave Handler ────────────────────────────────────────────────────
   const handleApplyLeave = (data: {
@@ -180,8 +195,8 @@ export default function DashboardPage() {
     localStorage.setItem("hr_leave_balances", JSON.stringify(serializableBalances))
   }
 
-  // ── Computed Final Attendance ─────────────────────────────────────────────
-  const finalAttendance = dbLogs.map((record): AttendanceRecord => {
+  // ── Computed Final Attendance (memoized to avoid recomputing every second) ─
+  const finalAttendance = useMemo(() => dbLogs.map((record): AttendanceRecord => {
     const matchingLeave = leaveApplications.find(la => record.day >= la.startDay && record.day <= la.endDay)
     if (matchingLeave) {
       const selectedTypeObj = balances.find(b => b.key === matchingLeave.leaveType)
@@ -224,13 +239,19 @@ export default function DashboardPage() {
     }
 
     return record
-  })
+  }), [dbLogs, leaveApplications, balances, regularHolidays, weeklyHolidays, calYear, calMonth])
 
-  // ── Selected Day Record ────────────────────────────────────────────────────
-  const selectedRecord = finalAttendance.find(d => d.day === selectedDayNumber)
+  // ── Selected Day Record (memoized) ──────────────────────────────────────────
+  const selectedRecord = useMemo(
+    () => finalAttendance.find(d => d.day === selectedDayNumber),
+    [finalAttendance, selectedDayNumber]
+  )
 
-  // ── Today's Checkin Record for Punch Widget ────────────────────────────────
-  const todayRecord = finalAttendance.find(d => d.day === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear())
+  // ── Today's Checkin Record for Punch Widget (memoized) ──────────────────────
+  const todayRecord = useMemo(
+    () => finalAttendance.find(d => d.day === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear()),
+    [finalAttendance, calMonth, calYear]
+  )
 
   // ── Punch Mutations ────────────────────────────────────────────────────────
   const handleCheckIn = () => {
@@ -276,7 +297,7 @@ export default function DashboardPage() {
               calMonth={calMonth}
               calYear={calYear}
               onMonthChange={setCalMonth}
-              currentTime={currentTime}
+              currentTime={todayDate}
               selectedDayNumber={selectedDayNumber}
               onSelectDay={setSelectedDayNumber}
               onOpenDayDetail={() => setIsDayDetailOpen(true)}
@@ -303,16 +324,8 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
-                {/* Mon ticking clock */}
-                <div className="text-center py-4 bg-muted/30 rounded-2xl border border-border/20">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Current Time</p>
-                  <p className="font-mono text-2xl font-extrabold text-primary tracking-widest mt-1">
-                    {currentTime.toLocaleTimeString("en-US", { hour12: true })}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {currentTime.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
-                  </p>
-                </div>
+                {/* Mon ticking clock (isolated re-render) */}
+                <ClockDisplay />
 
                 {/* Location selector */}
                 {!todayRecord?.checkIn && (

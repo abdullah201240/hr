@@ -3,9 +3,10 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { eq, and, isNull, isNotNull, lte, gte, or } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
-import { attendanceLogs, attendanceSettings, holidays, employees } from '../../db/schema';
+import { attendanceLogs, holidays, employees } from '../../db/schema';
 import { ATTENDANCE_QUEUE } from '../queue/queue.module';
 import { AttendanceService } from './attendance.service';
+import { AttendanceSettingsService } from '../attendance-settings/attendance-settings.service';
 
 @Processor(ATTENDANCE_QUEUE, { concurrency: 1 })
 export class AttendanceProcessor extends WorkerHost {
@@ -14,6 +15,7 @@ export class AttendanceProcessor extends WorkerHost {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly attendanceService: AttendanceService,
+    private readonly settingsService: AttendanceSettingsService,
   ) {
     super();
   }
@@ -59,13 +61,13 @@ export class AttendanceProcessor extends WorkerHost {
       return { status: 'skipped', reason: 'already_initialized' };
     }
 
-    // 2. Load active employees, settings, and holidays
-    const [activeEmployees, [settings], holiday] = await Promise.all([
+    // 2. Load active employees, settings (cached), and holidays
+    const [activeEmployees, settings, holiday] = await Promise.all([
       this.db
         .select({ id: employees.id })
         .from(employees)
         .where(eq(employees.status, 'active')),
-      this.db.select().from(attendanceSettings).limit(1),
+      this.settingsService.getSettings(),
       this.db
         .select({ name: holidays.name })
         .from(holidays)
@@ -78,7 +80,7 @@ export class AttendanceProcessor extends WorkerHost {
         .limit(1),
     ]);
 
-    const weeklyHolidays = settings?.weeklyHolidays || ['Saturday', 'Sunday'];
+    const weeklyHolidays = settings.weeklyHolidays || ['Saturday', 'Sunday'];
 
     // 3. Determine today's default status
     let defaultStatus = 'absent';
@@ -96,15 +98,19 @@ export class AttendanceProcessor extends WorkerHost {
       return { status: 'success', count: 0 };
     }
 
-    // 4. Batch insert
-    await this.db.insert(attendanceLogs).values(
-      activeEmployees.map((emp) => ({
-        employeeId: emp.id,
-        date: todayStr,
-        status: defaultStatus,
-        notes,
-      })),
-    );
+    // 4. Chunked batch insert (200 per chunk to avoid large SQL statements)
+    const CHUNK_SIZE = 200;
+    for (let i = 0; i < activeEmployees.length; i += CHUNK_SIZE) {
+      const chunk = activeEmployees.slice(i, i + CHUNK_SIZE);
+      await this.db.insert(attendanceLogs).values(
+        chunk.map((emp) => ({
+          employeeId: emp.id,
+          date: todayStr,
+          status: defaultStatus,
+          notes,
+        })),
+      );
+    }
 
     this.logger.log(
       `Successfully initialized ${activeEmployees.length} attendance logs for today as status "${defaultStatus}"`,
@@ -119,24 +125,19 @@ export class AttendanceProcessor extends WorkerHost {
 
     this.logger.log(`Running auto-checkout self-healing worker scan`);
 
-    // 1. Get office settings
-    let [settings] = await this.db.select().from(attendanceSettings).limit(1);
-    if (!settings) {
-      settings = {
-        id: 'default',
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-        lateThreshold: 15,
-        halfDayThreshold: 240,
-        weeklyHolidays: ['Saturday', 'Sunday'],
-      };
-    }
+    // 1. Get office settings (cached)
+    const settings = await this.settingsService.getSettings();
 
     // 2. Find logs where checkIn is not null, checkout is null, and date <= todayStr
+    //    Select only needed columns to reduce memory/bandwidth
     const activeLogs = await this.db
-      .select()
+      .select({
+        id: attendanceLogs.id,
+        employeeId: attendanceLogs.employeeId,
+        date: attendanceLogs.date,
+        checkIn: attendanceLogs.checkIn,
+        notes: attendanceLogs.notes,
+      })
       .from(attendanceLogs)
       .where(
         and(
@@ -153,48 +154,64 @@ export class AttendanceProcessor extends WorkerHost {
 
     let processedCount = 0;
 
+    // Group logs by date for batched updates (same date shares same office end time)
+    const byDate = new Map<string, typeof activeLogs>();
     for (const log of activeLogs) {
-      // Compare current datetime with this log's office out time
-      const officeEnd = this.attendanceService.parseOfficeTime(settings.endTime, log.date);
+      const group = byDate.get(log.date) ?? [];
+      group.push(log);
+      byDate.set(log.date, group);
+    }
 
-      // Trigger auto checkout if:
-      // - The log date is in the past (e.g. yesterday, always check out!)
-      // - OR the log date is today and the current server time is past officeEnd
-      const isPastDay = log.date < todayStr;
+    for (const [dateStr, logs] of byDate) {
+      const officeEnd = this.attendanceService.parseOfficeTime(settings.endTime, dateStr);
+      const isPastDay = dateStr < todayStr;
       const isPastOutTime = now >= officeEnd;
 
-      if (isPastDay || isPastOutTime) {
+      if (!(isPastDay || isPastOutTime)) continue;
+
+      const officeEndStr = this.attendanceService.formatTime(officeEnd);
+
+      // Compute break hours once per date group (same break window for all)
+      let breakHours = 0;
+      if (settings.breakStart && settings.breakEnd) {
+        const breakS = this.attendanceService.parseOfficeTime(settings.breakStart, dateStr);
+        const breakE = this.attendanceService.parseOfficeTime(settings.breakEnd, dateStr);
+        if (officeEnd > breakS) {
+          // Will be narrowed per-log below if needed
+        }
+      }
+
+      // Update each log individually (different check-in times → different hours)
+      for (const log of logs) {
         this.logger.log(
           `Auto-checking out employee ${log.employeeId} for date ${log.date} (check-in: ${log.checkIn})`,
         );
 
-        // Convert endTime ("18:00") to AM/PM string ("06:00 PM")
-        const officeEndStr = this.attendanceService.formatTime(officeEnd);
         const checkInTime = this.attendanceService.parseTimeString(log.checkIn!, log.date);
 
         // Compute hours
         const diffMs = officeEnd.getTime() - checkInTime.getTime();
         const totalHours = diffMs / (1000 * 60 * 60);
 
-        let breakHours = 0;
+        let logBreakHours = 0;
         if (settings.breakStart && settings.breakEnd) {
-          const breakS = this.attendanceService.parseOfficeTime(settings.breakStart, log.date);
-          const breakE = this.attendanceService.parseOfficeTime(settings.breakEnd, log.date);
+          const breakS = this.attendanceService.parseOfficeTime(settings.breakStart, dateStr);
+          const breakE = this.attendanceService.parseOfficeTime(settings.breakEnd, dateStr);
           if (checkInTime < breakE && officeEnd > breakS) {
             const overlapStart = new Date(Math.max(checkInTime.getTime(), breakS.getTime()));
             const overlapEnd = new Date(Math.min(officeEnd.getTime(), breakE.getTime()));
-            breakHours = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60);
+            logBreakHours = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60);
           }
         }
 
-        const finalHours = Math.max(0, Math.round((totalHours - breakHours) * 100) / 100);
+        const finalHours = Math.max(0, Math.round((totalHours - logBreakHours) * 100) / 100);
 
         await this.db
           .update(attendanceLogs)
           .set({
             checkOut: officeEndStr,
             hours: finalHours,
-            breakHours: Math.round(breakHours * 100) / 100,
+            breakHours: Math.round(logBreakHours * 100) / 100,
             notes: log.notes
               ? `${log.notes} (Auto checked-out)`
               : 'Auto checked-out at end of shift',

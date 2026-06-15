@@ -105,13 +105,6 @@ export class LeaveTypeService {
     if (cached) return cached;
 
     // Total count
-    const [totalRow] = await this.db
-      .select({ count: count() })
-      .from(leaveTypes)
-      .where(where);
-
-    const total = totalRow?.count ?? 0;
-
     // Sort
     const sortColumns: Record<
       string,
@@ -126,15 +119,23 @@ export class LeaveTypeService {
     const sortCol = sortColumns[sortBy] ?? leaveTypes.name;
     const orderFn = sortOrder === 'asc' ? asc : desc;
 
-    // Paginated query
+    // Paginated query — run count + data in parallel for faster response
     const offset = (page - 1) * limit;
-    const data = await this.db
-      .select()
-      .from(leaveTypes)
-      .where(where)
-      .orderBy(orderFn(sortCol))
-      .limit(limit)
-      .offset(offset);
+    const [[totalRow], data] = await Promise.all([
+      this.db
+        .select({ count: count() })
+        .from(leaveTypes)
+        .where(where),
+      this.db
+        .select()
+        .from(leaveTypes)
+        .where(where)
+        .orderBy(orderFn(sortCol))
+        .limit(limit)
+        .offset(offset),
+    ]);
+
+    const total = totalRow?.count ?? 0;
 
     const result = {
       data,

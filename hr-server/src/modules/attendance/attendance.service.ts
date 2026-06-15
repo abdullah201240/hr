@@ -11,8 +11,9 @@ import { eq, and, between, asc } from 'drizzle-orm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { DB_CONNECTION, type Database } from '../../db';
-import { attendanceLogs, attendanceSettings, holidays, employees } from '../../db/schema';
+import { attendanceLogs, holidays, employees } from '../../db/schema';
 import { ATTENDANCE_QUEUE } from '../queue/queue.module';
+import { AttendanceSettingsService } from '../attendance-settings/attendance-settings.service';
 import { CheckInDto, CheckOutDto, SubmitCorrectionDto, AdminLogOverrideDto } from './dto/attendance.dto';
 
 @Injectable()
@@ -22,6 +23,7 @@ export class AttendanceService implements OnModuleInit {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     @InjectQueue(ATTENDANCE_QUEUE) private readonly attendanceQueue: Queue,
+    private readonly settingsService: AttendanceSettingsService,
   ) {}
 
   async onModuleInit() {
@@ -103,20 +105,8 @@ export class AttendanceService implements OnModuleInit {
     const dateStr = this.getLocalTodayStr();
     const now = new Date();
 
-    // 1. Get office settings
-    let [settings] = await this.db.select().from(attendanceSettings).limit(1);
-    if (!settings) {
-      settings = {
-        id: 'default',
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-        lateThreshold: 15,
-        halfDayThreshold: 240,
-        weeklyHolidays: ['Saturday', 'Sunday'],
-      };
-    }
+    // 1. Get office settings (cached)
+    const settings = await this.settingsService.getSettings();
 
     // 2. Check if log already exists
     let [log] = await this.db
@@ -190,20 +180,8 @@ export class AttendanceService implements OnModuleInit {
       throw new ConflictException('You have already checked out for today');
     }
 
-    // 2. Get office settings
-    let [settings] = await this.db.select().from(attendanceSettings).limit(1);
-    if (!settings) {
-      settings = {
-        id: 'default',
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-        lateThreshold: 15,
-        halfDayThreshold: 240,
-        weeklyHolidays: ['Saturday', 'Sunday'],
-      };
-    }
+    // 2. Get office settings (cached)
+    const settings = await this.settingsService.getSettings();
 
     // 3. Perform calculations
     const checkOutStr = this.formatTime(now);
@@ -252,18 +230,18 @@ export class AttendanceService implements OnModuleInit {
     const endStr = this.getLocalTodayStr(endDate);
     const todayStr = this.getLocalTodayStr();
 
-    // 1. Get logs, settings, and holidays
-    const [logsList, [settings], holidaysList] = await Promise.all([
+    // 1. Get logs, settings (cached), and holidays
+    const [logsList, settings, holidaysList] = await Promise.all([
       this.db
         .select()
         .from(attendanceLogs)
         .where(and(eq(attendanceLogs.employeeId, employeeId), between(attendanceLogs.date, startStr, endStr)))
         .orderBy(asc(attendanceLogs.date)),
-      this.db.select().from(attendanceSettings).limit(1),
+      this.settingsService.getSettings(),
       this.db.select().from(holidays).where(between(holidays.startDate, startStr, endStr)),
     ]);
 
-    const weeklyHolidays = settings?.weeklyHolidays || ['Saturday', 'Sunday'];
+    const weeklyHolidays = settings.weeklyHolidays || ['Saturday', 'Sunday'];
     const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // Map logs to date keys for fast lookup
@@ -422,20 +400,8 @@ export class AttendanceService implements OnModuleInit {
       throw new BadRequestException('No pending correction request for this log');
     }
 
-    // Get office settings for break calculation
-    let [settings] = await this.db.select().from(attendanceSettings).limit(1);
-    if (!settings) {
-      settings = {
-        id: 'default',
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-        lateThreshold: 15,
-        halfDayThreshold: 240,
-        weeklyHolidays: ['Saturday', 'Sunday'],
-      };
-    }
+    // Get office settings (cached) for break calculation
+    const settings = await this.settingsService.getSettings();
 
     const checkInTime = this.parseTimeString(log.proposedCheckIn!, log.date);
     const checkOutTime = this.parseTimeString(log.proposedCheckOut!, log.date);
@@ -550,19 +516,7 @@ export class AttendanceService implements OnModuleInit {
       .where(and(eq(attendanceLogs.employeeId, employeeId), eq(attendanceLogs.date, date)))
       .limit(1);
 
-    let [settings] = await this.db.select().from(attendanceSettings).limit(1);
-    if (!settings) {
-      settings = {
-        id: 'default',
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-        lateThreshold: 15,
-        halfDayThreshold: 240,
-        weeklyHolidays: ['Saturday', 'Sunday'],
-      };
-    }
+    const settings = await this.settingsService.getSettings();
 
     let hours: number | null = null;
     let breakHours = 0;

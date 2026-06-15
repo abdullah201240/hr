@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -24,7 +25,7 @@ interface AttendanceCalendarProps {
   onCancelLeave: (id: string) => void
 }
 
-export function AttendanceCalendar({
+export const AttendanceCalendar = memo(function AttendanceCalendar({
   calMonth,
   calYear,
   onMonthChange,
@@ -40,9 +41,12 @@ export function AttendanceCalendar({
   onDragOver,
   onCancelLeave,
 }: AttendanceCalendarProps) {
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
-  const startOffset = (new Date(calYear, calMonth, 1).getDay() + 6) % 7
-  const isCurrentMo = calMonth === currentTime.getMonth() && calYear === currentTime.getFullYear()
+  const daysInMonth = useMemo(() => new Date(calYear, calMonth + 1, 0).getDate(), [calYear, calMonth])
+  const startOffset = useMemo(() => (new Date(calYear, calMonth, 1).getDay() + 6) % 7, [calYear, calMonth])
+  const isCurrentMo = useMemo(
+    () => calMonth === currentTime.getMonth() && calYear === currentTime.getFullYear(),
+    [calMonth, calYear, currentTime]
+  )
   const today = currentTime.getDate()
 
   return (
@@ -257,4 +261,4 @@ export function AttendanceCalendar({
       </CardContent>
     </Card>
   )
-}
+})

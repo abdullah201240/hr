@@ -172,7 +172,7 @@ export class EmployeeService {
       throw new NotFoundException(`Employee with ID "${id}" not found`);
     }
 
-    const [spouses, children, nominees, documents] = await Promise.all([
+    const [spouses, children, nominees, documents, bankResult] = await Promise.all([
       this.db
         .select()
         .from(employeeSpouses)
@@ -189,20 +189,19 @@ export class EmployeeService {
         .select()
         .from(employeeDocuments)
         .where(eq(employeeDocuments.employeeId, id)),
+      this.db
+        .select()
+        .from(employeeBankDetails)
+        .where(eq(employeeBankDetails.employeeId, id))
+        .limit(1),
     ]);
-
-    const [bankDetail] = await this.db
-      .select()
-      .from(employeeBankDetails)
-      .where(eq(employeeBankDetails.employeeId, id))
-      .limit(1);
 
     const result = {
       ...employee,
       spouses,
       children,
       nominees,
-      bankDetails: bankDetail ?? null,
+      bankDetails: bankResult[0] ?? null,
       documents,
     };
 
