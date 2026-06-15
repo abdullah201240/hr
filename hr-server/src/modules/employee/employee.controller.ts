@@ -22,6 +22,7 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeQueryDto } from './dto/employee-query.dto';
+import { ChangeStatusDto } from './dto/change-status.dto';
 import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Employees')
@@ -93,6 +94,22 @@ export class EmployeeController {
     @Query('queue') queue: string = 'create',
   ) {
     return this.employeeService.getJobStatus(queue, jobId);
+  }
+
+  // ─── Change status (active/inactive with optional scheduled date) ──────
+
+  @Patch(':id/status')
+  @Roles('admin', 'hr')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change employee status (active/inactive) with optional scheduled date' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Status changed (or scheduled)' })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  async changeStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeStatusDto,
+  ) {
+    return this.employeeService.changeStatus(id, dto);
   }
 
   // ─── Soft delete ──────────────────────────────────────────────────────

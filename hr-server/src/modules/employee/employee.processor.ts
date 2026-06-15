@@ -17,6 +17,7 @@ import { CacheKeys } from '../../common/cache/cache-keys';
 import {
   EMPLOYEE_CREATE_QUEUE,
   EMPLOYEE_UPDATE_QUEUE,
+  EMPLOYEE_STATUS_QUEUE,
 } from '../queue/queue.module';
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -346,6 +347,70 @@ export class EmployeeUpdateProcessor extends WorkerHost {
     } catch (error: any) {
       this.logger.error(
         `Failed to update employee ${id}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+}
+
+// ─── Status Change Processor (delayed deactivation) ─────────────────────────
+
+@Processor(EMPLOYEE_STATUS_QUEUE, { concurrency: 3 })
+export class EmployeeStatusProcessor extends WorkerHost {
+  private readonly logger = new Logger(EmployeeStatusProcessor.name);
+
+  constructor(
+    @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly cache: CacheService,
+  ) {
+    super();
+  }
+
+  async process(
+    job: Job<{ id: string; status: string }>,
+  ): Promise<{ employeeId: string; status: string }> {
+    const { id, status } = job.data;
+    this.logger.log(
+      `Processing scheduled status change for employee ${id} → ${status} (job: ${job.id})`,
+    );
+
+    try {
+      // Verify employee still exists and hasn't been terminated/reactivated manually
+      const [employee] = await this.db
+        .select({ id: employees.id, status: employees.status })
+        .from(employees)
+        .where(eq(employees.id, id))
+        .limit(1);
+
+      if (!employee) {
+        this.logger.warn(`Employee ${id} not found — skipping status change`);
+        return { employeeId: id, status: 'not-found' };
+      }
+
+      // If already inactive or terminated, skip
+      if (employee.status === 'inactive' || employee.status === 'terminated') {
+        this.logger.log(
+          `Employee ${id} is already "${employee.status}" — skipping scheduled deactivation`,
+        );
+        return { employeeId: id, status: employee.status };
+      }
+
+      // Apply the status change
+      await this.db
+        .update(employees)
+        .set({ status, inactiveDate: null })
+        .where(eq(employees.id, id));
+
+      // Invalidate caches
+      await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByPattern(CacheKeys.employeeList);
+
+      this.logger.log(`Employee ${id} status changed to "${status}" successfully`);
+      return { employeeId: id, status };
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to change status for employee ${id}: ${error.message}`,
         error.stack,
       );
       throw error;

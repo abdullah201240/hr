@@ -6,6 +6,7 @@ import type {
   EmployeeQuery,
   CreateEmployeePayload,
   UpdateEmployeePayload,
+  ChangeStatusPayload,
 } from "@/types";
 
 export function useEmployeesQuery(query: EmployeeQuery) {
@@ -68,6 +69,19 @@ export function useDeleteEmployeeMutation() {
     mutationFn: (id) => apiClient.delete<{ message: string }>(`employees/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+  });
+}
+
+export function useChangeEmployeeStatusMutation(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation<{ message: string; scheduled: boolean }, Error, ChangeStatusPayload>({
+    mutationFn: (payload) => {
+      return apiClient.patch<{ message: string; scheduled: boolean }>(`employees/${id}/status`, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees", id] });
     },
   });
 }

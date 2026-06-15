@@ -134,6 +134,7 @@ export const employees = pgTable(
 
     // Status
     status: varchar('status', { length: 20 }).default('active').notNull(), // active | inactive | terminated
+    inactiveDate: date('inactive_date'), // Scheduled date to become inactive
 
     // Auth
     role: varchar('role', { length: 20 }).default('employee').notNull(), // admin | hr | employee

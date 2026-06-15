@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 
 export const EMPLOYEE_CREATE_QUEUE = 'employee-create';
 export const EMPLOYEE_UPDATE_QUEUE = 'employee-update';
+export const EMPLOYEE_STATUS_QUEUE = 'employee-status';
 
 @Global()
 @Module({
@@ -22,6 +23,9 @@ export const EMPLOYEE_UPDATE_QUEUE = 'employee-update';
     }),
     BullModule.registerQueue({
       name: EMPLOYEE_UPDATE_QUEUE,
+    }),
+    BullModule.registerQueue({
+      name: EMPLOYEE_STATUS_QUEUE,
     }),
   ],
   exports: [BullModule],

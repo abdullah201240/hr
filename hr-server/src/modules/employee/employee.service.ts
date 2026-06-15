@@ -24,10 +24,12 @@ import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
 import {
   EMPLOYEE_CREATE_QUEUE,
   EMPLOYEE_UPDATE_QUEUE,
+  EMPLOYEE_STATUS_QUEUE,
 } from '../queue/queue.module';
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 import type { EmployeeQueryDto } from './dto/employee-query.dto';
+import type { ChangeStatusDto } from './dto/change-status.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -40,6 +42,8 @@ export class EmployeeService {
     private readonly createQueue: Queue<CreateEmployeeDto>,
     @InjectQueue(EMPLOYEE_UPDATE_QUEUE)
     private readonly updateQueue: Queue<UpdateEmployeeDto & { id: string }>,
+    @InjectQueue(EMPLOYEE_STATUS_QUEUE)
+    private readonly statusQueue: Queue<{ id: string; status: string }>,
   ) {}
 
   // ─── Enqueue create ─────────────────────────────────────────────────────
@@ -147,6 +151,7 @@ export class EmployeeService {
         joinDate: employees.joinDate,
         lineManagerId: employees.lineManagerId,
         status: employees.status,
+        inactiveDate: employees.inactiveDate,
         role: employees.role,
         isEmailVerified: employees.isEmailVerified,
         lastLoginAt: employees.lastLoginAt,
@@ -280,6 +285,7 @@ export class EmployeeService {
           employeeType: employees.employeeType,
           joinDate: employees.joinDate,
           status: employees.status,
+          inactiveDate: employees.inactiveDate,
           employeePhotoUrl: employees.employeePhotoUrl,
           createdAt: employees.createdAt,
         })
@@ -307,6 +313,107 @@ export class EmployeeService {
     await this.cache.setByKey(CacheKeys.employeeList, result, cacheKeyParts);
 
     return result;
+  }
+
+  // ─── Change status (active/inactive with optional scheduled date) ────────
+
+  async changeStatus(id: string, dto: ChangeStatusDto) {
+    const [existing] = await this.db
+      .select({ id: employees.id, status: employees.status })
+      .from(employees)
+      .where(eq(employees.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new NotFoundException(`Employee with ID "${id}" not found`);
+    }
+
+    // ── Reactivate: set status to active immediately, clear inactiveDate, cancel pending jobs
+    if (dto.status === 'active') {
+      await this.db
+        .update(employees)
+        .set({ status: 'active', inactiveDate: null })
+        .where(eq(employees.id, id));
+
+      // Remove any pending delayed status-change jobs for this employee
+      const waitingJobs = await this.statusQueue.getJobs(['waiting', 'delayed']);
+      for (const job of waitingJobs) {
+        if (job.data.id === id) {
+          await job.remove();
+          this.logger.log(`Cancelled pending status-change job ${job.id} for employee ${id}`);
+        }
+      }
+
+      await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByPattern(CacheKeys.employeeList);
+
+      return { message: 'Employee reactivated successfully', scheduled: false };
+    }
+
+    // ── Set inactive
+    if (dto.inactiveDate) {
+      const scheduledDate = new Date(dto.inactiveDate + 'T00:00:00');
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      // If the date is today or in the past → apply immediately
+      if (scheduledDate <= now) {
+        await this.db
+          .update(employees)
+          .set({ status: 'inactive', inactiveDate: dto.inactiveDate })
+          .where(eq(employees.id, id));
+
+        await this.cache.delByKey(CacheKeys.employeeById, id);
+        await this.cache.delByPattern(CacheKeys.employeeList);
+
+        return { message: 'Employee marked inactive immediately', scheduled: false };
+      }
+
+      // Future date → store the scheduled date and enqueue a delayed job
+      await this.db
+        .update(employees)
+        .set({ inactiveDate: dto.inactiveDate })
+        .where(eq(employees.id, id));
+
+      const delayMs = scheduledDate.getTime() - now.getTime();
+
+      await this.statusQueue.add(
+        'deactivate-employee',
+        { id, status: 'inactive' },
+        {
+          delay: delayMs,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 60_000 },
+          removeOnComplete: { count: 200 },
+          removeOnFail: { count: 500 },
+          jobId: `deactivate-${id}-${dto.inactiveDate}`,
+        },
+      );
+
+      this.logger.log(
+        `Scheduled employee ${id} to become inactive on ${dto.inactiveDate} (delay: ${Math.round(delayMs / 3600000)}h)`,
+      );
+
+      await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByPattern(CacheKeys.employeeList);
+
+      return {
+        message: `Employee scheduled to become inactive on ${dto.inactiveDate}`,
+        scheduled: true,
+        inactiveDate: dto.inactiveDate,
+      };
+    }
+
+    // No date provided → mark inactive immediately
+    await this.db
+      .update(employees)
+      .set({ status: 'inactive', inactiveDate: new Date().toISOString().split('T')[0] })
+      .where(eq(employees.id, id));
+
+    await this.cache.delByKey(CacheKeys.employeeById, id);
+    await this.cache.delByPattern(CacheKeys.employeeList);
+
+    return { message: 'Employee marked inactive immediately', scheduled: false };
   }
 
   // ─── Soft delete ────────────────────────────────────────────────────────

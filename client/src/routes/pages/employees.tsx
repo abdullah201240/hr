@@ -3,6 +3,7 @@ import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -16,7 +17,6 @@ import {
   Plus,
   MoreHorizontal,
   Edit2,
-  Trash2,
   Eye,
   Users,
   CheckCircle,
@@ -29,6 +29,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FilterX,
+  UserCheck,
+  UserX,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -39,27 +41,26 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
-import { useEmployeesQuery, useDeleteEmployeeMutation } from "@/hooks/useEmployees"
+import { useEmployeesQuery, useChangeEmployeeStatusMutation } from "@/hooks/useEmployees"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
 import { toast } from "sonner"
+
 
 export default function EmployeesPage() {
   const navigate = useNavigate()
@@ -82,8 +83,9 @@ export default function EmployeesPage() {
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
-  // Modal confirm delete state
-  const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null)
+  // Status change dialog state
+  const [statusDialogEmployee, setStatusDialogEmployee] = useState<{ id: string; name: string; currentStatus: string } | null>(null)
+  const [inactiveDate, setInactiveDate] = useState<string>("")
 
   // API Hooks
   const { data: deptOptions } = useDepartmentOptionsQuery()
@@ -101,8 +103,6 @@ export default function EmployeesPage() {
     sortOrder,
   })
 
-  const deleteMutation = useDeleteEmployeeMutation()
-
   const handleSort = (field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc")
@@ -111,20 +111,6 @@ export default function EmployeesPage() {
       setSortOrder("desc")
     }
     setPage(1)
-  }
-
-  const handleDeleteConfirm = () => {
-    if (!employeeToDelete) return
-    deleteMutation.mutate(employeeToDelete.id, {
-      onSuccess: () => {
-        toast.success("Employee terminated successfully")
-        setEmployeeToDelete(null)
-      },
-      onError: (err: any) => {
-        toast.error(err.message || "Failed to terminate employee")
-        setEmployeeToDelete(null)
-      }
-    })
   }
 
   const resetFilters = () => {
@@ -187,6 +173,28 @@ export default function EmployeesPage() {
   }
 
   const pagesArray = getPageNumbers(meta.page, meta.totalPages)
+
+  // Status change mutation (uses the selected employee's ID)
+  const statusMutation = useChangeEmployeeStatusMutation(statusDialogEmployee?.id || "")
+
+  const handleStatusChange = () => {
+    if (!statusDialogEmployee) return
+
+    const payload = statusDialogEmployee.currentStatus === "active"
+      ? { status: "inactive" as const, inactiveDate: inactiveDate || undefined }
+      : { status: "active" as const }
+
+    statusMutation.mutate(payload, {
+      onSuccess: (res) => {
+        toast.success(res.message)
+        setStatusDialogEmployee(null)
+        setInactiveDate("")
+      },
+      onError: (err: any) => {
+        toast.error(err.message || "Failed to change employee status")
+      },
+    })
+  }
 
   return (
     <div className="space-y-8">
@@ -335,7 +343,7 @@ export default function EmployeesPage() {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="terminated">Terminated</SelectItem>
+
             </SelectContent>
           </Select>
         </div>
@@ -515,7 +523,7 @@ export default function EmployeesPage() {
                             <span className="sr-only">Actions</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36">
+                        <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem onClick={() => navigate(`/employees/view/${emp.id}`)}>
                             <Eye className="mr-2 h-3.5 w-3.5" />
                             View Profile
@@ -526,11 +534,22 @@ export default function EmployeesPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setEmployeeToDelete({ id: emp.id, name: emp.fullNameEnglish })}
+                            onClick={() => {
+                              setStatusDialogEmployee({ id: emp.id, name: emp.fullNameEnglish, currentStatus: emp.status })
+                              setInactiveDate("")
+                            }}
                           >
-                            <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
-                            Terminate
+                            {emp.status === "active" ? (
+                              <>
+                                <UserX className="mr-2 h-3.5 w-3.5 text-amber-500" />
+                                Set Inactive
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="mr-2 h-3.5 w-3.5 text-emerald-500" />
+                                Set Active
+                              </>
+                            )}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -592,23 +611,77 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {/* Premium Radix Native AlertDialog for Delete Confirmation */}
-      <AlertDialog open={!!employeeToDelete} onOpenChange={(open) => !open && setEmployeeToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently terminate <strong>{employeeToDelete?.name}</strong> and mark their records as inactive in the core registry.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm}>
-              Terminate Employee
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Status Change Dialog */}
+      <Dialog open={!!statusDialogEmployee} onOpenChange={(open) => {
+        if (!open) {
+          setStatusDialogEmployee(null)
+          setInactiveDate("")
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {statusDialogEmployee?.currentStatus === "active" ? "Set Employee Inactive" : "Reactivate Employee"}
+            </DialogTitle>
+            <DialogDescription>
+              {statusDialogEmployee?.currentStatus === "active"
+                ? `Schedule or immediately deactivate ${statusDialogEmployee?.name}.`
+                : `Reactivate ${statusDialogEmployee?.name} to active status.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {statusDialogEmployee?.currentStatus === "active" && (
+            <div className="space-y-3 py-2">
+              <Label htmlFor="inactive-date" className="text-sm font-medium">
+                Inactive Effective Date <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="inactive-date"
+                type="date"
+                value={inactiveDate}
+                onChange={(e) => setInactiveDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="bg-transparent border-border/60"
+              />
+              <p className="text-xs text-muted-foreground">
+                {inactiveDate
+                  ? `Employee will become inactive on ${inactiveDate}. A scheduled job will handle the transition automatically.`
+                  : "Leave empty to mark inactive immediately."}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStatusDialogEmployee(null)
+                setInactiveDate("")
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleStatusChange}
+              disabled={statusMutation.isPending}
+              className={cn(
+                statusDialogEmployee?.currentStatus === "active"
+                  ? "bg-amber-500 hover:bg-amber-600 text-white"
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white"
+              )}
+            >
+              {statusMutation.isPending
+                ? "Processing..."
+                : statusDialogEmployee?.currentStatus === "active"
+                  ? inactiveDate
+                    ? `Schedule Inactive (${inactiveDate})`
+                    : "Mark Inactive Now"
+                  : "Reactivate Employee"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

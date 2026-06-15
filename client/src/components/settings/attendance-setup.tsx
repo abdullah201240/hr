@@ -18,6 +18,7 @@ import {
   Sparkles,
   ArrowRight,
   Loader2,
+  List,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -272,49 +273,51 @@ export function AttendanceSetup() {
 
   return (
     <div className="space-y-6">
-      {/* ─── Summary Cards ─── */}
-      <div className="grid gap-3 grid-cols-3">
-        <Card className="shadow-none border border-border/30 bg-emerald-500/[0.04]">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-              <Briefcase className="h-4 w-4 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-extrabold text-foreground">{summary.workingDays}</p>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Working Days
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ─── KPI Cards ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Working Days</span>
+            <p className="text-3xl font-bold tracking-tight">{summary.workingDays}</p>
+            <p className="text-[10px] text-muted-foreground">This month</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 flex items-center justify-center">
+            <Briefcase className="h-5 w-5" />
+          </div>
+        </div>
 
-        <Card className="shadow-none border border-border/30 bg-orange-500/[0.04]">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center shrink-0">
-              <CalendarOff className="h-4 w-4 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-extrabold text-foreground">{summary.weekendDays}</p>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Weekly Off Days
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Weekly Off</span>
+            <p className="text-3xl font-bold tracking-tight">{summary.weekendDays}</p>
+            <p className="text-[10px] text-muted-foreground">{weeklyHolidays.join(", ")}</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-500 flex items-center justify-center">
+            <CalendarOff className="h-5 w-5" />
+          </div>
+        </div>
 
-        <Card className="shadow-none border border-border/30 bg-violet-500/[0.04]">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
-              <Sparkles className="h-4 w-4 text-violet-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-extrabold text-foreground">{summary.holidayDays}</p>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Holidays ({format(new Date(), "MMM")})
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Holidays</span>
+            <p className="text-3xl font-bold tracking-tight">{summary.holidayDays}</p>
+            <p className="text-[10px] text-muted-foreground">{format(new Date(), "MMMM")}</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center justify-center">
+            <Sparkles className="h-5 w-5" />
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Configured</span>
+            <p className="text-3xl font-bold tracking-tight">{holidays.length}</p>
+            <p className="text-[10px] text-muted-foreground">All holidays</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-500 flex items-center justify-center">
+            <List className="h-5 w-5" />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

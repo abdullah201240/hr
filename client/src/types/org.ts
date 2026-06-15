@@ -160,6 +160,7 @@ export interface Employee {
   joinDate: string;
   lineManagerId: string | null;
   status: string;
+  inactiveDate: string | null;
   role: string;
   isEmailVerified: boolean;
   lastLoginAt: string | null;
@@ -225,4 +226,9 @@ export interface CreateEmployeePayload {
 }
 
 export type UpdateEmployeePayload = Partial<CreateEmployeePayload>;
+
+export interface ChangeStatusPayload {
+  status: 'active' | 'inactive';
+  inactiveDate?: string;
+}
 
