@@ -244,7 +244,7 @@ export async function authUpload(
  * Clear rate-limit keys from Redis to avoid 429 errors between test runs.
  */
 async function clearRateLimitKeys(): Promise<void> {
-  const Redis = (await import('ioredis')).default;
+  const { Redis } = await import('ioredis');
   const redis = new Redis({
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),

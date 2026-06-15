@@ -1,19 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { CalendarOff, CalendarDays, ArrowRight } from "lucide-react"
-
-interface LeaveType {
-  id: string
-  name: string
-  icon: any
-  color: string
-  days: number
-  paid: boolean
-  carryForward: boolean
-  maxCarryOver: number
-  requiresApproval: boolean
-  requiresDocument: boolean
-  description: string
-}
+import type { LeaveType } from "@/types"
 
 interface LeaveSummaryCardsProps {
   leaveTypes: LeaveType[]

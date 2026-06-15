@@ -9,6 +9,7 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
@@ -25,7 +26,7 @@ export const departments = pgTable(
     description: text('description').default(''),
 
     /** Optional head of department (reference to an employee) */
-    headEmployeeId: uuid('head_employee_id'),
+    headEmployeeId: uuid('head_employee_id').references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
 
     /** Soft delete / active flag */
     isActive: boolean('is_active').default(true).notNull(),
@@ -123,10 +124,10 @@ export const employees = pgTable(
     // Employment
     designationId: uuid('designation_id')
       .notNull()
-      .references(() => designations.id, { onDelete: 'restrict' }),
+      .references((): AnyPgColumn => designations.id, { onDelete: 'restrict' }),
     departmentId: uuid('department_id')
       .notNull()
-      .references(() => departments.id, { onDelete: 'restrict' }),
+      .references((): AnyPgColumn => departments.id, { onDelete: 'restrict' }),
     employeeType: varchar('employee_type', { length: 50 }).notNull(),
     joinDate: date('join_date').notNull(),
     lineManagerId: uuid('line_manager_id'),

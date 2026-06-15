@@ -15,20 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ArrowRight, AlertCircle, CheckCircle2, Trash2, MoreHorizontal, Edit2, CalendarOff } from "lucide-react"
-
-interface LeaveType {
-  id: string
-  name: string
-  icon: any
-  color: string
-  days: number
-  paid: boolean
-  carryForward: boolean
-  maxCarryOver: number
-  requiresApproval: boolean
-  requiresDocument: boolean
-  description: string
-}
+import type { LeaveType } from "@/types"
 
 interface LeaveTypesListProps {
   leaveTypes: LeaveType[]

@@ -83,7 +83,8 @@ export function LeaveTypeDialog({ open, onOpenChange, editingLeave, onSave }: Le
       requiresApproval: leaveForm.requiresApproval ?? true,
       requiresDocument: leaveForm.requiresDocument ?? false,
       color: leaveForm.color || 'bg-sky-500',
-      icon: leaveForm.icon || 'CalendarOff'
+      icon: leaveForm.icon || 'CalendarOff',
+      isActive: leaveForm.isActive ?? true
     }
 
     onSave(newLeaveType)
