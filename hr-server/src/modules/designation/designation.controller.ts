@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -53,6 +54,7 @@ export class DesignationController {
   // ─── Dropdown options (for select inputs) ──────────────────────────────
 
   @Get('options')
+  @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active designations as dropdown options' })
   @ApiResponse({ status: 200, description: 'Designation options for select inputs' })
   async getOptions() {

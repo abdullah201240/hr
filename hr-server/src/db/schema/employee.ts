@@ -131,8 +131,11 @@ export const employees = pgTable(
     uniqueIndex('employees_employee_id_idx').on(table.employeeId),
     uniqueIndex('employees_email_idx').on(table.email),
     index('employees_department_id_idx').on(table.departmentId),
+    index('employees_designation_id_idx').on(table.designationId),
     index('employees_status_idx').on(table.status),
+    index('employees_employee_type_idx').on(table.employeeType),
     index('employees_join_date_idx').on(table.joinDate),
+    index('employees_full_name_english_idx').on(table.fullNameEnglish),
   ],
 );
 

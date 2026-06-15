@@ -8,32 +8,6 @@ import type {
   UpdateEmployeePayload,
 } from "@/types";
 
-// Helper to poll BullMQ job status until completion or failure
-async function pollEmployeeJob(jobId: string, queue: "create" | "update"): Promise<any> {
-  const maxAttempts = 60; // 30 seconds max
-  const delayMs = 500;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const status = await apiClient.get<{
-      jobId: string;
-      status: string;
-      progress?: number;
-      result?: any;
-    }>(`employees/jobs/${jobId}?queue=${queue}`);
-
-    if (status.status === "completed") {
-      return status.result;
-    }
-    if (status.status === "failed") {
-      throw new Error(`Background processing job failed: ${status.result || "Unknown error"}`);
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
-  }
-
-  throw new Error("Timeout waiting for background employee processing job to complete");
-}
-
 export function useEmployeesQuery(query: EmployeeQuery) {
   const params = new URLSearchParams();
   if (query.page) params.set("page", String(query.page));
@@ -65,19 +39,9 @@ export function useEmployeeQuery(id: string) {
 
 export function useCreateEmployeeMutation() {
   const queryClient = useQueryClient();
-  return useMutation<Employee, Error, CreateEmployeePayload>({
-    mutationFn: async (payload) => {
-      const response = await apiClient.post<{ jobId: string; status: string }>(
-        "employees",
-        payload
-      );
-      if (!response.jobId) {
-        throw new Error("Failed to queue employee creation job");
-      }
-      // Poll the job status until completion
-      const result = await pollEmployeeJob(response.jobId, "create");
-      // Result contains { employeeId: string }
-      return apiClient.get<Employee>(`employees/${result.employeeId}`);
+  return useMutation<{ jobId: string; status: string }, Error, CreateEmployeePayload>({
+    mutationFn: (payload) => {
+      return apiClient.post<{ jobId: string; status: string }>("employees", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -87,21 +51,13 @@ export function useCreateEmployeeMutation() {
 
 export function useUpdateEmployeeMutation(id: string) {
   const queryClient = useQueryClient();
-  return useMutation<Employee, Error, UpdateEmployeePayload>({
-    mutationFn: async (payload) => {
-      const response = await apiClient.patch<{ jobId: string; status: string }>(
-        `employees/${id}`,
-        payload
-      );
-      if (!response.jobId) {
-        throw new Error("Failed to queue employee update job");
-      }
-      // Poll the job status until completion
-      await pollEmployeeJob(response.jobId, "update");
-      return apiClient.get<Employee>(`employees/${id}`);
+  return useMutation<{ jobId: string; status: string }, Error, UpdateEmployeePayload>({
+    mutationFn: (payload) => {
+      return apiClient.patch<{ jobId: string; status: string }>(`employees/${id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees", id] });
     },
   });
 }

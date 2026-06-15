@@ -15,7 +15,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
+    "db:push": "echo 'Error: db:push is disabled. Use migrations instead.' && exit 1",
     "db:studio": "drizzle-kit studio",
     "db:pull": "drizzle-kit pull",
     "test": "jest",
@@ -32,6 +32,7 @@
     "test:seed": "npx tsx test/seed-test-data.ts"
   },
   "dependencies": {
+    "@fastify/compress": "^9.0.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/helmet": "^13.0.2",
     "@fastify/multipart": "^10.0.0",

@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,19 +30,18 @@ import { Roles } from '../auth/guards/roles.decorator';
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
 
-  // ─── Create ────────────────────────────────────────────────────────────
+  // ─── Create ───────────────────────────────────────────────────────────
 
   @Post()
   @Roles('admin', 'hr')
-  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new department' })
   @ApiResponse({ status: 201, description: 'Department created' })
-  @ApiResponse({ status: 409, description: 'Name or code already exists' })
+  @ApiResponse({ status: 409, description: 'Department code already exists' })
   async create(@Body() dto: CreateDepartmentDto) {
     return this.departmentService.create(dto);
   }
 
-  // ─── List ──────────────────────────────────────────────────────────────
+  // ─── List with filters ────────────────────────────────────────────────
 
   @Get()
   @ApiOperation({ summary: 'List departments with pagination and filters' })
@@ -53,6 +53,7 @@ export class DepartmentController {
   // ─── Dropdown options (for select inputs) ──────────────────────────────
 
   @Get('options')
+  @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active departments as dropdown options' })
   @ApiResponse({ status: 200, description: 'Department options for select inputs' })
   async getOptions() {

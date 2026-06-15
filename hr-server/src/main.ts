@@ -7,12 +7,17 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
+import compression from '@fastify/compress';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { runDatabaseMigrations } from './db/migrate';
 
 async function bootstrap() {
+  // Run DB migrations before Nest application bootstrap starts to ensure schema integrity
+  await runDatabaseMigrations();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -31,6 +36,11 @@ async function bootstrap() {
   // ── Security ──────────────────────────────────────────────────
   await app.register(helmet, {
     contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+  });
+
+  // ── Compression ───────────────────────────────────────────────
+  await app.register(compression, {
+    encodings: ['gzip', 'deflate'],
   });
 
   // ── Rate limiting ─────────────────────────────────────────────

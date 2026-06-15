@@ -22,9 +22,9 @@ import {
   CheckCircle,
   Clock,
   Building2,
-  Phone,
   Calendar,
   IdCard,
+  Phone,
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
@@ -45,7 +45,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import Swal from "sweetalert2"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import { useEmployeesQuery, useDeleteEmployeeMutation } from "@/hooks/useEmployees"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
@@ -65,6 +74,9 @@ export default function EmployeesPage() {
   const [employeeType, setEmployeeType] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+
+  // Modal confirm delete state
+  const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null)
 
   // API Hooks
   const { data: deptOptions } = useDepartmentOptionsQuery()
@@ -94,29 +106,16 @@ export default function EmployeesPage() {
     setPage(1)
   }
 
-  const handleDelete = (id: string, name: string) => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: `Are you sure you want to terminate ${name}?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, terminate",
-      cancelButtonText: "Cancel",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
-        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        deleteMutation.mutate(id, {
-          onSuccess: () => {
-            toast.success("Employee terminated successfully")
-          },
-          onError: (err: any) => {
-            toast.error(err.message || "Failed to terminate employee")
-          }
-        })
+  const handleDeleteConfirm = () => {
+    if (!employeeToDelete) return
+    deleteMutation.mutate(employeeToDelete.id, {
+      onSuccess: () => {
+        toast.success("Employee terminated successfully")
+        setEmployeeToDelete(null)
+      },
+      onError: (err: any) => {
+        toast.error(err.message || "Failed to terminate employee")
+        setEmployeeToDelete(null)
       }
     })
   }
@@ -145,6 +144,41 @@ export default function EmployeesPage() {
           .toUpperCase()
       : "EM"
   }
+
+  // Smart windowing pagination page numbers builder
+  const getPageNumbers = (currentPage: number, totalPages: number) => {
+    const pages: Array<number | string> = []
+    const maxVisiblePages = 5
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      pages.push(1)
+
+      if (currentPage > 3) {
+        pages.push("...")
+      }
+
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
+
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push("...")
+      }
+
+      pages.push(totalPages)
+    }
+
+    return pages
+  }
+
+  const pagesArray = getPageNumbers(meta.page, meta.totalPages)
 
   return (
     <div className="space-y-8">
@@ -485,7 +519,7 @@ export default function EmployeesPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => handleDelete(emp.id, emp.fullNameEnglish)}
+                            onClick={() => setEmployeeToDelete({ id: emp.id, name: emp.fullNameEnglish })}
                           >
                             <Trash2 className="mr-2 h-3.5 w-3.5 text-destructive" />
                             Terminate
@@ -500,7 +534,7 @@ export default function EmployeesPage() {
           </Table>
         </div>
 
-        {/* Server-Side Pagination Controls */}
+        {/* Server-Side Pagination Controls with Ellipsis Windowing */}
         {!isLoading && !isError && meta.totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-border/20 pt-4">
             <span className="text-xs text-muted-foreground">
@@ -517,14 +551,20 @@ export default function EmployeesPage() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              {Array.from({ length: meta.totalPages }, (_, idx) => {
-                const pageNum = idx + 1
+              {pagesArray.map((pageNum, idx) => {
+                if (pageNum === "...") {
+                  return (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-xs text-muted-foreground">
+                      ...
+                    </span>
+                  )
+                }
                 return (
                   <Button
                     key={pageNum}
                     variant={page === pageNum ? "default" : "outline"}
                     className="h-8 w-8 text-xs font-semibold"
-                    onClick={() => setPage(pageNum)}
+                    onClick={() => setPage(Number(pageNum))}
                   >
                     {pageNum}
                   </Button>
@@ -543,6 +583,24 @@ export default function EmployeesPage() {
           </div>
         )}
       </div>
+
+      {/* Premium Radix Native AlertDialog for Delete Confirmation */}
+      <AlertDialog open={!!employeeToDelete} onOpenChange={(open) => !open && setEmployeeToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently terminate <strong>{employeeToDelete?.name}</strong> and mark their records as inactive in the core registry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteConfirm}>
+              Terminate Employee
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
