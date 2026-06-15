@@ -61,6 +61,9 @@ export default function LoginPage() {
 
       if (res?.tokens?.accessToken) {
         localStorage.setItem("access_token", res.tokens.accessToken)
+        if (res.tokens.refreshToken) {
+          localStorage.setItem("refresh_token", res.tokens.refreshToken)
+        }
         localStorage.setItem("user", JSON.stringify(res.user))
       }
 
@@ -190,11 +193,13 @@ export default function LoginPage() {
       </form>
 
       {/* Demo hint */}
-      <div className="rounded-lg bg-muted/50 px-4 py-3 text-center">
-        <p className="text-xs text-muted-foreground">
-          Demo: Use any email &amp; password (8+ chars) to sign in
-        </p>
-      </div>
+      {import.meta.env.VITE_DEMO_MODE && (
+        <div className="rounded-lg bg-muted/50 px-4 py-3 text-center">
+          <p className="text-xs text-muted-foreground">
+            Demo: Use any email &amp; password (8+ chars) to sign in
+          </p>
+        </div>
+      )}
     </div>
   )
 }

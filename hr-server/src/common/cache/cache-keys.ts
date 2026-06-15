@@ -177,7 +177,7 @@ export const CacheKeys = {
   /** JWT validation cache (short-lived) */
   jwtValidate: {
     key: key('jwt:validate:*'),
-    ttl: 60, // 1 min
+    ttl: 15, // 15 seconds
     description: 'Cached JWT user validation result',
   },
 } as const;

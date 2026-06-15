@@ -34,6 +34,17 @@ export interface LoginResponse {
   };
 }
 
+/**
+ * AuthService handles user authentication, session tokens, and passwords.
+ * 
+ * SECURITY DESIGN NOTE: 
+ * Access tokens contain a unique `jti` (JWT ID), but the Redis blacklist is only populated during
+ * explicit logouts or token invalidations. On normal access token expiry (15m), the expired token
+ * is rejected by signature validation anyway. While a stolen access token remains valid until its natural 
+ * 15m expiration, this is an acceptable trade-off to keep Redis memory footprint minimal and avoid
+ * checking Redis for validation on every single API request. If stricter requirements arise, consider
+ * reducing accessTokenExpiry to 5m or implementing an active jti verification filter.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);

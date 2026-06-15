@@ -243,6 +243,8 @@ export class EmployeeService {
     if (employeeType) conditions.push(eq(employees.employeeType, employeeType));
 
     if (search) {
+      // NOTE: Using LIKE '%search%' causes full table scans because leading wildcards prevent B-tree index usage.
+      // For large employee datasets, consider PostgreSQL full-text search (tsvector/tsquery) or a search index like Typesense/Meilisearch.
       conditions.push(
         or(
           like(employees.fullNameEnglish, `%${search}%`),
@@ -346,6 +348,7 @@ export class EmployeeService {
       }
 
       await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
 
       return { message: 'Employee reactivated successfully', scheduled: false };
@@ -365,6 +368,7 @@ export class EmployeeService {
           .where(eq(employees.id, id));
 
         await this.cache.delByKey(CacheKeys.employeeById, id);
+        await this.cache.delByKey(CacheKeys.jwtValidate, id);
         await this.cache.delByPattern(CacheKeys.employeeList);
 
         return { message: 'Employee marked inactive immediately', scheduled: false };
@@ -396,6 +400,7 @@ export class EmployeeService {
       );
 
       await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
 
       return {
@@ -412,6 +417,7 @@ export class EmployeeService {
       .where(eq(employees.id, id));
 
     await this.cache.delByKey(CacheKeys.employeeById, id);
+    await this.cache.delByKey(CacheKeys.jwtValidate, id);
     await this.cache.delByPattern(CacheKeys.employeeList);
 
     return { message: 'Employee marked inactive immediately', scheduled: false };
@@ -440,6 +446,7 @@ export class EmployeeService {
 
     // Invalidate cache
     await this.cache.delByKey(CacheKeys.employeeById, id);
+    await this.cache.delByKey(CacheKeys.jwtValidate, id);
     await this.cache.delByPattern(CacheKeys.employeeList);
 
     return { message: 'Employee terminated successfully' };
@@ -497,6 +504,7 @@ export class EmployeeService {
 
     // Clear caches
     await this.cache.delByKey(CacheKeys.employeeById, id);
+    await this.cache.delByKey(CacheKeys.jwtValidate, id);
     await this.cache.delByPattern(CacheKeys.employeeList);
 
     this.logger.log(`Password reset by administrator/HR for employee ID: ${id}`);

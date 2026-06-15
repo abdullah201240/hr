@@ -1,3 +1,10 @@
+/**
+ * NOTE: Frontend types are currently manually maintained and must be kept in sync
+ * with backend DTOs and database schema.
+ * Recommendation: In the future, use openapi-typescript to automatically sync
+ * frontend types from the Swagger/OpenAPI spec, or implement a shared npm packages structure.
+ */
+
 export interface Department {
   id: string;
   name: string;

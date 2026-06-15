@@ -61,6 +61,10 @@ async function bootstrap() {
   // ── CORS ──────────────────────────────────────────────────────
   // Uses process.env directly because CORS must be configured before
   // the app is fully initialized and ConfigService is available.
+  // NOTE ON CSRF: While credentials is set to true, the application relies solely on
+  // Bearer authentication tokens sent via headers. No session cookies are used for auth,
+  // making it inherently resistant to CSRF attacks. If cookies are ever introduced for session/auth,
+  // cross-origin CSRF protections (e.g. @fastify/csrf) must be implemented.
   const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim());
   app.enableCors({
     origin: corsOrigins && corsOrigins.length > 0

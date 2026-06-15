@@ -19,6 +19,7 @@ import {
 import { IsOptional, IsString, IsNumberString } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
 import { CloudinaryService, UploadResult } from './cloudinary.service';
+import { Roles } from '../auth/guards/roles.decorator';
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
@@ -184,15 +185,22 @@ export class UploadController {
   // ── Delete by prefix ───────────────────────────────────────────────────────
 
   @Delete()
-  @ApiOperation({ summary: 'Delete all files matching a prefix' })
+  @Roles('admin')
+  @ApiOperation({ summary: 'Delete all files matching a prefix (Admin only)' })
   async deleteByPrefix(
     @Query() query: DeleteByPrefixQueryDto,
   ): Promise<{ deleted: number }> {
     if (!query.prefix) {
       throw new BadRequestException('prefix query parameter is required');
     }
+    const cleanPrefix = query.prefix.trim();
+    if (cleanPrefix.length < 4 || cleanPrefix === 'hr-system' || cleanPrefix === 'hr-system/') {
+      throw new BadRequestException(
+        'Prefix is too short or generic. Deleting root folders is prohibited for safety.',
+      );
+    }
     const deleted = await this.cloudinary.deleteByPrefix(
-      query.prefix,
+      cleanPrefix,
       query.resourceType,
     );
     return { deleted };

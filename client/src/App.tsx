@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { AuthLayout } from "@/layouts/auth-layout"
 import { DashboardLayout } from "@/layouts/dashboard-layout"
 import { ProtectedRoute } from "@/components/auth/protected-route"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 // Lazy loaded page components
 const LoginPage = lazy(() => import("@/routes/pages/login"))
@@ -73,8 +74,9 @@ function App() {
     <ThemeProvider defaultTheme="system" storageKey="hr-theme">
       <TooltipProvider>
         <BrowserRouter>
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
               {/* Public auth routes */}
               <Route element={<AuthLayout />}>
                 <Route path="/login" element={<LoginPage />} />
@@ -124,6 +126,7 @@ function App() {
               <Route path="/letters/print/:id" element={<PrintHRLetterPage />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </BrowserRouter>
         <Toaster />
       </TooltipProvider>

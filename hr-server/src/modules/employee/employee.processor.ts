@@ -237,10 +237,6 @@ export class EmployeeUpdateProcessor extends WorkerHost {
           }
         }
 
-        // Handle password update
-        if (dto.password) {
-          updateData.passwordHash = await bcrypt.hash(dto.password, 12);
-        }
 
         // Update employee
         await tx.update(employees).set(updateData).where(eq(employees.id, id));
@@ -340,6 +336,7 @@ export class EmployeeUpdateProcessor extends WorkerHost {
 
       // Invalidate caches
       await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
 
       this.logger.log(`Employee updated successfully: ${id}`);
@@ -404,6 +401,7 @@ export class EmployeeStatusProcessor extends WorkerHost {
 
       // Invalidate caches
       await this.cache.delByKey(CacheKeys.employeeById, id);
+      await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
 
       this.logger.log(`Employee ${id} status changed to "${status}" successfully`);
