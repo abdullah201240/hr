@@ -9,7 +9,6 @@ import {
   CalendarIcon,
   CalendarDays,
   Clock,
-  Trash2,
   Plus,
   Pencil,
   X,
@@ -37,7 +36,6 @@ import {
   useHolidaysQuery,
   useCreateHolidayMutation,
   useUpdateHolidayMutation,
-  useDeleteHolidayMutation,
 } from "@/hooks/useAttendanceSettings"
 import type { Holiday } from "@/types"
 
@@ -60,7 +58,6 @@ export function AttendanceSetup() {
   const updateSettingsMut = useUpdateAttendanceSettingsMutation()
   const createHolidayMut = useCreateHolidayMutation()
   const updateHolidayMut = useUpdateHolidayMutation()
-  const deleteHolidayMut = useDeleteHolidayMutation()
 
   // ─── Derived data ────────────────────────────────────────────────────────
   const weeklyHolidays = settingsQuery.data?.weeklyHolidays ?? ["Saturday", "Sunday"]
@@ -81,7 +78,6 @@ export function AttendanceSetup() {
   const isSavingSettings = updateSettingsMut.isPending
   const isCreatingHoliday = createHolidayMut.isPending
   const isUpdatingHoliday = updateHolidayMut.isPending
-  const isDeletingHoliday = deleteHolidayMut.isPending
   const isMutating = isCreatingHoliday || isUpdatingHoliday
 
   // ─── Weekly Holidays ────────────────────────────────────────────────────
@@ -185,19 +181,6 @@ export function AttendanceSetup() {
         },
       },
     )
-  }
-
-  const handleDeleteHoliday = (id: string) => {
-    deleteHolidayMut.mutate(id, {
-      onSuccess: () => {
-        // If we were editing this holiday, exit edit mode
-        if (editingId === id) resetForm()
-        toast.success("Holiday removed")
-      },
-      onError: () => {
-        toast.error("Failed to remove holiday")
-      },
-    })
   }
 
   const handleEditHoliday = (holiday: Holiday) => {
@@ -592,15 +575,6 @@ export function AttendanceSetup() {
                             )}
                           >
                             <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteHoliday(holiday.id)}
-                            disabled={isDeletingHoliday}
-                            className="h-7 w-7 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-500/5 transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>

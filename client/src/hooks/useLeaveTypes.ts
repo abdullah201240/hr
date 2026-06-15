@@ -49,10 +49,10 @@ export function useCreateLeaveTypeMutation() {
   });
 }
 
-export function useUpdateLeaveTypeMutation(id: string) {
+export function useUpdateLeaveTypeMutation() {
   const queryClient = useQueryClient();
-  return useMutation<LeaveType, Error, UpdateLeaveTypePayload>({
-    mutationFn: (payload) => apiClient.patch<LeaveType>(`leave-types/${id}`, payload),
+  return useMutation<LeaveType, Error, { id: string; payload: UpdateLeaveTypePayload }>({
+    mutationFn: ({ id, payload }) => apiClient.patch<LeaveType>(`leave-types/${id}`, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leaveTypes"] });
     },

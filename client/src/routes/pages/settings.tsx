@@ -16,7 +16,6 @@ import {
   useLeaveTypesQuery,
   useCreateLeaveTypeMutation,
   useUpdateLeaveTypeMutation,
-  useDeleteLeaveTypeMutation,
 } from "@/hooks/useLeaveTypes"
 import type { LeaveType } from "@/types"
 
@@ -31,8 +30,7 @@ export default function SettingsPage() {
   })
 
   const createLeaveMutation = useCreateLeaveTypeMutation()
-  const updateLeaveMutation = useUpdateLeaveTypeMutation(editingLeave?.id || "")
-  const deleteLeaveMutation = useDeleteLeaveTypeMutation()
+  const updateLeaveMutation = useUpdateLeaveTypeMutation()
 
   const leaveTypes = leaveTypesData?.data || []
 
@@ -40,7 +38,7 @@ export default function SettingsPage() {
     if (editingLeave) {
       // Update — strip id, createdAt, updatedAt before sending
       const { id, createdAt, updatedAt, ...updatePayload } = leaveType
-      updateLeaveMutation.mutate(updatePayload, {
+      updateLeaveMutation.mutate({ id, payload: updatePayload }, {
         onSuccess: () => {
           toast.success("Leave type updated!", {
             description: `${leaveType.name} configuration saved.`
@@ -75,32 +73,35 @@ export default function SettingsPage() {
     setShowAddLeave(true)
   }
 
-  const handleDeleteLeaveType = (id: string) => {
-    const leaveType = leaveTypes.find(l => l.id === id)
-    if (!leaveType) return
+  const handleToggleActive = (leave: LeaveType) => {
+    const newIsActive = !leave.isActive
+    const statusText = newIsActive ? "activated" : "deactivated"
 
     Swal.fire({
-      title: "Are you sure?",
-      text: `Deactivate leave type "${leaveType.name}"? This cannot be undone.`,
+      title: `${newIsActive ? "Activate" : "Deactivate"} Leave Type?`,
+      text: `"${leave.name}" will be ${statusText}. ${newIsActive ? "It will become available for leave applications." : "It will no longer be available for new leave applications."}`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, deactivate",
+      confirmButtonText: newIsActive ? "Activate" : "Deactivate",
       cancelButtonText: "Cancel",
       buttonsStyling: false,
       customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        confirmButton: `swal2-confirm swal2-styled ${newIsActive ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600'} text-white font-semibold rounded-md px-4 py-2 mr-2`,
         cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        deleteLeaveMutation.mutate(id, {
-          onSuccess: () => {
-            Swal.fire("Deactivated!", "Leave type has been deactivated.", "success")
-          },
-          onError: (err: any) => {
-            Swal.fire("Error", err.message || "Failed to deactivate leave type", "error")
+        updateLeaveMutation.mutate(
+          { id: leave.id, payload: { isActive: newIsActive } },
+          {
+            onSuccess: () => {
+              Swal.fire("Updated!", `Leave type ${statusText}.`, "success")
+            },
+            onError: (err: any) => {
+              Swal.fire("Error", err.message || `Failed to ${statusText} leave type`, "error")
+            }
           }
-        })
+        )
       }
     })
   }
@@ -164,7 +165,7 @@ export default function SettingsPage() {
                 <LeaveTypesList
                   leaveTypes={leaveTypes}
                   onEdit={handleOpenEdit}
-                  onDelete={handleDeleteLeaveType}
+                  onToggleActive={handleToggleActive}
                 />
               </>
             )}

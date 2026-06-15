@@ -16,12 +16,8 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { runDatabaseMigrations } from './db/migrate';
 
 async function bootstrap() {
-  // Run DB migrations before Nest application bootstrap starts to ensure schema integrity
-  await runDatabaseMigrations();
-
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
