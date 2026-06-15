@@ -23,6 +23,7 @@ const processQueue = (error: any, token: string | null = null) => {
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 second timeout
   headers: {
     "Content-Type": "application/json",
   },

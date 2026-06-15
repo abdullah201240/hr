@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -68,6 +68,13 @@ export default function EmployeesPage() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
   const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  // Debounce search input by 300ms to avoid API calls on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
   const [departmentId, setDepartmentId] = useState<string>("all")
   const [designationId, setDesignationId] = useState<string>("all")
   const [status, setStatus] = useState<string>("active")
@@ -85,7 +92,7 @@ export default function EmployeesPage() {
   const { data, isLoading, isError, error } = useEmployeesQuery({
     page,
     limit,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     departmentId: departmentId === "all" ? undefined : departmentId,
     designationId: designationId === "all" ? undefined : designationId,
     status: status === "all" ? undefined : status,
@@ -122,6 +129,7 @@ export default function EmployeesPage() {
 
   const resetFilters = () => {
     setSearch("")
+    setDebouncedSearch("")
     setDepartmentId("all")
     setDesignationId("all")
     setStatus("active")

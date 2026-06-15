@@ -226,14 +226,6 @@ export class EmployeeService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Count
-    const [totalRow] = await this.db
-      .select({ count: count() })
-      .from(employees)
-      .where(where);
-
-    const total = totalRow?.count ?? 0;
-
     // Sort column
     const sortColumns: Record<string, any> = {
       joinDate: employees.joinDate,
@@ -246,32 +238,42 @@ export class EmployeeService {
 
     // Paginated query with department/designation names via join
     const offset = (page - 1) * limit;
-    const data = await this.db
-      .select({
-        id: employees.id,
-        employeeId: employees.employeeId,
-        fullNameEnglish: employees.fullNameEnglish,
-        fullNameBangla: employees.fullNameBangla,
-        email: employees.email,
-        phone: employees.phone,
-        gender: employees.gender,
-        departmentId: employees.departmentId,
-        departmentName: departments.name,
-        designationId: employees.designationId,
-        designationName: designations.name,
-        employeeType: employees.employeeType,
-        joinDate: employees.joinDate,
-        status: employees.status,
-        employeePhotoUrl: employees.employeePhotoUrl,
-        createdAt: employees.createdAt,
-      })
-      .from(employees)
-      .leftJoin(departments, eq(employees.departmentId, departments.id))
-      .leftJoin(designations, eq(employees.designationId, designations.id))
-      .where(where)
-      .orderBy(orderFn(sortCol))
-      .limit(limit)
-      .offset(offset);
+
+    // Run count + data in parallel for faster response
+    const [[totalRow], data] = await Promise.all([
+      this.db
+        .select({ count: count() })
+        .from(employees)
+        .where(where),
+      this.db
+        .select({
+          id: employees.id,
+          employeeId: employees.employeeId,
+          fullNameEnglish: employees.fullNameEnglish,
+          fullNameBangla: employees.fullNameBangla,
+          email: employees.email,
+          phone: employees.phone,
+          gender: employees.gender,
+          departmentId: employees.departmentId,
+          departmentName: departments.name,
+          designationId: employees.designationId,
+          designationName: designations.name,
+          employeeType: employees.employeeType,
+          joinDate: employees.joinDate,
+          status: employees.status,
+          employeePhotoUrl: employees.employeePhotoUrl,
+          createdAt: employees.createdAt,
+        })
+        .from(employees)
+        .leftJoin(departments, eq(employees.departmentId, departments.id))
+        .leftJoin(designations, eq(employees.designationId, designations.id))
+        .where(where)
+        .orderBy(orderFn(sortCol))
+        .limit(limit)
+        .offset(offset),
+    ]);
+
+    const total = totalRow?.count ?? 0;
 
     const result = {
       data,

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Link, useLocation } from "react-router"
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -26,12 +26,12 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
   const location = useLocation()
   const { user } = useAuthStore()
 
-  const mappedUser = {
+  const mappedUser = useMemo(() => ({
     name: user?.fullNameEnglish || "Employee",
     email: user?.email || "",
     avatar: user?.employeePhotoUrl || "",
     role: user?.role || "",
-  }
+  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role])
 
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {
     // Auto-expand menus that contain the current route

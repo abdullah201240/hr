@@ -62,6 +62,13 @@ export const CacheKeys = {
     description: 'All departments',
   },
 
+  /** Cached department list (paginated) */
+  departmentListPaginated: {
+    key: key('departments:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated department list',
+  },
+
   /** Designation list */
   designationList: {
     key: key('designations:list'),

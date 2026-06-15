@@ -106,13 +106,10 @@ export class DepartmentService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Total count
-    const [totalRow] = await this.db
-      .select({ count: count() })
-      .from(departments)
-      .where(where);
-
-    const total = totalRow?.count ?? 0;
+    // Build a deterministic cache key from query params
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${isActive ?? ''}:${sortBy}:${sortOrder}`;
+    const cached = await this.cache.getByKey<any>(CacheKeys.departmentListPaginated, cacheKeyParts);
+    if (cached) return cached;
 
     // Sort
     const sortColumns: Record<string, any> = {
@@ -125,24 +122,34 @@ export class DepartmentService {
 
     // Paginated query
     const offset = (page - 1) * limit;
-    const data = await this.db
-      .select({
-        id: departments.id,
-        name: departments.name,
-        code: departments.code,
-        description: departments.description,
-        headEmployeeId: departments.headEmployeeId,
-        isActive: departments.isActive,
-        createdAt: departments.createdAt,
-        updatedAt: departments.updatedAt,
-      })
-      .from(departments)
-      .where(where)
-      .orderBy(orderFn(sortCol))
-      .limit(limit)
-      .offset(offset);
 
-    return {
+    // Run count + data in parallel for faster response
+    const [[totalRow], data] = await Promise.all([
+      this.db
+        .select({ count: count() })
+        .from(departments)
+        .where(where),
+      this.db
+        .select({
+          id: departments.id,
+          name: departments.name,
+          code: departments.code,
+          description: departments.description,
+          headEmployeeId: departments.headEmployeeId,
+          isActive: departments.isActive,
+          createdAt: departments.createdAt,
+          updatedAt: departments.updatedAt,
+        })
+        .from(departments)
+        .where(where)
+        .orderBy(orderFn(sortCol))
+        .limit(limit)
+        .offset(offset),
+    ]);
+
+    const total = totalRow?.count ?? 0;
+
+    const result = {
       data,
       meta: {
         total,
@@ -151,6 +158,10 @@ export class DepartmentService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    await this.cache.setByKey(CacheKeys.departmentListPaginated, result, cacheKeyParts);
+
+    return result;
   }
 
   // ─── Find one ────────────────────────────────────────────────────────────
@@ -315,6 +326,9 @@ export class DepartmentService {
   // ─── Cache helpers ────────────────────────────────────────────────────────
 
   private async invalidateListCache() {
-    await this.cache.delByPattern(CacheKeys.departmentList);
+    await Promise.all([
+      this.cache.delByPattern(CacheKeys.departmentList),
+      this.cache.delByPattern(CacheKeys.departmentListPaginated),
+    ]);
   }
 }

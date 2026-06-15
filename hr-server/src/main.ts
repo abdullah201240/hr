@@ -40,7 +40,7 @@ async function bootstrap() {
 
   // ── Compression ───────────────────────────────────────────────
   await app.register(compression, {
-    encodings: ['gzip', 'deflate'],
+    encodings: ['br', 'gzip', 'deflate'], // Brotli preferred (30% smaller)
   });
 
   // ── Rate limiting ─────────────────────────────────────────────

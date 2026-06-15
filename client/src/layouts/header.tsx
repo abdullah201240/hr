@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useLocation, useNavigate } from "react-router"
 import {
   Search,
@@ -58,12 +58,12 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
 
   const pageTitle = getPageTitle(location.pathname)
 
-  const mappedUser = {
+  const mappedUser = useMemo(() => ({
     name: user?.fullNameEnglish || "Employee",
     email: user?.email || "",
     avatar: user?.employeePhotoUrl || "",
     role: user?.role || "",
-  }
+  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role])
 
   const handleLogout = () => {
     logout()
