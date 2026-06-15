@@ -46,8 +46,8 @@ const FIELD_LABELS: Record<string, string> = {
 
 interface AddEmployeeFormProps {
   onCancel: () => void
-  onSubmit: (data: any) => void
-  initialData?: any
+  onSubmit: (data: EmployeeFormInput) => void
+  initialData?: Partial<EmployeeFormInput>
   isEdit?: boolean
   isView?: boolean
 }
@@ -77,7 +77,7 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
   >(() => {
     const initial: Record<number, { nidPdfName: string | null; photoPreview: string | null }> = {}
     if (initialData?.nominees) {
-      initialData.nominees.forEach((nom: any, index: number) => {
+      initialData.nominees.forEach((nom: Record<string, unknown>, index: number) => {
         let nPdf: string | null = null
         let pPrev: string | null = null
         if (nom.nidPdf) {

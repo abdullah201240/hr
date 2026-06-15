@@ -42,6 +42,8 @@ import {
   usePendingCorrectionsQuery,
   useOverrideAttendanceMutation,
   type AttendanceRecord,
+  type DailyAttendanceLog,
+  type CorrectionRequest,
 } from "@/hooks/useAttendance"
 import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -187,9 +189,10 @@ export default function AttendancePage() {
         description: `Your request for ${correctionRecord.dateStr} has been sent for approval.`,
       })
       setIsCorrectionDialogOpen(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
       toast.error("Failed to submit correction request", {
-        description: err.response?.data?.message || err.message || "An error occurred.",
+        description: error.response?.data?.message || error.message || "An error occurred.",
       })
     }
   }
@@ -234,7 +237,7 @@ export default function AttendancePage() {
 
   // Filtered daily logs
   const filteredDailyLogs = useMemo(() => {
-    return dailyLogs.filter((log: any) => {
+    return dailyLogs.filter((log) => {
       const matchesStatus = adminFilterStatus === "all" || log.status === adminFilterStatus
       const matchesSearch =
         log.employeeName.toLowerCase().includes(adminSearch.toLowerCase()) ||
@@ -254,7 +257,7 @@ export default function AttendancePage() {
     return counts
   }, [dailyLogs])
 
-  const handleOpenOverride = (log?: any) => {
+  const handleOpenOverride = (log?: DailyAttendanceLog) => {
     if (log) {
       // Edit mode
       setOverrideEmployeeId(log.employeeId)
@@ -296,8 +299,9 @@ export default function AttendancePage() {
       toast.success("Attendance entry updated successfully")
       setIsOverrideDialogOpen(false)
       refetchDaily()
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to update attendance")
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error.response?.data?.message || error.message || "Failed to update attendance")
     }
   }
 
@@ -305,8 +309,9 @@ export default function AttendancePage() {
     try {
       await approveCorrectionMut.mutateAsync(id)
       toast.success(`Approved correction for ${name} on ${date}`)
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Approval failed")
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error.response?.data?.message || error.message || "Approval failed")
     }
   }
 
@@ -314,8 +319,9 @@ export default function AttendancePage() {
     try {
       await rejectCorrectionMut.mutateAsync(id)
       toast.success(`Rejected correction for ${name} on ${date}`)
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Rejection failed")
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error.response?.data?.message || error.message || "Rejection failed")
     }
   }
 
@@ -918,7 +924,7 @@ export default function AttendancePage() {
                         </thead>
                         <tbody>
                           {filteredDailyLogs.length > 0 ? (
-                            filteredDailyLogs.map((log: any) => (
+                            filteredDailyLogs.map((log) => (
                               <tr key={log.id} className="border-b border-border/10 hover:bg-muted/5 transition-colors">
                                 <td className="py-3.5 px-5 font-semibold text-foreground">{log.employeeName}</td>
                                 <td className="py-3.5 px-5 text-muted-foreground">{log.employeeIdCode}</td>
@@ -1001,7 +1007,7 @@ export default function AttendancePage() {
                       </thead>
                       <tbody>
                         {pendingCorrections.length > 0 ? (
-                          pendingCorrections.map((corr: any) => (
+                          pendingCorrections.map((corr) => (
                             <tr key={corr.id} className="border-b border-border/10 hover:bg-muted/5 transition-colors">
                               <td className="py-3.5 px-5">
                                 <div className="font-semibold text-foreground">{corr.employeeName}</div>
@@ -1174,7 +1180,7 @@ export default function AttendancePage() {
                 required
               >
                 <option value="">-- Choose Employee --</option>
-                {activeEmployees.map((emp: any) => (
+                {activeEmployees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {emp.fullNameEnglish} ({emp.employeeId})
                   </option>

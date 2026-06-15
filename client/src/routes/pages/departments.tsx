@@ -1,4 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router"
+import { useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -58,9 +59,11 @@ export default function DepartmentsPage() {
 
   // Sync tab with URL search parameter
   const urlTab = searchParams.get("tab") || "departments"
-  if (urlTab !== activeTab) {
-    setActiveTab(urlTab)
-  }
+  useEffect(() => {
+    if (urlTab !== activeTab) {
+      setActiveTab(urlTab)
+    }
+  }, [urlTab, activeTab, setActiveTab])
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
@@ -102,7 +105,7 @@ export default function DepartmentsPage() {
           onSuccess: () => {
             Swal.fire("Deactivated!", "Department has been deactivated.", "success")
           },
-          onError: (err: any) => {
+          onError: (err: Error) => {
             Swal.fire("Error", err.message || "Failed to deactivate department", "error")
           }
         })
@@ -129,7 +132,7 @@ export default function DepartmentsPage() {
           onSuccess: () => {
             Swal.fire("Deactivated!", "Designation has been deactivated.", "success")
           },
-          onError: (err: any) => {
+          onError: (err: Error) => {
             Swal.fire("Error", err.message || "Failed to deactivate designation", "error")
           }
         })
@@ -140,9 +143,8 @@ export default function DepartmentsPage() {
   // Calculations for Department KPIs
   const departments = deptsData?.data || []
   const totalDepts = deptsData?.meta?.total || departments.length
-  // Open Roles & size are dummy for now or computed based on loaded data
+  // Open Roles & size are computed from loaded data
   const totalMembers = departments.reduce((acc, curr) => acc + (Number(curr.employeeCount) || 0), 0)
-  const totalOpenRoles = departments.length * 2 // approximation for visual completeness
   const avgDeptSize = totalDepts > 0 ? Math.round(totalMembers / totalDepts) : 0
 
   // Calculations for Designation KPIs
@@ -204,16 +206,6 @@ export default function DepartmentsPage() {
 
             <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
               <div className="space-y-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Open Positions</span>
-                <p className="text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{totalOpenRoles}</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                <Briefcase className="h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
-              <div className="space-y-1">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Dept Size</span>
                 <p className="text-3xl font-bold tracking-tight">{avgDeptSize} <span className="text-xs text-muted-foreground font-normal">/ dept</span></p>
               </div>
@@ -264,7 +256,7 @@ export default function DepartmentsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    departments.map((dept: any) => (
+                    departments.map((dept) => (
                       <TableRow key={dept.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="cursor-pointer py-3 font-semibold text-sm hover:text-primary transition-colors" onClick={() => navigate(`/departments/view/${dept.id}`)}>
                           <div className="flex items-center gap-2.5">
@@ -370,9 +362,9 @@ export default function DepartmentsPage() {
 
             <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
               <div className="space-y-1">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Designation Openings</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Employees</span>
                 <p className="text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
-                  {totalDesgs * 2}
+                  {designations.reduce((acc, d) => acc + (d.employeeCount || 0), 0)}
                 </p>
               </div>
               <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
@@ -423,7 +415,7 @@ export default function DepartmentsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    designations.map((desg: any) => (
+                    designations.map((desg) => (
                       <TableRow key={desg.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="cursor-pointer py-3 font-semibold text-sm hover:text-primary transition-colors" onClick={() => navigate(`/designations/view/${desg.id}`)}>
                           <div className="flex items-center gap-2.5">

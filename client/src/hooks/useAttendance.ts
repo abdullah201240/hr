@@ -20,6 +20,33 @@ export interface AttendanceRecord {
   correctionReason?: string;
 }
 
+export interface DailyAttendanceLog {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeIdCode: string;
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  hours: number | null;
+  status: string;
+  notes: string | null;
+}
+
+export interface CorrectionRequest {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeIdCode: string;
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  proposedCheckIn: string;
+  proposedCheckOut: string;
+  correctionReason: string;
+  correctionStatus: string;
+}
+
 export function useMyAttendanceQuery(year: number, month: number) {
   return useQuery<AttendanceRecord[]>({
     queryKey: ["attendance", "my-logs", year, month],
@@ -31,7 +58,7 @@ export function useMyAttendanceQuery(year: number, month: number) {
 
 export function useCheckInMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { location: string; ipAddress?: string; device?: string; notes?: string }>({
+  return useMutation<unknown, Error, { location: string; ipAddress?: string; device?: string; notes?: string }>({
     mutationFn: (payload) => apiClient.post("attendance/check-in", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
@@ -41,7 +68,7 @@ export function useCheckInMutation() {
 
 export function useCheckOutMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { notes?: string }>({
+  return useMutation<unknown, Error, { notes?: string }>({
     mutationFn: (payload) => apiClient.post("attendance/check-out", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
@@ -51,7 +78,7 @@ export function useCheckOutMutation() {
 
 export function useSubmitCorrectionMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, { date: string; proposedCheckIn: string; proposedCheckOut: string; correctionReason: string }>({
+  return useMutation<unknown, Error, { date: string; proposedCheckIn: string; proposedCheckOut: string; correctionReason: string }>({
     mutationFn: (payload) => apiClient.post("attendance/correction", payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
@@ -62,16 +89,16 @@ export function useSubmitCorrectionMutation() {
 // ─── Admin/HR hooks ─────────────────────────────────────────────────────────
 
 export function useDailyAttendanceQuery(dateStr: string) {
-  return useQuery<any[]>({
+  return useQuery<DailyAttendanceLog[]>({
     queryKey: ["attendance", "daily", dateStr],
-    queryFn: () => apiClient.get<any[]>(`attendance/daily?date=${dateStr}`),
+    queryFn: () => apiClient.get<DailyAttendanceLog[]>(`attendance/daily?date=${dateStr}`),
     staleTime: 30 * 1000,
   });
 }
 
 export function useApproveCorrectionMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, string>({
+  return useMutation<unknown, Error, string>({
     mutationFn: (id) => apiClient.post(`attendance/correction/approve/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
@@ -81,7 +108,7 @@ export function useApproveCorrectionMutation() {
 
 export function useRejectCorrectionMutation() {
   const queryClient = useQueryClient();
-  return useMutation<any, Error, string>({
+  return useMutation<unknown, Error, string>({
     mutationFn: (id) => apiClient.post(`attendance/correction/reject/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
@@ -90,9 +117,9 @@ export function useRejectCorrectionMutation() {
 }
 
 export function usePendingCorrectionsQuery() {
-  return useQuery<any[]>({
+  return useQuery<CorrectionRequest[]>({
     queryKey: ["attendance", "pending-corrections"],
-    queryFn: () => apiClient.get<any[]>("attendance/corrections/pending"),
+    queryFn: () => apiClient.get<CorrectionRequest[]>("attendance/corrections/pending"),
     staleTime: 30 * 1000,
   });
 }
@@ -100,7 +127,7 @@ export function usePendingCorrectionsQuery() {
 export function useOverrideAttendanceMutation() {
   const queryClient = useQueryClient();
   return useMutation<
-    any,
+    unknown,
     Error,
     {
       employeeId: string;

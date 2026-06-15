@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const res = await apiClient.post<any>("auth/login", { email, password });
+      const res = await apiClient.post<{ tokens: { accessToken: string; refreshToken?: string }; user: UserProfile }>("auth/login", { email, password });
       
       if (res?.tokens?.accessToken) {
         localStorage.setItem("access_token", res.tokens.accessToken);
@@ -108,7 +108,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: JSON.parse(storedUser),
           accessToken: token,
           isAuthenticated: true,
-          isLoading: false,
         });
       } catch {
         // ignore JSON parse error
@@ -123,11 +122,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: token,
         isAuthenticated: true,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { status?: number };
       console.warn("Auth background validation failed:", error);
       // Only logout on explicit 401 Unauthorized errors (e.g. expired tokens).
       // Keep cached session for other errors (network timeouts, offline, server 500s).
-      if (error?.status === 401) {
+      if (err?.status === 401) {
         get().logout();
       }
     } finally {

@@ -16,6 +16,7 @@ import type { EmployeeFormInput } from "./form-schema"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
 import { useEmployeesQuery } from "@/hooks/useEmployees"
+import type { Employee } from "@/types"
 
 interface EmploymentStepProps {
   nidPdfName: string | null
@@ -108,7 +109,7 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
               <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
                 <SelectTrigger className={cn("w-full", errors.designation && "border-destructive")}><SelectValue placeholder="Select designation" /></SelectTrigger>
                 <SelectContent>
-                  {desigOptions?.map((d: any) => (
+                  {desigOptions?.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -120,7 +121,7 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
               <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
                 <SelectTrigger className={cn("w-full", errors.department && "border-destructive")}><SelectValue placeholder="Select department" /></SelectTrigger>
                 <SelectContent>
-                  {deptOptions?.map((d: any) => (
+                  {deptOptions?.map((d) => (
                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -168,7 +169,7 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
                 <SelectTrigger className="w-full"><SelectValue placeholder="Select reporting manager" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No Manager</SelectItem>
-                  {employeesData?.data?.map((emp: any) => (
+                  {employeesData?.data?.map((emp: Employee) => (
                     <SelectItem key={emp.id} value={emp.id}>{emp.fullNameEnglish} ({emp.employeeId})</SelectItem>
                   ))}
                 </SelectContent>

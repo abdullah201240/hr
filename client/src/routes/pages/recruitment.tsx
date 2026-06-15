@@ -133,6 +133,12 @@ const INITIAL_ONBOARDING: OnboardingHire[] = [
 
 const PIPELINE_STAGES = ["Applied", "Screening", "Interview", "Technical", "Offer", "Hired"] as const
 
+// HTML escape helper to prevent XSS in SweetAlert2 html templates
+const escHtml = (str: string | undefined | null): string => {
+  if (!str) return ""
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
+}
+
 export default function RecruitmentPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -204,9 +210,9 @@ export default function RecruitmentPage() {
           html: `
             <div class="text-left border p-3 rounded bg-muted/30 text-xs font-mono space-y-2 max-h-60 overflow-y-auto">
               <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-              <p><strong>To:</strong> ${cand.name} (${cand.email})</p>
-              <p>Dear ${cand.name},</p>
-              <p>We are pleased to offer you the position of <strong>${cand.role}</strong> at our organization. We offer a starting salary of <strong>${result.value.salary}</strong> with a start date of <strong>${result.value.startDate}</strong>.</p>
+              <p><strong>To:</strong> ${escHtml(cand.name)} (${escHtml(cand.email)})</p>
+              <p>Dear ${escHtml(cand.name)},</p>
+              <p>We are pleased to offer you the position of <strong>${escHtml(cand.role)}</strong> at our organization. We offer a starting salary of <strong>${escHtml(result.value.salary)}</strong> with a start date of <strong>${escHtml(result.value.startDate)}</strong>.</p>
               <p>Sincerely,<br/>HR Department</p>
             </div>
           `
@@ -255,11 +261,11 @@ export default function RecruitmentPage() {
           html: `
             <div class="text-left border p-3 rounded bg-muted/30 text-xs font-mono space-y-2 max-h-60 overflow-y-auto">
               <p><strong>OFFICIAL JOINING LETTER</strong></p>
-              <p><strong>Employee:</strong> ${cand.name}</p>
-              <p><strong>Designation:</strong> ${cand.role}</p>
-              <p><strong>Reporting To:</strong> ${result.value.manager}</p>
-              <p>Dear ${cand.name},</p>
-              <p>Welcome to our team! This letter confirms your active placement. Please report to <strong>${result.value.manager}</strong> on your start date.</p>
+              <p><strong>Employee:</strong> ${escHtml(cand.name)}</p>
+              <p><strong>Designation:</strong> ${escHtml(cand.role)}</p>
+              <p><strong>Reporting To:</strong> ${escHtml(result.value.manager)}</p>
+              <p>Dear ${escHtml(cand.name)},</p>
+              <p>Welcome to our team! This letter confirms your active placement. Please report to <strong>${escHtml(result.value.manager)}</strong> on your start date.</p>
             </div>
           `
         })

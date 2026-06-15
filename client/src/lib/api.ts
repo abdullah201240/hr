@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
@@ -7,10 +7,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
-  reject: (err: any) => void;
+  reject: (err: unknown) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -24,6 +24,7 @@ const processQueue = (error: any, token: string | null = null) => {
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 second timeout
+  withCredentials: true, // Required for httpOnly cookie-based auth
 });
 
 // Request Interceptor: Attach bearer token dynamically
@@ -58,7 +59,7 @@ axiosInstance.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const status = error.response?.status;
-    const errorData = error.response?.data as any;
+    const errorData = error.response?.data as Record<string, unknown> | undefined;
 
     // 1. Auto-retry on 429 Too Many Requests (Rate Limit)
     const isRateLimit = status === 429 || (errorData && typeof errorData.message === "string" && errorData.message.includes("Rate limit exceeded"));
@@ -94,7 +95,7 @@ axiosInstance.interceptors.response.use(
     }
 
     // 2. Handle 401 Session Expiration and Refresh Token
-    if (status === 401 && error.config && !(error.config as any)._retry) {
+    if (status === 401 && error.config && !(error.config as unknown as Record<string, unknown>)._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -108,7 +109,7 @@ axiosInstance.interceptors.response.use(
           });
       }
 
-      (error.config as any)._retry = true;
+      (error.config as unknown as Record<string, unknown>)._retry = true;
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (refreshToken) {
@@ -118,7 +119,7 @@ axiosInstance.interceptors.response.use(
           // Call NestJS auth/refresh directly using raw axios to bypass global interceptors
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
-          });
+          }, { withCredentials: true });
 
           const payload = response.data;
           const tokens = payload && typeof payload === "object" && "data" in payload ? payload.data.tokens : payload.tokens;
@@ -169,16 +170,17 @@ axiosInstance.interceptors.response.use(
     let errorDescription = "";
 
     if (errorData) {
-      if (errorData.error && typeof errorData.error.message === "string") {
-        errorMessage = errorData.error.message;
-        if (Array.isArray(errorData.error.errors)) {
-          errorDescription = errorData.error.errors.join(", ");
+      const errObj = errorData.error as Record<string, unknown> | undefined;
+      if (errObj && typeof errObj.message === "string") {
+        errorMessage = errObj.message;
+        if (Array.isArray(errObj.errors)) {
+          errorDescription = (errObj.errors as string[]).join(", ");
         }
       } else if (typeof errorData.message === "string") {
         errorMessage = errorData.message;
       } else if (Array.isArray(errorData.message)) {
         errorMessage = "Validation Error";
-        errorDescription = errorData.message.join(", ");
+        errorDescription = (errorData.message as string[]).join(", ");
       }
     } else if (error.message) {
       errorMessage = error.message;
@@ -196,15 +198,15 @@ axiosInstance.interceptors.response.use(
 
 // Standardized client wrapper
 export const apiClient = {
-  get: <T>(endpoint: string, options?: any) =>
-    axiosInstance.get<any, T>(endpoint.replace(/^\//, ""), options),
+  get: <T>(endpoint: string, options?: AxiosRequestConfig) =>
+    axiosInstance.get<unknown, T>(endpoint.replace(/^\//, ""), options),
 
-  post: <T>(endpoint: string, body?: any, options?: any) =>
-    axiosInstance.post<any, T>(endpoint.replace(/^\//, ""), body, options),
+  post: <T>(endpoint: string, body?: unknown, options?: AxiosRequestConfig) =>
+    axiosInstance.post<unknown, T>(endpoint.replace(/^\//, ""), body, options),
 
-  patch: <T>(endpoint: string, body?: any, options?: any) =>
-    axiosInstance.patch<any, T>(endpoint.replace(/^\//, ""), body, options),
+  patch: <T>(endpoint: string, body?: unknown, options?: AxiosRequestConfig) =>
+    axiosInstance.patch<unknown, T>(endpoint.replace(/^\//, ""), body, options),
 
-  delete: <T>(endpoint: string, options?: any) =>
-    axiosInstance.delete<any, T>(endpoint.replace(/^\//, ""), options),
+  delete: <T>(endpoint: string, options?: AxiosRequestConfig) =>
+    axiosInstance.delete<unknown, T>(endpoint.replace(/^\//, ""), options),
 };

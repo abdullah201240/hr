@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
-import { apiClient } from "@/lib/api"
+import { useAuthStore } from "@/store/useAuthStore"
 
 const loginSchema = z.object({
   email: z
@@ -49,23 +49,14 @@ export default function LoginPage() {
 
   const rememberMe = watch("rememberMe")
 
+  const login = useAuthStore((state) => state.login)
+
   async function onSubmit(data: LoginFormValues) {
     setServerError(null)
     setIsLoading(true)
 
     try {
-      const res = await apiClient.post<any>("auth/login", {
-        email: data.email,
-        password: data.password,
-      })
-
-      if (res?.tokens?.accessToken) {
-        localStorage.setItem("access_token", res.tokens.accessToken)
-        if (res.tokens.refreshToken) {
-          localStorage.setItem("refresh_token", res.tokens.refreshToken)
-        }
-        localStorage.setItem("user", JSON.stringify(res.user))
-      }
+      await login(data.email, data.password)
 
       navigate("/")
     } catch (err: any) {

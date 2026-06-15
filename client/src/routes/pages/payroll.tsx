@@ -141,7 +141,7 @@ export default function PayrollPage() {
       { employeeId: "EMP-006", name: "Marcus Brown", email: "marcus.b@sadoshima.com", role: "Sales Rep", dept: "Sales", joinDate: "2025-02-01", status: "Active" },
     ]
 
-    setEmployees(list.map((emp: any) => ({
+    setEmployees(list.map((emp: Record<string, string>) => ({
       email: emp.email,
       name: emp.name,
       role: emp.role,
@@ -368,7 +368,7 @@ export default function PayrollPage() {
   // Calculate PF balances based on historic payrolls & join duration seed
   const getEmployeePfStats = (emp: EmployeeSalaryDef) => {
     const joinDateObj = new Date(emp.joinDate)
-    const today = new Date("2026-06-15") // System benchmark date
+    const today = new Date()
     const diffMonths = (today.getFullYear() - joinDateObj.getFullYear()) * 12 + today.getMonth() - joinDateObj.getMonth()
     const months = Math.max(1, diffMonths)
 
@@ -401,7 +401,7 @@ export default function PayrollPage() {
   }
 
   const formatCurrency = (val: number) => {
-    return "৳" + new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(val)
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(val)
   }
 
   // Calculate total monthly analytics
@@ -693,8 +693,8 @@ export default function PayrollPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {disbursements.map((rec, i) => (
-                      <TableRow key={i} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                    {disbursements.map((rec) => (
+                      <TableRow key={`${rec.monthKey}-${rec.referenceId}`} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3 text-xs font-semibold">{rec.monthKey}</TableCell>
                         <TableCell className="py-3 text-xs text-muted-foreground">{rec.disbursementDate}</TableCell>
                         <TableCell className="py-3">
