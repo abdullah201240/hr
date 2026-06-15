@@ -20,6 +20,7 @@ import { DesignationModule } from './modules/designation/designation.module';
 import { LeaveTypeModule } from './modules/leave-type/leave-type.module';
 import { AttendanceSettingsModule } from './modules/attendance-settings/attendance-settings.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -73,6 +74,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     LeaveTypeModule,
     AttendanceSettingsModule,
     AttendanceModule,
+    AnnouncementsModule,
   ],
   providers: [
     {

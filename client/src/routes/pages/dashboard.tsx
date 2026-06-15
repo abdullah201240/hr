@@ -13,26 +13,18 @@ import type {
 import {
   DEFAULT_LEAVE_BALANCES,
   INITIAL_TASKS,
-  DEFAULT_ANNOUNCEMENTS,
   resolveLeaveIcon,
 } from "@/components/dashboard/types"
 import { useMyAttendanceQuery } from "@/hooks/useAttendance"
+import { useAnnouncements } from "@/hooks/useAnnouncements"
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   // ── Announcements ──────────────────────────────────────────────────────────
-  const [announcements] = useState(() => {
-    const saved = localStorage.getItem("hr_announcements")
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        return parsed.filter((a: any) => a.status === "Published")
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return DEFAULT_ANNOUNCEMENTS
-  })
+  const { data: allAnnouncements = [] } = useAnnouncements()
+  const announcements = useMemo(() => {
+    return allAnnouncements.filter((a: any) => a.status === "Published")
+  }, [allAnnouncements])
 
   // ── Tasks ──────────────────────────────────────────────────────────────────
   const [tasks, setTasks] = useState(INITIAL_TASKS)
