@@ -1,7 +1,25 @@
 import axios, { AxiosError } from "axios";
 import { toast } from "sonner";
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+
+// Silent Refresh queue state variables
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -71,15 +89,75 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // 2. Handle 401 Session Expiration
-    if (status === 401) {
-      const authStoreModule = await import("@/store/useAuthStore");
-      authStoreModule.useAuthStore.getState().logout();
-      toast.error("Session Expired", {
-        description: "Your session has expired. Please sign in again.",
-        duration: 4000,
-      });
-      return Promise.reject(error);
+    // 2. Handle 401 Session Expiration and Refresh Token
+    if (status === 401 && error.config && !(error.config as any)._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            error.config!.headers.Authorization = `Bearer ${token}`;
+            return axiosInstance(error.config!);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      (error.config as any)._retry = true;
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      if (refreshToken) {
+        isRefreshing = true;
+
+        try {
+          // Call NestJS auth/refresh directly using raw axios to bypass global interceptors
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+            refreshToken,
+          });
+
+          const payload = response.data;
+          const tokens = payload && typeof payload === "object" && "data" in payload ? payload.data.tokens : payload.tokens;
+
+          if (tokens?.accessToken) {
+            localStorage.setItem("access_token", tokens.accessToken);
+            if (tokens.refreshToken) {
+              localStorage.setItem("refresh_token", tokens.refreshToken);
+            }
+
+            // Sync Zustand store
+            import("@/store/useAuthStore").then((mod) => {
+              mod.useAuthStore.setState({ accessToken: tokens.accessToken, isAuthenticated: true });
+            });
+
+            processQueue(null, tokens.accessToken);
+            isRefreshing = false;
+
+            error.config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+            return axiosInstance(error.config);
+          }
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          isRefreshing = false;
+
+          // Clear credentials and logout user on refresh failure
+          const authStoreModule = await import("@/store/useAuthStore");
+          authStoreModule.useAuthStore.getState().logout();
+          toast.error("Session Expired", {
+            description: "Your session has expired. Please sign in again.",
+            duration: 4000,
+          });
+          return Promise.reject(error);
+        }
+      } else {
+        const authStoreModule = await import("@/store/useAuthStore");
+        authStoreModule.useAuthStore.getState().logout();
+        toast.error("Session Expired", {
+          description: "Your session has expired. Please sign in again.",
+          duration: 4000,
+        });
+        return Promise.reject(error);
+      }
     }
 
     // 3. Standardize error message extraction

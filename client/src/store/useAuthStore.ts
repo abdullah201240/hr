@@ -50,6 +50,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       if (res?.tokens?.accessToken) {
         localStorage.setItem("access_token", res.tokens.accessToken);
+        if (res.tokens.refreshToken) {
+          localStorage.setItem("refresh_token", res.tokens.refreshToken);
+        }
         localStorage.setItem("user", JSON.stringify(res.user));
         
         set({
@@ -69,6 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     set({
       user: null,
