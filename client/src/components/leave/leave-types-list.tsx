@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, CheckCircle2, CalendarOff, X, Pencil, ToggleRight, ToggleLeft } from "lucide-react"
+import { AlertCircle, CheckCircle2, CalendarOff, X, Pencil, ToggleRight, ToggleLeft, ArrowRightLeft, Coins, CalendarClock, Users, Calculator } from "lucide-react"
 import type { LeaveType } from "@/types"
 import { cn } from "@/lib/utils"
 
@@ -29,13 +29,14 @@ export function LeaveTypesList({ leaveTypes, onEdit, onToggleActive }: LeaveType
             <TableHead className="font-semibold text-xs text-muted-foreground">Days</TableHead>
             <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Active</TableHead>
             <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Policy</TableHead>
+            <TableHead className="hidden xl:table-cell font-semibold text-xs text-muted-foreground">Rules</TableHead>
             <TableHead className="w-24 font-semibold text-xs text-muted-foreground">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {leaveTypes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center border-b-0">
+              <TableCell colSpan={7} className="h-24 text-center border-b-0">
                 <div className="flex flex-col items-center justify-center">
                   <CalendarOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
                   <p className="text-sm text-muted-foreground">No leave types configured yet.</p>
@@ -53,11 +54,14 @@ export function LeaveTypesList({ leaveTypes, onEdit, onToggleActive }: LeaveType
                       
                       <div>
                         <p className="font-semibold text-sm">{leave.name}</p>
-                        <div className="flex items-center gap-1.5 mt-1">
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <Badge variant="secondary" className="text-[10px] h-5">{leave.days} days/year</Badge>
                           <Badge className={`text-[10px] h-5 ${leave.paid ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
                             {leave.paid ? 'Paid' : 'Unpaid'}
                           </Badge>
+                          {leave.clause && (
+                            <Badge variant="outline" className="text-[10px] h-5">§{leave.clause}</Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -66,6 +70,12 @@ export function LeaveTypesList({ leaveTypes, onEdit, onToggleActive }: LeaveType
                   {/* Description */}
                   <TableCell className="hidden md:table-cell text-sm text-muted-foreground py-3 max-w-xs">
                     <p className="truncate">{leave.description}</p>
+                    {leave.eligibility && (
+                      <p className="text-[10px] mt-1 text-amber-600 flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {leave.eligibility}
+                      </p>
+                    )}
                   </TableCell>
 
                   {/* Days Allocation */}
@@ -133,6 +143,51 @@ export function LeaveTypesList({ leaveTypes, onEdit, onToggleActive }: LeaveType
                           <AlertCircle className="h-3 w-3" />
                           <span>Document Needed</span>
                         </div>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Special Rules */}
+                  <TableCell className="hidden xl:table-cell py-3">
+                    <div className="space-y-1.5">
+                      {leave.carryForward && (
+                        <div className="flex items-center gap-1 text-[11px] text-sky-600">
+                          <ArrowRightLeft className="h-3 w-3" />
+                          <span>
+                            Carry Forward
+                            {leave.maxCarryOverDays ? ` (max ${leave.maxCarryOverDays}d)` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {leave.encashment && (
+                        <div className="flex items-center gap-1 text-[11px] text-violet-600">
+                          <Coins className="h-3 w-3" />
+                          <span>
+                            Encashment
+                            {leave.encashmentPercent ? ` (${leave.encashmentPercent}%)` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {leave.isProRata && (
+                        <div className="flex items-center gap-1 text-[11px] text-amber-600">
+                          <Calculator className="h-3 w-3" />
+                          <span>Pro-Rata</span>
+                        </div>
+                      )}
+                      {leave.sandwichRule && (
+                        <div className="flex items-center gap-1 text-[11px] text-rose-600">
+                          <CalendarClock className="h-3 w-3" />
+                          <span>Sandwich Rule</span>
+                        </div>
+                      )}
+                      {leave.compLeaveExpiryDays && (
+                        <div className="flex items-center gap-1 text-[11px] text-orange-600">
+                          <CalendarClock className="h-3 w-3" />
+                          <span>Comp Leave ({leave.compLeaveExpiryDays}d expiry)</span>
+                        </div>
+                      )}
+                      {!leave.carryForward && !leave.encashment && !leave.isProRata && !leave.sandwichRule && !leave.compLeaveExpiryDays && (
+                        <span className="text-[10px] text-muted-foreground/60">No special rules</span>
                       )}
                     </div>
                   </TableCell>

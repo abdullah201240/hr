@@ -4,8 +4,14 @@ import {
   integer,
   jsonb,
   date,
+  uuid,
+  doublePrecision,
+  index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
+import { employees } from './employee';
 
 // ─── Attendance Settings (singleton — one row) ────────────────────────────
 
@@ -40,3 +46,44 @@ export const holidays = pgTable('holidays', {
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
 });
+
+// ─── Attendance Logs ───────────────────────────────────────────────────────
+
+export const attendanceLogs = pgTable(
+  'attendance_logs',
+  {
+    ...baseTable,
+
+    employeeId: uuid('employee_id')
+      .notNull()
+      .references(() => employees.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(), // format YYYY-MM-DD
+    status: varchar('status', { length: 20 }).default('absent').notNull(), // 'present', 'late', 'absent', 'leave', 'holiday', 'weekend'
+    checkIn: varchar('check_in', { length: 15 }), // e.g. "09:05 AM"
+    checkOut: varchar('check_out', { length: 15 }), // e.g. "06:00 PM"
+    hours: doublePrecision('hours'),
+    breakHours: doublePrecision('break_hours').default(0).notNull(),
+    location: varchar('location', { length: 20 }), // "Office" or "Remote"
+    ipAddress: varchar('ip_address', { length: 45 }),
+    device: varchar('device', { length: 255 }),
+    notes: varchar('notes', { length: 255 }),
+
+    // Correction Request fields
+    correctionStatus: varchar('correction_status', { length: 20 }).default('none').notNull(), // 'none' | 'pending' | 'approved' | 'rejected'
+    proposedCheckIn: varchar('proposed_check_in', { length: 15 }),
+    proposedCheckOut: varchar('proposed_check_out', { length: 15 }),
+    correctionReason: varchar('correction_reason', { length: 255 }),
+  },
+  (table) => [
+    uniqueIndex('attendance_logs_employee_date_idx').on(table.employeeId, table.date),
+    index('attendance_logs_date_idx').on(table.date),
+    index('attendance_logs_status_idx').on(table.status),
+  ],
+);
+
+export const attendanceLogsRelations = relations(attendanceLogs, ({ one }) => ({
+  employee: one(employees, {
+    fields: [attendanceLogs.employeeId],
+    references: [employees.id],
+  }),
+}));

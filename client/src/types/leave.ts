@@ -8,6 +8,15 @@ export interface LeaveType {
   requiresApproval: boolean;
   requiresDocument: boolean;
   description: string;
+  clause?: string | null;
+  carryForward: boolean;
+  maxCarryOverDays?: number | null;
+  encashment: boolean;
+  encashmentPercent?: number | null;
+  isProRata: boolean;
+  sandwichRule: boolean;
+  compLeaveExpiryDays?: number | null;
+  eligibility?: string | null;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -29,6 +38,15 @@ export interface CreateLeaveTypePayload {
   requiresApproval?: boolean;
   requiresDocument?: boolean;
   description?: string;
+  clause?: string | null;
+  carryForward?: boolean;
+  maxCarryOverDays?: number | null;
+  encashment?: boolean;
+  encashmentPercent?: number | null;
+  isProRata?: boolean;
+  sandwichRule?: boolean;
+  compLeaveExpiryDays?: number | null;
+  eligibility?: string | null;
 }
 
 export interface UpdateLeaveTypePayload {
@@ -40,5 +58,14 @@ export interface UpdateLeaveTypePayload {
   requiresApproval?: boolean;
   requiresDocument?: boolean;
   description?: string;
+  clause?: string | null;
+  carryForward?: boolean;
+  maxCarryOverDays?: number | null;
+  encashment?: boolean;
+  encashmentPercent?: number | null;
+  isProRata?: boolean;
+  sandwichRule?: boolean;
+  compLeaveExpiryDays?: number | null;
+  eligibility?: string | null;
   isActive?: boolean;
 }

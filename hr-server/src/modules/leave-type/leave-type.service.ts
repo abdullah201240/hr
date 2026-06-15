@@ -53,6 +53,15 @@ export class LeaveTypeService {
           requiresApproval: dto.requiresApproval ?? true,
           requiresDocument: dto.requiresDocument ?? false,
           description: dto.description || '',
+          clause: dto.clause ?? null,
+          carryForward: dto.carryForward ?? false,
+          maxCarryOverDays: dto.maxCarryOverDays ?? null,
+          encashment: dto.encashment ?? false,
+          encashmentPercent: dto.encashmentPercent ?? null,
+          isProRata: dto.isProRata ?? false,
+          sandwichRule: dto.sandwichRule ?? false,
+          compLeaveExpiryDays: dto.compLeaveExpiryDays ?? null,
+          eligibility: dto.eligibility ?? null,
         })
         .returning();
 
@@ -226,6 +235,15 @@ export class LeaveTypeService {
         updateData.requiresDocument = dto.requiresDocument;
       if (dto.description !== undefined)
         updateData.description = dto.description;
+      if (dto.clause !== undefined) updateData.clause = dto.clause;
+      if (dto.carryForward !== undefined) updateData.carryForward = dto.carryForward;
+      if (dto.maxCarryOverDays !== undefined) updateData.maxCarryOverDays = dto.maxCarryOverDays;
+      if (dto.encashment !== undefined) updateData.encashment = dto.encashment;
+      if (dto.encashmentPercent !== undefined) updateData.encashmentPercent = dto.encashmentPercent;
+      if (dto.isProRata !== undefined) updateData.isProRata = dto.isProRata;
+      if (dto.sandwichRule !== undefined) updateData.sandwichRule = dto.sandwichRule;
+      if (dto.compLeaveExpiryDays !== undefined) updateData.compLeaveExpiryDays = dto.compLeaveExpiryDays;
+      if (dto.eligibility !== undefined) updateData.eligibility = dto.eligibility;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
       const [updated] = await tx
