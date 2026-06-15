@@ -15,8 +15,6 @@ import {
 import {
   Search,
   Plus,
-  MoreHorizontal,
-  Edit2,
   Eye,
   Users,
   CheckCircle,
@@ -29,17 +27,11 @@ import {
   ChevronLeft,
   ChevronRight,
   FilterX,
-  UserCheck,
-  UserX,
+  Pencil,
+  ToggleRight,
+  ToggleLeft,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -417,7 +409,7 @@ export default function EmployeesPage() {
                 <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Type</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Gender</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
-                <TableHead className="w-12 font-semibold text-xs text-muted-foreground" />
+                <TableHead className="w-32 font-semibold text-xs text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -516,43 +508,43 @@ export default function EmployeesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={() => navigate(`/employees/view/${emp.id}`)}>
-                            <Eye className="mr-2 h-3.5 w-3.5" />
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/employees/edit/${emp.id}`)}>
-                            <Edit2 className="mr-2 h-3.5 w-3.5" />
-                            Edit Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setStatusDialogEmployee({ id: emp.id, name: emp.fullNameEnglish, currentStatus: emp.status })
-                              setInactiveDate("")
-                            }}
-                          >
-                            {emp.status === "active" ? (
-                              <>
-                                <UserX className="mr-2 h-3.5 w-3.5 text-amber-500" />
-                                Set Inactive
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="mr-2 h-3.5 w-3.5 text-emerald-500" />
-                                Set Active
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-muted"
+                          onClick={() => navigate(`/employees/view/${emp.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-muted"
+                          onClick={() => navigate(`/employees/edit/${emp.id}`)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`h-8 w-8 ${
+                            emp.status === "active"
+                              ? "text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600"
+                              : "text-muted-foreground/40 hover:bg-muted"
+                          }`}
+                          onClick={() => {
+                            setStatusDialogEmployee({ id: emp.id, name: emp.fullNameEnglish, currentStatus: emp.status })
+                            setInactiveDate("")
+                          }}
+                        >
+                          {emp.status === "active" ? (
+                            <ToggleRight className="h-4 w-4" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

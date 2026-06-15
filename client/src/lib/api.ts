@@ -24,9 +24,6 @@ const processQueue = (error: any, token: string | null = null) => {
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000, // 30 second timeout
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 // Request Interceptor: Attach bearer token dynamically
@@ -35,6 +32,12 @@ axiosInstance.interceptors.request.use(
     const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Auto-detect FormData and remove Content-Type to let browser set boundary
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    } else if (!config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
     }
     return config;
   },
