@@ -40,6 +40,8 @@ import PrintOfferLetterPage from "@/routes/pages/print/offer-letter"
 import PrintHRLetterPage from "@/routes/pages/print/hr-letter"
 import ProfilePage from "@/routes/pages/profile"
 
+import { ProtectedRoute } from "@/components/auth/protected-route"
+
 function NotFoundPage() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -70,39 +72,41 @@ function App() {
             </Route>
 
             {/* Protected dashboard routes */}
-            <Route element={<DashboardLayout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="employees" element={<EmployeesPage />} />
-              <Route path="employees/create" element={<CreateEmployeePage />} />
-              <Route path="employees/edit/:email" element={<EditEmployeePage />} />
-              <Route path="employees/view/:email" element={<ViewEmployeePage />} />
-              <Route path="attendance" element={<AttendancePage />} />
-              <Route path="attendance/setup" element={<AttendanceSetupPage />} />
-              <Route path="leave" element={<LeavePage />} />
-              <Route path="payroll" element={<PayrollPage />} />
-              <Route path="claims" element={<Navigate to="/claims/medical" replace />} />
-              <Route path="claims/medical" element={<MedicalReimbursementPage />} />
-              <Route path="claims/tada" element={<TADAClaimPage />} />
-              <Route path="claims/advance" element={<BusinessTravelAdvancePage />} />
-              <Route path="letters" element={<LettersPage />} />
-              <Route path="letters/view/:id" element={<ViewLetterPage />} />
-              <Route path="departments" element={<DepartmentsPage />} />
-              <Route path="departments/create" element={<CreateDepartmentPage />} />
-              <Route path="departments/edit/:name" element={<EditDepartmentPage />} />
-              <Route path="departments/view/:name" element={<ViewDepartmentPage />} />
-              <Route path="designations/create" element={<CreateDesignationPage />} />
-              <Route path="designations/edit/:name" element={<EditDesignationPage />} />
-              <Route path="designations/view/:name" element={<ViewDesignationPage />} />
-              <Route path="documents" element={<DocumentsPage />} />
-              <Route path="recruitment" element={<RecruitmentPage />} />
-              <Route path="announcements" element={<AnnouncementsPage />} />
-              <Route path="separation" element={<SeparationPage />} />
-              <Route path="disciplinary" element={<DisciplinaryPage />} />
-              <Route path="performance" element={<PerformancePage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="*" element={<NotFoundPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route index element={<DashboardPage />} />
+                <Route path="employees" element={<EmployeesPage />} />
+                <Route path="employees/create" element={<CreateEmployeePage />} />
+                <Route path="employees/edit/:email" element={<EditEmployeePage />} />
+                <Route path="employees/view/:email" element={<ViewEmployeePage />} />
+                <Route path="attendance" element={<AttendancePage />} />
+                <Route path="attendance/setup" element={<AttendanceSetupPage />} />
+                <Route path="leave" element={<LeavePage />} />
+                <Route path="payroll" element={<PayrollPage />} />
+                <Route path="claims" element={<Navigate to="/claims/medical" replace />} />
+                <Route path="claims/medical" element={<MedicalReimbursementPage />} />
+                <Route path="claims/tada" element={<TADAClaimPage />} />
+                <Route path="claims/advance" element={<BusinessTravelAdvancePage />} />
+                <Route path="letters" element={<LettersPage />} />
+                <Route path="letters/view/:id" element={<ViewLetterPage />} />
+                <Route path="departments" element={<DepartmentsPage />} />
+                <Route path="departments/create" element={<CreateDepartmentPage />} />
+                <Route path="departments/edit/:id" element={<EditDepartmentPage />} />
+                <Route path="departments/view/:id" element={<ViewDepartmentPage />} />
+                <Route path="designations/create" element={<CreateDesignationPage />} />
+                <Route path="designations/edit/:id" element={<EditDesignationPage />} />
+                <Route path="designations/view/:id" element={<ViewDesignationPage />} />
+                <Route path="documents" element={<DocumentsPage />} />
+                <Route path="recruitment" element={<RecruitmentPage />} />
+                <Route path="announcements" element={<AnnouncementsPage />} />
+                <Route path="separation" element={<SeparationPage />} />
+                <Route path="disciplinary" element={<DisciplinaryPage />} />
+                <Route path="performance" element={<PerformancePage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
             </Route>
 
             {/* Printable templates */}

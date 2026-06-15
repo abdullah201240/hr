@@ -3,56 +3,59 @@ import { useNavigate, useParams } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SectionCard, SectionTitle, Field, StepHeader } from "@/components/employee/form-ui"
-import { Building2, ArrowLeft } from "lucide-react"
+import { Building2, ArrowLeft, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { z } from "zod"
-
-const initialDepartments = [
-  { name: "Engineering", head: "Michael Torres", count: 64, openRoles: 5, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  { name: "Product", head: "Sarah Chen", count: 32, openRoles: 2, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
-  { name: "Marketing", head: "Anna Williams", count: 28, openRoles: 3, color: "bg-pink-500/10 text-pink-600 dark:text-pink-400" },
-  { name: "Sales", head: "Robert Davis", count: 45, openRoles: 8, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-  { name: "Human Resources", head: "Patricia Lee", count: 12, openRoles: 1, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  { name: "Finance", head: "Thomas Wright", count: 18, openRoles: 2, color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
-]
+import { useDepartmentQuery, useUpdateDepartmentMutation } from "@/hooks/useDepartments"
+import { useQuery } from "@tanstack/react-query"
+import { apiClient } from "@/lib/api"
 
 const departmentSchema = z.object({
   name: z.string().trim().min(1, "Department Name is required"),
-  head: z.string().trim().min(1, "Head of Department is required"),
-  count: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Count must be 0 or more")),
-  openRoles: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Open roles must be 0 or more")),
+  code: z.string().trim().min(2, "Code must be at least 2 characters").max(50, "Code cannot exceed 50 characters"),
+  description: z.string().trim().optional(),
+  headEmployeeId: z.string().trim().uuid("Invalid Head Employee ID").or(z.literal("")).optional(),
+  isActive: z.boolean().optional(),
 })
 
 export default function EditDepartmentPage() {
   const navigate = useNavigate()
-  const { name: paramName } = useParams()
+  const { id } = useParams()
+  
   const [name, setName] = useState("")
-  const [head, setHead] = useState("")
-  const [count, setCount] = useState("0")
-  const [openRoles, setOpenRoles] = useState("0")
-  const [color, setColor] = useState("")
+  const [code, setCode] = useState("")
+  const [description, setDescription] = useState("")
+  const [headEmployeeId, setHeadEmployeeId] = useState("")
+  const [isActive, setIsActive] = useState(true)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
+  // Fetch department details
+  const { data: department, isLoading } = useDepartmentQuery(id || "")
+
+  // Fetch employees list to populate Head of Department dropdown options
+  const { data: employeesData } = useQuery<any>({
+    queryKey: ["employees", "options-list"],
+    queryFn: () => apiClient.get<any>("employees?limit=100"),
+  })
+  const employeesList = employeesData?.data || []
+
+  const updateMutation = useUpdateDepartmentMutation(id || "")
+
   useEffect(() => {
-    const stored = localStorage.getItem("departments_list")
-    const currentList = stored ? JSON.parse(stored) : initialDepartments
-    const dept = currentList.find((d: any) => d.name === decodeURIComponent(paramName || ""))
-    if (dept) {
-      setName(dept.name)
-      setHead(dept.head)
-      setCount(String(dept.count || 0))
-      setOpenRoles(String(dept.openRoles || 0))
-      setColor(dept.color || "")
-    } else {
-      Swal.fire("Error", "Department not found", "error").then(() => navigate("/departments"))
+    if (department) {
+      setName(department.name || "")
+      setCode(department.code || "")
+      setDescription(department.description || "")
+      setHeadEmployeeId(department.headEmployeeId || "")
+      setIsActive(department.isActive ?? true)
     }
-  }, [paramName, navigate])
+  }, [department])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     // Zod validation
-    const result = departmentSchema.safeParse({ name, head, count, openRoles })
+    const result = departmentSchema.safeParse({ name, code, description, headEmployeeId, isActive })
     
     if (!result.success) {
       const fieldErrors: { [key: string]: string } = {}
@@ -67,36 +70,51 @@ export default function EditDepartmentPage() {
 
     const data = result.data
 
-    const stored = localStorage.getItem("departments_list")
-    const currentList = stored ? JSON.parse(stored) : initialDepartments
-    
-    const updatedList = currentList.map((d: any) => {
-      if (d.name === decodeURIComponent(paramName || "")) {
-        return {
-          name: data.name,
-          head: data.head,
-          count: data.count,
-          openRoles: data.openRoles,
-          color: color || "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    updateMutation.mutate(
+      {
+        name: data.name,
+        code: data.code,
+        description: data.description || "",
+        headEmployeeId: data.headEmployeeId || null,
+        isActive: data.isActive,
+      },
+      {
+        onSuccess: () => {
+          Swal.fire({
+            title: "Saved!",
+            text: "Department changes saved successfully.",
+            icon: "success",
+            confirmButtonText: "Done",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary hover:bg-primary/90 text-white font-semibold rounded-md px-4 py-2"
+            }
+          }).then(() => {
+            navigate("/departments")
+          })
+        },
+        onError: (err: any) => {
+          Swal.fire({
+            title: "Error",
+            text: err.message || "Failed to update department",
+            icon: "error",
+            confirmButtonText: "Ok",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary hover:bg-primary/90 text-white font-semibold rounded-md px-4 py-2"
+            }
+          })
         }
       }
-      return d
-    })
+    )
+  }
 
-    localStorage.setItem("departments_list", JSON.stringify(updatedList))
-
-    Swal.fire({
-      title: "Saved!",
-      text: "Department changes saved successfully.",
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled"
-      }
-    }).then(() => {
-      navigate("/departments")
-    })
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -107,7 +125,7 @@ export default function EditDepartmentPage() {
         </Button>
         <StepHeader 
           title="Edit Department" 
-          description="Update department details, leadership, or headcount."
+          description="Update department details, leadership, or status."
           icon={Building2}
         />
       </div>
@@ -127,42 +145,64 @@ export default function EditDepartmentPage() {
               />
             </Field>
 
-            <Field label="Head of Department" required error={errors.head}>
+            <Field label="Department Code" required error={errors.code}>
               <Input 
-                value={head} 
+                value={code} 
                 onChange={(e) => {
-                  setHead(e.target.value)
-                  if (errors.head) setErrors(prev => ({ ...prev, head: "" }))
+                  setCode(e.target.value)
+                  if (errors.code) setErrors(prev => ({ ...prev, code: "" }))
                 }}
-                placeholder="e.g. John Doe" 
+                placeholder="e.g. QA" 
               />
             </Field>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Total Members" hint="Number of current team members">
-                <Input 
-                  type="number" 
-                  value={count} 
-                  onChange={(e) => setCount(e.target.value)} 
-                />
-              </Field>
+            <Field label="Head of Department" error={errors.headEmployeeId}>
+              <select
+                value={headEmployeeId}
+                onChange={(e) => {
+                  setHeadEmployeeId(e.target.value)
+                  if (errors.headEmployeeId) setErrors(prev => ({ ...prev, headEmployeeId: "" }))
+                }}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select Head of Department (Optional)</option>
+                {employeesList.map((emp: any) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.fullNameEnglish} ({emp.employeeId})
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-              <Field label="Open Roles" hint="Number of active vacancies">
-                <Input 
-                  type="number" 
-                  value={openRoles} 
-                  onChange={(e) => setOpenRoles(e.target.value)} 
-                />
-              </Field>
+            <Field label="Description">
+              <Input 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                placeholder="Brief details about the department operations..."
+              />
+            </Field>
+
+            <div className="flex items-center gap-2 pt-2">
+              <input 
+                type="checkbox" 
+                id="isActive"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Department is Active
+              </label>
             </div>
           </div>
         </SectionCard>
 
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => navigate("/departments")}>
+          <Button type="button" variant="outline" onClick={() => navigate("/departments")} disabled={updateMutation.isPending}>
             Cancel
           </Button>
-          <Button type="submit">
+          <Button type="submit" disabled={updateMutation.isPending}>
+            {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
           </Button>
         </div>

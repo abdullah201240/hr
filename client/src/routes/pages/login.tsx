@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
+import { apiClient } from "@/lib/api"
+
 const loginSchema = z.object({
   email: z
     .string()
@@ -52,23 +54,19 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (data.email === "admin@sadoshima.com" && data.password === "password123") {
-            resolve(true)
-          } else if (data.email && data.password) {
-            // Accept any valid credentials for demo
-            resolve(true)
-          } else {
-            reject(new Error("Invalid credentials"))
-          }
-        }, 1200)
+      const res = await apiClient.post<any>("auth/login", {
+        email: data.email,
+        password: data.password,
       })
 
+      if (res?.tokens?.accessToken) {
+        localStorage.setItem("access_token", res.tokens.accessToken)
+        localStorage.setItem("user", JSON.stringify(res.user))
+      }
+
       navigate("/")
-    } catch {
-      setServerError("Invalid email or password. Please try again.")
+    } catch (err: any) {
+      setServerError(err.message || "Invalid email or password. Please try again.")
     } finally {
       setIsLoading(false)
     }

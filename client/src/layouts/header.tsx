@@ -33,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/hooks/use-theme"
-import { currentUser, UserAvatar } from "@/components/common/user-avatar"
+import { UserAvatar } from "@/components/common/user-avatar"
 import { navGroups } from "@/components/navigation/nav-data"
 
 function getPageTitle(pathname: string): string {
@@ -47,13 +47,28 @@ function getPageTitle(pathname: string): string {
   return "Dashboard"
 }
 
+import { useAuthStore } from "@/store/useAuthStore"
+
 export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onMobileMenuToggle: () => void }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { setTheme } = useTheme()
   const [showMobileSearch, setShowMobileSearch] = useState(false)
+  const { user, logout } = useAuthStore()
 
   const pageTitle = getPageTitle(location.pathname)
+
+  const mappedUser = {
+    name: user?.fullNameEnglish || "Employee",
+    email: user?.email || "",
+    avatar: user?.employeePhotoUrl || "",
+    role: user?.role || "",
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate("/login")
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/10 bg-sidebar/95 backdrop-blur-sm px-4 lg:px-6 transition-all">
@@ -238,14 +253,14 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-1.5 outline-none rounded-full transition-all focus:ring-1 focus:ring-primary/20">
-              <UserAvatar user={currentUser} size="sm" />
+              <UserAvatar user={mappedUser} size="sm" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52 shadow-none border-border/50 text-xs">
             <DropdownMenuLabel className="py-2">
               <div className="flex flex-col space-y-0.5">
-                <p className="font-semibold text-foreground">{currentUser.name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{currentUser.email}</p>
+                <p className="font-semibold text-foreground">{mappedUser.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{mappedUser.email}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -271,7 +286,7 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
               Change Password
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5 text-destructive" onClick={() => navigate("/login")}>
+            <DropdownMenuItem className="gap-2 cursor-pointer py-1.5 text-destructive" onClick={handleLogout}>
               <LogOut className="h-3.5 w-3.5" />
               Logout
             </DropdownMenuItem>
@@ -281,3 +296,4 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
     </header>
   )
 }
+

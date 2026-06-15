@@ -20,3 +20,6 @@ export interface User {
   avatar: string
   role: string
 }
+
+export * from "./org"
+

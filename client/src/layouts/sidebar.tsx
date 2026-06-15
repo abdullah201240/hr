@@ -11,8 +11,9 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { navGroups } from "@/components/navigation/nav-data"
-import { currentUser, UserAvatar } from "@/components/common/user-avatar"
+import { UserAvatar } from "@/components/common/user-avatar"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store/useAuthStore"
 
 interface SidebarProps {
   collapsed: boolean
@@ -23,6 +24,15 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, onLinkClick, className }: SidebarProps) {
   const location = useLocation()
+  const { user } = useAuthStore()
+
+  const mappedUser = {
+    name: user?.fullNameEnglish || "Employee",
+    email: user?.email || "",
+    avatar: user?.employeePhotoUrl || "",
+    role: user?.role || "",
+  }
+
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {
     // Auto-expand menus that contain the current route
     const initial = new Set<string>()
@@ -91,7 +101,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                     {group.label}
                   </p>
                 )}
-                {group.items.map((item) => {
+                {group.items.filter(item => !item.roles || item.roles.includes(mappedUser.role)).map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
                   const hasSubItems = item.items && item.items.length > 0
@@ -263,13 +273,13 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
           {!collapsed ? (
             <div className="flex items-center gap-2 rounded-md bg-sidebar-accent/30 p-1.5">
               <Link to="/settings" onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
-                <UserAvatar user={currentUser} size="sm" />
+                <UserAvatar user={mappedUser} size="sm" />
                 <div className="flex-1 overflow-hidden">
                   <p className="truncate text-xs font-medium text-sidebar-foreground">
-                    {currentUser.name}
+                    {mappedUser.name}
                   </p>
                   <p className="truncate text-[10px] text-muted-foreground">
-                    {currentUser.role}
+                    {mappedUser.role}
                   </p>
                 </div>
               </Link>
@@ -287,12 +297,12 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link to="/settings" onClick={onLinkClick}>
-                    <UserAvatar user={currentUser} size="sm" />
+                    <UserAvatar user={mappedUser} size="sm" />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="text-xs border-border/50 shadow-none">
-                  <p>{currentUser.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{currentUser.role}</p>
+                  <p>{mappedUser.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{mappedUser.role}</p>
                 </TooltipContent>
               </Tooltip>
               <Button
