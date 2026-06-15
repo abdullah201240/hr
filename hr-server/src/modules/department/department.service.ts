@@ -173,6 +173,9 @@ export class DepartmentService {
   // ─── Find one ────────────────────────────────────────────────────────────
 
   async findOne(id: string) {
+    const cached = await this.cache.getByKey<any>(CacheKeys.departmentById, id);
+    if (cached) return cached;
+
     const [department] = await this.db
       .select()
       .from(departments)
@@ -189,10 +192,13 @@ export class DepartmentService {
       .from(employees)
       .where(eq(employees.departmentId, department.id));
 
-    return {
+    const result = {
       ...department,
       employeeCount: empCount?.count ?? 0,
     };
+
+    await this.cache.setByKey(CacheKeys.departmentById, result, id);
+    return result;
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────
@@ -263,7 +269,7 @@ export class DepartmentService {
         .where(eq(departments.id, id))
         .returning();
 
-      await this.invalidateListCache();
+      await this.invalidateListCache(id);
 
       this.logger.log(`Department updated: ${updated.name} (${updated.code})`);
       return updated;
@@ -305,7 +311,7 @@ export class DepartmentService {
       .set({ isActive: false })
       .where(eq(departments.id, id));
 
-    await this.invalidateListCache();
+    await this.invalidateListCache(id);
 
     this.logger.log(`Department deactivated: ${existing.name}`);
     return { message: `Department "${existing.name}" has been deactivated` };
@@ -333,10 +339,14 @@ export class DepartmentService {
 
   // ─── Cache helpers ────────────────────────────────────────────────────────
 
-  private async invalidateListCache() {
-    await Promise.all([
+  private async invalidateListCache(id?: string) {
+    const promises: Promise<void>[] = [
       this.cache.delByPattern(CacheKeys.departmentList),
       this.cache.delByPattern(CacheKeys.departmentListPaginated),
-    ]);
+    ];
+    if (id) {
+      promises.push(this.cache.delByKey(CacheKeys.departmentById, id));
+    }
+    await Promise.all(promises);
   }
 }

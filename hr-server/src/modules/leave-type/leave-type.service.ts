@@ -87,6 +87,14 @@ export class LeaveTypeService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Build a deterministic cache key from query params
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${isActive ?? ''}:${sortBy}:${sortOrder}`;
+    const cached = await this.cache.getByKey<any>(
+      CacheKeys.leaveTypeListPaginated,
+      cacheKeyParts,
+    );
+    if (cached) return cached;
+
     // Total count
     const [totalRow] = await this.db
       .select({ count: count() })
@@ -119,7 +127,7 @@ export class LeaveTypeService {
       .limit(limit)
       .offset(offset);
 
-    return {
+    const result = {
       data,
       meta: {
         total,
@@ -128,6 +136,14 @@ export class LeaveTypeService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    await this.cache.setByKey(
+      CacheKeys.leaveTypeListPaginated,
+      result,
+      cacheKeyParts,
+    );
+
+    return result;
   }
 
   // ─── Options (dropdown/active lists) ────────────────────────────────────
@@ -151,6 +167,9 @@ export class LeaveTypeService {
   // ─── Find one ────────────────────────────────────────────────────────────
 
   async findOne(id: string) {
+    const cached = await this.cache.getByKey<any>(CacheKeys.leaveTypeById, id);
+    if (cached) return cached;
+
     const [leaveType] = await this.db
       .select()
       .from(leaveTypes)
@@ -161,6 +180,7 @@ export class LeaveTypeService {
       throw new NotFoundException(`Leave type with ID "${id}" not found`);
     }
 
+    await this.cache.setByKey(CacheKeys.leaveTypeById, leaveType, id);
     return leaveType;
   }
 
@@ -214,7 +234,7 @@ export class LeaveTypeService {
         .where(eq(leaveTypes.id, id))
         .returning();
 
-      await this.invalidateCache();
+      await this.invalidateCache(id);
 
       this.logger.log(`Leave type updated: ${updated.name}`);
       return updated;
@@ -239,7 +259,7 @@ export class LeaveTypeService {
       .set({ isActive: false })
       .where(eq(leaveTypes.id, id));
 
-    await this.invalidateCache();
+    await this.invalidateCache(id);
 
     this.logger.log(`Leave type deactivated: ${existing.name}`);
     return { message: `Leave type "${existing.name}" has been deactivated` };
@@ -247,7 +267,14 @@ export class LeaveTypeService {
 
   // ─── Cache invalidation ──────────────────────────────────────────────────
 
-  private async invalidateCache() {
-    await this.cache.delByPattern(CacheKeys.leaveTypes);
+  private async invalidateCache(id?: string) {
+    const promises: Promise<void>[] = [
+      this.cache.delByPattern(CacheKeys.leaveTypes),
+      this.cache.delByPattern(CacheKeys.leaveTypeListPaginated),
+    ];
+    if (id) {
+      promises.push(this.cache.delByKey(CacheKeys.leaveTypeById, id));
+    }
+    await Promise.all(promises);
   }
 }

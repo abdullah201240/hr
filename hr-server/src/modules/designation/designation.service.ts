@@ -94,6 +94,14 @@ export class DesignationService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Build a deterministic cache key from query params
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${isActive ?? ''}:${sortBy}:${sortOrder}`;
+    const cached = await this.cache.getByKey<any>(
+      CacheKeys.designationListPaginated,
+      cacheKeyParts,
+    );
+    if (cached) return cached;
+
     // Total count
     const [totalRow] = await this.db
       .select({ count: count() })
@@ -131,7 +139,7 @@ export class DesignationService {
       .limit(limit)
       .offset(offset);
 
-    return {
+    const result = {
       data,
       meta: {
         total,
@@ -140,11 +148,22 @@ export class DesignationService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    await this.cache.setByKey(
+      CacheKeys.designationListPaginated,
+      result,
+      cacheKeyParts,
+    );
+
+    return result;
   }
 
   // ─── Find one ────────────────────────────────────────────────────────────
 
   async findOne(id: string) {
+    const cached = await this.cache.getByKey<any>(CacheKeys.designationById, id);
+    if (cached) return cached;
+
     const [designation] = await this.db
       .select()
       .from(designations)
@@ -161,10 +180,13 @@ export class DesignationService {
       .from(employees)
       .where(eq(employees.designationId, designation.id));
 
-    return {
+    const result = {
       ...designation,
       employeeCount: empCount?.count ?? 0,
     };
+
+    await this.cache.setByKey(CacheKeys.designationById, result, id);
+    return result;
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────
@@ -218,7 +240,7 @@ export class DesignationService {
         .where(eq(designations.id, id))
         .returning();
 
-      await this.invalidateListCache();
+      await this.invalidateListCache(id);
 
       this.logger.log(`Designation updated: ${updated.name} (${updated.code})`);
       return updated;
@@ -260,7 +282,7 @@ export class DesignationService {
       .set({ isActive: false })
       .where(eq(designations.id, id));
 
-    await this.invalidateListCache();
+    await this.invalidateListCache(id);
 
     this.logger.log(`Designation deactivated: ${existing.name}`);
     return { message: `Designation "${existing.name}" has been deactivated` };
@@ -289,7 +311,14 @@ export class DesignationService {
 
   // ─── Cache helpers ────────────────────────────────────────────────────────
 
-  private async invalidateListCache() {
-    await this.cache.delByPattern(CacheKeys.designationList);
+  private async invalidateListCache(id?: string) {
+    const promises: Promise<void>[] = [
+      this.cache.delByPattern(CacheKeys.designationList),
+      this.cache.delByPattern(CacheKeys.designationListPaginated),
+    ];
+    if (id) {
+      promises.push(this.cache.delByKey(CacheKeys.designationById, id));
+    }
+    await Promise.all(promises);
   }
 }

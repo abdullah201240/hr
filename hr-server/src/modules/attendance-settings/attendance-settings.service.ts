@@ -103,10 +103,16 @@ export class AttendanceSettingsService {
   // ─── Holidays CRUD ───────────────────────────────────────────────────────
 
   async getHolidays() {
-    return this.db
+    const cached = await this.cache.getByKey<any>(CacheKeys.holidaysList);
+    if (cached) return cached;
+
+    const list = await this.db
       .select()
       .from(holidays)
       .orderBy(asc(holidays.startDate));
+
+    await this.cache.setByKey(CacheKeys.holidaysList, list);
+    return list;
   }
 
   async createHoliday(dto: CreateHolidayDto) {
@@ -119,6 +125,7 @@ export class AttendanceSettingsService {
       })
       .returning();
 
+    await this.cache.delByPattern(CacheKeys.holidaysList);
     this.logger.log(`Holiday created: ${holiday.name}`);
     return holiday;
   }
@@ -145,6 +152,7 @@ export class AttendanceSettingsService {
       .where(eq(holidays.id, id))
       .returning();
 
+    await this.cache.delByPattern(CacheKeys.holidaysList);
     this.logger.log(`Holiday updated: ${updated.name}`);
     return updated;
   }
@@ -162,6 +170,7 @@ export class AttendanceSettingsService {
 
     await this.db.delete(holidays).where(eq(holidays.id, id));
 
+    await this.cache.delByPattern(CacheKeys.holidaysList);
     this.logger.log(`Holiday deleted: ${existing.name}`);
     return { message: `Holiday "${existing.name}" has been deleted` };
   }

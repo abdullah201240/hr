@@ -69,6 +69,13 @@ export const CacheKeys = {
     description: 'Paginated department list',
   },
 
+  /** Department record by ID */
+  departmentById: {
+    key: key('departments:id:*'),
+    ttl: 300, // 5 min
+    description: 'Department record by ID',
+  },
+
   /** Designation list */
   designationList: {
     key: key('designations:list'),
@@ -76,11 +83,39 @@ export const CacheKeys = {
     description: 'All designations',
   },
 
-  /** Leave type configuration */
+  /** Cached designation list (paginated) */
+  designationListPaginated: {
+    key: key('designations:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated designation list',
+  },
+
+  /** Designation record by ID */
+  designationById: {
+    key: key('designations:id:*'),
+    ttl: 300, // 5 min
+    description: 'Designation record by ID',
+  },
+
+  /** Leave type configuration (dropdown list) */
   leaveTypes: {
     key: key('leave:types'),
     ttl: 900, // 15 min
-    description: 'Leave type configuration',
+    description: 'Leave type configuration options',
+  },
+
+  /** Cached leave type list (paginated) */
+  leaveTypeListPaginated: {
+    key: key('leave:types:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated leave type list',
+  },
+
+  /** Leave type record by ID */
+  leaveTypeById: {
+    key: key('leave:types:id:*'),
+    ttl: 300, // 5 min
+    description: 'Leave type record by ID',
   },
 
   /** Payroll run result */
@@ -95,6 +130,13 @@ export const CacheKeys = {
     key: key('attendance:settings'),
     ttl: 1800, // 30 min
     description: 'Attendance settings singleton',
+  },
+
+  /** Holidays list */
+  holidaysList: {
+    key: key('attendance:holidays'),
+    ttl: 1800, // 30 min
+    description: 'Holidays configuration list',
   },
 
   /** Generic settings / config cache */
