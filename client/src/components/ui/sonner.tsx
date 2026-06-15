@@ -29,33 +29,33 @@ const Toaster = ({ ...props }: ToasterProps) => {
           /* Base / default toast */
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          "--normal-border": "transparent",
           "--border-radius": "0.625rem",
 
-          /* Success — emerald green */
-          "--success-bg": "oklch(0.962 0.044 156.7)",
-          "--success-text": "oklch(0.270 0.072 132.1)",
-          "--success-border": "oklch(0.792 0.128 146.5)",
+          /* Success — solid emerald */
+          "--success-bg": "oklch(0.527 0.154 150)",
+          "--success-text": "#ffffff",
+          "--success-border": "transparent",
 
-          /* Error — red */
-          "--error-bg": "oklch(0.955 0.040 17.7)",
-          "--error-text": "oklch(0.396 0.141 25.7)",
-          "--error-border": "oklch(0.704 0.191 22.2)",
+          /* Error — solid red */
+          "--error-bg": "oklch(0.537 0.200 25)",
+          "--error-text": "#ffffff",
+          "--error-border": "transparent",
 
-          /* Warning — amber */
-          "--warning-bg": "oklch(0.962 0.059 95.6)",
-          "--warning-text": "oklch(0.408 0.098 62.6)",
-          "--warning-border": "oklch(0.795 0.184 86.0)",
+          /* Warning — solid amber */
+          "--warning-bg": "oklch(0.650 0.170 55)",
+          "--warning-text": "#ffffff",
+          "--warning-border": "transparent",
 
-          /* Info — sky blue */
-          "--info-bg": "oklch(0.956 0.045 203.4)",
-          "--info-text": "oklch(0.380 0.100 208.8)",
-          "--info-border": "oklch(0.707 0.165 231.3)",
+          /* Info — solid sky blue */
+          "--info-bg": "oklch(0.550 0.150 230)",
+          "--info-text": "#ffffff",
+          "--info-border": "transparent",
 
           /* Loading — neutral */
           "--loading-bg": "var(--popover)",
           "--loading-text": "var(--popover-foreground)",
-          "--loading-border": "var(--border)",
+          "--loading-border": "transparent",
         } as React.CSSProperties
       }
       toastOptions={{

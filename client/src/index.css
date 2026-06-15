@@ -298,9 +298,7 @@ html.theme-transition *::after {
 /* Restore shadow for toasts (global shadow removal strips them) */
 .cn-toast {
   box-shadow: 0 4px 14px -2px oklch(0 0 0 / 10%), 0 2px 6px -2px oklch(0 0 0 / 6%) !important;
-  border-left-width: 4px !important;
-  border-left-style: solid !important;
-  border-left-color: var(--normal-border) !important;
+  border: none !important;
   padding: 14px 16px !important;
   gap: 10px !important;
   min-width: 320px !important;
@@ -322,13 +320,13 @@ html.theme-transition *::after {
 .cn-toast-desc {
   font-size: 0.75rem !important;
   line-height: 1.45 !important;
-  opacity: 0.85 !important;
+  opacity: 0.9 !important;
   margin-top: 1px !important;
 }
 
 /* Close button */
 .cn-toast-close {
-  opacity: 0.5 !important;
+  opacity: 0.6 !important;
   transition: opacity 0.15s ease !important;
   top: 8px !important;
   right: 8px !important;
@@ -337,61 +335,93 @@ html.theme-transition *::after {
   opacity: 1 !important;
 }
 
-/* ── Success Toast ── */
+/* ── Success Toast — solid emerald ── */
 .cn-toast-success {
-  border-left-color: oklch(0.627 0.170 149.2) !important;
+  background: oklch(0.527 0.154 150) !important;
+  color: #fff !important;
+}
+.cn-toast-success .cn-toast-desc {
+  color: oklch(0.95 0.02 150) !important;
+}
+.cn-toast-success .cn-toast-close {
+  color: #fff !important;
 }
 .dark .cn-toast-success {
   background: oklch(0.265 0.040 150) !important;
   color: oklch(0.920 0.045 150) !important;
-  border-left-color: oklch(0.700 0.160 149) !important;
 }
 .dark .cn-toast-success .cn-toast-desc {
   color: oklch(0.820 0.030 150) !important;
 }
 
-/* ── Error Toast ── */
+/* ── Error Toast — solid red ── */
 .cn-toast-error {
-  border-left-color: oklch(0.637 0.237 25.3) !important;
+  background: oklch(0.537 0.200 25) !important;
+  color: #fff !important;
+}
+.cn-toast-error .cn-toast-desc {
+  color: oklch(0.93 0.03 25) !important;
+}
+.cn-toast-error .cn-toast-close {
+  color: #fff !important;
 }
 .dark .cn-toast-error {
   background: oklch(0.250 0.060 25) !important;
   color: oklch(0.930 0.040 25) !important;
-  border-left-color: oklch(0.704 0.191 22.2) !important;
 }
 .dark .cn-toast-error .cn-toast-desc {
   color: oklch(0.830 0.030 25) !important;
 }
 
-/* ── Warning Toast ── */
+/* ── Warning Toast — solid amber ── */
 .cn-toast-warning {
-  border-left-color: oklch(0.750 0.183 55.9) !important;
+  background: oklch(0.650 0.170 55) !important;
+  color: #fff !important;
+}
+.cn-toast-warning .cn-toast-desc {
+  color: oklch(0.95 0.04 60) !important;
+}
+.cn-toast-warning .cn-toast-close {
+  color: #fff !important;
 }
 .dark .cn-toast-warning {
   background: oklch(0.270 0.045 75) !important;
   color: oklch(0.930 0.060 80) !important;
-  border-left-color: oklch(0.795 0.184 86.0) !important;
 }
 .dark .cn-toast-warning .cn-toast-desc {
   color: oklch(0.830 0.040 75) !important;
 }
 
-/* ── Info Toast ── */
+/* ── Info Toast — solid sky blue ── */
 .cn-toast-info {
-  border-left-color: oklch(0.588 0.158 241.9) !important;
+  background: oklch(0.550 0.150 230) !important;
+  color: #fff !important;
+}
+.cn-toast-info .cn-toast-desc {
+  color: oklch(0.93 0.03 220) !important;
+}
+.cn-toast-info .cn-toast-close {
+  color: #fff !important;
 }
 .dark .cn-toast-info {
   background: oklch(0.255 0.035 240) !important;
   color: oklch(0.920 0.040 220) !important;
-  border-left-color: oklch(0.707 0.165 231.3) !important;
 }
 .dark .cn-toast-info .cn-toast-desc {
   color: oklch(0.820 0.030 230) !important;
 }
 
-/* ── Loading Toast ── */
+/* ── Loading Toast — neutral ── */
 .cn-toast-loading {
-  border-left-color: var(--border) !important;
+  border: none !important;
+}
+
+/* Icons inherit toast color */
+.cn-toast-success svg,
+.cn-toast-error svg,
+.cn-toast-warning svg,
+.cn-toast-info svg {
+  color: #fff !important;
 }
 
 
