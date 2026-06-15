@@ -47,19 +47,6 @@ export class AttendanceService implements OnModuleInit {
         },
       );
 
-      // 2. Every 5 minutes, self-heal and check out employees who forgot to punch out
-      await this.attendanceQueue.add(
-        'auto-checkout-attendance',
-        {},
-        {
-          repeat: {
-            pattern: '*/5 * * * *', // Every 5 minutes
-          },
-          removeOnComplete: true,
-          removeOnFail: true,
-        },
-      );
-
       this.logger.log('BullMQ Attendance repeatable jobs successfully registered');
     } catch (err: any) {
       this.logger.error('Failed to register BullMQ repeatable jobs:', err.message);

@@ -93,11 +93,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initialize: async () => {
-    const { user, accessToken, isLoading } = get()
+    const { user, accessToken } = get()
 
-    // Skip if already loading or have fresh user data with valid token
-    if (isLoading || (user && accessToken)) {
-      if (!isLoading) set({ isLoading: false })
+    // Skip if already authenticated with fresh user data
+    if (user && accessToken) {
       return
     }
 

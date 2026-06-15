@@ -42,8 +42,7 @@ import {
   usePendingCorrectionsQuery,
   useOverrideAttendanceMutation,
   type AttendanceRecord,
-  type DailyAttendanceLog,
-  type CorrectionRequest,
+  type DailyAttendanceLog
 } from "@/hooks/useAttendance"
 import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useAuthStore } from "@/store/useAuthStore"
