@@ -11,6 +11,8 @@ import {
   Clock,
   Trash2,
   Plus,
+  Pencil,
+  X,
   CalendarOff,
   Briefcase,
   Sparkles,
@@ -33,6 +35,7 @@ import {
   useUpdateAttendanceSettingsMutation,
   useHolidaysQuery,
   useCreateHolidayMutation,
+  useUpdateHolidayMutation,
   useDeleteHolidayMutation,
 } from "@/hooks/useAttendanceSettings"
 import type { Holiday } from "@/types"
@@ -48,12 +51,14 @@ export function AttendanceSetup() {
   const [holidayName, setHolidayName] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   // ─── API hooks ───────────────────────────────────────────────────────────
   const settingsQuery = useAttendanceSettingsQuery()
   const holidaysQuery = useHolidaysQuery()
   const updateSettingsMut = useUpdateAttendanceSettingsMutation()
   const createHolidayMut = useCreateHolidayMutation()
+  const updateHolidayMut = useUpdateHolidayMutation()
   const deleteHolidayMut = useDeleteHolidayMutation()
 
   // ─── Derived data ────────────────────────────────────────────────────────
@@ -74,7 +79,9 @@ export function AttendanceSetup() {
   const isLoading = settingsQuery.isLoading || holidaysQuery.isLoading
   const isSavingSettings = updateSettingsMut.isPending
   const isCreatingHoliday = createHolidayMut.isPending
+  const isUpdatingHoliday = updateHolidayMut.isPending
   const isDeletingHoliday = deleteHolidayMut.isPending
+  const isMutating = isCreatingHoliday || isUpdatingHoliday
 
   // ─── Weekly Holidays ────────────────────────────────────────────────────
   const toggleWeeklyDay = (day: string) => {
@@ -123,8 +130,9 @@ export function AttendanceSetup() {
       return
     }
 
-    // Check for overlap
+    // Check for overlap (exclude the holiday being edited)
     const hasOverlap = regularHolidays.some((h) => {
+      if (editingId && h.id === editingId) return false
       const hStart = startOfDay(h.startDateObj)
       const hEnd = startOfDay(h.endDateObj)
       return !(end < hStart || start > hEnd)
@@ -140,18 +148,36 @@ export function AttendanceSetup() {
     const startStr = format(start, "yyyy-MM-dd")
     const endStr = format(end, "yyyy-MM-dd")
 
+    // Edit mode — update existing holiday
+    if (editingId) {
+      updateHolidayMut.mutate(
+        { id: editingId, payload: { name: holidayName.trim(), startDate: startStr, endDate: endStr } },
+        {
+          onSuccess: () => {
+            const duration = differenceInDays(end, start) + 1
+            toast.success("Holiday updated!", {
+              description: `"${holidayName.trim()}" — ${format(start, "MMM d")} to ${format(end, "MMM d, yyyy")} (${duration} ${duration === 1 ? "day" : "days"})`,
+            })
+            resetForm()
+          },
+          onError: () => {
+            toast.error("Failed to update holiday")
+          },
+        },
+      )
+      return
+    }
+
+    // Create mode — add new holiday
     createHolidayMut.mutate(
       { name: holidayName.trim(), startDate: startStr, endDate: endStr },
       {
         onSuccess: () => {
-          setStartDate("")
-          setEndDate("")
-          setHolidayName("")
-
           const duration = differenceInDays(end, start) + 1
           toast.success("Holiday added!", {
             description: `"${holidayName.trim()}" — ${format(start, "MMM d")} to ${format(end, "MMM d, yyyy")} (${duration} ${duration === 1 ? "day" : "days"})`,
           })
+          resetForm()
         },
         onError: () => {
           toast.error("Failed to add holiday")
@@ -163,6 +189,8 @@ export function AttendanceSetup() {
   const handleDeleteHoliday = (id: string) => {
     deleteHolidayMut.mutate(id, {
       onSuccess: () => {
+        // If we were editing this holiday, exit edit mode
+        if (editingId === id) resetForm()
         toast.success("Holiday removed")
       },
       onError: () => {
@@ -171,10 +199,18 @@ export function AttendanceSetup() {
     })
   }
 
-  const resetSelection = () => {
+  const handleEditHoliday = (holiday: Holiday) => {
+    setEditingId(holiday.id)
+    setHolidayName(holiday.name)
+    setStartDate(holiday.startDate)
+    setEndDate(holiday.endDate !== holiday.startDate ? holiday.endDate : "")
+  }
+
+  const resetForm = () => {
+    setEditingId(null)
+    setHolidayName("")
     setStartDate("")
     setEndDate("")
-    setHolidayName("")
   }
 
   // ─── Summary stats ─────────────────────────────────────────────────────
@@ -371,6 +407,23 @@ export function AttendanceSetup() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Editing indicator + cancel */}
+            {editingId && (
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-primary/5 border border-primary/15">
+                <div className="flex items-center gap-2">
+                  <Pencil className="h-3 w-3 text-primary" />
+                  <span className="text-[11px] font-semibold text-primary">Editing holiday</span>
+                </div>
+                <button
+                  onClick={resetForm}
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                  Cancel
+                </button>
+              </div>
+            )}
+
             {/* Holiday Name */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Holiday Name</Label>
@@ -438,7 +491,7 @@ export function AttendanceSetup() {
                   )}
                 </div>
                 <button
-                  onClick={resetSelection}
+                  onClick={resetForm}
                   className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
                 >
                   Clear
@@ -448,15 +501,20 @@ export function AttendanceSetup() {
 
             <Button
               onClick={handleAddHoliday}
-              disabled={!canAdd || isCreatingHoliday}
-              className="w-full gap-2 h-10"
+              disabled={!canAdd || isMutating}
+              className={cn(
+                "w-full gap-2 h-10",
+                editingId && "bg-primary/90",
+              )}
             >
-              {isCreatingHoliday ? (
+              {isMutating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : editingId ? (
+                <Pencil className="h-4 w-4" />
               ) : (
                 <Plus className="h-4 w-4" />
               )}{" "}
-              Add Holiday
+              {editingId ? "Update Holiday" : "Add Holiday"}
             </Button>
 
             <Separator className="bg-border/30" />
@@ -477,11 +535,17 @@ export function AttendanceSetup() {
                   sortedHolidays.map((holiday) => {
                     const duration = differenceInDays(holiday.endDateObj, holiday.startDateObj) + 1
                     const isMultiDay = duration > 1
+                    const isEditing = editingId === holiday.id
 
                     return (
                       <div
                         key={holiday.id}
-                        className="group flex items-center justify-between rounded-lg border border-border/30 bg-card px-3 py-2.5 hover:border-border/50 transition-colors"
+                        className={cn(
+                          "group flex items-center justify-between rounded-lg border bg-card px-3 py-2.5 transition-colors",
+                          isEditing
+                            ? "border-primary/40 bg-primary/5"
+                            : "border-border/30 hover:border-border/50",
+                        )}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex items-center gap-1 shrink-0">
@@ -512,15 +576,30 @@ export function AttendanceSetup() {
                             </p>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteHoliday(holiday.id)}
-                          disabled={isDeletingHoliday}
-                          className="h-7 w-7 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-500/5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditHoliday(holiday)}
+                            className={cn(
+                              "h-7 w-7 rounded-lg transition-colors",
+                              isEditing
+                                ? "text-primary bg-primary/10"
+                                : "text-muted-foreground hover:text-primary hover:bg-primary/5",
+                            )}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteHoliday(holiday.id)}
+                            disabled={isDeletingHoliday}
+                            className="h-7 w-7 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-500/5 transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     )
                   })
