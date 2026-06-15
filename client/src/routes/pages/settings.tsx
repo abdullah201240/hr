@@ -38,8 +38,9 @@ export default function SettingsPage() {
 
   const handleSaveLeaveType = (leaveType: LeaveType) => {
     if (editingLeave) {
-      // Update
-      updateLeaveMutation.mutate(leaveType, {
+      // Update — strip id, createdAt, updatedAt before sending
+      const { id, createdAt, updatedAt, ...updatePayload } = leaveType
+      updateLeaveMutation.mutate(updatePayload, {
         onSuccess: () => {
           toast.success("Leave type updated!", {
             description: `${leaveType.name} configuration saved.`

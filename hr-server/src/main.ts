@@ -15,6 +15,7 @@ import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { runDatabaseMigrations } from './db/migrate';
 
 async function bootstrap() {
@@ -66,8 +67,12 @@ async function bootstrap() {
   // the app is fully initialized and ConfigService is available.
   const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim());
   app.enableCors({
-    origin: nodeEnv === 'production' ? (corsOrigins ?? []) : true,
+    origin: corsOrigins && corsOrigins.length > 0
+      ? corsOrigins
+      : ['http://localhost:5173'],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
   });
 
   // ── Global prefix ─────────────────────────────────────────────
@@ -85,7 +90,7 @@ async function bootstrap() {
 
   // ── Global filters & interceptors ─────────────────────────────
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalInterceptors(new LoggingInterceptor(), new ResponseInterceptor());
 
   // ── Logging ───────────────────────────────────────────────────
   app.useLogger(app.get(PinoLogger));

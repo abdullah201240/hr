@@ -39,10 +39,24 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
       pinoHttp: {
         transport:
           process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty', options: { singleLine: true } }
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  singleLine: true,
+                  colorize: true,
+                  translateTime: 'HH:MM:ss.l',
+                  ignore: 'pid,hostname,req,res',
+                  messageFormat: '{msg}',
+                  levelFirst: false,
+                },
+              }
             : undefined,
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
-        autoLogging: true,
+        // Disable auto-logging — our LoggingInterceptor handles request logging cleanly
+        autoLogging: false,
+        customProps: () => ({
+          env: process.env.NODE_ENV || 'development',
+        }),
       },
     }),
     DatabaseModule,

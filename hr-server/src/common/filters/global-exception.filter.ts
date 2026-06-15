@@ -7,7 +7,7 @@ import {
   Logger,
   ConflictException,
 } from '@nestjs/common';
-import { FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -16,6 +16,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<FastifyReply>();
+    const request = ctx.getRequest<FastifyRequest>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
@@ -60,10 +61,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     }
 
+    // Log ALL errors with request context
+    const reqInfo = `${request.method} ${request.url}`;
+
     if (status >= 500) {
       this.logger.error(
-        'Unhandled exception',
-        exception instanceof Error ? exception.stack : exception,
+        `[${reqInfo}] Server Error ${status}: ${message}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    } else if (status >= 400) {
+      const detail = errors ? ` | Details: ${errors.join(', ')}` : '';
+      this.logger.warn(
+        `[${reqInfo}] Client Error ${status}: ${message}${detail}`,
       );
     }
 
