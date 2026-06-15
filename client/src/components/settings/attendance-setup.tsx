@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import {
   Briefcase,
   Sparkles,
   ArrowRight,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -27,100 +28,73 @@ import {
   eachDayOfInterval,
   getDay,
 } from "date-fns"
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-interface SetupHoliday {
-  id: string
-  name: string
-  startDate: Date
-  endDate: Date
-}
-
-// Serializable holiday for localStorage
-interface SavedHoliday {
-  id: string
-  name: string
-  startDate: string
-  endDate: string
-}
+import {
+  useAttendanceSettingsQuery,
+  useUpdateAttendanceSettingsMutation,
+  useHolidaysQuery,
+  useCreateHolidayMutation,
+  useDeleteHolidayMutation,
+} from "@/hooks/useAttendanceSettings"
+import type { Holiday } from "@/types"
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 const DAY_INDEX_TO_NAME = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-function generateId() {
-  return `h-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-}
-
-function toISODate(d: Date): string {
-  return startOfDay(d).toISOString()
-}
-
-function parseHolidayDate(d: string | Date): Date {
-  return d instanceof Date ? d : new Date(d)
+function parseHolidayDate(d: string): Date {
+  return new Date(d + "T00:00:00")
 }
 
 export function AttendanceSetup() {
-  const [weeklyHolidays, setWeeklyHolidays] = useState<string[]>(["Saturday", "Sunday"])
-  const [regularHolidays, setRegularHolidays] = useState<SetupHoliday[]>([])
   const [holidayName, setHolidayName] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
 
-  // ─── Load from localStorage ──────────────────────────────────────────────
-  useEffect(() => {
-    const savedWeekly = localStorage.getItem("hr_weekly_holidays")
-    if (savedWeekly) {
-      try {
-        setWeeklyHolidays(JSON.parse(savedWeekly))
-      } catch (e) {
-        console.error("Failed to parse weekly holidays:", e)
-      }
-    }
+  // ─── API hooks ───────────────────────────────────────────────────────────
+  const settingsQuery = useAttendanceSettingsQuery()
+  const holidaysQuery = useHolidaysQuery()
+  const updateSettingsMut = useUpdateAttendanceSettingsMutation()
+  const createHolidayMut = useCreateHolidayMutation()
+  const deleteHolidayMut = useDeleteHolidayMutation()
 
-    const savedRegular = localStorage.getItem("hr_regular_holidays")
-    if (savedRegular) {
-      try {
-        const parsed: SavedHoliday[] = JSON.parse(savedRegular)
-        setRegularHolidays(
-          parsed.map((h) => ({
-            id: h.id,
-            name: h.name,
-            startDate: parseHolidayDate(h.startDate),
-            endDate: parseHolidayDate(h.endDate),
-          }))
-        )
-      } catch (e) {
-        console.error("Failed to parse regular holidays:", e)
-      }
-    }
-  }, [])
+  // ─── Derived data ────────────────────────────────────────────────────────
+  const weeklyHolidays = settingsQuery.data?.weeklyHolidays ?? ["Saturday", "Sunday"]
+  const holidays: Holiday[] = holidaysQuery.data ?? []
 
-  // ─── Save helpers ────────────────────────────────────────────────────────
-  const saveWeeklyHolidays = (weekly: string[]) => {
-    localStorage.setItem("hr_weekly_holidays", JSON.stringify(weekly))
-  }
+  // Convert holidays to Date-based for display
+  const regularHolidays = useMemo(
+    () =>
+      holidays.map((h) => ({
+        ...h,
+        startDateObj: parseHolidayDate(h.startDate),
+        endDateObj: parseHolidayDate(h.endDate),
+      })),
+    [holidays],
+  )
 
-  const saveRegularHolidays = (holidays: SetupHoliday[]) => {
-    setRegularHolidays(holidays)
-    const toSave: SavedHoliday[] = holidays.map((h) => ({
-      id: h.id,
-      name: h.name,
-      startDate: toISODate(h.startDate),
-      endDate: toISODate(h.endDate),
-    }))
-    localStorage.setItem("hr_regular_holidays", JSON.stringify(toSave))
-  }
+  const isLoading = settingsQuery.isLoading || holidaysQuery.isLoading
+  const isSavingSettings = updateSettingsMut.isPending
+  const isCreatingHoliday = createHolidayMut.isPending
+  const isDeletingHoliday = deleteHolidayMut.isPending
 
   // ─── Weekly Holidays ────────────────────────────────────────────────────
   const toggleWeeklyDay = (day: string) => {
     const updated = weeklyHolidays.includes(day)
       ? weeklyHolidays.filter((d) => d !== day)
       : [...weeklyHolidays, day]
-    setWeeklyHolidays(updated)
-    saveWeeklyHolidays(updated)
-    toast.info("Weekly holidays updated", {
-      description: `${day} is now ${updated.includes(day) ? "a holiday" : "a working day"}.`,
-    })
+
+    updateSettingsMut.mutate(
+      { weeklyHolidays: updated },
+      {
+        onSuccess: () => {
+          toast.info("Weekly holidays updated", {
+            description: `${day} is now ${updated.includes(day) ? "a holiday" : "a working day"}.`,
+          })
+        },
+        onError: () => {
+          toast.error("Failed to update weekly holidays")
+        },
+      },
+    )
   }
 
   // ─── Holiday CRUD ───────────────────────────────────────────────────────
@@ -151,8 +125,8 @@ export function AttendanceSetup() {
 
     // Check for overlap
     const hasOverlap = regularHolidays.some((h) => {
-      const hStart = startOfDay(h.startDate)
-      const hEnd = startOfDay(h.endDate)
+      const hStart = startOfDay(h.startDateObj)
+      const hEnd = startOfDay(h.endDateObj)
       return !(end < hStart || start > hEnd)
     })
 
@@ -163,29 +137,38 @@ export function AttendanceSetup() {
       return
     }
 
-    const newHoliday: SetupHoliday = {
-      id: generateId(),
-      name: holidayName.trim(),
-      startDate: start,
-      endDate: end,
-    }
+    const startStr = format(start, "yyyy-MM-dd")
+    const endStr = format(end, "yyyy-MM-dd")
 
-    const updated = [...regularHolidays, newHoliday]
-    saveRegularHolidays(updated)
-    setStartDate("")
-    setEndDate("")
-    setHolidayName("")
+    createHolidayMut.mutate(
+      { name: holidayName.trim(), startDate: startStr, endDate: endStr },
+      {
+        onSuccess: () => {
+          setStartDate("")
+          setEndDate("")
+          setHolidayName("")
 
-    const duration = differenceInDays(end, start) + 1
-    toast.success("Holiday added!", {
-      description: `"${newHoliday.name}" — ${format(start, "MMM d")} to ${format(end, "MMM d, yyyy")} (${duration} ${duration === 1 ? "day" : "days"})`,
-    })
+          const duration = differenceInDays(end, start) + 1
+          toast.success("Holiday added!", {
+            description: `"${holidayName.trim()}" — ${format(start, "MMM d")} to ${format(end, "MMM d, yyyy")} (${duration} ${duration === 1 ? "day" : "days"})`,
+          })
+        },
+        onError: () => {
+          toast.error("Failed to add holiday")
+        },
+      },
+    )
   }
 
   const handleDeleteHoliday = (id: string) => {
-    const updated = regularHolidays.filter((h) => h.id !== id)
-    saveRegularHolidays(updated)
-    toast.success("Holiday removed")
+    deleteHolidayMut.mutate(id, {
+      onSuccess: () => {
+        toast.success("Holiday removed")
+      },
+      onError: () => {
+        toast.error("Failed to remove holiday")
+      },
+    })
   }
 
   const resetSelection = () => {
@@ -210,8 +193,8 @@ export function AttendanceSetup() {
       const dayTime = startOfDay(day).getTime()
 
       const isRegularHoliday = regularHolidays.some((h) => {
-        const s = startOfDay(h.startDate).getTime()
-        const e = startOfDay(h.endDate).getTime()
+        const s = startOfDay(h.startDateObj).getTime()
+        const e = startOfDay(h.endDateObj).getTime()
         return dayTime >= s && dayTime <= e
       })
 
@@ -231,8 +214,8 @@ export function AttendanceSetup() {
 
   // ─── Sorted holidays list ──────────────────────────────────────────────
   const sortedHolidays = useMemo(
-    () => [...regularHolidays].sort((a, b) => a.startDate.getTime() - b.startDate.getTime()),
-    [regularHolidays]
+    () => [...regularHolidays].sort((a, b) => a.startDateObj.getTime() - b.startDateObj.getTime()),
+    [regularHolidays],
   )
 
   // ─── Computed range info ──────────────────────────────────────────────
@@ -240,6 +223,16 @@ export function AttendanceSetup() {
   const rangeEnd = endDate ? startOfDay(new Date(endDate)) : null
   const rangeDays = rangeStart && rangeEnd ? differenceInDays(rangeEnd, rangeStart) + 1 : null
   const canAdd = !!startDate && !!holidayName.trim()
+
+  // ─── Loading state ────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2 text-sm text-muted-foreground">Loading attendance settings...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -310,11 +303,13 @@ export function AttendanceSetup() {
                     <button
                       key={dayName}
                       onClick={() => toggleWeeklyDay(dayName)}
+                      disabled={isSavingSettings}
                       className={cn(
                         "flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all text-left border",
                         isActive
                           ? "bg-primary/10 border-primary/25 hover:bg-primary/15"
-                          : "bg-transparent border-border/30 hover:bg-muted/30"
+                          : "bg-transparent border-border/30 hover:bg-muted/30",
+                        isSavingSettings && "opacity-50 cursor-not-allowed",
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -323,7 +318,7 @@ export function AttendanceSetup() {
                             "h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 transition-colors",
                             isActive
                               ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
+                              : "bg-muted text-muted-foreground",
                           )}
                         >
                           {abbr.slice(0, 2)}
@@ -338,19 +333,19 @@ export function AttendanceSetup() {
                       <div
                         className={cn(
                           "h-4.5 w-8 rounded-full relative transition-all",
-                          isActive ? "bg-primary" : "bg-muted"
+                          isActive ? "bg-primary" : "bg-muted",
                         )}
                       >
                         <div
                           className={cn(
                             "absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow transition-all",
-                            isActive ? "left-4" : "left-0.5"
+                            isActive ? "left-4" : "left-0.5",
                           )}
                         />
                       </div>
                     </button>
                   )
-                }
+                },
               )}
             </div>
 
@@ -453,10 +448,15 @@ export function AttendanceSetup() {
 
             <Button
               onClick={handleAddHoliday}
-              disabled={!canAdd}
+              disabled={!canAdd || isCreatingHoliday}
               className="w-full gap-2 h-10"
             >
-              <Plus className="h-4 w-4" /> Add Holiday
+              {isCreatingHoliday ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}{" "}
+              Add Holiday
             </Button>
 
             <Separator className="bg-border/30" />
@@ -468,14 +468,14 @@ export function AttendanceSetup() {
                   <Clock className="h-3.5 w-3.5" /> Scheduled Holidays
                 </Label>
                 <Badge variant="outline" className="text-[10px]">
-                  {regularHolidays.length} configured
+                  {holidays.length} configured
                 </Badge>
               </div>
 
               <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
                 {sortedHolidays.length > 0 ? (
                   sortedHolidays.map((holiday) => {
-                    const duration = differenceInDays(holiday.endDate, holiday.startDate) + 1
+                    const duration = differenceInDays(holiday.endDateObj, holiday.startDateObj) + 1
                     const isMultiDay = duration > 1
 
                     return (
@@ -486,13 +486,13 @@ export function AttendanceSetup() {
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex items-center gap-1 shrink-0">
                             <div className="h-7 w-7 rounded-lg bg-violet-500/15 text-violet-500 flex items-center justify-center font-extrabold text-[11px]">
-                              {format(holiday.startDate, "d")}
+                              {format(holiday.startDateObj, "d")}
                             </div>
                             {isMultiDay && (
                               <>
                                 <div className="h-0.5 w-3 bg-violet-300/50 rounded" />
                                 <div className="h-7 w-7 rounded-lg bg-violet-500/15 text-violet-500 flex items-center justify-center font-extrabold text-[11px]">
-                                  {format(holiday.endDate, "d")}
+                                  {format(holiday.endDateObj, "d")}
                                 </div>
                               </>
                             )}
@@ -502,10 +502,10 @@ export function AttendanceSetup() {
                               {holiday.name}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {format(holiday.startDate, "MMM d")}
+                              {format(holiday.startDateObj, "MMM d")}
                               {isMultiDay
-                                ? ` – ${format(holiday.endDate, "MMM d, yyyy")}`
-                                : `, ${format(holiday.startDate, "yyyy")}`}
+                                ? ` – ${format(holiday.endDateObj, "MMM d, yyyy")}`
+                                : `, ${format(holiday.startDateObj, "yyyy")}`}
                               <span className="ml-1.5 text-violet-500 font-semibold">
                                 • {duration} {duration === 1 ? "day" : "days"}
                               </span>
@@ -516,6 +516,7 @@ export function AttendanceSetup() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteHoliday(holiday.id)}
+                          disabled={isDeletingHoliday}
                           className="h-7 w-7 text-muted-foreground hover:text-red-500 rounded-lg hover:bg-red-500/5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Trash2 className="h-3 w-3" />

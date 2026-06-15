@@ -90,6 +90,13 @@ export const CacheKeys = {
     description: 'Payroll run result by period',
   },
 
+  /** Attendance settings (singleton) */
+  attendanceSettings: {
+    key: key('attendance:settings'),
+    ttl: 1800, // 30 min
+    description: 'Attendance settings singleton',
+  },
+
   /** Generic settings / config cache */
   settings: {
     key: key('settings:*'),

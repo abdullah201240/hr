@@ -10,10 +10,16 @@ import {
   AlertCircle,
   Coffee,
   Timer,
+  Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
 import { cn } from "@/lib/utils"
+import {
+  useAttendanceSettingsQuery,
+  useUpdateAttendanceSettingsMutation,
+} from "@/hooks/useAttendanceSettings"
+import type { UpdateAttendanceSettingsPayload } from "@/types"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface OfficeSettings {
@@ -25,15 +31,13 @@ interface OfficeSettings {
   halfDayThreshold: number
 }
 
-const STORAGE_KEY = "hr_office_settings"
-
 const DEFAULT_SETTINGS: OfficeSettings = {
   startTime: "09:00",
   endTime: "18:00",
   breakStart: "13:00",
   breakEnd: "14:00",
   lateThreshold: 15,
-  halfDayThreshold: 240, // 4 hours — arriving after this = half day
+  halfDayThreshold: 240,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -59,24 +63,24 @@ function formatTime12(t: string): string {
 export function OfficeHours() {
   const [settings, setSettings] = useState<OfficeSettings>(DEFAULT_SETTINGS)
 
-  // ─── Load from localStorage ──────────────────────────────────────────────
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as Partial<OfficeSettings>
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed })
-      } catch (e) {
-        console.error("Failed to parse office settings:", e)
-      }
-    }
-  }, [])
+  // ─── API hooks ───────────────────────────────────────────────────────────
+  const settingsQuery = useAttendanceSettingsQuery()
+  const updateSettingsMut = useUpdateAttendanceSettingsMutation()
 
-  // ─── Save to localStorage ────────────────────────────────────────────────
-  const persistSettings = (updated: OfficeSettings) => {
-    setSettings(updated)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  }
+  // ─── Sync from API on load ──────────────────────────────────────────────
+  useEffect(() => {
+    if (settingsQuery.data) {
+      const d = settingsQuery.data
+      setSettings({
+        startTime: d.startTime || DEFAULT_SETTINGS.startTime,
+        endTime: d.endTime || DEFAULT_SETTINGS.endTime,
+        breakStart: d.breakStart || DEFAULT_SETTINGS.breakStart,
+        breakEnd: d.breakEnd || DEFAULT_SETTINGS.breakEnd,
+        lateThreshold: d.lateThreshold || DEFAULT_SETTINGS.lateThreshold,
+        halfDayThreshold: d.halfDayThreshold || DEFAULT_SETTINGS.halfDayThreshold,
+      })
+    }
+  }, [settingsQuery.data])
 
   // ─── Validation ──────────────────────────────────────────────────────────
   const validation = useMemo(() => {
@@ -129,10 +133,38 @@ export function OfficeHours() {
       return
     }
 
-    persistSettings(settings)
-    toast.success("Office settings saved!", {
-      description: `Office hours: ${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)} (${formatDuration(validation.workMinutes)} working)`,
+    const payload: UpdateAttendanceSettingsPayload = {
+      startTime: settings.startTime,
+      endTime: settings.endTime,
+      breakStart: settings.breakStart,
+      breakEnd: settings.breakEnd,
+      lateThreshold: settings.lateThreshold,
+      halfDayThreshold: settings.halfDayThreshold,
+    }
+
+    updateSettingsMut.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Office settings saved!", {
+          description: `Office hours: ${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)} (${formatDuration(validation.workMinutes)} working)`,
+        })
+      },
+      onError: () => {
+        toast.error("Failed to save office settings")
+      },
     })
+  }
+
+  const isLoading = settingsQuery.isLoading
+  const isSaving = updateSettingsMut.isPending
+
+  // ─── Loading state ────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2 text-sm text-muted-foreground">Loading office settings...</span>
+      </div>
+    )
   }
 
   return (
@@ -274,9 +306,12 @@ export function OfficeHours() {
 
           <Button
             onClick={handleSave}
-            disabled={!validation.isValid}
+            disabled={!validation.isValid || isSaving}
             className="w-full gap-2 h-10"
           >
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : null}
             Save Office Settings
           </Button>
         </CardContent>
@@ -392,7 +427,7 @@ function SummaryRow({
     <div
       className={cn(
         "flex items-center justify-between py-1",
-        highlight && "font-bold"
+        highlight && "font-bold",
       )}
     >
       <div>
@@ -446,7 +481,7 @@ function StatusRule({
     color === "emerald" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     color === "amber" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     color === "orange" && "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    color === "red" && "bg-red-500/10 text-red-600 dark:text-red-400"
+    color === "red" && "bg-red-500/10 text-red-600 dark:text-red-400",
   )
 
   return (

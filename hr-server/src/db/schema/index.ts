@@ -6,3 +6,4 @@ export { baseTable } from './_base';
 // ─────────────────────────────────────────────────────────────
 export * from './employee';
 export * from './leave-type';
+export * from './attendance';
