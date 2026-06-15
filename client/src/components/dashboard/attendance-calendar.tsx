@@ -195,7 +195,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                         )}
                       </div>
 
-                      {record && record.status !== "upcoming" && record.status !== "weekend" && (
+                      {record && record.status !== "upcoming" && (
                         <div className="flex flex-col gap-0.5 mt-1 flex-1 justify-center">
                           <span className={cn(
                             "text-[9px] font-bold uppercase tracking-tight leading-none px-1.5 py-0.5 rounded self-start",
@@ -203,7 +203,8 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                             record.status === "late" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
                             record.status === "absent" && "bg-red-500/20 text-red-700 dark:text-red-400",
                             record.status === "leave" && "bg-sky-500/20 text-sky-700 dark:text-sky-400",
-                            record.status === "holiday" && "bg-violet-500/20 text-violet-700 dark:text-violet-400"
+                            record.status === "holiday" && "bg-violet-500/20 text-violet-700 dark:text-violet-400",
+                            record.status === "weekend" && "bg-muted/60 text-muted-foreground"
                           )}>
                             {record.status === "leave"
                               ? (() => {
@@ -212,7 +213,9 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                                 })()
                               : record.status === "holiday"
                                 ? "HOLIDAY"
-                                : record.status === "absent"
+                                : record.status === "weekend"
+                                  ? "WEEKEND OFF"
+                                  : record.status === "absent"
                                   ? "ABSENT"
                                   : record.status === "present"
                                     ? "REGULAR"
