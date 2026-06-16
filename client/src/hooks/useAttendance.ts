@@ -96,6 +96,45 @@ export function useDailyAttendanceQuery(dateStr: string) {
   });
 }
 
+export interface AttendanceCursorPage {
+  data: DailyAttendanceLog[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  limit: number;
+  counts?: {
+    present: number;
+    late: number;
+    absent: number;
+    leave: number;
+    holiday: number;
+    weekend: number;
+  };
+}
+
+export function useRangeAttendanceQuery(
+  startDateStr: string,
+  endDateStr: string,
+  limit?: number,
+  cursor?: string,
+  departmentId?: string,
+  status?: string,
+  search?: string
+) {
+  return useQuery<AttendanceCursorPage>({
+    queryKey: ["attendance", "range", startDateStr, endDateStr, limit, cursor, departmentId, status, search],
+    queryFn: () =>
+      apiClient.get<AttendanceCursorPage>(
+        `attendance/range?startDate=${startDateStr}&endDate=${endDateStr}` +
+          (limit ? `&limit=${limit}` : "") +
+          (cursor ? `&cursor=${cursor}` : "") +
+          (departmentId ? `&departmentId=${departmentId}` : "") +
+          (status ? `&status=${status}` : "") +
+          (search ? `&search=${encodeURIComponent(search)}` : "")
+      ),
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useApproveCorrectionMutation() {
   const queryClient = useQueryClient();
   return useMutation<unknown, Error, string>({

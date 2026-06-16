@@ -7,7 +7,7 @@ import {
   BadRequestException,
   OnModuleInit,
 } from '@nestjs/common';
-import { eq, and, between, asc } from 'drizzle-orm';
+import { eq, and, between, asc, desc, or, gt, lt, like } from 'drizzle-orm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { DB_CONNECTION, type Database } from '../../db';
@@ -389,6 +389,123 @@ export class AttendanceService implements OnModuleInit {
 
     await this.cache.setByKey(CacheKeys.attendanceDailyLogs, list, dateStr);
     return list;
+  }
+
+  async getRangeLogs(
+    startDateStr: string,
+    endDateStr: string,
+    limit = 50,
+    cursor?: string,
+    departmentId?: string,
+    status?: string,
+    search?: string,
+  ) {
+    let cursorDateStr: string | null = null;
+    let cursorId: string | null = null;
+
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const [dateStr, id] = decoded.split(':');
+        cursorDateStr = dateStr;
+        cursorId = id;
+      } catch {
+        // ignore invalid cursor
+      }
+    }
+
+    const conditions = [between(attendanceLogs.date, startDateStr, endDateStr)];
+
+    if (departmentId && departmentId !== 'all') {
+      conditions.push(eq(employees.departmentId, departmentId));
+    }
+
+    if (status && status !== 'all') {
+      conditions.push(eq(attendanceLogs.status, status));
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          like(employees.fullNameEnglish, `%${search}%`),
+          like(employees.employeeId, `%${search}%`),
+        )!,
+      );
+    }
+
+    // Clone conditions for full KPI range counts (before appending pagination cursor)
+    const countConditions = [...conditions];
+
+    if (cursorDateStr && cursorId) {
+      conditions.push(
+        or(
+          gt(attendanceLogs.date, cursorDateStr),
+          and(
+            eq(attendanceLogs.date, cursorDateStr),
+            gt(attendanceLogs.id, cursorId),
+          ),
+        )!,
+      );
+    }
+
+    const results = await this.db
+      .select({
+        id: attendanceLogs.id,
+        date: attendanceLogs.date,
+        status: attendanceLogs.status,
+        checkIn: attendanceLogs.checkIn,
+        checkOut: attendanceLogs.checkOut,
+        hours: attendanceLogs.hours,
+        location: attendanceLogs.location,
+        ipAddress: attendanceLogs.ipAddress,
+        device: attendanceLogs.device,
+        correctionStatus: attendanceLogs.correctionStatus,
+        correctionReason: attendanceLogs.correctionReason,
+        proposedCheckIn: attendanceLogs.proposedCheckIn,
+        proposedCheckOut: attendanceLogs.proposedCheckOut,
+        employeeName: employees.fullNameEnglish,
+        employeeIdCode: employees.employeeId,
+        employeeId: employees.id,
+      })
+      .from(attendanceLogs)
+      .innerJoin(employees, eq(attendanceLogs.employeeId, employees.id))
+      .where(and(...conditions))
+      .orderBy(asc(attendanceLogs.date), asc(attendanceLogs.id))
+      .limit(limit + 1);
+
+    // Fetch full matching logs for counting metrics
+    const allMatchingLogs = await this.db
+      .select({
+        status: attendanceLogs.status,
+      })
+      .from(attendanceLogs)
+      .innerJoin(employees, eq(attendanceLogs.employeeId, employees.id))
+      .where(and(...countConditions));
+
+    const counts = { present: 0, late: 0, absent: 0, leave: 0, holiday: 0, weekend: 0 };
+    for (const log of allMatchingLogs) {
+      if (log.status in counts) {
+        counts[log.status as keyof typeof counts]++;
+      }
+    }
+
+    const hasNextPage = results.length > limit;
+    const data = results.slice(0, limit);
+
+    let nextCursor: string | null = null;
+    if (hasNextPage && data.length > 0) {
+      const lastItem = data[data.length - 1];
+      const cursorValue = `${lastItem.date}:${lastItem.id}`;
+      nextCursor = Buffer.from(cursorValue).toString('base64');
+    }
+
+    return {
+      data,
+      nextCursor,
+      hasNextPage,
+      limit,
+      counts,
+    };
   }
 
   // ─── Approve Correction ────────────────────────────────────────────────────

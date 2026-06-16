@@ -50,6 +50,11 @@ export const navGroups: NavGroup[] = [
         icon: CalendarClock,
       },
       {
+        title: "Company Attendance",
+        href: "/attendance/company",
+        icon: CalendarClock,
+      },
+      {
         title: "Leave Management",
         href: "/leave",
         icon: CalendarOff,

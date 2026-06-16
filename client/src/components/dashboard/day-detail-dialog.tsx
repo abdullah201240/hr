@@ -426,24 +426,7 @@ export function DayDetailDialog({
                 </div>
               </div>
 
-              {/* Attachments */}
-              {record.attachments && record.attachments.length > 0 && (
-                <div className="rounded-lg border border-border/40 overflow-hidden">
-                  <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Attachments</p>
-                  </div>
-                  <div className="p-3">
-                    <div className="flex flex-wrap gap-2">
-                      {record.attachments.map(att => (
-                        <div key={att.id} className="flex items-center gap-1.5 bg-sky-500/10 border border-sky-500/20 text-sky-600 rounded-lg px-2 py-1 text-[11px] font-semibold">
-                          <span className="opacity-70">{att.title}:</span>
-                          <span className="underline cursor-pointer">{att.fileName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+
             </div>
 
             <DialogFooter className="gap-2 mt-4">

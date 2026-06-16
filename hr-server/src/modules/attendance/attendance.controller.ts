@@ -76,6 +76,30 @@ export class AttendanceController {
     return this.attendanceService.getDailyLogs(date);
   }
 
+  @Get('range')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Get attendance logs for all employees within a date range' })
+  @ApiResponse({ status: 200, description: 'Attendance logs list' })
+  async getRangeLogs(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('limit') limit?: number,
+    @Query('cursor') cursor?: string,
+    @Query('departmentId') departmentId?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.attendanceService.getRangeLogs(
+      startDate,
+      endDate,
+      limit ? Number(limit) : undefined,
+      cursor,
+      departmentId,
+      status,
+      search,
+    );
+  }
+
   @Post('correction/approve/:id')
   @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
