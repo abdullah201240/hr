@@ -9,8 +9,11 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { eq, and, between, desc, asc, count, sum, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
 import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments } from '../../db/schema';
+
+const approver = alias(employees, 'approver');
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
 import { LEAVE_APPLICATION_QUEUE } from '../queue/queue.module';
@@ -333,14 +336,21 @@ export class LeaveApplicationService {
         employeeName: employees.fullNameEnglish,
         employeeEmail: employees.email,
         employeeIdCode: employees.employeeId,
+        employeePhone: employees.phone,
+        employeeEmergencyPhone: employees.emergencyContactNumber,
         employeeId: leaveApplications.employeeId,
         leaveTypeName: leaveTypes.name,
         leaveTypeId: leaveTypes.id,
+        leaveTypePaid: leaveTypes.paid,
         rejectionReason: leaveApplications.rejectionReason,
+        approvedByName: approver.fullNameEnglish,
+        approvedAt: leaveApplications.approvedAt,
+        rejectedAt: leaveApplications.rejectedAt,
       })
       .from(leaveApplications)
       .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
       .innerJoin(leaveTypes, eq(leaveApplications.leaveTypeId, leaveTypes.id))
+      .leftJoin(approver, eq(leaveApplications.approvedById, approver.id))
       .where(finalWhere)
       .orderBy(sortOrder === 'asc' ? asc(leaveApplications.createdAt) : desc(leaveApplications.createdAt));
 
@@ -422,13 +432,21 @@ export class LeaveApplicationService {
         createdAt: leaveApplications.createdAt,
         employeeName: employees.fullNameEnglish,
         employeeEmail: employees.email,
+        employeeIdCode: employees.employeeId,
+        employeePhone: employees.phone,
+        employeeEmergencyPhone: employees.emergencyContactNumber,
         leaveTypeName: leaveTypes.name,
         leaveTypeId: leaveTypes.id,
+        leaveTypePaid: leaveTypes.paid,
         rejectionReason: leaveApplications.rejectionReason,
+        approvedByName: approver.fullNameEnglish,
+        approvedAt: leaveApplications.approvedAt,
+        rejectedAt: leaveApplications.rejectedAt,
       })
       .from(leaveApplications)
       .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
       .innerJoin(leaveTypes, eq(leaveApplications.leaveTypeId, leaveTypes.id))
+      .leftJoin(approver, eq(leaveApplications.approvedById, approver.id))
       .where(eq(leaveApplications.id, id))
       .limit(1);
 

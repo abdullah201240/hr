@@ -93,6 +93,12 @@ export interface LeaveApplication {
   leaveTypeName: string;
   leaveTypeId: string;
   rejectionReason: string | null;
+  employeePhone?: string;
+  employeeEmergencyPhone?: string;
+  leaveTypePaid?: boolean;
+  approvedByName?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
 }
 
 export interface LeaveBalance {

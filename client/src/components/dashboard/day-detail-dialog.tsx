@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -8,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Coffee, XCircle, Edit } from "lucide-react"
+import { Coffee, Image as ImageIcon, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AttendanceRecord, LeaveApplication, LeaveBalance } from "./types"
 import { formatFullDate } from "./types"
@@ -45,6 +46,44 @@ function convert24to12(time24: string): string {
   return `${hrStr}:${minFormatted} ${ampm}`
 }
 
+const formatDateDMY = (dateStr?: string) => {
+  if (!dateStr) return "—"
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return "—"
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const year = d.getFullYear()
+    return `${day}-${month}-${year}`
+  } catch {
+    return "—"
+  }
+}
+
+const formatDateTimeDMY = (dateStr?: string) => {
+  if (!dateStr) return "—"
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return "—"
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const year = d.getFullYear()
+    
+    let hours = d.getHours()
+    const minutes = String(d.getMinutes()).padStart(2, "0")
+    const ampm = hours >= 12 ? "PM" : "AM"
+    hours = hours % 12
+    hours = hours ? hours : 12
+    const hoursStr = String(hours).padStart(2, "0")
+    
+    return `${day}-${month}-${year} ${hoursStr}:${minutes} ${ampm}`
+  } catch {
+    return "—"
+  }
+}
+
+
+
 export function DayDetailDialog({
   open,
   onOpenChange,
@@ -54,12 +93,14 @@ export function DayDetailDialog({
   record,
   leaveApplications,
   balances: _balances,
-  onCancelLeave,
+  onCancelLeave: _onCancelLeave,
   onApplyLeave,
-  onEditLeave,
+  onEditLeave: _onEditLeave,
   viewMode = "regular",
 }: DayDetailDialogProps) {
   const { user } = useAuthStore()
+  const [docsOpen, setDocsOpen] = useState(true)
+  const [historyOpen, setHistoryOpen] = useState(true)
   const { data: department } = useDepartmentQuery(user?.departmentId || "")
   const { data: designation } = useDesignationQuery(user?.designationId || "")
   const { data: settings } = useAttendanceSettingsQuery()
@@ -80,120 +121,250 @@ export function DayDetailDialog({
   }
   const duration = getDurationHours(settings?.startTime, settings?.endTime)
 
+  const showLeaveMode = viewMode === "leave" && matchingLeave
+  const selectedLeave = matchingLeave?.rawLeave || matchingLeave
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px]">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold">
-            {record ? `${formatFullDate(record.day, calMonth, calYear)} — Day Details` : `Day ${selectedDayNumber}`}
-          </DialogTitle>
-          <DialogDescription className="text-xs">Complete attendance and shift information for this day.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="p-6 sm:max-w-[800px]">
+        {showLeaveMode ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-center text-base font-bold text-[#0c624d]">
+                Leave Request Details
+              </DialogTitle>
+              <DialogDescription className="text-center text-xs">
+                Review detailed leave application information.
+              </DialogDescription>
+            </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Section 1: Employee & Shift Info */}
-          <div className="rounded-lg border border-border/40 overflow-hidden">
-            <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Employee & Shift Info</p>
-            </div>
-            <div className="grid grid-cols-2 divide-x divide-border/20">
-              <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Date</span><span className="font-semibold">{formatFullDate(record.day, calMonth, calYear)}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Department</span><span className="font-semibold">{department?.name || "—"}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Employee</span><span className="font-semibold">{user?.fullNameEnglish || "—"}</span></div>
-              </div>
-              <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Shift Name</span><span className="font-semibold">{designation?.name || "—"}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Roster Time</span><span className="font-semibold">{rosterStart} – {rosterEnd}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Day Duration</span><span className="font-semibold">Day Shift ({duration}h)</span></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Leave Request Details (for leave days) */}
-          {viewMode === "leave" && matchingLeave && matchingLeave.rawLeave && (
-            <div className="rounded-lg border border-border/40 overflow-hidden">
-              <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Leave Request Details</p>
-              </div>
-              <div className="p-3 space-y-2.5">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex justify-between pr-2 border-r border-border/20">
-                    <span className="text-muted-foreground">Type</span>
-                    <Badge variant="secondary" className="text-[10px] uppercase font-semibold">
-                      {matchingLeave.rawLeave.leaveTypeName}
-                    </Badge>
+            <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-6 py-2">
+              {/* Two-column Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Column Box */}
+                <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
+                  <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
+                    <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
                   </div>
-                  <div className="flex justify-between pl-2">
-                    <span className="text-muted-foreground">Status</span>
-                    <Badge className={cn("text-[9px] font-bold",
-                      matchingLeave.rawLeave.status === "Approved" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                      matchingLeave.rawLeave.status === "Pending" && "bg-amber-500/10 text-amber-600 border-amber-500/20",
-                      matchingLeave.rawLeave.status === "Rejected" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
-                      matchingLeave.rawLeave.status === "Cancelled" && "bg-slate-500/10 text-slate-600 border-slate-500/20"
-                    )}>
-                      {matchingLeave.rawLeave.status}
-                    </Badge>
-                  </div>
+                  <table className="w-full text-[11px] border-collapse">
+                    <tbody>
+                      <tr className="border-b border-[#dee2e6]">
+                        <td className="w-1/3 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Employee :</td>
+                        <td className="p-2 font-bold text-gray-800">{selectedLeave.employeeName || user?.fullNameEnglish || "—"}</td>
+                      </tr>
+                      <tr className="border-b border-[#dee2e6]">
+                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Apply Date :</td>
+                        <td className="p-2 font-bold text-gray-800">{formatDateDMY(selectedLeave.createdAt)}</td>
+                      </tr>
+                      <tr>
+                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Date Range :</td>
+                        <td className="p-2 font-bold text-[#0c624d]">{formatDateDMY(selectedLeave.startDate)} - {formatDateDMY(selectedLeave.endDate)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex justify-between pr-2 border-r border-border/20">
-                    <span className="text-muted-foreground">Period</span>
-                    <span className="font-semibold">
-                      {new Date(matchingLeave.rawLeave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(matchingLeave.rawLeave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
+                {/* Right Column Box */}
+                <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
+                  <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
+                    <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
                   </div>
-                  <div className="flex justify-between pl-2">
-                    <span className="text-muted-foreground">Total Days</span>
-                    <span className="font-semibold">{matchingLeave.rawLeave.days} {matchingLeave.rawLeave.days === 1 ? "day" : "days"}</span>
-                  </div>
+                  <table className="w-full text-[11px] border-collapse">
+                    <tbody>
+                      <tr className="border-b border-[#dee2e6]">
+                        <td className="w-2/5 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Leave Name :</td>
+                        <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypeName || "Leave"}</td>
+                      </tr>
+                      <tr className="border-b border-[#dee2e6]">
+                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Pay Type :</td>
+                        <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypePaid ? "Paid Leave" : "Unpaid Leave"}</td>
+                      </tr>
+                      <tr>
+                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Approval Status :</td>
+                        <td className="p-2">
+                          <span className={cn(
+                            "font-bold",
+                            selectedLeave.status === "Approved" && "text-emerald-700",
+                            selectedLeave.status === "Pending" && "text-amber-600",
+                            selectedLeave.status === "Rejected" && "text-rose-600"
+                          )}>
+                            {selectedLeave.status}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
+              </div>
 
-                {matchingLeave.rawLeave.reason && (
-                  <div className="text-xs pt-1.5 border-t border-border/20">
-                    <span className="text-muted-foreground block mb-0.5">Reason</span>
-                    <p className="text-foreground bg-muted/20 p-2 rounded border border-border/30 text-[11px] leading-relaxed">
-                      {matchingLeave.rawLeave.reason}
-                    </p>
+              {/* Application Documents Section */}
+              <div className="space-y-2">
+                <div
+                  className="flex items-center justify-between gap-1 text-[13px] font-bold text-[#0c624d] hover:text-[#0c624d]/80 transition-colors cursor-pointer select-none bg-[#f5f9f6] border border-[#badbcc] rounded-md px-3 py-2"
+                  onClick={() => setDocsOpen(!docsOpen)}
+                >
+                  <span>Application Documents</span>
+                  {docsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+                {docsOpen && (
+                  <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm transition-all duration-200">
+                    <table className="w-full text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
+                          <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Name</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Document Extension</th>
+                          <th className="w-24 p-2.5 font-bold text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedLeave.attachments && selectedLeave.attachments.length > 0 ? (
+                          selectedLeave.attachments.map((att: any, idx: number) => {
+                            const extension = att.fileName.split(".").pop() || "unknown";
+                            return (
+                              <tr key={att.id || idx} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
+                                <td className="p-2 border-r border-[#dee2e6] text-center">{idx + 1}</td>
+                                <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{att.title || att.fileName}</td>
+                                <td className="p-2 border-r border-[#dee2e6] text-left">{extension}</td>
+                                <td className="p-2 text-center">
+                                  <a
+                                    href={att.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center p-1 rounded hover:bg-rose-50 text-rose-600 transition-colors"
+                                  >
+                                    <ImageIcon className="h-4 w-4" />
+                                  </a>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center text-gray-400 italic">No documents uploaded</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 )}
+              </div>
 
-                {matchingLeave.rawLeave.status === "Rejected" && matchingLeave.rawLeave.rejectionReason && (
-                  <div className="text-xs pt-1.5 border-t border-border/20">
-                    <span className="text-rose-500 block font-semibold mb-0.5">Rejection Details</span>
-                    <p className="text-rose-600 bg-rose-500/5 p-2 rounded border border-rose-500/10 text-[11px] leading-relaxed">
-                      {matchingLeave.rawLeave.rejectionReason}
-                    </p>
-                  </div>
-                )}
+              {/* Application Approval History Section */}
+              <div className="space-y-2">
+                <div
+                  className="flex items-center justify-between gap-1 text-[13px] font-bold text-[#0c624d] hover:text-[#0c624d]/80 transition-colors cursor-pointer select-none bg-[#f5f9f6] border border-[#badbcc] rounded-md px-3 py-2"
+                  onClick={() => setHistoryOpen(!historyOpen)}
+                >
+                  <span>Application Approval History</span>
+                  {historyOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+                {historyOpen && (
+                  <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm transition-all duration-200">
+                    <table className="w-full text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
+                          <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Activity by</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Time</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Type</th>
+                          <th className="p-2.5 font-bold text-left">Remark</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const history = [];
+                          
+                          history.push({
+                            sl: 1,
+                            activityBy: selectedLeave.employeeName || user?.fullNameEnglish || "—",
+                            time: selectedLeave.createdAt ? formatDateTimeDMY(selectedLeave.createdAt) : "—",
+                            type: "Applied",
+                            remark: selectedLeave.reason || "—"
+                          });
 
-                {matchingLeave.rawLeave.attachments && matchingLeave.rawLeave.attachments.length > 0 && (
-                  <div className="text-xs pt-1.5 border-t border-border/20">
-                    <span className="text-muted-foreground block mb-1">Leave Attachments ({matchingLeave.rawLeave.attachments.length})</span>
-                    <div className="flex flex-col gap-1.5">
-                      {matchingLeave.rawLeave.attachments.map((att: any, idx: number) => (
-                        <a
-                          key={att.id || idx}
-                          href={att.fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center justify-between p-1.5 rounded border border-border/40 hover:bg-muted/30 transition-colors text-[10px] text-sky-600 dark:text-sky-400 font-semibold"
-                        >
-                          <span className="truncate max-w-[200px]">{att.title || att.fileName}</span>
-                          <span className="text-[9px] text-muted-foreground underline">Download</span>
-                        </a>
-                      ))}
-                    </div>
+                          if (selectedLeave.status === "Approved") {
+                            history.push({
+                              sl: 2,
+                              activityBy: selectedLeave.approvedByName || "Admin",
+                              time: selectedLeave.approvedAt ? formatDateTimeDMY(selectedLeave.approvedAt) : "—",
+                              type: "Final Approved",
+                              remark: ""
+                            });
+                          } else if (selectedLeave.status === "Rejected") {
+                            history.push({
+                              sl: 2,
+                              activityBy: selectedLeave.approvedByName || "Admin",
+                              time: selectedLeave.rejectedAt ? formatDateTimeDMY(selectedLeave.rejectedAt) : "—",
+                              type: "Rejected",
+                              remark: selectedLeave.rejectionReason || "No reason provided"
+                            });
+                          } else {
+                            history.push({
+                              sl: 2,
+                              activityBy: "—",
+                              time: "—",
+                              type: "Pending Final Approval",
+                              remark: ""
+                            });
+                          }
+                          return history;
+                        })().map((row) => (
+                          <tr key={row.sl} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
+                            <td className="p-2 border-r border-[#dee2e6] text-center">{row.sl}</td>
+                            <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.activityBy}</td>
+                            <td className="p-2 border-r border-[#dee2e6] text-left">{row.time}</td>
+                            <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.type}</td>
+                            <td className="p-2 text-left text-gray-500">{row.remark || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Regular Attendance Details (when not on leave) */}
-          {viewMode === "regular" && (
-            <>
+            <DialogFooter className="gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-8 border-[#f08135] text-[#f08135] hover:bg-[#f08135]/10 text-[11px] font-bold"
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold">
+                {record ? `${formatFullDate(record.day, calMonth, calYear)} — Day Details` : `Day ${selectedDayNumber}`}
+              </DialogTitle>
+              <DialogDescription className="text-xs">Complete attendance and shift information for this day.</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              {/* Section 1: Employee & Shift Info */}
+              <div className="rounded-lg border border-border/40 overflow-hidden">
+                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Employee & Shift Info</p>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-border/20">
+                  <div className="p-3 space-y-2">
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Date</span><span className="font-semibold">{formatFullDate(record.day, calMonth, calYear)}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Department</span><span className="font-semibold">{department?.name || "—"}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Employee</span><span className="font-semibold">{user?.fullNameEnglish || "—"}</span></div>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Shift Name</span><span className="font-semibold">{designation?.name || "—"}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Roster Time</span><span className="font-semibold">{rosterStart} – {rosterEnd}</span></div>
+                    <div className="flex justify-between text-xs"><span className="text-muted-foreground">Day Duration</span><span className="font-semibold">Day Shift ({duration}h)</span></div>
+                  </div>
+                </div>
+              </div>
+
               {/* Section 2: Duty & Leave Details */}
               <div className="rounded-lg border border-border/40 overflow-hidden">
                 <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
@@ -215,18 +386,18 @@ export function DayDetailDialog({
                       </Badge>
                     </div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Leave Status</span>
-                      <span className="font-semibold">—</span>
+                      <span className="font-semibold capitalize">{matchingLeave ? matchingLeave.status : "—"}</span>
                     </div>
                   </div>
                   <div className="p-3 space-y-2">
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Leave Application</span>
-                      <span className="font-semibold">—</span>
+                      <span className="font-semibold">{matchingLeave ? (matchingLeave.rawLeave?.leaveTypeName || "Leave") : "—"}</span>
                     </div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Holiday</span>
                       <span className="font-semibold text-right max-w-[180px] truncate">{record.status === "holiday" && record.notes ? record.notes : "—"}</span>
                     </div>
                     <div className="flex justify-between text-xs"><span className="text-muted-foreground">Leave Reason</span>
-                      <span className="font-semibold text-right max-w-[180px] truncate">—</span>
+                      <span className="font-semibold text-right max-w-[180px] truncate">{matchingLeave ? (matchingLeave.reason || "—") : "—"}</span>
                     </div>
                   </div>
                 </div>
@@ -273,47 +444,25 @@ export function DayDetailDialog({
                   </div>
                 </div>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        <DialogFooter className="gap-2">
-          {(() => {
-            if (!record || record.status === "holiday" || record.status === "weekend") return null
-            if (record.status === "leave") {
-              const app = leaveApplications.find(la => selectedDayNumber >= la.startDay && selectedDayNumber <= la.endDay)
-              const isPending = app?.status?.toLowerCase() === "pending"
-              const isRejected = app?.status?.toLowerCase() === "rejected"
-              return (
-                <div className="flex gap-2">
-                  {app && (isPending || isRejected) && (
-                    <Button size="sm" variant="outline"
-                      onClick={() => { if (app) { onEditLeave?.(app); onOpenChange(false); } }}
-                      className="h-8 border-sky-500/30 hover:border-sky-500 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 gap-1 text-[11px] font-bold px-3">
-                      <Edit className="h-3.5 w-3.5" /> Edit Leave
-                    </Button>
-                  )}
-                  {app && isPending && (
-                    <Button size="sm" variant="outline"
-                      onClick={() => { if (app) { onCancelLeave(app.id); onOpenChange(false); } }}
-                      className="h-8 border-red-500/30 hover:border-red-500 hover:bg-red-500/10 text-red-600 dark:text-red-400 gap-1 text-[11px] font-bold px-3">
-                      <XCircle className="h-3.5 w-3.5" /> Cancel Leave
-                    </Button>
-                  )}
-                </div>
-              )
-            }
-            return (
-              <Button size="sm" variant="outline"
-                onClick={() => { onOpenChange(false); onApplyLeave(); }}
-                className="h-8 border-sky-500/30 hover:border-sky-500 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 gap-1 text-[11px] font-bold px-3">
-                <Coffee className="h-3.5 w-3.5" /> Apply Leave
-              </Button>
-            )
-          })()}
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-8 text-[11px]">Close</Button>
-        </DialogFooter>
+            <DialogFooter className="gap-2 mt-4">
+              {(() => {
+                if (!record || record.status === "holiday" || record.status === "weekend") return null
+                return (
+                  <Button size="sm" variant="outline"
+                    onClick={() => { onOpenChange(false); onApplyLeave(); }}
+                    className="h-8 border-sky-500/30 hover:border-sky-500 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 gap-1 text-[11px] font-bold px-3">
+                    <Coffee className="h-3.5 w-3.5" /> Apply Leave
+                  </Button>
+                )
+              })()}
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-8 text-[11px]">Close</Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
 }
+

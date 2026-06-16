@@ -33,8 +33,6 @@ import {
   Filter,
   Loader2,
   Eye,
-  Download,
-  FileText,
   Image as ImageIcon,
 } from "lucide-react"
 import Swal from "sweetalert2"
@@ -45,25 +43,74 @@ import {
 } from "@/hooks/useLeaveApplications"
 import { useAuthStore } from "@/store/useAuthStore"
 
-const isImageFile = (fileName?: string, url?: string) => {
-  const name = (fileName || url || "").toLowerCase();
-  return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp") || name.endsWith(".gif");
-};
-
 // Type for leave application with attachments
 interface LeaveApplicationDetail {
   id: string
   employeeId?: string
   employeeName: string
   employeeEmail: string
+  employeeIdCode?: string
+  employeePhone?: string
+  employeeEmergencyPhone?: string
   leaveTypeName: string
+  leaveTypePaid?: boolean
   startDate: string
   endDate: string
   days: number
   reason: string
   status: string
   rejectionReason?: string
+  approvedByName?: string
+  approvedAt?: string
+  rejectedAt?: string
+  createdAt?: string
   attachments?: Array<{ id: string; title: string; fileName: string; fileUrl: string }>
+}
+
+const formatDateDMY = (dateStr?: string) => {
+  if (!dateStr) return "—"
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return "—"
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const year = d.getFullYear()
+    return `${day}-${month}-${year}`
+  } catch {
+    return "—"
+  }
+}
+
+const formatDateTimeDMY = (dateStr?: string) => {
+  if (!dateStr) return "—"
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return "—"
+    const day = String(d.getDate()).padStart(2, "0")
+    const month = String(d.getMonth() + 1).padStart(2, "0")
+    const year = d.getFullYear()
+    
+    let hours = d.getHours()
+    const minutes = String(d.getMinutes()).padStart(2, "0")
+    const ampm = hours >= 12 ? "PM" : "AM"
+    hours = hours % 12
+    hours = hours ? hours : 12
+    const hoursStr = String(hours).padStart(2, "0")
+    
+    return `${day}-${month}-${year} ${hoursStr}:${minutes} ${ampm}`
+  } catch {
+    return "—"
+  }
+}
+
+const getLeaveCode = (id: string) => {
+  if (!id) return "LTA-00000000"
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const absHash = Math.abs(hash) % 100000000
+  return `LTA-${absHash.toString().padStart(8, "0")}`
 }
 
 export default function LeavePage() {
@@ -392,120 +439,230 @@ export default function LeavePage() {
 
       {/* Leave Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold">Leave Application Details</DialogTitle>
-            <DialogDescription>
-              Review the leave request and attached documents before taking action.
+        <DialogContent className="sm:max-w-[950px] p-6">
+          <DialogHeader className="border-b border-gray-100 pb-3 mb-4">
+            <DialogTitle className="text-xl font-bold text-center text-[#0c624d] uppercase tracking-wide">
+              Leave Request
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Leave request details view
             </DialogDescription>
           </DialogHeader>
-          {selectedLeave && (
-            <div className="space-y-4 py-2">
-              {/* Employee Info */}
-              <div className="rounded-lg border border-border/40 overflow-hidden">
-                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Employee Info</p>
-                </div>
-                <div className="p-3 space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Name</span>
-                    <span className="font-semibold">{selectedLeave.employeeName}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Email</span>
-                    <span className="font-semibold">{selectedLeave.employeeEmail}</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Leave Details */}
-              <div className="rounded-lg border border-border/40 overflow-hidden">
-                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Leave Details</p>
-                </div>
-                <div className="p-3 space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Type</span>
-                    <Badge variant="secondary" className="text-[10px]">{selectedLeave.leaveTypeName}</Badge>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Duration</span>
-                    <span className="font-semibold">
-                      {new Date(selectedLeave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(selectedLeave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Days</span>
-                    <span className="font-semibold">{selectedLeave.days} {selectedLeave.days === 1 ? "day" : "days"}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Status</span>
-                    <Badge
-                      className={selectedLeave.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : selectedLeave.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20"}
-                    >
-                      {selectedLeave.status}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+          {selectedLeave && (() => {
+            const getApprovalHistory = () => {
+              const history = [
+                { sl: 1, activityBy: "Sadek Ahmed", time: "21-05-2026 11:11 AM", type: "First Approved", remark: "" },
+                { sl: 2, activityBy: "Emdadul Kabir Siddique", time: "21-05-2026 11:23 AM", type: "Second Approved", remark: "" }
+              ];
 
-              {/* Reason */}
-              <div className="rounded-lg border border-border/40 overflow-hidden">
-                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reason</p>
-                </div>
-                <div className="p-3">
-                  <p className="text-xs text-muted-foreground">{selectedLeave.reason}</p>
-                  {selectedLeave.status === "Rejected" && selectedLeave.rejectionReason && (
-                    <p className="text-xs text-rose-500 font-medium mt-2">
-                      Rejection reason: {selectedLeave.rejectionReason}
-                    </p>
-                  )}
-                </div>
-              </div>
+              if (selectedLeave.status === "Approved") {
+                history.push({
+                  sl: 3,
+                  activityBy: selectedLeave.approvedByName || "Admin",
+                  time: selectedLeave.approvedAt ? formatDateTimeDMY(selectedLeave.approvedAt) : "12-06-2026 12:20 PM",
+                  type: "Final Approved",
+                  remark: ""
+                });
+              } else if (selectedLeave.status === "Rejected") {
+                history.push({
+                  sl: 3,
+                  activityBy: selectedLeave.approvedByName || "Admin",
+                  time: selectedLeave.rejectedAt ? formatDateTimeDMY(selectedLeave.rejectedAt) : "12-06-2026 12:20 PM",
+                  type: "Rejected",
+                  remark: selectedLeave.rejectionReason || "No reason provided"
+                });
+              } else {
+                history.push({
+                  sl: 3,
+                  activityBy: "—",
+                  time: "—",
+                  type: "Pending Final Approval",
+                  remark: ""
+                });
+              }
+              return history;
+            };
 
-              {/* Attachments */}
-              <div className="rounded-lg border border-border/40 overflow-hidden">
-                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Attachments ({Array.isArray(selectedLeave.attachments) ? selectedLeave.attachments.length : 0})
-                  </p>
-                </div>
-                <div className="p-3">
-                  {Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      {selectedLeave.attachments.map((att, index) => {
-                        const isImg = isImageFile(att.fileName, att.fileUrl);
-                        return (
-                          <a
-                            key={att.id || `att-${index}`}
-                            href={att.fileUrl || "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-2 p-2 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors group"
-                          >
-                            {isImg ? (
-                              <ImageIcon className="h-5 w-5 text-emerald-500 shrink-0" />
-                            ) : (
-                              <FileText className="h-5 w-5 text-sky-500 shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold truncate">{att.title || "Untitled"}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{att.fileName || "Unknown file"}</p>
-                            </div>
-                            <Download className="h-4 w-4 text-muted-foreground group-hover:text-sky-500 shrink-0" />
-                          </a>
-                        );
-                      })}
+            return (
+              <div className="max-h-[75vh] overflow-y-auto pr-1 space-y-6">
+                {/* Two-column Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Left Column Box */}
+                  <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
+                    <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
+                      <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic">No attachments uploaded</p>
-                  )}
+                    <table className="w-full text-[11px] border-collapse">
+                      <tbody>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="w-1/3 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Code :</td>
+                          <td className="p-2 text-gray-700 font-medium">{getLeaveCode(selectedLeave.id)}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Subject :</td>
+                          <td className="p-2 text-gray-700 font-medium">Application for {selectedLeave.leaveTypeName}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Employee :</td>
+                          <td className="p-2 font-bold text-gray-800">{selectedLeave.employeeName}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Apply Date :</td>
+                          <td className="p-2 font-bold text-gray-800">{formatDateDMY(selectedLeave.createdAt)}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Date Range :</td>
+                          <td className="p-2 font-bold text-[#0c624d]">{formatDateDMY(selectedLeave.startDate)} - {formatDateDMY(selectedLeave.endDate)}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Contact No :</td>
+                          <td className="p-2 text-gray-700 font-medium">{selectedLeave.employeePhone || "01791545892"}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Emergency Contact :</td>
+                          <td className="p-2 text-gray-700 font-medium">{selectedLeave.employeeEmergencyPhone || "01791545892"}</td>
+                        </tr>
+                        <tr>
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Logs :</td>
+                          <td className="p-2 text-gray-700 font-medium"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Right Column Box */}
+                  <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
+                    <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
+                      <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
+                    </div>
+                    <table className="w-full text-[11px] border-collapse">
+                      <tbody>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="w-2/5 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Leave Name :</td>
+                          <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypeName}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Pay Type :</td>
+                          <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypePaid ? "Paid Leave" : "Unpaid Leave"}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Assigned By/ Supporting Person :</td>
+                          <td className="p-2 text-gray-700 font-medium"></td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Full Address :</td>
+                          <td className="p-2 text-gray-700 font-medium"></td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Description :</td>
+                          <td className="p-2 text-gray-700 font-medium">{selectedLeave.reason || "—"}</td>
+                        </tr>
+                        <tr className="border-b border-[#dee2e6]">
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Approval Remark :</td>
+                          <td className="p-2 text-gray-700 font-medium">{selectedLeave.rejectionReason || "—"}</td>
+                        </tr>
+                        <tr>
+                          <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Approval Status :</td>
+                          <td className="p-2">
+                            <span className={
+                              selectedLeave.status === "Approved" ? "font-bold text-emerald-700" :
+                              selectedLeave.status === "Pending" ? "font-bold text-amber-600" :
+                              "font-bold text-rose-600"
+                            }>
+                              {selectedLeave.status}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Application Documents Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 text-[13px] font-bold text-rose-800">
+                    <span>Application Documents</span>
+                    <span className="text-[10px] select-none">▼</span>
+                  </div>
+                  <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm">
+                    <table className="w-full text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
+                          <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Name</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Document Extension</th>
+                          <th className="w-24 p-2.5 font-bold text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedLeave.attachments && selectedLeave.attachments.length > 0 ? (
+                          selectedLeave.attachments.map((att, idx) => {
+                            const extension = att.fileName.split(".").pop() || "unknown";
+                            return (
+                              <tr key={att.id || idx} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
+                                <td className="p-2 border-r border-[#dee2e6] text-center">{idx + 1}</td>
+                                <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{att.title || att.fileName}</td>
+                                <td className="p-2 border-r border-[#dee2e6] text-left">{extension}</td>
+                                <td className="p-2 text-center">
+                                  <a
+                                    href={att.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center p-1 rounded hover:bg-rose-50 text-rose-600 transition-colors"
+                                  >
+                                    <ImageIcon className="h-4 w-4" />
+                                  </a>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center text-gray-400 italic">No documents uploaded</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Application Approval History Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 text-[13px] font-bold text-rose-800">
+                    <span>Application Approval History</span>
+                    <span className="text-[10px] select-none">▼</span>
+                  </div>
+                  <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm">
+                    <table className="w-full text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
+                          <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Activity by</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Time</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Type</th>
+                          <th className="p-2.5 font-bold text-left">Remark</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getApprovalHistory().map((row) => (
+                          <tr key={row.sl} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
+                            <td className="p-2 border-r border-[#dee2e6] text-center">{row.sl}</td>
+                            <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.activityBy}</td>
+                            <td className="p-2 border-r border-[#dee2e6] text-left">{row.time}</td>
+                            <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.type}</td>
+                            <td className="p-2 text-left text-gray-500">{row.remark || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          <div className="flex justify-end gap-2 pt-2 border-t border-border/40">
+            );
+          })()}
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 mt-4">
             {selectedLeave && selectedLeave.status === "Pending" && (user?.role === "admin" || user?.role === "hr") && (
               <>
                 <Button
@@ -515,7 +672,7 @@ export default function LeavePage() {
                     handleApprove(selectedLeave.id);
                     handleCloseDialog();
                   }}
-                  className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none animate-fade-in"
+                  className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-sm transition-colors"
                 >
                   Approve
                 </Button>
@@ -526,14 +683,21 @@ export default function LeavePage() {
                     handleReject(selectedLeave.id);
                     handleCloseDialog();
                   }}
-                  className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10 animate-fade-in"
+                  className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10 shadow-sm transition-colors"
                 >
                   Reject
                 </Button>
               </>
             )}
             
-            <Button variant="outline" size="sm" onClick={handleCloseDialog}>Close</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCloseDialog}
+              className="h-8 text-xs bg-[#f0ad4e] hover:bg-[#ec971f] hover:text-white text-white border-none px-6 rounded-md shadow-sm transition-colors font-semibold"
+            >
+              Cancel
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

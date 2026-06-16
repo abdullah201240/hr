@@ -227,19 +227,27 @@ export default function DashboardPage() {
   const mappedLeaveApplications = useMemo(() => {
     return leaveApplications
       .filter((la) => {
-        const start = new Date(la.startDate)
-        const end = new Date(la.endDate)
-        const monthStart = new Date(calYear, calMonth, 1)
-        const monthEnd = new Date(calYear, calMonth + 1, 0)
-        // Check if leave overlaps with current month
-        return start <= monthEnd && end >= monthStart
+        const startStr = typeof la.startDate === 'string' ? la.startDate.split('T')[0] : new Date(la.startDate).toISOString().split('T')[0]
+        const endStr = typeof la.endDate === 'string' ? la.endDate.split('T')[0] : new Date(la.endDate).toISOString().split('T')[0]
+        const firstDayStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-01`
+        const lastDayStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(new Date(calYear, calMonth + 1, 0).getDate()).padStart(2, '0')}`
+        return startStr <= lastDayStr && endStr >= firstDayStr
       })
       .map((la) => {
-        const start = new Date(la.startDate)
-        const end = new Date(la.endDate)
-        // Clamp to current month boundaries
-        const startDay = start.getFullYear() === calYear && start.getMonth() === calMonth ? start.getDate() : 1
-        const endDay = end.getFullYear() === calYear && end.getMonth() === calMonth ? end.getDate() : new Date(calYear, calMonth + 1, 0).getDate()
+        const startStr = typeof la.startDate === 'string' ? la.startDate.split('T')[0] : new Date(la.startDate).toISOString().split('T')[0]
+        const endStr = typeof la.endDate === 'string' ? la.endDate.split('T')[0] : new Date(la.endDate).toISOString().split('T')[0]
+        const [startYear, startMonth, startDayVal] = startStr.split('-').map(Number)
+        const [endYear, endMonth, endDayVal] = endStr.split('-').map(Number)
+
+        let startDay = 1
+        if (startYear === calYear && (startMonth - 1) === calMonth) {
+          startDay = startDayVal
+        }
+        let endDay = new Date(calYear, calMonth + 1, 0).getDate()
+        if (endYear === calYear && (endMonth - 1) === calMonth) {
+          endDay = endDayVal
+        }
+
         return {
           id: la.id,
           startDay,
@@ -252,6 +260,7 @@ export default function DashboardPage() {
         }
       })
   }, [leaveApplications, calYear, calMonth])
+
 
   // ── Computed Final Attendance (memoized to avoid recomputing every second) ─
   const finalAttendance = useMemo(() => dbLogs.map((record): AttendanceRecord => {

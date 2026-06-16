@@ -6,7 +6,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LeaveBalanceChips } from "./leave-balance-chips"
 import type { AttendanceRecord, LeaveApplication, LeaveBalance } from "./types"
-import { LEAVE_TYPE_SHORT, formatMonthYear, formatFullDate } from "./types"
+import { formatMonthYear, formatFullDate } from "./types"
 
 interface AttendanceCalendarProps {
   calMonth: number
@@ -138,11 +138,13 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
               return (
                 <Tooltip key={`d-${day}`}>
                   <TooltipTrigger asChild>
-                    <button
+                    <div
                       onClick={() => {
                         if (record) {
                           onSelectDay(day)
-                          if (record.status !== "upcoming") onOpenDayDetail("regular")
+                          if (record.status !== "upcoming") {
+                            onOpenDayDetail("regular")
+                          }
                         }
                       }}
                       onDragOver={(e) => {
@@ -161,7 +163,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                         onDragOver(null)
                       }}
                       className={cn(
-                        "relative rounded-xl flex flex-col items-stretch p-2 text-xs font-medium transition-all duration-200 hover:scale-[1.02] min-h-[100px] group",
+                        "relative rounded-xl flex flex-col items-stretch p-2 text-xs font-medium transition-all duration-200 hover:scale-[1.02] min-h-[100px] cursor-pointer group",
                         cellBg,
                         isToday && "ring-2 ring-primary",
                         isSel && "ring-2 ring-foreground",
@@ -202,17 +204,19 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                       {record && record.status !== "upcoming" && (
                         record.status === "leave" ? (
                           <div 
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onSelectDay(day)
-                              onOpenDayDetail("leave")
-                            }}
-                            className="flex flex-col gap-1 mt-2 flex-1 justify-start cursor-pointer hover:bg-sky-500/20 p-1.5 rounded transition-all duration-200"
+                            className="flex flex-col gap-1 mt-2 flex-1 justify-start p-1.5 rounded"
                           >
-                            <span className="text-[10px] font-bold uppercase tracking-tight leading-none px-2 py-0.5 bg-sky-500/20 text-sky-700 dark:text-sky-400 rounded w-fit">
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onSelectDay(day)
+                                onOpenDayDetail("leave")
+                              }}
+                              className="text-[9px] font-bold uppercase tracking-tight leading-normal px-1.5 py-0.5 bg-sky-500/20 text-sky-700 dark:text-sky-400 rounded w-fit block truncate max-w-full cursor-pointer hover:bg-sky-500/30 transition-colors"
+                            >
                               {(() => {
-                                const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
-                                return matchingLeave ? (LEAVE_TYPE_SHORT[matchingLeave.leaveType] || "LV") : "LV"
+                                const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay) as any
+                                return matchingLeave ? (matchingLeave.rawLeave?.leaveTypeName || "Leave") : "Leave"
                               })()}
                             </span>
                             {(() => {
@@ -275,7 +279,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                           </div>
                         )
                       )}
-                    </button>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[200px] p-2 space-y-1">
                     <p className="font-bold">{formatFullDate(day, calMonth, calYear)}</p>
