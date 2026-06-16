@@ -14,7 +14,7 @@ import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto/announcement
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Announcements')
-@Controller('api/announcements')
+@Controller('announcements')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AnnouncementsController {

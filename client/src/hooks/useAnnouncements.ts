@@ -29,7 +29,7 @@ export type UpdateAnnouncementData = Partial<CreateAnnouncementData>;
 
 // API calls
 const fetchAnnouncements = async (): Promise<Announcement[]> => {
-  const data = await api.get<any[]>('/api/announcements');
+  const data = await api.get<any[]>('announcements');
   return data.map((item: any) => ({
     ...item,
     author: item.authorName || 'HR Admin'
@@ -37,17 +37,17 @@ const fetchAnnouncements = async (): Promise<Announcement[]> => {
 };
 
 const createAnnouncement = async (announcement: CreateAnnouncementData): Promise<Announcement> => {
-  const data = await api.post<any>('/api/announcements', announcement);
+  const data = await api.post<any>('announcements', announcement);
   return { ...data, author: data.authorName || 'HR Admin' };
 };
 
 const updateAnnouncement = async ({ id, data }: { id: string; data: UpdateAnnouncementData }): Promise<Announcement> => {
-  const dataRes = await api.patch<any>(`/api/announcements/${id}`, data);
+  const dataRes = await api.patch<any>(`announcements/${id}`, data);
   return { ...dataRes, author: dataRes.authorName || 'HR Admin' };
 };
 
 const deleteAnnouncement = async (id: string): Promise<void> => {
-  await api.delete<void>(`/api/announcements/${id}`);
+  await api.delete<void>(`announcements/${id}`);
 };
 
 // Hooks
