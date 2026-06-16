@@ -14,9 +14,11 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import cookie from '@fastify/cookie';
 import { AppModule } from '../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
+
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,10 @@ export async function bootstrapApp(): Promise<TestContext> {
   await app.register(multipart, {
     limits: { fileSize: 10 * 1024 * 1024, files: 5 },
   });
+  await app.register(cookie, {
+    secret: configService.get<string>('jwt.refreshTokenSecret')!,
+  });
+
 
   app.setGlobalPrefix(apiPrefix);
   app.useGlobalPipes(
@@ -122,11 +128,16 @@ async function loginAsAdmin(
   }
 
   const json = await res.json();
+  const setCookieHeader = res.headers.get('set-cookie') || '';
+  const match = setCookieHeader.match(/refresh_token=([^;]+)/);
+  const refreshToken = match ? decodeURIComponent(match[1]) : '';
+
   return {
     accessToken: json.data.tokens.accessToken,
-    refreshToken: json.data.tokens.refreshToken,
+    refreshToken,
   };
 }
+
 
 // ── Fetch-based request helpers ───────────────────────────────────────────
 

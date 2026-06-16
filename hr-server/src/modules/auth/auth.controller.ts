@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UseGuards,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +19,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import '@fastify/cookie';
+
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -78,7 +81,7 @@ export class AuthController {
   ) {
     const refreshToken = req.cookies.refresh_token || dto.refreshToken;
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is missing');
+      throw new BadRequestException('Refresh token is missing');
     }
 
     const newTokens = await this.authService.refreshToken(refreshToken);
@@ -114,6 +117,9 @@ export class AuthController {
       : '';
 
     const refreshToken = req.cookies.refresh_token || dto.refreshToken;
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is missing');
+    }
 
     res.clearCookie('refresh_token', {
       path: '/api/auth',
