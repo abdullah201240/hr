@@ -49,7 +49,7 @@ export interface LeaveApplication {
   leaveType: string
   reason: string
   attachments: Attachment[]
-  status: "approved"
+  status: "pending" | "approved" | "rejected" | "cancelled"
 }
 
 export interface LeaveBalance {

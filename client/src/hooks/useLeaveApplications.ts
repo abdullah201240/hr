@@ -54,7 +54,7 @@ export function useApplyLeaveMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leaveApplications"] });
       queryClient.invalidateQueries({ queryKey: ["leaveBalances"] });
-      queryClient.invalidateQueries({ queryKey: ["attendanceLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
     },
   });
 }
@@ -66,7 +66,7 @@ export function useApproveLeaveMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leaveApplications"] });
       queryClient.invalidateQueries({ queryKey: ["leaveBalances"] });
-      queryClient.invalidateQueries({ queryKey: ["attendanceLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
     },
   });
 }
@@ -78,7 +78,7 @@ export function useRejectLeaveMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leaveApplications"] });
       queryClient.invalidateQueries({ queryKey: ["leaveBalances"] });
-      queryClient.invalidateQueries({ queryKey: ["attendanceLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
     },
   });
 }
@@ -90,7 +90,19 @@ export function useCancelLeaveMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leaveApplications"] });
       queryClient.invalidateQueries({ queryKey: ["leaveBalances"] });
-      queryClient.invalidateQueries({ queryKey: ["attendanceLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+    },
+  });
+}
+
+export function useUpdateLeaveMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<LeaveApplication, Error, { id: string; payload: CreateLeaveApplicationPayload }>({
+    mutationFn: ({ id, payload }) => apiClient.patch<LeaveApplication>(`leave-applications/${id}`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leaveApplications"] });
+      queryClient.invalidateQueries({ queryKey: ["leaveBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
     },
   });
 }

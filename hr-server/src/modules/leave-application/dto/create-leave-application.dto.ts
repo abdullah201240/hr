@@ -56,3 +56,34 @@ export class UpdateLeaveApplicationStatusDto {
   @MaxLength(1000)
   rejectionReason?: string;
 }
+
+export class UpdateLeaveApplicationDto {
+  @ApiPropertyOptional({ example: 'd3b07384-d113-4ec5-a587-c8c5ed167384', description: 'Leave type ID' })
+  @IsUUID()
+  @IsOptional()
+  leaveTypeId?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-15', description: 'Start Date YYYY-MM-DD' })
+  @IsDateString()
+  @IsOptional()
+  startDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-17', description: 'End Date YYYY-MM-DD' })
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+
+  @ApiPropertyOptional({ example: 'Family trip out of town', description: 'Reason for leave' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  reason?: string;
+
+  @ApiPropertyOptional({
+    example: [{ id: 'att-1', title: 'Flight Tickets', fileName: 'tickets.pdf', fileUrl: 'https://cloudinary.com/xyz.pdf' }],
+    description: 'Attachments list',
+  })
+  @IsOptional()
+  @IsArray()
+  attachments?: Array<{ id: string; title: string; fileName: string; fileUrl: string }>;
+}

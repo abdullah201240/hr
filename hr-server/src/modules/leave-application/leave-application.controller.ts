@@ -22,6 +22,7 @@ import { LeaveApplicationService } from './leave-application.service';
 import {
   CreateLeaveApplicationDto,
   UpdateLeaveApplicationStatusDto,
+  UpdateLeaveApplicationDto,
 } from './dto/create-leave-application.dto';
 import { LeaveApplicationQueryDto } from './dto/leave-application-query.dto';
 import { Roles } from '../auth/guards/roles.decorator';
@@ -90,6 +91,23 @@ export class LeaveApplicationController {
   @ApiResponse({ status: 404, description: 'Leave application not found' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.leaveApplicationService.findOne(id);
+  }
+
+  // ─── Edit/Resubmit Leave Application ──────────────────────────────────────
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Edit or resubmit a leave application' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Leave application updated' })
+  @ApiResponse({ status: 404, description: 'Leave application not found' })
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: any,
+    @Body() dto: UpdateLeaveApplicationDto,
+  ) {
+    const employeeId = req.user.id;
+    const role = req.user.role;
+    return this.leaveApplicationService.update(id, employeeId, role, dto);
   }
 
   // ─── Process Leave (Approve/Reject) ───────────────────────────────────────

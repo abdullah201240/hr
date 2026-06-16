@@ -79,6 +79,7 @@ export interface Attachment {
 
 export interface LeaveApplication {
   id: string;
+  employeeId?: string;
   startDate: string;
   endDate: string;
   days: number;

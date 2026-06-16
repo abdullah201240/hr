@@ -15,7 +15,7 @@ interface AttendanceCalendarProps {
   currentTime: Date
   selectedDayNumber: number
   onSelectDay: (day: number) => void
-  onOpenDayDetail: () => void
+  onOpenDayDetail: (mode: "leave" | "regular") => void
   onOpenLeaveDialog: (day: number, leaveType?: string) => void
   finalAttendance: AttendanceRecord[]
   leaveApplications: LeaveApplication[]
@@ -142,7 +142,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                       onClick={() => {
                         if (record) {
                           onSelectDay(day)
-                          if (record.status !== "upcoming") onOpenDayDetail()
+                          if (record.status !== "upcoming") onOpenDayDetail("regular")
                         }
                       }}
                       onDragOver={(e) => {
@@ -171,17 +171,21 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                       <div className="flex items-start justify-between">
                         <span className={cn("text-xs leading-none font-semibold", isToday ? "text-primary font-extrabold" : textColor)}>{day}</span>
                         {record && record.status !== "upcoming" && record.status !== "weekend" && record.status !== "holiday" && (
-                          record.status === "leave" ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                const app = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
-                                if (app) onCancelLeave(app.id)
-                              }}
-                              className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-red-500 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
-                              title="Cancel leave"
-                            >×</button>
-                          ) : (
+                          record.status === "leave" ? (() => {
+                            const app = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                            // Only show cancel button if leave is still pending
+                            if (!app || app.status.toLowerCase() !== "pending") return null
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onCancelLeave(app.id)
+                                }}
+                                className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-red-500 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Cancel leave"
+                              >×</button>
+                            )
+                          })() : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -196,60 +200,80 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                       </div>
 
                       {record && record.status !== "upcoming" && (
-                        <div className="flex flex-col gap-0.5 mt-1 flex-1 justify-center">
-                          <span className={cn(
-                            "text-[9px] font-bold uppercase tracking-tight leading-none px-1.5 py-0.5 rounded self-start",
-                            record.status === "present" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
-                            record.status === "late" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
-                            record.status === "absent" && "bg-red-500/20 text-red-700 dark:text-red-400",
-                            record.status === "leave" && "bg-sky-500/20 text-sky-700 dark:text-sky-400",
-                            record.status === "holiday" && "bg-violet-500/20 text-violet-700 dark:text-violet-400",
-                            record.status === "weekend" && "bg-muted/60 text-muted-foreground"
-                          )}>
-                            {record.status === "leave"
-                              ? (() => {
-                                  const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
-                                  return matchingLeave ? (LEAVE_TYPE_SHORT[matchingLeave.leaveType] || "LV") : "LV"
-                                })()
-                              : record.status === "holiday"
+                        record.status === "leave" ? (
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onSelectDay(day)
+                              onOpenDayDetail("leave")
+                            }}
+                            className="flex flex-col gap-1 mt-2 flex-1 justify-start cursor-pointer hover:bg-sky-500/20 p-1.5 rounded transition-all duration-200"
+                          >
+                            <span className="text-[10px] font-bold uppercase tracking-tight leading-none px-2 py-0.5 bg-sky-500/20 text-sky-700 dark:text-sky-400 rounded w-fit">
+                              {(() => {
+                                const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                                return matchingLeave ? (LEAVE_TYPE_SHORT[matchingLeave.leaveType] || "LV") : "LV"
+                              })()}
+                            </span>
+                            {(() => {
+                              const la = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                              const leaveStatus = la?.status?.toLowerCase() || ""
+                              return leaveStatus ? (
+                                <span className={cn(
+                                  "text-[7.5px] font-bold uppercase tracking-wider leading-none px-1.5 py-0.5 rounded w-fit",
+                                  leaveStatus === "pending" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
+                                  leaveStatus === "approved" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+                                  leaveStatus === "rejected" && "bg-red-500/20 text-red-700 dark:text-red-400",
+                                )}>
+                                  {leaveStatus}
+                                </span>
+                              ) : null
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5 mt-1 flex-1 justify-center">
+                            <span className={cn(
+                              "text-[9px] font-bold uppercase tracking-tight leading-none px-1.5 py-0.5 rounded self-start",
+                              record.status === "present" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+                              record.status === "late" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
+                              record.status === "absent" && "bg-red-500/20 text-red-700 dark:text-red-400",
+                              record.status === "holiday" && "bg-violet-500/20 text-violet-700 dark:text-violet-400",
+                              record.status === "weekend" && "bg-muted/60 text-muted-foreground"
+                            )}>
+                              {record.status === "holiday"
                                 ? "HOLIDAY"
                                 : record.status === "weekend"
                                   ? "WEEKEND OFF"
                                   : record.status === "absent"
-                                  ? "ABSENT"
-                                  : record.status === "present"
-                                    ? "REGULAR"
-                                    : "LATE"
-                            }
-                          </span>
+                                    ? "ABSENT"
+                                    : record.status === "present"
+                                      ? "REGULAR"
+                                      : "LATE"
+                              }
+                            </span>
 
-                          {(record.status === "present" || record.status === "late") && record.checkIn && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Clock className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                              <span className="text-[9px] text-muted-foreground leading-none truncate">
-                                {record.checkIn}–{record.checkOut || "Active"}
+                            {(record.status === "present" || record.status === "late") && record.checkIn && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Clock className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                                <span className="text-[9px] text-muted-foreground leading-none truncate">
+                                  {record.checkIn}–{record.checkOut || "Active"}
+                                </span>
+                              </div>
+                            )}
+
+                            {(record.status === "present" || record.status === "late") && record.hours && (
+                              <span className="text-[9px] text-muted-foreground/80 leading-none">
+                                {record.hours}h{record.location === "Remote" ? " · RM" : ""}
                               </span>
-                            </div>
-                          )}
+                            )}
 
-                          {(record.status === "present" || record.status === "late") && record.hours && (
-                            <span className="text-[9px] text-muted-foreground/80 leading-none">
-                              {record.hours}h{record.location === "Remote" ? " · RM" : ""}
-                            </span>
-                          )}
-
-                          {record.status === "leave" && record.notes && (
-                            <span className="text-[8px] text-sky-600/70 dark:text-sky-400/70 leading-none truncate">
-                              {record.notes.replace("Approved ", "").split(":")[0]}
-                            </span>
-                          )}
-
-                          {record.status === "holiday" && record.notes && (
-                            <span className="text-[8px] text-violet-600/70 dark:text-violet-400/70 leading-none truncate">
-                              {record.notes.length > 22 ? record.notes.substring(0, 22) + "…" : record.notes}
-                            </span>
-                          )}
-                        </div>
+                            {record.status === "holiday" && record.notes && (
+                              <span className="text-[8px] text-violet-600/70 dark:text-violet-400/70 leading-none truncate">
+                                {record.notes.length > 22 ? record.notes.substring(0, 22) + "…" : record.notes}
+                              </span>
+                            )}
+                          </div>
+                        )
                       )}
                     </button>
                   </TooltipTrigger>

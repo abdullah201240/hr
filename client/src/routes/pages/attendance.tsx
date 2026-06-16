@@ -19,6 +19,7 @@ import {
   useLeaveBalancesQuery,
   useApplyLeaveMutation,
   useCancelLeaveMutation,
+  useUpdateLeaveMutation,
 } from "@/hooks/useLeaveApplications"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -147,6 +148,8 @@ export default function AttendancePage() {
   // ── Dialog State ───────────────────────────────────────────────────────────
   const [isDayDetailOpen, setIsDayDetailOpen] = useState(false)
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+  const [editLeaveData, setEditLeaveData] = useState<any>(null)
+  const [dayDetailMode, setDayDetailMode] = useState<"leave" | "regular">("regular")
 
   // ── Drag & Drop ────────────────────────────────────────────────────────────
   const [dragOverDay, setDragOverDay] = useState<number | null>(null)
@@ -236,9 +239,10 @@ export default function AttendancePage() {
     }
   }, [settings])
 
-  // Apply leave, cancel leave handlers
+  // Apply leave, cancel leave, update leave handlers
   const applyLeaveMutation = useApplyLeaveMutation()
   const cancelLeaveMutation = useCancelLeaveMutation()
+  const updateLeaveMutation = useUpdateLeaveMutation()
 
   const handleApplyLeave = (data: {
     leaveTypeId: string;
@@ -247,34 +251,72 @@ export default function AttendancePage() {
     reason: string;
     attachments: any[];
   }) => {
-    applyLeaveMutation.mutate(
-      {
-        leaveTypeId: data.leaveTypeId,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        reason: data.reason,
-        attachments: data.attachments,
-      },
-      {
-        onSuccess: () => {
-          setIsLeaveDialogOpen(false)
-          Swal.fire({
-            title: "Applied!",
-            text: "Your leave application has been submitted successfully.",
-            icon: "success",
-            confirmButtonText: "Ok",
-          })
+    if (editLeaveData) {
+      updateLeaveMutation.mutate(
+        {
+          id: editLeaveData.id,
+          payload: {
+            leaveTypeId: data.leaveTypeId,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            reason: data.reason,
+            attachments: data.attachments,
+          },
         },
-        onError: (err: any) => {
-          Swal.fire({
-            title: "Failed to Apply",
-            text: err?.response?.data?.message || err?.message || "Something went wrong.",
-            icon: "error",
-            confirmButtonText: "Ok",
-          })
+        {
+          onSuccess: () => {
+            setIsLeaveDialogOpen(false)
+            setEditLeaveData(null)
+            Swal.fire({
+              title: "Updated!",
+              text: "Your leave application has been updated/resubmitted successfully.",
+              icon: "success",
+              confirmButtonText: "Ok",
+            })
+          },
+          onError: (err: any) => {
+            setIsLeaveDialogOpen(false)
+            setEditLeaveData(null)
+            Swal.fire({
+              title: "Failed to Update",
+              text: err?.response?.data?.message || err?.message || "Something went wrong.",
+              icon: "error",
+              confirmButtonText: "Ok",
+            })
+          },
+        }
+      )
+    } else {
+      applyLeaveMutation.mutate(
+        {
+          leaveTypeId: data.leaveTypeId,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          reason: data.reason,
+          attachments: data.attachments,
         },
-      }
-    )
+        {
+          onSuccess: () => {
+            setIsLeaveDialogOpen(false)
+            Swal.fire({
+              title: "Applied!",
+              text: "Your leave application has been submitted successfully.",
+              icon: "success",
+              confirmButtonText: "Ok",
+            })
+          },
+          onError: (err: any) => {
+            setIsLeaveDialogOpen(false)
+            Swal.fire({
+              title: "Failed to Apply",
+              text: err?.response?.data?.message || err?.message || "Something went wrong.",
+              icon: "error",
+              confirmButtonText: "Ok",
+            })
+          },
+        }
+      )
+    }
   }
 
   const handleCancelLeaveById = (id: string) => {
@@ -318,20 +360,33 @@ export default function AttendancePage() {
   const viewMonth = useMemo(() => new Date(calYear, calMonth, 1), [calYear, calMonth])
 
   // Map API leave applications to format expected by internal components
+  // Only include leaves that overlap with the current calendar month
   const mappedLeaveApplications = useMemo(() => {
-    return leaveApplications.map((la) => {
-      const start = new Date(la.startDate)
-      const end = new Date(la.endDate)
-      return {
-        id: la.id,
-        startDay: start.getFullYear() === calYear && start.getMonth() === calMonth ? start.getDate() : 1,
-        endDay: end.getFullYear() === calYear && end.getMonth() === calMonth ? end.getDate() : 31,
-        leaveType: la.leaveTypeName.toLowerCase().replace(" leave", "").replace(" ", ""),
-        reason: la.reason,
-        attachments: la.attachments,
-        status: la.status,
-      }
-    })
+    return leaveApplications
+      .filter((la) => {
+        const start = new Date(la.startDate)
+        const end = new Date(la.endDate)
+        const monthStart = new Date(calYear, calMonth, 1)
+        const monthEnd = new Date(calYear, calMonth + 1, 0)
+        // Check if leave overlaps with current month
+        return start <= monthEnd && end >= monthStart
+      })
+      .map((la) => {
+        const start = new Date(la.startDate)
+        const end = new Date(la.endDate)
+        // Clamp to current month boundaries
+        const startDay = start.getFullYear() === calYear && start.getMonth() === calMonth ? start.getDate() : 1
+        const endDay = end.getFullYear() === calYear && end.getMonth() === calMonth ? end.getDate() : new Date(calYear, calMonth + 1, 0).getDate()
+        return {
+          id: la.id,
+          startDay,
+          endDay,
+          leaveType: la.leaveTypeName.toLowerCase().replace(" leave", "").replace(" ", ""),
+          reason: la.reason,
+          attachments: la.attachments,
+          status: la.status,
+        }
+      })
   }, [leaveApplications, calYear, calMonth])
 
   // Computed final attendance matching dashboard logic
@@ -592,7 +647,10 @@ export default function AttendancePage() {
         currentTime={todayDate}
         selectedDayNumber={selectedDayNumber}
         onSelectDay={setSelectedDayNumber}
-        onOpenDayDetail={() => setIsDayDetailOpen(true)}
+        onOpenDayDetail={(mode) => {
+          setDayDetailMode(mode)
+          setIsDayDetailOpen(true)
+        }}
         onOpenLeaveDialog={(day) => {
           setSelectedDayNumber(day)
           setIsLeaveDialogOpen(true)
@@ -1261,9 +1319,13 @@ export default function AttendancePage() {
       {/* ─── Apply Leave Dialog ─── */}
       <ApplyLeaveDialog
         open={isLeaveDialogOpen}
-        onOpenChange={setIsLeaveDialogOpen}
+        onOpenChange={(open) => {
+          setIsLeaveDialogOpen(open)
+          if (!open) setEditLeaveData(null)
+        }}
         selectedDate={`${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(selectedDayNumber).padStart(2, "0")}`}
         balances={balances}
+        initialData={editLeaveData}
         onSubmit={handleApplyLeave}
       />
 
@@ -1278,7 +1340,15 @@ export default function AttendancePage() {
         leaveApplications={mappedLeaveApplications as any}
         balances={balances}
         onCancelLeave={handleCancelLeaveById}
-        onApplyLeave={() => setIsLeaveDialogOpen(true)}
+        onApplyLeave={() => {
+          setEditLeaveData(null)
+          setIsLeaveDialogOpen(true)
+        }}
+        onEditLeave={(app) => {
+          setEditLeaveData(app.rawLeave)
+          setIsLeaveDialogOpen(true)
+        }}
+        viewMode={dayDetailMode}
       />
     </div>
   )

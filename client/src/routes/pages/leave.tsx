@@ -18,6 +18,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   CalendarOff,
   CheckCircle2,
   XCircle,
@@ -25,28 +32,137 @@ import {
   Search,
   Filter,
   Loader2,
+  Eye,
   Download,
+  FileText,
+  Image as ImageIcon,
+  Edit,
 } from "lucide-react"
 import Swal from "sweetalert2"
 import {
   useLeaveApplicationsQuery,
   useApproveLeaveMutation,
   useRejectLeaveMutation,
+  useLeaveBalancesQuery,
+  useUpdateLeaveMutation,
 } from "@/hooks/useLeaveApplications"
+import { useAuthStore } from "@/store/useAuthStore"
+import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
+
+const isImageFile = (fileName?: string, url?: string) => {
+  const name = (fileName || url || "").toLowerCase();
+  return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp") || name.endsWith(".gif");
+};
+
+// Type for leave application with attachments
+interface LeaveApplicationDetail {
+  id: string
+  employeeId?: string
+  employeeName: string
+  employeeEmail: string
+  leaveTypeName: string
+  startDate: string
+  endDate: string
+  days: number
+  reason: string
+  status: string
+  rejectionReason?: string
+  attachments?: Array<{ id: string; title: string; fileName: string; fileUrl: string }>
+}
 
 export default function LeavePage() {
+  const { user } = useAuthStore()
+
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All")
+  const [selectedLeave, setSelectedLeave] = useState<LeaveApplicationDetail | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Leave edit states
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+  const [editLeaveData, setEditLeaveData] = useState<any>(null)
+
+  // Helper to open dialog with leave details
+  const handleViewDetails = (req: any) => {
+    console.log("Opening leave details:", req)
+    setSelectedLeave(req as LeaveApplicationDetail)
+    setIsDialogOpen(true)
+  }
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false)
+    setSelectedLeave(null)
+  }
 
   // API Queries & Mutations
   const { data: listResponse, isLoading } = useLeaveApplicationsQuery({
-    limit: 1000, // Load all for complete sorting and stats
+    limit: 100, // Server DTO caps at 100
   })
   const requests = listResponse?.data || []
 
+  const { data: dbBalances = [] } = useLeaveBalancesQuery(new Date().getFullYear())
+  const balances = useMemo(() => {
+    return dbBalances.map(b => ({
+      id: b.id,
+      key: b.key,
+      label: b.label,
+      total: b.total,
+      used: b.used,
+      color: b.color || "bg-sky-500",
+      icon: b.icon || "coffee",
+      requiresDocument: b.requiresDocument
+    }))
+  }, [dbBalances])
+
   const approveMutation = useApproveLeaveMutation()
   const rejectMutation = useRejectLeaveMutation()
+  const updateLeaveMutation = useUpdateLeaveMutation()
+
+  const handleApplyLeave = (data: {
+    leaveTypeId: string;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    attachments: any[];
+  }) => {
+    if (editLeaveData) {
+      updateLeaveMutation.mutate(
+        {
+          id: editLeaveData.id,
+          payload: {
+            leaveTypeId: data.leaveTypeId,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            reason: data.reason,
+            attachments: data.attachments,
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsLeaveDialogOpen(false)
+            setEditLeaveData(null)
+            Swal.fire({
+              title: "Updated!",
+              text: "Your leave application has been updated/resubmitted successfully.",
+              icon: "success",
+              confirmButtonText: "Ok",
+            })
+          },
+          onError: (err: any) => {
+            setIsLeaveDialogOpen(false)
+            setEditLeaveData(null)
+            Swal.fire({
+              title: "Failed to Update",
+              text: err?.response?.data?.message || err?.message || "Something went wrong.",
+              icon: "error",
+              confirmButtonText: "Ok",
+            })
+          },
+        }
+      )
+    }
+  }
 
   // Action Handlers
   const handleApprove = (id: string) => {
@@ -234,7 +350,6 @@ export default function LeavePage() {
                   <TableHead className="font-semibold text-xs text-muted-foreground">Type</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground">Duration</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground">Reason</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground">Attachments</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
                   <TableHead className="w-36 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
                 </TableRow>
@@ -265,32 +380,6 @@ export default function LeavePage() {
                       {req.reason}
                     </TableCell>
                     <TableCell className="py-3">
-                      {req.attachments && req.attachments.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {req.attachments.map((att) => (
-                            <a
-                              key={att.id}
-                              href={att.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex"
-                            >
-                              <Badge
-                                variant="outline"
-                                className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 max-w-[120px] truncate hover:bg-sky-500/10 cursor-pointer flex items-center gap-1"
-                                title={`Download: ${att.title}`}
-                              >
-                                <Download className="h-2 w-2" />
-                                {att.title}
-                              </Badge>
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground/40 italic">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-3">
                       <div>
                         <Badge
                           className={req.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : req.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
@@ -305,28 +394,61 @@ export default function LeavePage() {
                       </div>
                     </TableCell>
                     <TableCell className="py-3 text-right">
-                      {req.status === "Pending" ? (
-                        <div className="inline-flex gap-2 justify-end">
+                      <div className="inline-flex gap-2 justify-end items-center">
+                        {/* View Details Button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(req)}
+                          className="h-8 w-8 p-0 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                          title="View details & attachments"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Edit & Resubmit Button */}
+                        {(req.status === "Pending" || req.status === "Rejected") && req.employeeId === user?.id && (
                           <Button
-                            variant="default"
+                            variant="ghost"
                             size="sm"
-                            onClick={() => handleApprove(req.id)}
-                            className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                            onClick={() => {
+                              setEditLeaveData(req)
+                              setIsLeaveDialogOpen(true)
+                            }}
+                            className="h-8 w-8 p-0 hover:bg-amber-500/10 text-amber-500 hover:text-amber-600 dark:text-amber-400"
+                            title="Edit & Resubmit"
                           >
-                            Approve
+                            <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReject(req.id)}
-                            className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
-                          >
-                            Reject
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Processed</span>
-                      )}
+                        )}
+
+                        {req.status === "Pending" ? (
+                          (user?.role === "admin" || user?.role === "hr") ? (
+                            <>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleApprove(req.id)}
+                                className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleReject(req.id)}
+                                className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Pending</span>
+                          )
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Processed</span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -335,6 +457,183 @@ export default function LeavePage() {
           )}
         </div>
       </div>
+
+      {/* Leave Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">Leave Application Details</DialogTitle>
+            <DialogDescription>
+              Review the leave request and attached documents before taking action.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLeave && (
+            <div className="space-y-4 py-2">
+              {/* Employee Info */}
+              <div className="rounded-lg border border-border/40 overflow-hidden">
+                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Employee Info</p>
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Name</span>
+                    <span className="font-semibold">{selectedLeave.employeeName}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Email</span>
+                    <span className="font-semibold">{selectedLeave.employeeEmail}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Leave Details */}
+              <div className="rounded-lg border border-border/40 overflow-hidden">
+                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Leave Details</p>
+                </div>
+                <div className="p-3 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Type</span>
+                    <Badge variant="secondary" className="text-[10px]">{selectedLeave.leaveTypeName}</Badge>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="font-semibold">
+                      {new Date(selectedLeave.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(selectedLeave.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Days</span>
+                    <span className="font-semibold">{selectedLeave.days} {selectedLeave.days === 1 ? "day" : "days"}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge
+                      className={selectedLeave.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : selectedLeave.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20"}
+                    >
+                      {selectedLeave.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div className="rounded-lg border border-border/40 overflow-hidden">
+                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Reason</p>
+                </div>
+                <div className="p-3">
+                  <p className="text-xs text-muted-foreground">{selectedLeave.reason}</p>
+                  {selectedLeave.status === "Rejected" && selectedLeave.rejectionReason && (
+                    <p className="text-xs text-rose-500 font-medium mt-2">
+                      Rejection reason: {selectedLeave.rejectionReason}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Attachments */}
+              <div className="rounded-lg border border-border/40 overflow-hidden">
+                <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Attachments ({Array.isArray(selectedLeave.attachments) ? selectedLeave.attachments.length : 0})
+                  </p>
+                </div>
+                <div className="p-3">
+                  {Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {selectedLeave.attachments.map((att, index) => {
+                        const isImg = isImageFile(att.fileName, att.fileUrl);
+                        return (
+                          <a
+                            key={att.id || `att-${index}`}
+                            href={att.fileUrl || "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 p-2 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors group"
+                          >
+                            {isImg ? (
+                              <ImageIcon className="h-5 w-5 text-emerald-500 shrink-0" />
+                            ) : (
+                              <FileText className="h-5 w-5 text-sky-500 shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate">{att.title || "Untitled"}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{att.fileName || "Unknown file"}</p>
+                            </div>
+                            <Download className="h-4 w-4 text-muted-foreground group-hover:text-sky-500 shrink-0" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">No attachments uploaded</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2 border-t border-border/40">
+            {selectedLeave && selectedLeave.status === "Pending" && (user?.role === "admin" || user?.role === "hr") && (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    handleApprove(selectedLeave.id);
+                    handleCloseDialog();
+                  }}
+                  className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none animate-fade-in"
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleReject(selectedLeave.id);
+                    handleCloseDialog();
+                  }}
+                  className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10 animate-fade-in"
+                >
+                  Reject
+                </Button>
+              </>
+            )}
+            
+            {/* Owner Edit & Resubmit from details dialog */}
+            {selectedLeave && (selectedLeave.status === "Pending" || selectedLeave.status === "Rejected") && selectedLeave.employeeId === user?.id && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  setEditLeaveData(selectedLeave);
+                  setIsLeaveDialogOpen(true);
+                  handleCloseDialog();
+                }}
+                className="h-8 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white border-none animate-fade-in"
+              >
+                Edit & Resubmit
+              </Button>
+            )}
+            
+            <Button variant="outline" size="sm" onClick={handleCloseDialog}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Apply/Edit Leave Dialog */}
+      <ApplyLeaveDialog
+        open={isLeaveDialogOpen}
+        onOpenChange={(open) => {
+          setIsLeaveDialogOpen(open)
+          if (!open) setEditLeaveData(null)
+        }}
+        selectedDate={editLeaveData?.startDate || new Date().toISOString().split("T")[0]}
+        balances={balances}
+        initialData={editLeaveData}
+        onSubmit={handleApplyLeave}
+      />
     </div>
   )
 }

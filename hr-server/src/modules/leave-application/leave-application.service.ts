@@ -6,14 +6,15 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { eq, and, between, desc, asc, count, sum } from 'drizzle-orm';
+import { eq, and, between, desc, asc, count, sum, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
-import { leaveApplications, leaveTypes, employees, attendanceLogs } from '../../db/schema';
+import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
 import type {
   CreateLeaveApplicationDto,
   UpdateLeaveApplicationStatusDto,
+  UpdateLeaveApplicationDto,
 } from './dto/create-leave-application.dto';
 import type { LeaveApplicationQueryDto } from './dto/leave-application-query.dto';
 
@@ -129,9 +130,24 @@ export class LeaveApplicationService {
           days,
           reason: dto.reason,
           status: 'Pending',
-          attachments: dto.attachments || [],
         })
         .returning();
+
+      // 7. Insert attachments to leaveAttachments table
+      const clientAttachments = Array.isArray(dto.attachments)
+        ? (dto.attachments as any).flat().filter((x: any) => x && typeof x === 'object')
+        : [];
+
+      if (clientAttachments.length > 0) {
+        await tx.insert(leaveAttachments).values(
+          clientAttachments.map((att: any) => ({
+            leaveApplicationId: created.id,
+            title: att.title || 'Attachment',
+            fileName: att.fileName || 'file',
+            fileUrl: att.fileUrl,
+          })),
+        );
+      }
 
       await this.invalidateCache(employeeId, startYear);
 
@@ -189,11 +205,11 @@ export class LeaveApplicationService {
         days: leaveApplications.days,
         reason: leaveApplications.reason,
         status: leaveApplications.status,
-        attachments: leaveApplications.attachments,
         createdAt: leaveApplications.createdAt,
         employeeName: employees.fullNameEnglish,
         employeeEmail: employees.email,
         employeeIdCode: employees.employeeId,
+        employeeId: leaveApplications.employeeId,
         leaveTypeName: leaveTypes.name,
         leaveTypeId: leaveTypes.id,
         rejectionReason: leaveApplications.rejectionReason,
@@ -219,8 +235,40 @@ export class LeaveApplicationService {
     const total = processed.length;
     const paginated = processed.slice(offset, offset + limit);
 
+    // Fetch and attach attachments for paginated records
+    const ids = paginated.map((r) => r.id);
+    const allAttachments = ids.length > 0
+      ? await this.db
+          .select({
+            id: leaveAttachments.id,
+            leaveApplicationId: leaveAttachments.leaveApplicationId,
+            title: leaveAttachments.title,
+            fileName: leaveAttachments.fileName,
+            fileUrl: leaveAttachments.fileUrl,
+          })
+          .from(leaveAttachments)
+          .where(inArray(leaveAttachments.leaveApplicationId, ids))
+      : [];
+
+    const attachmentsMap = new Map<string, any[]>();
+    for (const att of allAttachments) {
+      const list = attachmentsMap.get(att.leaveApplicationId) || [];
+      list.push({
+        id: att.id,
+        title: att.title,
+        fileName: att.fileName,
+        fileUrl: att.fileUrl,
+      });
+      attachmentsMap.set(att.leaveApplicationId, list);
+    }
+
+    const paginatedWithAttachments = paginated.map((item) => ({
+      ...item,
+      attachments: attachmentsMap.get(item.id) || [],
+    }));
+
     const result = {
-      data: paginated,
+      data: paginatedWithAttachments,
       meta: {
         total,
         page,
@@ -247,7 +295,6 @@ export class LeaveApplicationService {
         days: leaveApplications.days,
         reason: leaveApplications.reason,
         status: leaveApplications.status,
-        attachments: leaveApplications.attachments,
         createdAt: leaveApplications.createdAt,
         employeeName: employees.fullNameEnglish,
         employeeEmail: employees.email,
@@ -265,8 +312,23 @@ export class LeaveApplicationService {
       throw new NotFoundException(`Leave application with ID "${id}" not found`);
     }
 
-    await this.cache.setByKey(CacheKeys.leaveApplicationById, application, id);
-    return application;
+    const attachments = await this.db
+      .select({
+        id: leaveAttachments.id,
+        title: leaveAttachments.title,
+        fileName: leaveAttachments.fileName,
+        fileUrl: leaveAttachments.fileUrl,
+      })
+      .from(leaveAttachments)
+      .where(eq(leaveAttachments.leaveApplicationId, id));
+
+    const result = {
+      ...application,
+      attachments,
+    };
+
+    await this.cache.setByKey(CacheKeys.leaveApplicationById, result, id);
+    return result;
   }
 
   // ─── Update Status (Approve/Reject) ───────────────────────────────────────
@@ -371,16 +433,26 @@ export class LeaveApplicationService {
         throw new BadRequestException('You are not authorized to cancel this leave application');
       }
 
+      // Fetch the canceller's name for audit trail
+      const [canceller] = await tx
+        .select({ fullNameEnglish: employees.fullNameEnglish, employeeId: employees.employeeId })
+        .from(employees)
+        .where(eq(employees.id, employeeId))
+        .limit(1);
+
+      const cancellerName = canceller?.fullNameEnglish || 'Unknown';
+      const cancellerIdCode = canceller?.employeeId || employeeId;
+      const cancelNote = role === 'employee'
+        ? `Cancelled by employee: ${cancellerName} (ID: ${cancellerIdCode})`
+        : `Cancelled by administrator: ${cancellerName} (ID: ${cancellerIdCode})`;
+
       const previousStatus = app.status;
 
-      // Update status to Rejected or just delete?
-      // Typically, setting status to 'Rejected' (or a new 'Cancelled' status if preferred, but we will just mark 'Rejected' with rejectionReason: 'Cancelled by User') is standard.
-      // Let's set status = 'Rejected' and rejectionReason = 'Cancelled by employee' or 'Cancelled by administrator'
       const [updated] = await tx
         .update(leaveApplications)
         .set({
           status: 'Rejected',
-          rejectionReason: role === 'employee' ? 'Cancelled by employee' : 'Cancelled by administrator',
+          rejectionReason: cancelNote,
           rejectedAt: new Date(),
         })
         .where(eq(leaveApplications.id, id))
@@ -415,6 +487,87 @@ export class LeaveApplicationService {
     });
   }
 
+  // ─── Edit & Resubmit Leave Application ─────────────────────────────────────
+  async update(id: string, employeeId: string, role: string, dto: UpdateLeaveApplicationDto) {
+    return this.db.transaction(async (tx) => {
+      // 1. Fetch leave application
+      const [app] = await tx
+        .select()
+        .from(leaveApplications)
+        .where(eq(leaveApplications.id, id))
+        .limit(1);
+
+      if (!app) {
+        throw new NotFoundException(`Leave application with ID "${id}" not found`);
+      }
+
+      // Only the employee who created the application (or an admin/hr) can edit it
+      if (role !== 'admin' && role !== 'hr' && app.employeeId !== employeeId) {
+        throw new BadRequestException('You are not authorized to update this leave application');
+      }
+
+      // Can only edit if status is 'Pending' or 'Rejected'
+      if (app.status !== 'Pending' && app.status !== 'Rejected') {
+        throw new BadRequestException(`Cannot edit leave application in ${app.status} status`);
+      }
+
+      const start = this.parseDateUTC(dto.startDate || app.startDate);
+      const end = this.parseDateUTC(dto.endDate || app.endDate);
+
+      if (start > end) {
+        throw new BadRequestException('Start date cannot be after end date');
+      }
+
+      const timeDiff = end.getTime() - start.getTime();
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+      // Update leave application details
+      const updateData: Record<string, any> = {
+        startDate: dto.startDate || app.startDate,
+        endDate: dto.endDate || app.endDate,
+        days,
+        reason: dto.reason !== undefined ? dto.reason : app.reason,
+        status: 'Pending', // Resubmitted applications reset to Pending
+      };
+
+      if (dto.leaveTypeId) {
+        updateData.leaveTypeId = dto.leaveTypeId;
+      }
+
+      const [updated] = await tx
+        .update(leaveApplications)
+        .set(updateData)
+        .where(eq(leaveApplications.id, id))
+        .returning();
+
+      // If attachments are provided, replace them in the relational table
+      if (dto.attachments) {
+        // Delete old attachments
+        await tx.delete(leaveAttachments).where(eq(leaveAttachments.leaveApplicationId, id));
+
+        // Insert new ones
+        const clientAttachments = Array.isArray(dto.attachments)
+          ? (dto.attachments as any).flat().filter((x: any) => x && typeof x === 'object')
+          : [];
+
+        if (clientAttachments.length > 0) {
+          await tx.insert(leaveAttachments).values(
+            clientAttachments.map((att: any) => ({
+              leaveApplicationId: id,
+              title: att.title || 'Attachment',
+              fileName: att.fileName || 'file',
+              fileUrl: att.fileUrl,
+            })),
+          );
+        }
+      }
+
+      await this.invalidateCache(app.employeeId, start.getUTCFullYear(), id);
+      this.logger.log(`Leave application ${id} updated/resubmitted by ${employeeId}`);
+      return updated;
+    });
+  }
+
   // ─── Get Leave Balances ───────────────────────────────────────────────────
   async getLeaveBalances(employeeId: string, year: number) {
     const cached = await this.cache.getByKey<any>(CacheKeys.leaveBalances, employeeId, String(year));
@@ -428,12 +581,34 @@ export class LeaveApplicationService {
 
   // Internal balance calculation query
   private async getLeaveBalancesInternal(db: any, employeeId: string, year: number) {
+    // Fetch employee gender to check eligibility
+    const [employee] = await db
+      .select({ gender: employees.gender })
+      .from(employees)
+      .where(eq(employees.id, employeeId))
+      .limit(1);
+
+    const gender = employee?.gender?.toLowerCase() || '';
+
     // 1. Fetch all active leave types
     const activeTypes = await db
       .select()
       .from(leaveTypes)
       .where(eq(leaveTypes.isActive, true))
       .orderBy(asc(leaveTypes.name));
+
+    // Filter activeTypes based on eligibility (e.g. gender matching)
+    const eligibleTypes = activeTypes.filter((lt: any) => {
+      if (!lt.eligibility) return true;
+      const eligibilityLower = lt.eligibility.toLowerCase();
+      if (eligibilityLower.includes('female') && gender !== 'female') {
+        return false;
+      }
+      if (eligibilityLower.includes('male') && gender !== 'male') {
+        return false;
+      }
+      return true;
+    });
 
     // 2. Fetch approved leaves for this employee and year
     const startOfYear = `${year}-01-01`;
@@ -461,7 +636,7 @@ export class LeaveApplicationService {
     }
 
     // 3. Construct balance records
-    return activeTypes.map((lt: any) => {
+    return eligibleTypes.map((lt: any) => {
       const used = usedMap.get(lt.id) || 0;
       return {
         id: lt.id,

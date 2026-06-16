@@ -45,6 +45,15 @@ interface ApplyLeaveDialogProps {
   onOpenChange: (open: boolean) => void
   selectedDate: string // YYYY-MM-DD
   balances: LeaveBalance[]
+  preSelectedLeaveKey?: string | null
+  initialData?: {
+    id: string
+    leaveTypeId: string
+    startDate: string
+    endDate: string
+    reason: string
+    attachments: Attachment[]
+  } | null
   onSubmit: (data: {
     leaveTypeId: string
     startDate: string
@@ -59,6 +68,8 @@ export function ApplyLeaveDialog({
   onOpenChange,
   selectedDate,
   balances,
+  preSelectedLeaveKey,
+  initialData,
   onSubmit,
 }: ApplyLeaveDialogProps) {
   const [startDate, setStartDate] = useState(selectedDate)
@@ -76,23 +87,42 @@ export function ApplyLeaveDialog({
   // Sync inputs when selectedDate change or dialog opens
   useEffect(() => {
     if (open) {
-      setStartDate(selectedDate)
-      setEndDate(selectedDate)
-      setReason("")
-      setAttachments([])
-      setNewAttTitle("")
-      setNewAttFileName("")
-      setNewAttFileUrl("")
-      
-      // Auto-select first available leave type with remaining days
-      const available = balances.find((b) => b.total - b.used > 0)
-      if (available) {
-        setLeaveTypeId(available.id)
-      } else if (balances.length > 0) {
-        setLeaveTypeId(balances[0].id)
+      if (initialData) {
+        setStartDate(initialData.startDate)
+        setEndDate(initialData.endDate)
+        setLeaveTypeId(initialData.leaveTypeId)
+        setReason(initialData.reason)
+        setAttachments(initialData.attachments || [])
+        setNewAttTitle("")
+        setNewAttFileName("")
+        setNewAttFileUrl("")
+      } else {
+        setStartDate(selectedDate)
+        setEndDate(selectedDate)
+        setReason("")
+        setAttachments([])
+        setNewAttTitle("")
+        setNewAttFileName("")
+        setNewAttFileUrl("")
+        
+        // Pre-select the dragged leave type, or fall back to first available
+        if (preSelectedLeaveKey) {
+          const matched = balances.find((b) => b.key === preSelectedLeaveKey)
+          if (matched) {
+            setLeaveTypeId(matched.id)
+            return
+          }
+        }
+        // Auto-select first available leave type with remaining days
+        const available = balances.find((b) => b.total - b.used > 0)
+        if (available) {
+          setLeaveTypeId(available.id)
+        } else if (balances.length > 0) {
+          setLeaveTypeId(balances[0].id)
+        }
       }
     }
-  }, [open, selectedDate, balances])
+  }, [open, selectedDate, balances, preSelectedLeaveKey, initialData])
 
   // Find current selected leave type balance to check if documents are required
   const selectedType = balances.find((b) => b.id === leaveTypeId)
@@ -172,12 +202,23 @@ export function ApplyLeaveDialog({
       return
     }
 
+    // Automatically include the pending attachment if the user uploaded a file but didn't click "Add Document"
+    let finalAttachments = [...attachments]
+    if (newAttTitle.trim() && newAttFileName && newAttFileUrl) {
+      finalAttachments.push({
+        id: Math.random().toString(36).substring(2, 9),
+        title: newAttTitle.trim(),
+        fileName: newAttFileName,
+        fileUrl: newAttFileUrl,
+      })
+    }
+
     onSubmit({
       leaveTypeId,
       startDate,
       endDate,
       reason: reason.trim() || "No reason provided",
-      attachments,
+      attachments: finalAttachments,
     })
   }
 
@@ -204,9 +245,11 @@ export function ApplyLeaveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle className="text-base font-bold">Apply Leave</DialogTitle>
+          <DialogTitle className="text-base font-bold">
+            {initialData ? "Edit Leave Application" : "Apply Leave"}
+          </DialogTitle>
           <DialogDescription className="text-xs">
-            Select leave type and provide details to submit your request.
+            {initialData ? "Modify and resubmit your leave request details." : "Select leave type and provide details to submit your request."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-3">

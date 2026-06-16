@@ -36,11 +36,6 @@ export const leaveApplications = pgTable(
     rejectedAt: timestamp('rejected_at', { withTimezone: true }),
     rejectionReason: text('rejection_reason'),
 
-    // Attachments as a JSONB array: Array<{ id: string; title: string; fileName: string; fileUrl: string }>
-    attachments: jsonb('attachments')
-      .default([])
-      .notNull()
-      .$type<Array<{ id: string; title: string; fileName: string; fileUrl: string }>>(),
   },
   (table) => [
     index('leave_applications_employee_idx').on(table.employeeId),
@@ -52,7 +47,7 @@ export const leaveApplications = pgTable(
 
 export const leaveApplicationsRelations = relations(
   leaveApplications,
-  ({ one }) => ({
+  ({ one, many }) => ({
     employee: one(employees, {
       fields: [leaveApplications.employeeId],
       references: [employees.id],
@@ -66,6 +61,28 @@ export const leaveApplicationsRelations = relations(
       fields: [leaveApplications.approvedById],
       references: [employees.id],
       relationName: 'approvedApplications',
+    }),
+    attachments: many(leaveAttachments),
+  }),
+);
+
+export const leaveAttachments = pgTable('leave_attachments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  leaveApplicationId: uuid('leave_application_id')
+    .notNull()
+    .references(() => leaveApplications.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 255 }).notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  fileUrl: text('file_url').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const leaveAttachmentsRelations = relations(
+  leaveAttachments,
+  ({ one }) => ({
+    leaveApplication: one(leaveApplications, {
+      fields: [leaveAttachments.leaveApplicationId],
+      references: [leaveApplications.id],
     }),
   }),
 );
