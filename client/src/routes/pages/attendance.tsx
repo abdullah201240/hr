@@ -2,6 +2,19 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AttendanceCalendar } from "@/components/dashboard/attendance-calendar"
+import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
+import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
+import type {
+  LeaveApplication,
+  AttendanceRecord as DashAttendanceRecord,
+} from "@/components/dashboard/types"
+import {
+  DEFAULT_LEAVE_BALANCES,
+  resolveLeaveIcon,
+} from "@/components/dashboard/types"
+import { useAttendanceSettingsQuery, useHolidaysQuery } from "@/hooks/useAttendanceSettings"
+import { useLeaveTypeOptionsQuery } from "@/hooks/useLeaveTypes"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Table,
@@ -19,8 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  ChevronLeft,
-  ChevronRight,
   MapPin,
   Laptop,
   Search,
@@ -50,9 +61,6 @@ import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
 import { toast } from "sonner"
 import {
   format,
-  startOfMonth,
-  addMonths,
-  subMonths,
 } from "date-fns"
 import {
   useMyAttendanceQuery,
@@ -126,26 +134,208 @@ export default function AttendancePage() {
     setSearchParams({ tab: value }, { replace: true })
   }
 
-  const today = new Date()
-  const [viewMonth, setViewMonth] = useState(() => startOfMonth(today))
+  const todayDate = new Date()
+  const [calMonth, setCalMonth] = useState(todayDate.getMonth())
+  const [calYear, setCalYear] = useState(todayDate.getFullYear())
+  const [selectedDayNumber, setSelectedDayNumber] = useState<number>(todayDate.getDate())
+
+  // ── Dialog State ───────────────────────────────────────────────────────────
+  const [isDayDetailOpen, setIsDayDetailOpen] = useState(false)
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+  const [leaveType, setLeaveType] = useState("casual")
+
+  // ── Drag & Drop ────────────────────────────────────────────────────────────
+  const [dragOverDay, setDragOverDay] = useState<number | null>(null)
+
+  // ── Leave Applications ─────────────────────────────────────────────────────
+  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>(() => {
+    const saved = localStorage.getItem("hr_leave_applications")
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) { console.error(e) }
+    }
+    return []
+  })
+
+  // ── Leave Balances (Dynamic from API) ──────────────────────────────────────
+  const { data: leaveTypes = [] } = useLeaveTypeOptionsQuery()
+
+  const balances = useMemo(() => {
+    const normalized = leaveTypes && leaveTypes.length > 0
+      ? leaveTypes.map(lt => ({
+          key: lt.id,
+          label: lt.name,
+          total: lt.days,
+          color: lt.color || "bg-sky-500",
+          icon: lt.icon || "coffee"
+        }))
+      : DEFAULT_LEAVE_BALANCES.map(db => ({
+          key: db.key,
+          label: db.label,
+          total: db.total,
+          color: db.color,
+          icon: db.key
+        }))
+
+    return normalized.map(item => {
+      const usedDays = leaveApplications
+        .filter(la => la.leaveType === item.key)
+        .reduce((sum, la) => sum + (la.endDay - la.startDay + 1), 0)
+
+      const resolvedIcon = resolveLeaveIcon(item.icon)
+
+      return {
+        label: item.label,
+        used: usedDays,
+        total: item.total,
+        color: item.color,
+        light: item.color.replace("bg-", "text-"),
+        icon: resolvedIcon,
+        key: item.key
+      }
+    })
+  }, [leaveTypes, leaveApplications])
+
+  // ── Holiday Settings (Dynamic from API) ────────────────────────────────────
+  const { data: settings } = useAttendanceSettingsQuery()
+  const { data: holidaysData = [] } = useHolidaysQuery()
+  const [weeklyHolidays, setWeeklyHolidays] = useState<string[]>(["Saturday", "Sunday"])
+
+  const regularHolidays = useMemo(() => {
+    if (holidaysData && holidaysData.length > 0) {
+      return holidaysData.map((h: any) => ({
+        id: h.id,
+        name: h.name,
+        startDate: h.startDate,
+        endDate: h.endDate,
+        startDay: h.startDate ? new Date(h.startDate).getDate() : 1,
+        endDay: h.endDate ? new Date(h.endDate).getDate() : 1
+      }))
+    }
+    const savedRegular = localStorage.getItem("hr_regular_holidays")
+    if (savedRegular) {
+      try { return JSON.parse(savedRegular) } catch (e) { console.error(e) }
+    }
+    return [
+      { id: "default-1", name: "National Holiday - Independence Celebration", startDay: 18, endDay: 18 }
+    ]
+  }, [holidaysData])
+
+  useEffect(() => {
+    if (settings?.weeklyHolidays) {
+      setWeeklyHolidays(settings.weeklyHolidays)
+    } else {
+      const savedWeekly = localStorage.getItem("hr_weekly_holidays")
+      if (savedWeekly) {
+        try { setWeeklyHolidays(JSON.parse(savedWeekly)) } catch (e) { console.error(e) }
+      }
+    }
+  }, [settings])
+
+  // Apply leave, cancel leave handlers
+  const handleApplyLeave = (data: {
+    startDay: number; endDay: number; leaveType: string; reason: string;
+    attachments: { id: string; title: string; fileName: string }[]
+  }) => {
+    const duration = data.endDay - data.startDay + 1
+    if (duration <= 0) return
+
+    const newApp: LeaveApplication = {
+      id: Math.random().toString(36).substring(2, 9),
+      startDay: data.startDay,
+      endDay: data.endDay,
+      leaveType: data.leaveType,
+      reason: data.reason,
+      attachments: data.attachments,
+      status: "approved"
+    }
+
+    const updatedApps = [...leaveApplications, newApp]
+    setLeaveApplications(updatedApps)
+    localStorage.setItem("hr_leave_applications", JSON.stringify(updatedApps))
+    setIsLeaveDialogOpen(false)
+  }
+
+  const handleCancelLeaveById = (id: string) => {
+    const updatedApps = leaveApplications.filter(la => la.id !== id)
+    setLeaveApplications(updatedApps)
+    localStorage.setItem("hr_leave_applications", JSON.stringify(updatedApps))
+  }
+
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState("")
 
   const { data: attendanceRecords = [], isLoading } = useMyAttendanceQuery(
-    viewMonth.getFullYear(),
-    viewMonth.getMonth()
+    calYear,
+    calMonth
   )
 
-  const selectedMonthLabel = format(viewMonth, "MMMM yyyy")
+  const viewMonth = useMemo(() => new Date(calYear, calMonth, 1), [calYear, calMonth])
 
-  const [selectedDay, setSelectedDay] = useState<AttendanceRecord | null>(null)
+  // Computed final attendance matching dashboard logic
+  const finalAttendance = useMemo(() => attendanceRecords.map((record): DashAttendanceRecord => {
+    const matchingLeave = leaveApplications.find(la => record.day >= la.startDay && record.day <= la.endDay)
+    if (matchingLeave) {
+      const selectedTypeObj = balances.find(b => b.key === matchingLeave.leaveType)
+      const typeLabel = selectedTypeObj?.label || "Leave"
+      return {
+        ...record,
+        status: "leave" as const,
+        notes: `Approved ${typeLabel}: ${matchingLeave.reason}`,
+        attachments: matchingLeave.attachments,
+        breakHours: record.breakHours || 0
+      }
+    }
 
-  useEffect(() => {
-    setSelectedDay(null)
-  }, [viewMonth])
+    if (record.status === "upcoming") return { ...record, breakHours: record.breakHours || 0 }
 
-  const goNextMonth = useCallback(() => setViewMonth((m) => addMonths(m, 1)), [])
-  const goPrevMonth = useCallback(() => setViewMonth((m) => subMonths(m, 1)), [])
+    const matchingRegularHoliday = regularHolidays.find((h: any) => {
+      if (h.startDate && h.endDate) {
+        const recordDate = new Date(calYear, calMonth, record.day)
+        const start = new Date(h.startDate)
+        const end = new Date(h.endDate)
+        recordDate.setHours(0, 0, 0, 0)
+        start.setHours(0, 0, 0, 0)
+        end.setHours(0, 0, 0, 0)
+        return recordDate >= start && recordDate <= end
+      }
+      return record.day >= h.startDay && record.day <= h.endDay
+    })
+    if (matchingRegularHoliday) {
+      return { ...record, status: "holiday" as const, notes: matchingRegularHoliday.name, checkIn: null, checkOut: null, hours: null, breakHours: record.breakHours || 0 }
+    }
+
+    const isWeeklyHoliday = weeklyHolidays.includes(record.dayName)
+    if (isWeeklyHoliday) {
+      if (!record.checkIn) {
+        return { ...record, status: "weekend" as const, checkIn: null, checkOut: null, hours: null, breakHours: record.breakHours || 0 }
+      }
+    } else {
+      if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
+        return { ...record, status: "absent" as const, breakHours: record.breakHours || 0 }
+      }
+    }
+
+    return { ...record, breakHours: record.breakHours || 0 }
+  }), [attendanceRecords, leaveApplications, balances, regularHolidays, weeklyHolidays, calYear, calMonth])
+
+  // Selected Day Record
+  const selectedRecord = useMemo(
+    () => finalAttendance.find(d => d.day === selectedDayNumber),
+    [finalAttendance, selectedDayNumber]
+  )
+
+  // Link selectedDay for historical reasons (like table highlighting)
+  const selectedDay = useMemo(() => {
+    const rec = finalAttendance.find(d => d.day === selectedDayNumber)
+    return (rec as unknown as AttendanceRecord) || null
+  }, [finalAttendance, selectedDayNumber])
+
+  const setSelectedDay = useCallback((record: AttendanceRecord | null) => {
+    if (record) {
+      setSelectedDayNumber(record.day)
+    }
+  }, [])
+
 
   const filteredLogs = useMemo(() => attendanceRecords.filter((log) => {
     if (log.status === "upcoming") return false
@@ -211,16 +401,6 @@ export default function AttendancePage() {
     }
   }
 
-  // Status counts
-  const counts = useMemo(() => {
-    const c = { present: 0, late: 0, absent: 0, leave: 0, holiday: 0, weekend: 0 }
-    for (const r of attendanceRecords) {
-      if (r.status !== "upcoming" && r.status in c) {
-        c[r.status as keyof typeof c]++
-      }
-    }
-    return c
-  }, [attendanceRecords])
 
   // ─── Employee Attendance (Admin/HR View) State ──────────────────────────────
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
@@ -338,156 +518,30 @@ export default function AttendancePage() {
   // ─── Render My Attendance Section ──────────────────────────────────────────
   const renderMyAttendance = () => (
     <div className="space-y-6">
-      {/* ─── Calendar + Month Nav ─── */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h3 className="text-lg font-bold">Shift & Status Calendar</h3>
-          <p className="text-xs text-muted-foreground">Click any day to view detailed check-in logs and settings.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={goPrevMonth}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-2 px-3 py-1.5 border border-border/60 bg-transparent text-sm font-semibold min-w-[140px] justify-center rounded-lg">
-            <CalendarDays className="h-4 w-4 text-primary" />
-            <span>{selectedMonthLabel}</span>
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={goNextMonth}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* ─── Summary Badges ─── */}
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="outline" className="gap-1.5 text-[10px] bg-emerald-500/5 text-emerald-600 dark:text-emerald-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Present: {counts.present}
-        </Badge>
-        <Badge variant="outline" className="gap-1.5 text-[10px] bg-amber-500/5 text-amber-600 dark:text-amber-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Late: {counts.late}
-        </Badge>
-        <Badge variant="outline" className="gap-1.5 text-[10px] bg-red-500/5 text-red-600 dark:text-red-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Absent: {counts.absent}
-        </Badge>
-        <Badge variant="outline" className="gap-1.5 text-[10px] bg-sky-500/5 text-sky-600 dark:text-sky-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> Leave: {counts.leave}
-        </Badge>
-        <Badge variant="outline" className="gap-1.5 text-[10px] bg-violet-500/5 text-violet-600 dark:text-violet-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-violet-500" /> Holiday: {counts.holiday}
-        </Badge>
-      </div>
-
-      {/* ─── Calendar Grid ─── */}
-      <Card className="shadow-none border-border/40">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3 mb-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Present</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" /> Late</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" /> Absent</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-500" /> Leave</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-violet-500" /> Holiday</span>
-          </div>
-
-          {/* Day headers */}
-          <div className="grid grid-cols-7 text-center text-xs font-semibold text-muted-foreground pb-2 border-b border-border/20 mb-3">
-            <div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div>
-          </div>
-
-          {/* Grid */}
-          <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5">
-            {attendanceRecords.map((record) => {
-              const isToday =
-                record.day === today.getDate() &&
-                viewMonth.getMonth() === today.getMonth() &&
-                viewMonth.getFullYear() === today.getFullYear()
-              const isSelected = selectedDay?.day === record.day
-
-              let cellBg = "bg-transparent hover:bg-muted/30"
-              let cellBorder = "border-0"
-              let glowStyle = ""
-
-              if (record.status === "present") {
-                cellBg = "bg-emerald-500/10 hover:bg-emerald-500/15 dark:bg-emerald-500/[0.04]"
-              } else if (record.status === "late") {
-                cellBg = "bg-amber-500/10 hover:bg-amber-500/15 dark:bg-amber-500/[0.04]"
-              } else if (record.status === "absent") {
-                cellBg = "bg-red-500/10 hover:bg-red-500/15 dark:bg-red-500/[0.04]"
-              } else if (record.status === "leave") {
-                cellBg = "bg-sky-500/10 hover:bg-sky-500/15 dark:bg-sky-500/[0.04]"
-              } else if (record.status === "holiday") {
-                cellBg = "bg-violet-500/10 hover:bg-violet-500/15 dark:bg-violet-500/[0.04]"
-              } else if (record.status === "weekend") {
-                cellBg = "bg-muted/30 hover:bg-muted/40 dark:bg-muted/15"
-              } else if (record.status === "upcoming") {
-                cellBg = "bg-transparent opacity-40 cursor-default pointer-events-none"
-              }
-
-              if (isToday) {
-                cellBorder = "ring-2 ring-primary/80"
-                glowStyle = "animate-pulse"
-              }
-              if (isSelected) {
-                cellBorder = "ring-2 ring-foreground"
-              }
-
-              return (
-                <button
-                  key={record.day}
-                  onClick={() => record.status !== "upcoming" && setSelectedDay(record)}
-                  className={`flex flex-col justify-between h-14 sm:h-16 p-2 rounded-xl text-left transition-all ${cellBg} ${cellBorder} ${glowStyle}`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className={`text-sm font-extrabold ${isToday ? "text-primary" : "text-foreground"}`}>
-                      {record.day}
-                    </span>
-                    {record.status !== "upcoming" && record.status !== "weekend" && (
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          record.status === "present" ? "bg-emerald-500"
-                            : record.status === "late" ? "bg-amber-500"
-                            : record.status === "absent" ? "bg-red-500"
-                            : record.status === "leave" ? "bg-sky-500"
-                            : "bg-violet-500"
-                        }`}
-                      />
-                    )}
-                  </div>
-                  <div className="mt-auto hidden sm:block">
-                    {record.hours && (
-                      <div className="text-[10px] font-bold text-foreground/85 leading-none">{record.hours}h logged</div>
-                    )}
-                    {record.status === "leave" && (
-                      <div className="text-[8px] font-bold text-sky-500 uppercase tracking-tight truncate leading-none">Leave</div>
-                    )}
-                    {record.status === "holiday" && (
-                      <div className="text-[8px] font-bold text-violet-500 uppercase tracking-tight truncate leading-none">Holiday</div>
-                    )}
-                    {record.status === "weekend" && (
-                      <div className="text-[8px] text-muted-foreground/50 font-medium leading-none">Off</div>
-                    )}
-                    {record.correctionStatus === "pending" && (
-                      <div className="text-[8px] font-bold text-amber-500 uppercase tracking-tight truncate leading-none mt-1">Pending</div>
-                    )}
-                    {record.correctionStatus === "approved" && (
-                      <div className="text-[8px] font-bold text-emerald-500 uppercase tracking-tight truncate leading-none mt-1">Corrected</div>
-                    )}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* ─── Interactive Calendar ─── */}
+      <AttendanceCalendar
+        calMonth={calMonth}
+        calYear={calYear}
+        onMonthChange={(month, year) => {
+          setCalMonth(month)
+          setCalYear(year)
+        }}
+        currentTime={todayDate}
+        selectedDayNumber={selectedDayNumber}
+        onSelectDay={setSelectedDayNumber}
+        onOpenDayDetail={() => setIsDayDetailOpen(true)}
+        onOpenLeaveDialog={(day, type) => {
+          setSelectedDayNumber(day)
+          if (type) setLeaveType(type)
+          setIsLeaveDialogOpen(true)
+        }}
+        finalAttendance={finalAttendance}
+        leaveApplications={leaveApplications}
+        balances={balances}
+        dragOverDay={dragOverDay}
+        onDragOver={setDragOverDay}
+        onCancelLeave={handleCancelLeaveById}
+      />
 
       {/* ─── Hours Chart ─── */}
       <Card className="shadow-none border-border/40">
@@ -669,16 +723,7 @@ export default function AttendancePage() {
     <div className="space-y-6 animate-fade-in pb-10">
       {isAdminOrHR ? (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Attendance</h2>
-              <p className="text-muted-foreground">Track personal logs and oversee company-wide workforce attendance</p>
-            </div>
-            <TabsList className="grid w-full sm:w-[380px] grid-cols-2 shadow-none border border-border/40 bg-muted/20 rounded-xl">
-              <TabsTrigger value="my-attendance" className="text-xs font-semibold rounded-lg">My Attendance</TabsTrigger>
-              <TabsTrigger value="employee-attendance" className="text-xs font-semibold rounded-lg">Employee Attendance</TabsTrigger>
-            </TabsList>
-          </div>
+         
 
           <TabsContent value="my-attendance" className="space-y-6 outline-none">
             {isLoading ? (
@@ -1150,6 +1195,29 @@ export default function AttendancePage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Apply Leave Dialog ─── */}
+      <ApplyLeaveDialog
+        open={isLeaveDialogOpen}
+        onOpenChange={setIsLeaveDialogOpen}
+        selectedDayNumber={selectedDayNumber}
+        leaveType={leaveType}
+        onLeaveTypeChange={setLeaveType}
+        balances={balances}
+        onSubmit={handleApplyLeave}
+      />
+
+      {/* ─── Day Detail Dialog ─── */}
+      <DayDetailDialog
+        open={isDayDetailOpen}
+        onOpenChange={setIsDayDetailOpen}
+        selectedDayNumber={selectedDayNumber}
+        record={selectedRecord}
+        leaveApplications={leaveApplications}
+        balances={balances}
+        onCancelLeave={handleCancelLeaveById}
+        onApplyLeave={() => setIsLeaveDialogOpen(true)}
+      />
     </div>
   )
 }
