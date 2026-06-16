@@ -11,6 +11,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import compression from '@fastify/compress';
+import cookie from '@fastify/cookie';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -36,6 +37,11 @@ async function bootstrap() {
   // ── Security ──────────────────────────────────────────────────
   await app.register(helmet, {
     contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+  });
+
+  // ── Cookies ───────────────────────────────────────────────────
+  await app.register(cookie, {
+    secret: configService.get<string>('jwt.refreshTokenSecret')!,
   });
 
   // ── Compression ───────────────────────────────────────────────

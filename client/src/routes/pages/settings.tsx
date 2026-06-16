@@ -95,10 +95,10 @@ export default function SettingsPage() {
           { id: leave.id, payload: { isActive: newIsActive } },
           {
             onSuccess: () => {
-              Swal.fire("Updated!", `Leave type ${statusText}.`, "success")
+              toast.success(`Leave type ${statusText}!`)
             },
             onError: (err: any) => {
-              Swal.fire("Error", err.message || `Failed to ${statusText} leave type`, "error")
+              toast.error(err.message || `Failed to ${statusText} leave type`)
             }
           }
         )

@@ -46,13 +46,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
-      const res = await apiClient.post<{ tokens: { accessToken: string; refreshToken?: string }; user: UserProfile }>("auth/login", { email, password });
+      const res = await apiClient.post<{ tokens: { accessToken: string }; user: UserProfile }>("auth/login", { email, password });
       
       if (res?.tokens?.accessToken) {
         localStorage.setItem("access_token", res.tokens.accessToken);
-        if (res.tokens.refreshToken) {
-          localStorage.setItem("refresh_token", res.tokens.refreshToken);
-        }
         localStorage.setItem("user", JSON.stringify(res.user));
         
         set({
@@ -72,7 +69,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     set({
       user: null,

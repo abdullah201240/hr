@@ -110,25 +110,20 @@ axiosInstance.interceptors.response.use(
       }
 
       (error.config as unknown as Record<string, unknown>)._retry = true;
-      const refreshToken = localStorage.getItem("refresh_token");
+      const hasSession = !!localStorage.getItem("access_token");
 
-      if (refreshToken) {
+      if (hasSession) {
         isRefreshing = true;
 
         try {
           // Call NestJS auth/refresh directly using raw axios to bypass global interceptors
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          }, { withCredentials: true });
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
 
           const payload = response.data;
           const tokens = payload && typeof payload === "object" && "data" in payload ? payload.data.tokens : payload.tokens;
 
           if (tokens?.accessToken) {
             localStorage.setItem("access_token", tokens.accessToken);
-            if (tokens.refreshToken) {
-              localStorage.setItem("refresh_token", tokens.refreshToken);
-            }
 
             // Sync Zustand store
             import("@/store/useAuthStore").then((mod) => {

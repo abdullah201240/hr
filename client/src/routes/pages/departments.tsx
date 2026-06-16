@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { toast } from "sonner"
 import Swal from "sweetalert2"
 import OrgChart from "@/components/organization/org-chart"
 import { useOrgStore } from "@/store/useOrgStore"
@@ -103,10 +104,10 @@ export default function DepartmentsPage() {
       if (result.isConfirmed) {
         deleteDeptMutation.mutate(id, {
           onSuccess: () => {
-            Swal.fire("Deactivated!", "Department has been deactivated.", "success")
+            toast.success("Department deactivated successfully.")
           },
           onError: (err: Error) => {
-            Swal.fire("Error", err.message || "Failed to deactivate department", "error")
+            toast.error(err.message || "Failed to deactivate department")
           }
         })
       }
@@ -130,10 +131,10 @@ export default function DepartmentsPage() {
       if (result.isConfirmed) {
         deleteDesgMutation.mutate(id, {
           onSuccess: () => {
-            Swal.fire("Deactivated!", "Designation has been deactivated.", "success")
+            toast.success("Designation deactivated successfully.")
           },
           onError: (err: Error) => {
-            Swal.fire("Error", err.message || "Failed to deactivate designation", "error")
+            toast.error(err.message || "Failed to deactivate designation")
           }
         })
       }

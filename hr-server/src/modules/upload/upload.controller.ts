@@ -85,10 +85,20 @@ export class UploadController {
       ? query.tags.split(',').map((t) => t.trim())
       : undefined;
 
+    const isImage = file.mimetype.startsWith('image/');
+
     const result = await this.cloudinary.uploadBuffer(buffer, file.mimetype, {
       folder: query.folder,
       tags,
       publicId: query.publicId,
+      ...(isImage && {
+        transformation: {
+          quality: 'auto',
+          format: 'auto',
+          crop: 'limit',
+          width: 1600,
+        },
+      }),
     });
 
     this.logger.log(
@@ -129,12 +139,21 @@ export class UploadController {
     }
 
     const results = await Promise.all(
-      buffers.map(({ buffer, mimetype }) =>
-        this.cloudinary.uploadBuffer(buffer, mimetype, {
+      buffers.map(({ buffer, mimetype }) => {
+        const isImage = mimetype.startsWith('image/');
+        return this.cloudinary.uploadBuffer(buffer, mimetype, {
           folder: query.folder,
           tags,
-        }),
-      ),
+          ...(isImage && {
+            transformation: {
+              quality: 'auto',
+              format: 'auto',
+              crop: 'limit',
+              width: 1600,
+            },
+          }),
+        });
+      }),
     );
 
     this.logger.log(`Batch uploaded: ${results.length} files`);
