@@ -36,18 +36,14 @@ import {
   Download,
   FileText,
   Image as ImageIcon,
-  Edit,
 } from "lucide-react"
 import Swal from "sweetalert2"
 import {
   useLeaveApplicationsQuery,
   useApproveLeaveMutation,
   useRejectLeaveMutation,
-  useLeaveBalancesQuery,
-  useUpdateLeaveMutation,
 } from "@/hooks/useLeaveApplications"
 import { useAuthStore } from "@/store/useAuthStore"
-import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 
 const isImageFile = (fileName?: string, url?: string) => {
   const name = (fileName || url || "").toLowerCase();
@@ -79,10 +75,6 @@ export default function LeavePage() {
   const [selectedLeave, setSelectedLeave] = useState<LeaveApplicationDetail | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Leave edit states
-  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
-  const [editLeaveData, setEditLeaveData] = useState<any>(null)
-
   // Helper to open dialog with leave details
   const handleViewDetails = (req: any) => {
     console.log("Opening leave details:", req)
@@ -101,68 +93,8 @@ export default function LeavePage() {
   })
   const requests = listResponse?.data || []
 
-  const { data: dbBalances = [] } = useLeaveBalancesQuery(new Date().getFullYear())
-  const balances = useMemo(() => {
-    return dbBalances.map(b => ({
-      id: b.id,
-      key: b.key,
-      label: b.label,
-      total: b.total,
-      used: b.used,
-      color: b.color || "bg-sky-500",
-      icon: b.icon || "coffee",
-      requiresDocument: b.requiresDocument
-    }))
-  }, [dbBalances])
-
   const approveMutation = useApproveLeaveMutation()
   const rejectMutation = useRejectLeaveMutation()
-  const updateLeaveMutation = useUpdateLeaveMutation()
-
-  const handleApplyLeave = (data: {
-    leaveTypeId: string;
-    startDate: string;
-    endDate: string;
-    reason: string;
-    attachments: any[];
-  }) => {
-    if (editLeaveData) {
-      updateLeaveMutation.mutate(
-        {
-          id: editLeaveData.id,
-          payload: {
-            leaveTypeId: data.leaveTypeId,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            reason: data.reason,
-            attachments: data.attachments,
-          },
-        },
-        {
-          onSuccess: () => {
-            setIsLeaveDialogOpen(false)
-            setEditLeaveData(null)
-            Swal.fire({
-              title: "Updated!",
-              text: "Your leave application has been updated/resubmitted successfully.",
-              icon: "success",
-              confirmButtonText: "Ok",
-            })
-          },
-          onError: (err: any) => {
-            setIsLeaveDialogOpen(false)
-            setEditLeaveData(null)
-            Swal.fire({
-              title: "Failed to Update",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-              confirmButtonText: "Ok",
-            })
-          },
-        }
-      )
-    }
-  }
 
   // Action Handlers
   const handleApprove = (id: string) => {
@@ -405,22 +337,6 @@ export default function LeavePage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        
-                        {/* Edit & Resubmit Button */}
-                        {(req.status === "Pending" || req.status === "Rejected") && req.employeeId === user?.id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditLeaveData(req)
-                              setIsLeaveDialogOpen(true)
-                            }}
-                            className="h-8 w-8 p-0 hover:bg-amber-500/10 text-amber-500 hover:text-amber-600 dark:text-amber-400"
-                            title="Edit & Resubmit"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
 
                         {req.status === "Pending" ? (
                           (user?.role === "admin" || user?.role === "hr") ? (
@@ -601,39 +517,10 @@ export default function LeavePage() {
               </>
             )}
             
-            {/* Owner Edit & Resubmit from details dialog */}
-            {selectedLeave && (selectedLeave.status === "Pending" || selectedLeave.status === "Rejected") && selectedLeave.employeeId === user?.id && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  setEditLeaveData(selectedLeave);
-                  setIsLeaveDialogOpen(true);
-                  handleCloseDialog();
-                }}
-                className="h-8 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-white border-none animate-fade-in"
-              >
-                Edit & Resubmit
-              </Button>
-            )}
-            
             <Button variant="outline" size="sm" onClick={handleCloseDialog}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Apply/Edit Leave Dialog */}
-      <ApplyLeaveDialog
-        open={isLeaveDialogOpen}
-        onOpenChange={(open) => {
-          setIsLeaveDialogOpen(open)
-          if (!open) setEditLeaveData(null)
-        }}
-        selectedDate={editLeaveData?.startDate || new Date().toISOString().split("T")[0]}
-        balances={balances}
-        initialData={editLeaveData}
-        onSubmit={handleApplyLeave}
-      />
     </div>
   )
 }
