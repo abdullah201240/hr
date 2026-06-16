@@ -17,6 +17,7 @@ import {
 } from "@/components/dashboard/types"
 import { useMyAttendanceQuery } from "@/hooks/useAttendance"
 import { useAnnouncements } from "@/hooks/useAnnouncements"
+import { useAttendanceSettingsQuery } from "@/hooks/useAttendanceSettings"
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
@@ -78,6 +79,7 @@ export default function DashboardPage() {
 
   // ── Real-Time Attendance Query ────────────────────────────────────────────
   const { data: dbLogs = [] } = useMyAttendanceQuery(calYear, calMonth)
+  const { data: settings } = useAttendanceSettingsQuery()
 
   // ── Holiday Settings ───────────────────────────────────────────────────────
   const [weeklyHolidays, setWeeklyHolidays] = useState<string[]>(["Saturday", "Sunday"])
@@ -86,15 +88,19 @@ export default function DashboardPage() {
   ])
 
   useEffect(() => {
-    const savedWeekly = localStorage.getItem("hr_weekly_holidays")
-    if (savedWeekly) {
-      try { setWeeklyHolidays(JSON.parse(savedWeekly)) } catch (e) { console.error(e) }
+    if (settings?.weeklyHolidays) {
+      setWeeklyHolidays(settings.weeklyHolidays)
+    } else {
+      const savedWeekly = localStorage.getItem("hr_weekly_holidays")
+      if (savedWeekly) {
+        try { setWeeklyHolidays(JSON.parse(savedWeekly)) } catch (e) { console.error(e) }
+      }
     }
     const savedRegular = localStorage.getItem("hr_regular_holidays")
     if (savedRegular) {
       try { setRegularHolidays(JSON.parse(savedRegular)) } catch (e) { console.error(e) }
     }
-  }, [])
+  }, [settings])
 
   // ── Apply Leave Handler ────────────────────────────────────────────────────
   const handleApplyLeave = (data: {
@@ -183,7 +189,7 @@ export default function DashboardPage() {
         return { ...record, status: "weekend" as const, checkIn: null, checkOut: null, hours: null }
       }
     } else {
-      if (!record.checkIn && record.status !== "leave") {
+      if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
         return { ...record, status: "absent" as const }
       }
     }

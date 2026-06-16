@@ -11,6 +11,10 @@ import {
 import { Coffee, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AttendanceRecord, LeaveApplication, LeaveBalance } from "./types"
+import { useAuthStore } from "@/store/useAuthStore"
+import { useDepartmentQuery } from "@/hooks/useDepartments"
+import { useDesignationQuery } from "@/hooks/useDesignations"
+import { useAttendanceSettingsQuery } from "@/hooks/useAttendanceSettings"
 
 interface DayDetailDialogProps {
   open: boolean
@@ -23,6 +27,19 @@ interface DayDetailDialogProps {
   onApplyLeave: () => void
 }
 
+function convert24to12(time24: string): string {
+  if (!time24) return ""
+  const [hourStr, minStr] = time24.split(":")
+  let hour = parseInt(hourStr, 10)
+  const min = parseInt(minStr, 10)
+  const ampm = hour >= 12 ? "PM" : "AM"
+  hour = hour % 12
+  hour = hour ? hour : 12 // 0 should be 12
+  const hrStr = hour.toString().padStart(2, "0")
+  const minFormatted = min.toString().padStart(2, "0")
+  return `${hrStr}:${minFormatted} ${ampm}`
+}
+
 export function DayDetailDialog({
   open,
   onOpenChange,
@@ -33,11 +50,27 @@ export function DayDetailDialog({
   onCancelLeave,
   onApplyLeave,
 }: DayDetailDialogProps) {
+  const { user } = useAuthStore()
+  const { data: department } = useDepartmentQuery(user?.departmentId || "")
+  const { data: designation } = useDesignationQuery(user?.designationId || "")
+  const { data: settings } = useAttendanceSettingsQuery()
+
   if (!record) return null
 
   const matchingLeave = leaveApplications.find(la => selectedDayNumber >= la.startDay && selectedDayNumber <= la.endDay)
   const workMinutes = record.hours ? Math.round(record.hours * 60) : null
   const leaveTypeLabel = matchingLeave ? balances.find(b => b.key === matchingLeave.leaveType)?.label : null
+
+  const rosterStart = settings?.startTime ? convert24to12(settings.startTime) : "10:00 AM"
+  const rosterEnd = settings?.endTime ? convert24to12(settings.endTime) : "06:00 PM"
+  
+  const getDurationHours = (start?: string, end?: string): number => {
+    if (!start || !end) return 8
+    const [sH, sM] = start.split(":").map(Number)
+    const [eH, eM] = end.split(":").map(Number)
+    return eH - sH + (eM - sM) / 60
+  }
+  const duration = getDurationHours(settings?.startTime, settings?.endTime)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,13 +91,13 @@ export function DayDetailDialog({
             <div className="grid grid-cols-2 divide-x divide-border/20">
               <div className="p-3 space-y-2">
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">Date</span><span className="font-semibold">{record.dateStr} {record.dayName}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Department</span><span className="font-semibold">Information Technology</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Employee</span><span className="font-semibold">Abdullah Al Sakib</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Department</span><span className="font-semibold">{department?.name || "Information Technology"}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Employee</span><span className="font-semibold">{user?.fullNameEnglish || "Abdullah Al Sakib"}</span></div>
               </div>
               <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Shift Name</span><span className="font-semibold">Head Office (General)</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Roster Time</span><span className="font-semibold">10:00 AM – 7:00 PM</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Day Duration</span><span className="font-semibold">Day Shift (9h)</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Shift Name</span><span className="font-semibold">{designation?.name || "Head Office (General)"}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Roster Time</span><span className="font-semibold">{rosterStart} – {rosterEnd}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Day Duration</span><span className="font-semibold">Day Shift ({duration}h)</span></div>
               </div>
             </div>
           </div>
@@ -76,7 +109,7 @@ export function DayDetailDialog({
             </div>
             <div className="grid grid-cols-2 divide-x divide-border/20">
               <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Duty Type</span><span className="font-semibold">Regular</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Duty Type</span><span className="font-semibold">{user?.employeeType || "Regular"}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">Present Status</span>
                   <Badge className={cn("text-[9px] font-bold",
                     record.status === "present" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
@@ -130,22 +163,6 @@ export function DayDetailDialog({
             </div>
           </div>
 
-          {/* Section 4: Log Details */}
-          <div className="rounded-lg border border-border/40 overflow-hidden">
-            <div className="bg-muted/40 px-3 py-1.5 border-b border-border/30">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Log Details</p>
-            </div>
-            <div className="grid grid-cols-2 divide-x divide-border/20">
-              <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">IP Address</span><span className="font-semibold">{record.ipAddress || "—"}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Device</span><span className="font-semibold">{record.device || "—"}</span></div>
-              </div>
-              <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Confirm Status</span><span className="font-semibold">Draft</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Remark</span><span className="font-semibold">{record.notes || "—"}</span></div>
-              </div>
-            </div>
-          </div>
 
           {/* Attachments */}
           {record.attachments && record.attachments.length > 0 && (
