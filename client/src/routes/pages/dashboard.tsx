@@ -342,6 +342,7 @@ export default function DashboardPage() {
         <ApplyLeaveDialog
           open={isLeaveDialogOpen}
           onOpenChange={(open) => {
+            if (applyLeaveMutation.isPending || updateLeaveMutation.isPending) return
             setIsLeaveDialogOpen(open)
             if (!open) {
               setEditLeaveData(null)
@@ -353,6 +354,7 @@ export default function DashboardPage() {
           preSelectedLeaveKey={draggedLeaveType}
           initialData={editLeaveData}
           onSubmit={handleApplyLeave}
+          isSubmitting={applyLeaveMutation.isPending || updateLeaveMutation.isPending}
         />
 
         {/* ── Day Detail Dialog ─────────────────────────────────────────────── */}

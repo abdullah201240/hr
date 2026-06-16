@@ -6,11 +6,18 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { eq, and, between, desc, asc, count, sum, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
+import { LEAVE_APPLICATION_QUEUE } from '../queue/queue.module';
+import type {
+  CreateLeaveApplicationJobData,
+  UpdateLeaveApplicationJobData,
+} from './leave-application.processor';
 import type {
   CreateLeaveApplicationDto,
   UpdateLeaveApplicationStatusDto,
@@ -25,7 +32,124 @@ export class LeaveApplicationService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly cache: CacheService,
+    @InjectQueue(LEAVE_APPLICATION_QUEUE)
+    private readonly leaveQueue: Queue<CreateLeaveApplicationJobData | UpdateLeaveApplicationJobData>,
   ) {}
+
+  // ─── Enqueue Create (async via BullMQ) ───────────────────────────────────
+  async createAsync(
+    employeeId: string,
+    dto: CreateLeaveApplicationDto,
+  ): Promise<{ jobId: string; status: string; message: string }> {
+    const payload: CreateLeaveApplicationJobData = {
+      type: 'create',
+      employeeId,
+      leaveTypeId: dto.leaveTypeId,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      reason: dto.reason,
+      attachments: (dto.attachments ?? []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        fileName: a.fileName,
+        fileUrl: a.fileUrl,
+      })),
+    };
+
+    const job = await this.leaveQueue.add('create-leave-application', payload, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1500 },
+      removeOnComplete: { count: 200, age: 60 * 60 * 24 * 7 },  // keep 7 days
+      removeOnFail: { count: 500, age: 60 * 60 * 24 * 30 },     // keep 30 days
+    });
+
+    this.logger.log(`Enqueued leave application creation job: ${job.id} for employee ${employeeId}`);
+    return {
+      jobId: job.id!,
+      status: 'queued',
+      message: 'Your leave application is being processed. Please wait for confirmation.',
+    };
+  }
+
+  // ─── Enqueue Update/Resubmit (async via BullMQ) ──────────────────────────
+  async updateAsync(
+    id: string,
+    employeeId: string,
+    role: string,
+    dto: UpdateLeaveApplicationDto,
+  ): Promise<{ jobId: string; status: string; message: string }> {
+    // Quick pre-check that the application exists before queuing
+    const [app] = await this.db
+      .select({ id: leaveApplications.id, status: leaveApplications.status })
+      .from(leaveApplications)
+      .where(eq(leaveApplications.id, id))
+      .limit(1);
+
+    if (!app) {
+      throw new NotFoundException(`Leave application with ID "${id}" not found`);
+    }
+    if (app.status !== 'Pending' && app.status !== 'Rejected') {
+      throw new BadRequestException(`Cannot edit a leave application with status "${app.status}"`);
+    }
+
+    const payload: UpdateLeaveApplicationJobData = {
+      type: 'update',
+      id,
+      employeeId,
+      role,
+      leaveTypeId: dto.leaveTypeId,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      reason: dto.reason,
+      attachments: (dto.attachments ?? []).map((a) => ({
+        id: (a as any).id,
+        title: a.title,
+        fileName: a.fileName,
+        fileUrl: a.fileUrl,
+      })),
+    };
+
+    const job = await this.leaveQueue.add('update-leave-application', payload, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1500 },
+      removeOnComplete: { count: 200, age: 60 * 60 * 24 * 7 },
+      removeOnFail: { count: 500, age: 60 * 60 * 24 * 30 },
+    });
+
+    this.logger.log(`Enqueued leave application update job: ${job.id} for application ${id}`);
+    return {
+      jobId: job.id!,
+      status: 'queued',
+      message: 'Your leave application update is being processed.',
+    };
+  }
+
+  // ─── Get Job Status ───────────────────────────────────────────────────────
+  async getJobStatus(jobId: string): Promise<{
+    jobId: string;
+    state: string;
+    result?: any;
+    error?: string;
+    progress?: number;
+  }> {
+    const job = await this.leaveQueue.getJob(jobId);
+    if (!job) {
+      return { jobId, state: 'not_found' };
+    }
+
+    const state = await job.getState();
+    const response: any = { jobId, state };
+
+    if (state === 'completed') {
+      response.result = job.returnvalue;
+    } else if (state === 'failed') {
+      response.error = job.failedReason ?? 'Unknown error';
+    } else if (state === 'active') {
+      response.progress = typeof job.progress === 'number' ? job.progress : 0;
+    }
+
+    return response;
+  }
 
   // Helper: Get local Date string (YYYY-MM-DD)
   private getLocalDateStr(date: Date): string {

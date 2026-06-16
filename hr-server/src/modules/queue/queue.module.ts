@@ -6,6 +6,7 @@ export const EMPLOYEE_CREATE_QUEUE = 'employee-create';
 export const EMPLOYEE_UPDATE_QUEUE = 'employee-update';
 export const EMPLOYEE_STATUS_QUEUE = 'employee-status';
 export const ATTENDANCE_QUEUE = 'attendance';
+export const LEAVE_APPLICATION_QUEUE = 'leave-application';
 
 @Global()
 @Module({
@@ -30,6 +31,9 @@ export const ATTENDANCE_QUEUE = 'attendance';
     }),
     BullModule.registerQueue({
       name: ATTENDANCE_QUEUE,
+    }),
+    BullModule.registerQueue({
+      name: LEAVE_APPLICATION_QUEUE,
     }),
   ],
   exports: [BullModule],

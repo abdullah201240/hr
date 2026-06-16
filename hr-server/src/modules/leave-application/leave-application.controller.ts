@@ -33,14 +33,23 @@ import { Roles } from '../auth/guards/roles.decorator';
 export class LeaveApplicationController {
   constructor(private readonly leaveApplicationService: LeaveApplicationService) {}
 
-  // ─── Apply for Leave ──────────────────────────────────────────────────────
+  // ─── Apply for Leave (queued) ─────────────────────────────────────────────
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Apply for a new leave request' })
-  @ApiResponse({ status: 201, description: 'Leave application submitted successfully' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Apply for a new leave request (queued via BullMQ)' })
+  @ApiResponse({ status: 202, description: 'Leave application job enqueued — poll /jobs/:jobId/status for result' })
   async create(@Req() req: any, @Body() dto: CreateLeaveApplicationDto) {
     const employeeId = req.user.id;
-    return this.leaveApplicationService.create(employeeId, dto);
+    return this.leaveApplicationService.createAsync(employeeId, dto);
+  }
+
+  // ─── Job Status Polling ──────────────────────────────────────────────────
+  @Get('jobs/:jobId/status')
+  @ApiOperation({ summary: 'Poll leave application job status' })
+  @ApiParam({ name: 'jobId', type: 'string' })
+  @ApiResponse({ status: 200, description: 'Job status: queued | active | completed | failed | not_found' })
+  async getJobStatus(@Param('jobId') jobId: string) {
+    return this.leaveApplicationService.getJobStatus(jobId);
   }
 
   // ─── Get Leave Balances ───────────────────────────────────────────────────
@@ -93,12 +102,12 @@ export class LeaveApplicationController {
     return this.leaveApplicationService.findOne(id);
   }
 
-  // ─── Edit/Resubmit Leave Application ──────────────────────────────────────
+  // ─── Edit/Resubmit Leave Application (queued) ─────────────────────────────
   @Patch(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Edit or resubmit a leave application' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Edit or resubmit a leave application (queued via BullMQ)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Leave application updated' })
+  @ApiResponse({ status: 202, description: 'Leave application update job enqueued' })
   @ApiResponse({ status: 404, description: 'Leave application not found' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -107,7 +116,7 @@ export class LeaveApplicationController {
   ) {
     const employeeId = req.user.id;
     const role = req.user.role;
-    return this.leaveApplicationService.update(id, employeeId, role, dto);
+    return this.leaveApplicationService.updateAsync(id, employeeId, role, dto);
   }
 
   // ─── Process Leave (Approve/Reject) ───────────────────────────────────────
