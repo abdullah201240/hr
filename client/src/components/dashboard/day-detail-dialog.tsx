@@ -11,6 +11,7 @@ import {
 import { Coffee, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AttendanceRecord, LeaveApplication, LeaveBalance } from "./types"
+import { formatFullDate } from "./types"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useDepartmentQuery } from "@/hooks/useDepartments"
 import { useDesignationQuery } from "@/hooks/useDesignations"
@@ -20,6 +21,8 @@ interface DayDetailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   selectedDayNumber: number
+  calMonth: number
+  calYear: number
   record: AttendanceRecord | undefined
   leaveApplications: LeaveApplication[]
   balances: LeaveBalance[]
@@ -44,6 +47,8 @@ export function DayDetailDialog({
   open,
   onOpenChange,
   selectedDayNumber,
+  calMonth,
+  calYear,
   record,
   leaveApplications,
   balances,
@@ -77,7 +82,7 @@ export function DayDetailDialog({
       <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
           <DialogTitle className="text-base font-bold">
-            {record ? `${record.dayName}, ${record.dateStr} 2026 — Day Details` : `Day ${selectedDayNumber}`}
+            {record ? `${formatFullDate(record.day, calMonth, calYear)} — Day Details` : `Day ${selectedDayNumber}`}
           </DialogTitle>
           <DialogDescription className="text-xs">Complete attendance and shift information for this day.</DialogDescription>
         </DialogHeader>
@@ -90,12 +95,12 @@ export function DayDetailDialog({
             </div>
             <div className="grid grid-cols-2 divide-x divide-border/20">
               <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Date</span><span className="font-semibold">{record.dateStr} {record.dayName}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Department</span><span className="font-semibold">{department?.name || "Information Technology"}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Employee</span><span className="font-semibold">{user?.fullNameEnglish || "Abdullah Al Sakib"}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Date</span><span className="font-semibold">{formatFullDate(record.day, calMonth, calYear)}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Department</span><span className="font-semibold">{department?.name || "—"}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Employee</span><span className="font-semibold">{user?.fullNameEnglish || "—"}</span></div>
               </div>
               <div className="p-3 space-y-2">
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Shift Name</span><span className="font-semibold">{designation?.name || "Head Office (General)"}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Shift Name</span><span className="font-semibold">{designation?.name || "—"}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">Roster Time</span><span className="font-semibold">{rosterStart} – {rosterEnd}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-muted-foreground">Day Duration</span><span className="font-semibold">Day Shift ({duration}h)</span></div>
               </div>

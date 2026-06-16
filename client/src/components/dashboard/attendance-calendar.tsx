@@ -6,7 +6,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LeaveBalanceChips } from "./leave-balance-chips"
 import type { AttendanceRecord, LeaveApplication, LeaveBalance } from "./types"
-import { LEAVE_TYPE_SHORT, MONTH_NAMES } from "./types"
+import { LEAVE_TYPE_SHORT, formatMonthYear, formatFullDate } from "./types"
 
 interface AttendanceCalendarProps {
   calMonth: number
@@ -59,7 +59,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
             </div>
             <div>
               <CardTitle className="text-base">Shift & Attendance Calendar</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">{MONTH_NAMES[calMonth]} {calYear}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{formatMonthYear(calMonth, calYear)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -254,7 +254,7 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[200px] p-2 space-y-1">
-                    <p className="font-bold">{MONTH_NAMES[calMonth]} {day}, {calYear}</p>
+                    <p className="font-bold">{formatFullDate(day, calMonth, calYear)}</p>
                     {record && (
                       <p className="capitalize">Status: <span className="font-semibold">{record.status}</span></p>
                     )}

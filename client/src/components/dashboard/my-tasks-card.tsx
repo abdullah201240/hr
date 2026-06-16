@@ -25,7 +25,7 @@ interface MyTasksCardProps {
 export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll }: MyTasksCardProps) {
   const doneTasks = tasks.filter(t => t.done).length
   const totalTasks = tasks.length
-  const taskPct = Math.round((doneTasks / totalTasks) * 100)
+  const taskPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
 
   return (
     <Card className="shadow-none border-border/40 flex flex-col justify-between">

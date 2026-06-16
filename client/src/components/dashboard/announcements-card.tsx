@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { CalendarDays, Clock, Megaphone } from "lucide-react"
 import type { Announcement } from "./types"
+import { formatDateStr } from "./types"
 
 interface AnnouncementsCardProps {
   announcements: Announcement[]
@@ -49,7 +50,7 @@ export function AnnouncementsCard({ announcements }: AnnouncementsCardProps) {
                 >
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] text-muted-foreground">{ann.date}</span>
+                      <span className="text-[9px] text-muted-foreground">{formatDateStr(ann.date)}</span>
                       <span className="text-[10px] font-medium text-muted-foreground/85">by {ann.author}</span>
                     </div>
                     <h5 className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
@@ -80,7 +81,7 @@ export function AnnouncementsCard({ announcements }: AnnouncementsCardProps) {
                 <div className="flex items-center justify-end">
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1.5 font-medium">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    Published: {selected.date}
+                    Published: {formatDateStr(selected.date)}
                   </span>
                 </div>
                 <DialogTitle className="text-base font-bold leading-snug">

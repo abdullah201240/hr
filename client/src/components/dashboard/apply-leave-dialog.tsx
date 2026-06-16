@@ -197,7 +197,7 @@ export function ApplyLeaveDialog({
     const d = new Date(dateStr)
     return isNaN(d.getTime())
       ? ""
-      : d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      : new Intl.DateTimeFormat(undefined, { month: "long", day: "numeric", year: "numeric" }).format(d)
   }
 
   return (
