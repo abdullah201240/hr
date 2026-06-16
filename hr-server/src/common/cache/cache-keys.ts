@@ -180,6 +180,62 @@ export const CacheKeys = {
     ttl: 15, // 15 seconds
     description: 'Cached JWT user validation result',
   },
+
+  /** Announcement list */
+  announcementList: {
+    key: key('announcements:list'),
+    ttl: 300, // 5 min
+    description: 'All announcements',
+  },
+
+  /** Single announcement by ID */
+  announcementById: {
+    key: key('announcements:id:*'),
+    ttl: 300, // 5 min
+    description: 'Announcement record by ID',
+  },
+
+  /** Attendance logs for employee by month */
+  attendanceLogsByMonth: {
+    key: key('attendance:logs:*:*:*'), // employeeId:year:month
+    ttl: 120, // 2 min
+    description: 'Monthly attendance logs by employee',
+  },
+
+  /** Daily attendance logs for admin view */
+  attendanceDailyLogs: {
+    key: key('attendance:daily:*'), // date
+    ttl: 120, // 2 min
+    description: 'Daily attendance logs for admin',
+  },
+
+  /** Pending attendance corrections */
+  attendancePendingCorrections: {
+    key: key('attendance:corrections:pending'),
+    ttl: 60, // 1 min
+    description: 'Pending attendance correction requests',
+  },
+
+  /** Festival bonus rules list */
+  festivalBonusRules: {
+    key: key('festival-bonus:rules'),
+    ttl: 1800, // 30 min
+    description: 'Festival bonus configuration rules',
+  },
+
+  /** Single festival bonus rule by ID */
+  festivalBonusRuleById: {
+    key: key('festival-bonus:rules:id:*'),
+    ttl: 1800, // 30 min
+    description: 'Festival bonus rule by ID',
+  },
+
+  /** Provident fund settings (singleton) */
+  providentFundSettings: {
+    key: key('provident-fund:settings'),
+    ttl: 1800, // 30 min
+    description: 'Provident fund configuration settings',
+  },
 } as const;
 
 export type CacheKeyDefinition = (typeof CacheKeys)[keyof typeof CacheKeys];

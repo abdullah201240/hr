@@ -3,25 +3,39 @@ import { DB_CONNECTION, type Database } from '../../db';
 import { announcements } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto/announcement.dto';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
 
 @Injectable()
 export class AnnouncementsService {
-  constructor(@Inject(DB_CONNECTION) private readonly db: Database) {}
+  constructor(
+    @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly cache: CacheService,
+  ) {}
 
   async findAll() {
+    const cached = await this.cache.getByKey(CacheKeys.announcementList);
+    if (cached) return cached;
+
     const results = await this.db
       .select()
       .from(announcements)
       .orderBy(desc(announcements.date), desc(announcements.createdAt));
     
     // Format date string for frontend to be consistently 'YYYY-MM-DD'
-    return results.map(ann => ({
+    const formatted = results.map(ann => ({
       ...ann,
       date: new Date(ann.date).toISOString().split('T')[0]
     }));
+
+    await this.cache.setByKey(CacheKeys.announcementList, formatted);
+    return formatted;
   }
 
   async findOne(id: string) {
+    const cached = await this.cache.getByKey(CacheKeys.announcementById, id);
+    if (cached) return cached;
+
     const result = await this.db
       .select()
       .from(announcements)
@@ -32,10 +46,13 @@ export class AnnouncementsService {
       throw new NotFoundException(`Announcement with ID ${id} not found`);
     }
 
-    return {
+    const formatted = {
       ...result[0],
       date: new Date(result[0].date).toISOString().split('T')[0]
     };
+
+    await this.cache.setByKey(CacheKeys.announcementById, formatted, id);
+    return formatted;
   }
 
   async create(createDto: CreateAnnouncementDto) {
@@ -54,10 +71,13 @@ export class AnnouncementsService {
       })
       .returning();
 
-    return {
+    const formatted = {
       ...newAnn[0],
       date: new Date(newAnn[0].date).toISOString().split('T')[0]
     };
+
+    await this.invalidateCache();
+    return formatted;
   }
 
   async update(id: string, updateDto: UpdateAnnouncementDto) {
@@ -70,10 +90,13 @@ export class AnnouncementsService {
       .where(eq(announcements.id, id))
       .returning();
 
-    return {
+    const formatted = {
       ...updatedAnn[0],
       date: new Date(updatedAnn[0].date).toISOString().split('T')[0]
     };
+
+    await this.invalidateCache(id);
+    return formatted;
   }
 
   async remove(id: string) {
@@ -81,6 +104,20 @@ export class AnnouncementsService {
     await this.findOne(id);
 
     await this.db.delete(announcements).where(eq(announcements.id, id));
+    
+    await this.invalidateCache(id);
     return { success: true, message: 'Announcement deleted successfully' };
+  }
+
+  // ─── Cache invalidation ──────────────────────────────────────────────────
+
+  private async invalidateCache(id?: string) {
+    const promises: Promise<void>[] = [
+      this.cache.delByPattern(CacheKeys.announcementList),
+    ];
+    if (id) {
+      promises.push(this.cache.delByKey(CacheKeys.announcementById, id));
+    }
+    await Promise.all(promises);
   }
 }

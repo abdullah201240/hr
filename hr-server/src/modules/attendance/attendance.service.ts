@@ -15,6 +15,8 @@ import { attendanceLogs, holidays, employees } from '../../db/schema';
 import { ATTENDANCE_QUEUE } from '../queue/queue.module';
 import { AttendanceSettingsService } from '../attendance-settings/attendance-settings.service';
 import { CheckInDto, CheckOutDto, SubmitCorrectionDto, AdminLogOverrideDto } from './dto/attendance.dto';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
 
 @Injectable()
 export class AttendanceService implements OnModuleInit {
@@ -24,6 +26,7 @@ export class AttendanceService implements OnModuleInit {
     @Inject(DB_CONNECTION) private readonly db: Database,
     @InjectQueue(ATTENDANCE_QUEUE) private readonly attendanceQueue: Queue,
     private readonly settingsService: AttendanceSettingsService,
+    private readonly cache: CacheService,
   ) {}
 
   async onModuleInit() {
@@ -127,6 +130,8 @@ export class AttendanceService implements OnModuleInit {
         })
         .where(eq(attendanceLogs.id, log.id))
         .returning();
+      
+      await this.invalidateAttendanceCache(employeeId, dateStr);
       return updated;
     } else {
       // Create new record
@@ -143,6 +148,8 @@ export class AttendanceService implements OnModuleInit {
           notes: dto.notes || null,
         })
         .returning();
+      
+      await this.invalidateAttendanceCache(employeeId, dateStr);
       return created;
     }
   }
@@ -204,6 +211,7 @@ export class AttendanceService implements OnModuleInit {
       .where(eq(attendanceLogs.id, log.id))
       .returning();
 
+    await this.invalidateAttendanceCache(employeeId, dateStr);
     return updated;
   }
 
@@ -216,6 +224,11 @@ export class AttendanceService implements OnModuleInit {
     const startStr = this.getLocalTodayStr(startDate);
     const endStr = this.getLocalTodayStr(endDate);
     const todayStr = this.getLocalTodayStr();
+
+    // Build cache key
+    const cacheKeyParts = `${employeeId}:${year}:${month}`;
+    const cached = await this.cache.getByKey(CacheKeys.attendanceLogsByMonth, cacheKeyParts);
+    if (cached) return cached;
 
     // 1. Get logs, settings (cached), and holidays
     const [logsList, settings, holidaysList] = await Promise.all([
@@ -305,6 +318,7 @@ export class AttendanceService implements OnModuleInit {
       });
     }
 
+    await this.cache.setByKey(CacheKeys.attendanceLogsByMonth, result, cacheKeyParts);
     return result;
   }
 
@@ -340,11 +354,16 @@ export class AttendanceService implements OnModuleInit {
       .where(eq(attendanceLogs.id, log.id))
       .returning();
 
+    await this.invalidateAttendanceCache(employeeId, dto.date);
+    await this.invalidateCorrectionsCache();
     return updated;
   }
 
   // ─── Daily Logs for Admin/HR ───────────────────────────────────────────────
   async getDailyLogs(dateStr: string) {
+    const cached = await this.cache.getByKey(CacheKeys.attendanceDailyLogs, dateStr);
+    if (cached) return cached;
+
     const list = await this.db
       .select({
         id: attendanceLogs.id,
@@ -368,6 +387,7 @@ export class AttendanceService implements OnModuleInit {
       .innerJoin(employees, eq(attendanceLogs.employeeId, employees.id))
       .where(eq(attendanceLogs.date, dateStr));
 
+    await this.cache.setByKey(CacheKeys.attendanceDailyLogs, list, dateStr);
     return list;
   }
 
@@ -430,6 +450,8 @@ export class AttendanceService implements OnModuleInit {
       .where(eq(attendanceLogs.id, logId))
       .returning();
 
+    await this.invalidateAttendanceCache(log.employeeId, log.date);
+    await this.invalidateCorrectionsCache();
     return updated;
   }
 
@@ -457,12 +479,16 @@ export class AttendanceService implements OnModuleInit {
       .where(eq(attendanceLogs.id, logId))
       .returning();
 
+    await this.invalidateCorrectionsCache();
     return updated;
   }
 
   // ─── Pending Corrections for Admin/HR ──────────────────────────────────────
   async getPendingCorrections() {
-    return this.db
+    const cached = await this.cache.getByKey(CacheKeys.attendancePendingCorrections);
+    if (cached) return cached;
+
+    const result = await this.db
       .select({
         id: attendanceLogs.id,
         date: attendanceLogs.date,
@@ -480,6 +506,9 @@ export class AttendanceService implements OnModuleInit {
       .innerJoin(employees, eq(attendanceLogs.employeeId, employees.id))
       .where(eq(attendanceLogs.correctionStatus, 'pending'))
       .orderBy(asc(attendanceLogs.date));
+
+    await this.cache.setByKey(CacheKeys.attendancePendingCorrections, result);
+    return result;
   }
 
   // ─── Manual Override/Log Creation by Admin/HR ──────────────────────────────
@@ -539,6 +568,8 @@ export class AttendanceService implements OnModuleInit {
         })
         .where(eq(attendanceLogs.id, log.id))
         .returning();
+      
+      await this.invalidateAttendanceCache(employeeId, date);
       return updated;
     } else {
       const [created] = await this.db
@@ -554,8 +585,30 @@ export class AttendanceService implements OnModuleInit {
           notes: notes || 'Manual entry by Admin',
         })
         .returning();
+      
+      await this.invalidateAttendanceCache(employeeId, date);
       return created;
     }
+  }
+
+  // ─── Cache invalidation ──────────────────────────────────────────────────
+
+  private async invalidateAttendanceCache(employeeId: string, dateStr: string) {
+    const [year, month] = dateStr.split('-');
+    const monthNum = parseInt(month, 10) - 1; // Convert to 0-indexed
+    
+    const promises: Promise<void>[] = [
+      // Invalidate monthly logs cache
+      this.cache.delByKey(CacheKeys.attendanceLogsByMonth, employeeId, year, String(monthNum)),
+      // Invalidate daily logs cache
+      this.cache.delByKey(CacheKeys.attendanceDailyLogs, dateStr),
+    ];
+    
+    await Promise.all(promises);
+  }
+
+  private async invalidateCorrectionsCache() {
+    await this.cache.delByPattern(CacheKeys.attendancePendingCorrections);
   }
 }
 

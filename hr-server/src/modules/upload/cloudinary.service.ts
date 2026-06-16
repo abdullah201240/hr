@@ -12,6 +12,8 @@ import {
 } from 'cloudinary';
 import { Readable } from 'node:stream';
 import type { CloudinaryConfig } from '../../config/cloudinary.config';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -88,7 +90,10 @@ export class CloudinaryService implements OnModuleInit {
   private readonly logger = new Logger(CloudinaryService.name);
   private readonly config: CloudinaryConfig;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cache: CacheService,
+  ) {
     this.config = this.configService.get<CloudinaryConfig>('cloudinary')!;
   }
 
@@ -177,6 +182,12 @@ export class CloudinaryService implements OnModuleInit {
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
+    
+    // Invalidate cache
+    if (result.result === 'ok') {
+      await this.cache.delByKey(CacheKeys.uploadMeta, publicId);
+    }
+    
     return result.result === 'ok';
   }
 
@@ -192,6 +203,10 @@ export class CloudinaryService implements OnModuleInit {
     });
     const deleted = Object.keys(result.deleted ?? {}).length;
     this.logger.debug(`Deleted ${deleted} resources with prefix "${prefix}"`);
+    
+    // Invalidate folder cache
+    await this.cache.delByPattern(CacheKeys.uploadFolderList);
+    
     return deleted;
   }
 
@@ -216,9 +231,17 @@ export class CloudinaryService implements OnModuleInit {
     publicId: string,
     resourceType: 'image' | 'raw' | 'video' = 'image',
   ) {
-    return cloudinary.api.resource(publicId, {
+    // Check cache first
+    const cached = await this.cache.getByKey(CacheKeys.uploadMeta, publicId);
+    if (cached) return cached;
+
+    const result = await cloudinary.api.resource(publicId, {
       resource_type: resourceType,
     });
+
+    // Cache the result
+    await this.cache.setByKey(CacheKeys.uploadMeta, result, publicId);
+    return result;
   }
 
   // ── List resources by folder ────────────────────────────────────────────────
@@ -234,13 +257,24 @@ export class CloudinaryService implements OnModuleInit {
       bytes: number;
     }>;
   }> {
+    // Check cache first
+    const cached = await this.cache.getByKey<{
+      resources: Array<{
+        publicId: string;
+        url: string;
+        format: string;
+        bytes: number;
+      }>;
+    }>(CacheKeys.uploadFolderList, folder);
+    if (cached) return cached;
+
     const result = await cloudinary.api.resources({
       type: 'upload',
       prefix: folder,
       max_results: maxResults,
     });
 
-    return {
+    const formatted = {
       resources: (result.resources ?? []).map(
         (r: {
           public_id: string;
@@ -255,6 +289,10 @@ export class CloudinaryService implements OnModuleInit {
         }),
       ),
     };
+
+    // Cache the result
+    await this.cache.setByKey(CacheKeys.uploadFolderList, formatted, folder);
+    return formatted;
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────

@@ -21,8 +21,11 @@ import { LeaveTypeModule } from './modules/leave-type/leave-type.module';
 import { AttendanceSettingsModule } from './modules/attendance-settings/attendance-settings.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
+import { FestivalBonusModule } from './modules/festival-bonus/festival-bonus.module';
+import { ProvidentFundModule } from './modules/provident-fund/provident-fund.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+
 
 @Module({
   imports: [
@@ -75,6 +78,8 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     AttendanceSettingsModule,
     AttendanceModule,
     AnnouncementsModule,
+    FestivalBonusModule,
+    ProvidentFundModule,
   ],
   providers: [
     {

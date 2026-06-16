@@ -24,4 +24,8 @@ export interface User {
 export * from "./org"
 export * from "./leave"
 export * from "./attendance"
+export * from "./festival-bonus"
+export * from "./provident-fund"
+
+
 
