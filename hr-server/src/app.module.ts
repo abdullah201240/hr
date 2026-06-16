@@ -18,6 +18,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { DesignationModule } from './modules/designation/designation.module';
 import { LeaveTypeModule } from './modules/leave-type/leave-type.module';
+import { LeaveApplicationModule } from './modules/leave-application/leave-application.module';
 import { AttendanceSettingsModule } from './modules/attendance-settings/attendance-settings.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
@@ -75,6 +76,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     DepartmentModule,
     DesignationModule,
     LeaveTypeModule,
+    LeaveApplicationModule,
     AttendanceSettingsModule,
     AttendanceModule,
     AnnouncementsModule,

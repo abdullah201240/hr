@@ -69,3 +69,62 @@ export interface UpdateLeaveTypePayload {
   eligibility?: string | null;
   isActive?: boolean;
 }
+
+export interface Attachment {
+  id: string;
+  title: string;
+  fileName: string;
+  fileUrl: string;
+}
+
+export interface LeaveApplication {
+  id: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  attachments: Attachment[];
+  createdAt: string;
+  employeeName: string;
+  employeeEmail: string;
+  employeeIdCode: string;
+  leaveTypeName: string;
+  leaveTypeId: string;
+  rejectionReason: string | null;
+}
+
+export interface LeaveBalance {
+  id: string;
+  key: string;
+  label: string;
+  color: string;
+  icon: string;
+  total: number;
+  used: number;
+  requiresDocument?: boolean;
+}
+
+export interface CreateLeaveApplicationPayload {
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  attachments?: Attachment[];
+}
+
+export interface UpdateLeaveApplicationStatusPayload {
+  status: 'Approved' | 'Rejected';
+  rejectionReason?: string;
+}
+
+export interface LeaveApplicationQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'Pending' | 'Approved' | 'Rejected';
+  employeeId?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+

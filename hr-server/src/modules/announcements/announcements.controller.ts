@@ -7,10 +7,11 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AnnouncementsService } from './announcements.service';
-import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto/announcement.dto';
+import { CreateAnnouncementDto, UpdateAnnouncementDto, AnnouncementQueryDto } from './dto/announcement.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Announcements')
@@ -21,10 +22,14 @@ export class AnnouncementsController {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all announcements' })
-  @ApiResponse({ status: 200, description: 'Return all announcements.' })
-  findAll() {
-    return this.announcementsService.findAll();
+  @ApiOperation({ summary: 'Get all announcements (cursor-based pagination)' })
+  @ApiQuery({ name: 'cursor', required: false, description: 'Base64 encoded cursor for pagination' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 20)' })
+  @ApiQuery({ name: 'status', required: false, enum: ['Published', 'Draft', 'all'], description: 'Filter by status' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by title, content, or author' })
+  @ApiResponse({ status: 200, description: 'Return paginated announcements.' })
+  findAll(@Query() query: AnnouncementQueryDto) {
+    return this.announcementsService.findAllCursor(query);
   }
 
   @Get(':id')

@@ -1,8 +1,9 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DB_CONNECTION, type Database } from '../../db';
 import { announcements } from '../../db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto/announcement.dto';
+import { eq, desc, and, like, or, lt } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
+import { CreateAnnouncementDto, UpdateAnnouncementDto, AnnouncementQueryDto, AnnouncementCursorPage } from './dto/announcement.dto';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
 
@@ -12,6 +13,109 @@ export class AnnouncementsService {
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly cache: CacheService,
   ) {}
+
+  // ─── Cursor-based pagination ─────────────────────────────────────────────
+
+  async findAllCursor(query: AnnouncementQueryDto): Promise<AnnouncementCursorPage> {
+    const { cursor, limit = 20, status = 'all', search } = query;
+
+    // Decode cursor if provided
+    let cursorDate: Date | null = null;
+    let cursorId: string | null = null;
+    if (cursor) {
+      try {
+        const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+        const [timestamp, id] = decoded.split(':');
+        cursorDate = new Date(parseInt(timestamp, 10));
+        cursorId = id;
+      } catch {
+        // Invalid cursor, ignore
+      }
+    }
+
+    // Build cache key from query params
+    const cacheKeyParts = `${cursor || ''}:${limit}:${status}:${search || ''}`;
+    const cached = await this.cache.getByKey<AnnouncementCursorPage>(
+      CacheKeys.announcementCursorPage,
+      cacheKeyParts,
+    );
+    if (cached) return cached;
+
+    // Build conditions
+    const conditions = [];
+
+    // Status filter
+    if (status !== 'all') {
+      conditions.push(eq(announcements.status, status));
+    }
+
+    // Search filter
+    if (search) {
+      conditions.push(
+        or(
+          like(announcements.title, `%${search}%`),
+          like(announcements.content, `%${search}%`),
+          like(announcements.authorName, `%${search}%`),
+        )!,
+      );
+    }
+
+    // Cursor filter (get items AFTER the cursor)
+    if (cursorDate && cursorId) {
+      const cursorDateStr = cursorDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      conditions.push(
+        or(
+          lt(announcements.date, cursorDateStr),
+          and(
+            eq(announcements.date, cursorDateStr),
+            lt(announcements.id, cursorId),
+          ),
+        )!,
+      );
+    }
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Fetch limit + 1 to determine if there's a next page
+    const results = await this.db
+      .select()
+      .from(announcements)
+      .where(where)
+      .orderBy(desc(announcements.date), desc(announcements.createdAt))
+      .limit(limit + 1);
+
+    // Determine if there's a next page
+    const hasNextPage = results.length > limit;
+    const data = results.slice(0, limit);
+
+    // Generate next cursor from last item
+    let nextCursor: string | null = null;
+    if (hasNextPage && data.length > 0) {
+      const lastItem = data[data.length - 1];
+      const lastDate = new Date(lastItem.date);
+      const cursorValue = `${lastDate.getTime()}:${lastItem.id}`;
+      nextCursor = Buffer.from(cursorValue).toString('base64');
+    }
+
+    // Format dates
+    const formatted = data.map(ann => ({
+      ...ann,
+      date: new Date(ann.date).toISOString().split('T')[0],
+    }));
+
+    const page: AnnouncementCursorPage = {
+      data: formatted,
+      nextCursor,
+      hasNextPage,
+      limit,
+    };
+
+    // Cache the page
+    await this.cache.setByKey(CacheKeys.announcementCursorPage, page, cacheKeyParts);
+    return page;
+  }
+
+  // ─── Legacy method (keep for backward compatibility) ──────────────────────
 
   async findAll() {
     const cached = await this.cache.getByKey(CacheKeys.announcementList);

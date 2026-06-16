@@ -11,7 +11,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow,  
 } from "@/components/ui/table"
 import {
   Dialog,
@@ -63,7 +63,7 @@ import type { FestivalBonusRule } from "@/types"
 interface SalaryComponent {
   id: string
   name: string
-  type: "earning" | "deduction"
+  type: "earning"
   category: string
   amount: number
   percentage?: number
@@ -79,7 +79,6 @@ interface SalaryTemplate {
   basicSalary: number
   components: SalaryComponent[]
   totalEarnings: number
-  totalDeductions: number
   netSalary: number
 }
 
@@ -145,38 +144,6 @@ const defaultComponents: SalaryComponent[] = [
     isFixed: true,
     icon: "BookOpen",
     description: "Education support allowance"
-  },
-  {
-    id: "provident_fund",
-    name: "Provident Fund",
-    type: "deduction",
-    category: "Statutory",
-    amount: 5000,
-    percentage: 10,
-    isFixed: false,
-    icon: "TrendingUp",
-    description: "10% of basic salary"
-  },
-  {
-    id: "tax",
-    name: "Income Tax",
-    type: "deduction",
-    category: "Statutory",
-    amount: 7500,
-    percentage: 15,
-    isFixed: false,
-    icon: "Calculator",
-    description: "15% of basic salary"
-  },
-  {
-    id: "professional_tax",
-    name: "Professional Tax",
-    type: "deduction",
-    category: "Statutory",
-    amount: 200,
-    isFixed: true,
-    icon: "Coffee",
-    description: "State professional tax"
   }
 ]
 
@@ -187,9 +154,8 @@ const initialTemplates: SalaryTemplate[] = [
     grade: "L3",
     basicSalary: 50000,
     components: defaultComponents,
-    totalEarnings: 95000,
-    totalDeductions: 12700,
-    netSalary: 82300
+    totalEarnings: 105000,
+    netSalary: 105000
   }
 ]
 
@@ -367,14 +333,9 @@ export function SalarySetup() {
   }
 
   const totalEarnings = currentTemplate.components
-    .filter(c => c.type === "earning")
     .reduce((sum, c) => sum + getComponentAmount(c), 0)
 
-  const totalDeductions = currentTemplate.components
-    .filter(c => c.type === "deduction")
-    .reduce((sum, c) => sum + getComponentAmount(c), 0)
-
-  const netSalary = totalEarnings - totalDeductions
+  const netSalary = totalEarnings
 
   return (
     <div className="space-y-6">
@@ -458,7 +419,6 @@ export function SalarySetup() {
                           <TableHead>Category</TableHead>
                           <TableHead>Rule / Formula</TableHead>
                           <TableHead>Calculated Value</TableHead>
-                          <TableHead>Type</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -492,14 +452,6 @@ export function SalarySetup() {
                               <TableCell className="font-semibold text-emerald-600">
                                 ৳{amt.toLocaleString()}
                               </TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant={component.isFixed ? "default" : "secondary"}
-                                  className="text-[10px]"
-                                >
-                                  {component.isFixed ? "Fixed" : "Formula"}
-                                </Badge>
-                              </TableCell>
                               <TableCell className="text-right">
                                 <Button
                                   variant="ghost"
@@ -516,9 +468,9 @@ export function SalarySetup() {
                           )
                         })}
                         <TableRow className="bg-emerald-500/5 font-semibold">
-                          <TableCell colSpan={3}>Total Earnings</TableCell>
+                          <TableCell colSpan={3}>Total Gross Salary</TableCell>
                           <TableCell className="text-emerald-600">৳{totalEarnings.toLocaleString()}</TableCell>
-                          <TableCell colSpan={2}></TableCell>
+                          <TableCell></TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -529,8 +481,8 @@ export function SalarySetup() {
                 <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Net Monthly Salary</p>
-                      <p className="text-xs text-muted-foreground mt-1">Take-home pay after deductions</p>
+                      <p className="text-sm font-medium text-muted-foreground">Gross Monthly Salary</p>
+                      <p className="text-xs text-muted-foreground mt-1">Total salary before any deductions</p>
                     </div>
                     <div className="text-right">
                       <p className="text-3xl font-bold text-blue-600">৳{netSalary.toLocaleString()}</p>
@@ -942,12 +894,10 @@ function SalaryTemplateForm({
         }
       ],
       totalEarnings: 50000,
-      totalDeductions: 0,
       netSalary: 50000
     }
   )
   const [showAddComponent, setShowAddComponent] = useState(false)
-  const [newComponentType, setNewComponentType] = useState<"earning" | "deduction">("earning")
 
   const presetComponents = [
     { id: "basic", name: "Basic Salary", category: "Fixed", icon: "CircleDollarSign" },
@@ -956,9 +906,6 @@ function SalaryTemplateForm({
     { id: "conveyance", name: "Conveyance Allowance", category: "Allowance", icon: "Bus" },
     { id: "special", name: "Special Allowance", category: "Allowance", icon: "Gift" },
     { id: "education", name: "Education Allowance", category: "Allowance", icon: "BookOpen" },
-    { id: "provident_fund", name: "Provident Fund", category: "Statutory", icon: "TrendingUp" },
-    { id: "tax", name: "Income Tax", category: "Statutory", icon: "Calculator" },
-    { id: "professional_tax", name: "Professional Tax", category: "Statutory", icon: "Coffee" },
     { id: "health_insurance", name: "Health Insurance", category: "Benefits", icon: "HeartPulse" },
     { id: "bonus", name: "Performance Bonus", category: "Variable", icon: "Gift" },
     { id: "others", name: "Others", category: "Other", icon: "CircleDollarSign" },
@@ -975,22 +922,21 @@ function SalaryTemplateForm({
       if (comp.isFixed) return comp.amount
       return Math.round((basic * (comp.percentage || 0)) / 100)
     }
-    const earnings = components.filter(c => c.type === "earning").reduce((sum, c) => sum + getCompAmt(c), 0)
-    const deductions = components.filter(c => c.type === "deduction").reduce((sum, c) => sum + getCompAmt(c), 0)
-    return { earnings, deductions, net: earnings - deductions }
+    const earnings = components.reduce((sum, c) => sum + getCompAmt(c), 0)
+    return { earnings, net: earnings }
   }
 
   const handleAddComponent = (presetId: string) => {
     const preset = presetComponents.find(p => p.id === presetId)
     if (!preset) return
 
-    const isPercentageBased = ["house_rent", "medical", "provident_fund", "tax"].includes(preset.id)
-    const defaultPercentage = preset.id === "house_rent" ? 50 : preset.id === "medical" ? 20 : preset.id === "provident_fund" ? 10 : preset.id === "tax" ? 15 : undefined
+    const isPercentageBased = ["house_rent", "medical"].includes(preset.id)
+    const defaultPercentage = preset.id === "house_rent" ? 50 : preset.id === "medical" ? 20 : undefined
     
     const newComponent: SalaryComponent = {
       id: preset.id,
       name: preset.name,
-      type: newComponentType,
+      type: "earning" as const,
       category: preset.category,
       amount: isPercentageBased ? 0 : 3000,
       percentage: defaultPercentage,
@@ -1027,7 +973,6 @@ function SalaryTemplateForm({
     onSave({
       ...formData,
       totalEarnings: totals.earnings,
-      totalDeductions: totals.deductions,
       netSalary: totals.net
     })
   }
@@ -1098,29 +1043,10 @@ function SalaryTemplateForm({
         {showAddComponent && (
           <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
             <CardHeader>
-              <CardTitle className="text-sm">Select Component Type</CardTitle>
-              <CardDescription className="text-xs">Choose a component to add to this template</CardDescription>
+              <CardTitle className="text-sm">Select Component to Add</CardTitle>
+              <CardDescription className="text-xs">Choose an earning component to add to this template</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button
-                  variant={newComponentType === "earning" ? "default" : "outline"}
-                  onClick={() => setNewComponentType("earning")}
-                  className="w-full justify-start gap-2"
-                >
-                  <TrendingUp className="h-4 w-4" />
-                  Earning
-                </Button>
-                <Button
-                  variant={newComponentType === "deduction" ? "default" : "outline"}
-                  onClick={() => setNewComponentType("deduction")}
-                  className="w-full justify-start gap-2"
-                >
-                  <Calculator className="h-4 w-4" />
-                  Deduction
-                </Button>
-              </div>
-              
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {availablePresets.map((preset) => (
                   <Button
@@ -1171,9 +1097,6 @@ function SalaryTemplateForm({
             <div key={component.id} className="rounded-lg border border-border p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Badge variant={component.type === "earning" ? "default" : "destructive"} className="text-[10px]">
-                    {component.type === "earning" ? "Earning" : "Deduction"}
-                  </Badge>
                   <span className="text-sm font-medium">{component.name}</span>
                   <Badge variant="outline" className="text-xs">{component.category}</Badge>
                 </div>
@@ -1253,18 +1176,9 @@ function SalaryTemplateForm({
 
         {/* Summary */}
         <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Total Earnings:</span>
-            <span className="font-semibold text-emerald-600">৳{totals.earnings.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Total Deductions:</span>
-            <span className="font-semibold text-red-600">৳{totals.deductions.toLocaleString()}</span>
-          </div>
-          <Separator />
           <div className="flex justify-between">
-            <span className="font-semibold">Net Salary:</span>
-            <span className="font-bold text-blue-600 text-lg">৳{totals.net.toLocaleString()}</span>
+            <span className="font-semibold">Gross Salary:</span>
+            <span className="font-bold text-emerald-600 text-lg">৳{totals.earnings.toLocaleString()}</span>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,10 +38,12 @@ import {
   Calendar,
   User,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { z } from "zod"
 import {
-  useAnnouncements,
+  useAnnouncementsPaginated,
   useCreateAnnouncement,
   useUpdateAnnouncement,
   useDeleteAnnouncement,
@@ -58,13 +60,45 @@ const announcementSchema = z.object({
 
 export default function AnnouncementsPage() {
   const { user } = useAuthStore()
-  const { data: announcements = [], isLoading } = useAnnouncements()
+  
+  // Pagination state
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [cursorHistory, setCursorHistory] = useState<string[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [limit] = useState(20)
+  
+  // Filter state
+  const [search, setSearch] = useState("")
+  const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setCursor(null) // Reset cursor when search changes
+      setCursorHistory([])
+      setCurrentPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+  
+  // Fetch paginated announcements
+  const { data: pageData, isLoading } = useAnnouncementsPaginated({
+    cursor: cursor || undefined,
+    limit,
+    status: selectedStatus as any,
+    search: debouncedSearch || undefined,
+  })
+  
+  const announcements = pageData?.data || []
+  const hasNextPage = pageData?.hasNextPage || false
+  const nextCursor = pageData?.nextCursor || null
+  
+  // Mutations
   const createMutation = useCreateAnnouncement()
   const updateMutation = useUpdateAnnouncement()
   const deleteMutation = useDeleteAnnouncement()
-
-  const [search, setSearch] = useState("")
-  const [selectedStatus, setSelectedStatus] = useState<string>("all")
   
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -205,15 +239,23 @@ export default function AnnouncementsPage() {
     }
   }
 
-  const filteredAnnouncements = announcements.filter((ann: any) => {
-    const searchLower = search.toLowerCase()
-    const matchesSearch =
-      ann.title.toLowerCase().includes(searchLower) ||
-      ann.content.toLowerCase().includes(searchLower) ||
-      (ann.author && ann.author.toLowerCase().includes(searchLower))
-    const matchesStatus = selectedStatus === "all" || ann.status === selectedStatus
-    return matchesSearch && matchesStatus
-  })
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (nextCursor) {
+      setCursorHistory([...cursorHistory, cursor || ''])
+      setCursor(nextCursor)
+      setCurrentPage(prev => prev + 1)
+    }
+  }
+
+  const handlePrevPage = () => {
+    if (cursorHistory.length > 0) {
+      const prevCursor = cursorHistory[cursorHistory.length - 1]
+      setCursorHistory(cursorHistory.slice(0, -1))
+      setCursor(prevCursor || null)
+      setCurrentPage(prev => prev - 1)
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -283,8 +325,8 @@ export default function AnnouncementsPage() {
                       <p className="text-sm font-semibold">Loading announcements...</p>
                     </TableCell>
                   </TableRow>
-                ) : filteredAnnouncements.length > 0 ? (
-                  filteredAnnouncements.map((ann: any) => {
+                ) : announcements.length > 0 ? (
+                  announcements.map((ann: any) => {
                     return (
                       <TableRow key={ann.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
@@ -346,6 +388,42 @@ export default function AnnouncementsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      {announcements.length > 0 && (
+        <Card className="shadow-none border-border/40">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{announcements.length}</span> results
+                {cursorHistory.length > 0 && ` (Page ${currentPage})`}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={cursorHistory.length === 0}
+                  className="text-xs gap-1"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={!hasNextPage}
+                  className="text-xs gap-1"
+                >
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Form Dialog for Create/Edit */}
       <Dialog open={isFormOpen} onOpenChange={(val) => {

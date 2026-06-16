@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { AttendanceCalendar } from "@/components/dashboard/attendance-calendar"
 import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
@@ -6,9 +6,6 @@ import { MyTasksCard } from "@/components/dashboard/my-tasks-card"
 import { AnnouncementsCard } from "@/components/dashboard/announcements-card"
 import type {
   AttendanceRecord,
-  LeaveApplication,
-  LeaveBalance,
-  SetupHoliday,
 } from "@/components/dashboard/types"
 import {
   DEFAULT_LEAVE_BALANCES,
@@ -16,16 +13,25 @@ import {
   resolveLeaveIcon,
 } from "@/components/dashboard/types"
 import { useMyAttendanceQuery } from "@/hooks/useAttendance"
-import { useAnnouncements } from "@/hooks/useAnnouncements"
-import { useAttendanceSettingsQuery } from "@/hooks/useAttendanceSettings"
+import { useAnnouncementsPaginated } from "@/hooks/useAnnouncements"
+import { useAttendanceSettingsQuery, useHolidaysQuery } from "@/hooks/useAttendanceSettings"
+import {
+  useLeaveApplicationsQuery,
+  useLeaveBalancesQuery,
+  useApplyLeaveMutation,
+  useCancelLeaveMutation,
+} from "@/hooks/useLeaveApplications"
+import { useAuthStore } from "@/store/useAuthStore"
+import Swal from "sweetalert2"
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  // ── Announcements ──────────────────────────────────────────────────────────
-  const { data: allAnnouncements = [] } = useAnnouncements()
-  const announcements = useMemo(() => {
-    return allAnnouncements.filter((a: any) => a.status === "Published")
-  }, [allAnnouncements])
+  // ── Announcements (fetch only published, limit to 10 for dashboard) ──────────────────────────────────
+  const { data: announcementsPage } = useAnnouncementsPaginated({
+    limit: 10,
+    status: 'Published',
+  })
+  const announcements = announcementsPage?.data || []
 
   // ── Tasks ──────────────────────────────────────────────────────────────────
   const [tasks, setTasks] = useState(INITIAL_TASKS)
@@ -41,133 +47,175 @@ export default function DashboardPage() {
   // ── Dialog State ───────────────────────────────────────────────────────────
   const [isDayDetailOpen, setIsDayDetailOpen] = useState(false)
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
-  const [leaveType, setLeaveType] = useState("casual")
 
   // ── Drag & Drop ────────────────────────────────────────────────────────────
   const [dragOverDay, setDragOverDay] = useState<number | null>(null)
 
-  // ── Leave Applications ─────────────────────────────────────────────────────
-  const [leaveApplications, setLeaveApplications] = useState<LeaveApplication[]>(() => {
-    const saved = localStorage.getItem("hr_leave_applications")
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { console.error(e) }
-    }
-    return [
-      { id: "default-leave-1", startDay: 15, endDay: 15, leaveType: "casual", reason: "Personal family matter", attachments: [], status: "approved" }
-    ]
-  })
+  // ── Leave Applications & Balances (Dynamic from API) ───────────────────────
+  const { user } = useAuthStore()
 
-  // ── Leave Balances ─────────────────────────────────────────────────────────
-  const [balances, setBalances] = useState<LeaveBalance[]>(() => {
-    const saved = localStorage.getItem("hr_leave_balances")
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        const savedKeys = new Set(parsed.map((b: any) => b.key))
-        const requiredKeys = ["annual", "sick", "casual", "late", "travel", "movement", "emergency", "unpaid"]
-        const hasAllKeys = requiredKeys.every(k => savedKeys.has(k))
-        if (hasAllKeys) {
-          return parsed.map((b: any) => ({ ...b, icon: resolveLeaveIcon(b.key) }))
-        }
-        localStorage.removeItem("hr_leave_balances")
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return DEFAULT_LEAVE_BALANCES
+  const { data: leaveApplicationsData } = useLeaveApplicationsQuery({
+    employeeId: user?.id,
+    limit: 100,
   })
+  const leaveApplications = leaveApplicationsData?.data || []
+
+  const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear)
+
+  const balances = useMemo(() => {
+    const normalized = dbBalances && dbBalances.length > 0
+      ? dbBalances.map(b => ({
+          id: b.id,
+          key: b.key,
+          label: b.label,
+          total: b.total,
+          used: b.used,
+          color: b.color || "bg-sky-500",
+          icon: b.icon || "coffee",
+          requiresDocument: b.requiresDocument
+        }))
+      : DEFAULT_LEAVE_BALANCES.map(db => ({
+          id: db.key,
+          key: db.key,
+          label: db.label,
+          total: db.total,
+          used: db.used,
+          color: db.color,
+          icon: db.key,
+          requiresDocument: false
+        }))
+
+    return normalized.map(item => {
+      const resolvedIcon = resolveLeaveIcon(item.icon)
+
+      return {
+        id: item.id,
+        label: item.label,
+        used: item.used,
+        total: item.total,
+        color: item.color,
+        light: item.color.replace("bg-", "text-"),
+        icon: resolvedIcon,
+        key: item.key,
+        requiresDocument: item.requiresDocument
+      }
+    })
+  }, [dbBalances])
 
   // ── Real-Time Attendance Query ────────────────────────────────────────────
   const { data: dbLogs = [] } = useMyAttendanceQuery(calYear, calMonth)
   const { data: settings } = useAttendanceSettingsQuery()
+  const { data: holidaysData = [] } = useHolidaysQuery()
 
   // ── Holiday Settings ───────────────────────────────────────────────────────
-  const [weeklyHolidays, setWeeklyHolidays] = useState<string[]>(["Saturday", "Sunday"])
-  const [regularHolidays, setRegularHolidays] = useState<SetupHoliday[]>([
-    { id: "default-1", name: "National Holiday - Independence Celebration", startDay: 18, endDay: 18 }
-  ])
+  const weeklyHolidays = useMemo(() => settings?.weeklyHolidays || ["Saturday", "Sunday"], [settings])
+  const regularHolidays = useMemo(() => holidaysData, [holidaysData])
 
-  useEffect(() => {
-    if (settings?.weeklyHolidays) {
-      setWeeklyHolidays(settings.weeklyHolidays)
-    } else {
-      const savedWeekly = localStorage.getItem("hr_weekly_holidays")
-      if (savedWeekly) {
-        try { setWeeklyHolidays(JSON.parse(savedWeekly)) } catch (e) { console.error(e) }
-      }
-    }
-    const savedRegular = localStorage.getItem("hr_regular_holidays")
-    if (savedRegular) {
-      try { setRegularHolidays(JSON.parse(savedRegular)) } catch (e) { console.error(e) }
-    }
-  }, [settings])
+  // ── Apply/Cancel Leave Handlers ───────────────────────────────────────────
+  const applyLeaveMutation = useApplyLeaveMutation()
+  const cancelLeaveMutation = useCancelLeaveMutation()
 
-  // ── Apply Leave Handler ────────────────────────────────────────────────────
   const handleApplyLeave = (data: {
-    startDay: number; endDay: number; leaveType: string; reason: string;
-    attachments: { id: string; title: string; fileName: string }[]
+    leaveTypeId: string;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    attachments: any[];
   }) => {
-    const duration = data.endDay - data.startDay + 1
-    if (duration <= 0) return
-
-    const newApp: LeaveApplication = {
-      id: Math.random().toString(36).substring(2, 9),
-      startDay: data.startDay,
-      endDay: data.endDay,
-      leaveType: data.leaveType,
-      reason: data.reason,
-      attachments: data.attachments,
-      status: "approved"
-    }
-
-    const updatedApps = [...leaveApplications, newApp]
-    const updatedBalances = balances.map(b =>
-      b.key === data.leaveType ? { ...b, used: b.used + duration } : b
+    applyLeaveMutation.mutate(
+      {
+        leaveTypeId: data.leaveTypeId,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        reason: data.reason,
+        attachments: data.attachments,
+      },
+      {
+        onSuccess: () => {
+          setIsLeaveDialogOpen(false)
+          Swal.fire({
+            title: "Applied!",
+            text: "Your leave application has been submitted successfully.",
+            icon: "success",
+            confirmButtonText: "Ok",
+          })
+        },
+        onError: (err: any) => {
+          Swal.fire({
+            title: "Failed to Apply",
+            text: err?.response?.data?.message || err?.message || "Something went wrong.",
+            icon: "error",
+            confirmButtonText: "Ok",
+          })
+        },
+      }
     )
-    const serializableBalances = updatedBalances.map(({ icon, ...rest }) => rest)
-
-    setLeaveApplications(updatedApps)
-    setBalances(updatedBalances)
-    localStorage.setItem("hr_leave_applications", JSON.stringify(updatedApps))
-    localStorage.setItem("hr_leave_balances", JSON.stringify(serializableBalances))
-    setIsLeaveDialogOpen(false)
   }
 
-  // ── Cancel Leave Handler ───────────────────────────────────────────────────
   const handleCancelLeaveById = (id: string) => {
-    const appToCancel = leaveApplications.find(la => la.id === id)
-    if (!appToCancel) return
-
-    const duration = appToCancel.endDay - appToCancel.startDay + 1
-    const updatedApps = leaveApplications.filter(la => la.id !== id)
-    const updatedBalances = balances.map(b =>
-      b.key === appToCancel.leaveType ? { ...b, used: Math.max(0, b.used - duration) } : b
-    )
-    const serializableBalances = updatedBalances.map(({ icon, ...rest }) => rest)
-
-    setLeaveApplications(updatedApps)
-    setBalances(updatedBalances)
-    localStorage.setItem("hr_leave_applications", JSON.stringify(updatedApps))
-    localStorage.setItem("hr_leave_balances", JSON.stringify(serializableBalances))
+    Swal.fire({
+      title: "Cancel Leave?",
+      text: "Are you sure you want to cancel this leave application?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, cancel it",
+      cancelButtonText: "No",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        cancelLeaveMutation.mutate(id, {
+          onSuccess: () => {
+            Swal.fire({
+              title: "Cancelled!",
+              text: "Leave application cancelled.",
+              icon: "info",
+            })
+          },
+          onError: (err: any) => {
+            Swal.fire({
+              title: "Cancel Failed",
+              text: err?.response?.data?.message || err?.message || "Something went wrong.",
+              icon: "error",
+            })
+          }
+        })
+      }
+    })
   }
+
+  // Map API leave applications to format expected by internal components
+  const mappedLeaveApplications = useMemo(() => {
+    return leaveApplications.map((la) => {
+      const start = new Date(la.startDate)
+      const end = new Date(la.endDate)
+      return {
+        id: la.id,
+        startDay: start.getFullYear() === calYear && start.getMonth() === calMonth ? start.getDate() : 1,
+        endDay: end.getFullYear() === calYear && end.getMonth() === calMonth ? end.getDate() : 31,
+        leaveType: la.leaveTypeName.toLowerCase().replace(" leave", "").replace(" ", ""),
+        reason: la.reason,
+        attachments: la.attachments,
+        status: la.status,
+      }
+    })
+  }, [leaveApplications, calYear, calMonth])
 
   // ── Computed Final Attendance (memoized to avoid recomputing every second) ─
   const finalAttendance = useMemo(() => dbLogs.map((record): AttendanceRecord => {
-    const matchingLeave = leaveApplications.find(la => record.day >= la.startDay && record.day <= la.endDay)
+    const matchingLeave = mappedLeaveApplications.find(la => record.day >= la.startDay && record.day <= la.endDay)
     if (matchingLeave) {
       const selectedTypeObj = balances.find(b => b.key === matchingLeave.leaveType)
       const typeLabel = selectedTypeObj?.label || "Leave"
       return {
         ...record,
         status: "leave" as const,
-        notes: `Approved ${typeLabel}: ${matchingLeave.reason}`,
-        attachments: matchingLeave.attachments
+        notes: `${matchingLeave.status} ${typeLabel}: ${matchingLeave.reason}`,
+        attachments: matchingLeave.attachments as any
       }
     }
 
     if (record.status === "upcoming") return record
 
-    const matchingRegularHoliday = regularHolidays.find(h => {
+    const matchingRegularHoliday = regularHolidays.find((h: any) => {
       if (h.startDate && h.endDate) {
         const recordDate = new Date(calYear, calMonth, record.day)
         const start = new Date(h.startDate)
@@ -219,13 +267,12 @@ export default function DashboardPage() {
             selectedDayNumber={selectedDayNumber}
             onSelectDay={setSelectedDayNumber}
             onOpenDayDetail={() => setIsDayDetailOpen(true)}
-            onOpenLeaveDialog={(day, type) => {
+            onOpenLeaveDialog={(day) => {
               setSelectedDayNumber(day)
-              if (type) setLeaveType(type)
               setIsLeaveDialogOpen(true)
             }}
             finalAttendance={finalAttendance}
-            leaveApplications={leaveApplications}
+            leaveApplications={mappedLeaveApplications as any}
             balances={balances}
             dragOverDay={dragOverDay}
             onDragOver={setDragOverDay}
@@ -237,9 +284,7 @@ export default function DashboardPage() {
         <ApplyLeaveDialog
           open={isLeaveDialogOpen}
           onOpenChange={setIsLeaveDialogOpen}
-          selectedDayNumber={selectedDayNumber}
-          leaveType={leaveType}
-          onLeaveTypeChange={setLeaveType}
+          selectedDate={`${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(selectedDayNumber).padStart(2, "0")}`}
           balances={balances}
           onSubmit={handleApplyLeave}
         />
@@ -250,7 +295,7 @@ export default function DashboardPage() {
           onOpenChange={setIsDayDetailOpen}
           selectedDayNumber={selectedDayNumber}
           record={selectedRecord}
-          leaveApplications={leaveApplications}
+          leaveApplications={mappedLeaveApplications as any}
           balances={balances}
           onCancelLeave={handleCancelLeaveById}
           onApplyLeave={() => setIsLeaveDialogOpen(true)}

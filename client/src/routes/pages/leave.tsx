@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,113 +24,112 @@ import {
   AlertCircle,
   Search,
   Filter,
+  Loader2,
+  Download,
 } from "lucide-react"
 import Swal from "sweetalert2"
-
-interface LeaveRequest {
-  id: string
-  name: string
-  email: string
-  type: string
-  from: string
-  to: string
-  days: number
-  reason: string
-  status: "Pending" | "Approved" | "Rejected"
-  appliedDate: string
-  attachments?: { id: string; title: string; fileName: string }[]
-}
-
-const INITIAL_REQUESTS: LeaveRequest[] = [
-  { id: "req-1", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", type: "Vacation", from: "2026-06-15", to: "2026-06-17", days: 3, reason: "Family trip out of town", status: "Pending", appliedDate: "2026-06-10", attachments: [{ id: "att-1", title: "Flight Tickets", fileName: "flight_booking_pdf_1.pdf" }] },
-  { id: "req-2", name: "David Kim", email: "david.k@sadoshima.com", type: "Sick Leave", from: "2026-06-10", to: "2026-06-12", days: 3, reason: "Severe flu and recovery", status: "Approved", appliedDate: "2026-06-08", attachments: [{ id: "att-2", title: "Doctor Certificate", fileName: "medical_report_june.png" }] },
-  { id: "req-3", name: "Marcus Brown", email: "marcus.b@sadoshima.com", type: "Personal Leave", from: "2026-06-20", to: "2026-06-20", days: 1, reason: "Bank and registration appointments", status: "Pending", appliedDate: "2026-06-12" },
-  { id: "req-4", name: "Emily Zhang", email: "emily.z@sadoshima.com", type: "Vacation", from: "2026-06-25", to: "2026-06-30", days: 5, reason: "Summer vacation plans", status: "Pending", appliedDate: "2026-06-11" },
-  { id: "req-5", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", type: "Maternity Leave", from: "2026-07-01", to: "2026-09-28", days: 90, reason: "Maternity and post-natal care", status: "Approved", appliedDate: "2026-05-15", attachments: [{ id: "att-3", title: "Hospital Admittance", fileName: "maternity_notice.pdf" }] },
-]
+import {
+  useLeaveApplicationsQuery,
+  useApproveLeaveMutation,
+  useRejectLeaveMutation,
+} from "@/hooks/useLeaveApplications"
 
 export default function LeavePage() {
-  // Core State
-  const [requests, setRequests] = useState<LeaveRequest[]>([])
-  
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All")
 
-  // Load Initial Data
-  useEffect(() => {
-    const storedRequests = localStorage.getItem("hr_leave_requests")
-    if (storedRequests) {
-      try {
-        setRequests(JSON.parse(storedRequests))
-      } catch (e) {
-        setRequests(INITIAL_REQUESTS)
-      }
-    } else {
-      setRequests(INITIAL_REQUESTS)
-      localStorage.setItem("hr_leave_requests", JSON.stringify(INITIAL_REQUESTS))
-    }
-  }, [])
+  // API Queries & Mutations
+  const { data: listResponse, isLoading } = useLeaveApplicationsQuery({
+    limit: 1000, // Load all for complete sorting and stats
+  })
+  const requests = listResponse?.data || []
 
-  // Persist State Helper
-  const saveRequests = (updated: LeaveRequest[]) => {
-    setRequests(updated)
-    localStorage.setItem("hr_leave_requests", JSON.stringify(updated))
-  }
+  const approveMutation = useApproveLeaveMutation()
+  const rejectMutation = useRejectLeaveMutation()
 
   // Action Handlers
   const handleApprove = (id: string) => {
-    const updated = requests.map(req => req.id === id ? { ...req, status: "Approved" as const } : req)
-    saveRequests(updated)
-    Swal.fire({
-      title: "Approved!",
-      text: "The leave request has been approved successfully.",
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: { confirmButton: "swal2-confirm swal2-styled" }
-    })
+    approveMutation.mutate(
+      { id, payload: { status: "Approved" } },
+      {
+        onSuccess: () => {
+          Swal.fire({
+            title: "Approved!",
+            text: "The leave request has been approved successfully.",
+            icon: "success",
+            confirmButtonText: "Done",
+            buttonsStyling: false,
+            customClass: { confirmButton: "swal2-confirm swal2-styled px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-xs font-semibold" }
+          })
+        },
+        onError: (err: any) => {
+          Swal.fire({
+            title: "Failed to Approve",
+            text: err?.response?.data?.message || err?.message || "An error occurred.",
+            icon: "error",
+          })
+        }
+      }
+    )
   }
 
   const handleReject = (id: string) => {
     Swal.fire({
       title: "Reject Request?",
-      text: "Are you sure you want to reject this leave request?",
+      text: "Provide a reason to reject this leave request:",
       icon: "warning",
+      input: "text",
+      inputPlaceholder: "Reason for rejection...",
       showCancelButton: true,
       confirmButtonText: "Yes, reject it",
       cancelButtonText: "Cancel",
       buttonsStyling: false,
       customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white px-4 py-2 rounded-md mr-2",
-        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-md"
+        confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white px-4 py-2 rounded-md mr-2 text-xs font-semibold",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-md text-xs font-semibold"
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        const updated = requests.map(req => req.id === id ? { ...req, status: "Rejected" as const } : req)
-        saveRequests(updated)
-        Swal.fire({
-          title: "Rejected!",
-          text: "Leave request status updated to Rejected.",
-          icon: "info",
-          confirmButtonText: "Done",
-          buttonsStyling: false,
-          customClass: { confirmButton: "swal2-confirm swal2-styled" }
-        })
+        const rejectionReason = result.value || "No reason provided"
+        rejectMutation.mutate(
+          { id, payload: { status: "Rejected", rejectionReason } },
+          {
+            onSuccess: () => {
+              Swal.fire({
+                title: "Rejected!",
+                text: "Leave request status updated to Rejected.",
+                icon: "info",
+                confirmButtonText: "Done",
+                buttonsStyling: false,
+                customClass: { confirmButton: "swal2-confirm swal2-styled px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-md text-xs font-semibold" }
+              })
+            },
+            onError: (err: any) => {
+              Swal.fire({
+                title: "Failed to Reject",
+                text: err?.response?.data?.message || err?.message || "An error occurred.",
+                icon: "error",
+              })
+            }
+          }
+        )
       }
     })
   }
 
   // Filter & Search Logic
-  const filteredRequests = requests.filter(req => {
-    const matchesSearch =
-      req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.reason.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = statusFilter === "All" ? true : req.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const filteredRequests = useMemo(() => {
+    return requests.filter(req => {
+      const matchesSearch =
+        req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.leaveTypeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.reason.toLowerCase().includes(searchTerm.toLowerCase())
+      
+      const matchesStatus = statusFilter === "All" ? true : req.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [requests, searchTerm, statusFilter])
 
   // Counters (single-pass memoized)
   const counts = useMemo(() => {
@@ -151,7 +150,7 @@ export default function LeavePage() {
         </div>
       </div>
 
-      {/* KPI Cards section (Subtle styling, strictly borderless and shadowless) */}
+      {/* KPI Cards section */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
           <div className="space-y-1">
@@ -216,7 +215,12 @@ export default function LeavePage() {
 
         {/* Requests Table */}
         <div className="w-full overflow-x-auto bg-transparent">
-          {filteredRequests.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-2">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <p className="text-xs text-muted-foreground">Loading leave requests...</p>
+            </div>
+          ) : filteredRequests.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
               <CalendarOff className="h-8 w-8 text-muted-foreground/35 mx-auto mb-2" />
               <p className="text-sm font-semibold text-muted-foreground">No leave requests found</p>
@@ -240,19 +244,19 @@ export default function LeavePage() {
                   <TableRow key={req.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                     <TableCell className="py-3">
                       <div>
-                        <p className="font-semibold text-sm">{req.name}</p>
-                        <p className="text-xs text-muted-foreground">{req.email}</p>
+                        <p className="font-semibold text-sm">{req.employeeName}</p>
+                        <p className="text-xs text-muted-foreground">{req.employeeEmail}</p>
                       </div>
                     </TableCell>
                     <TableCell className="py-3">
                       <Badge variant="secondary" className="text-[10px] font-bold tracking-wide uppercase">
-                        {req.type}
+                        {req.leaveTypeName}
                       </Badge>
                     </TableCell>
                     <TableCell className="py-3">
                       <div className="text-xs">
                         <p className="font-semibold text-primary">
-                          {new Date(req.from).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — {new Date(req.to).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {new Date(req.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — {new Date(req.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                         <p className="text-muted-foreground text-[10px]">{req.days} {req.days === 1 ? "day" : "days"}</p>
                       </div>
@@ -264,14 +268,22 @@ export default function LeavePage() {
                       {req.attachments && req.attachments.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {req.attachments.map((att) => (
-                            <Badge
+                            <a
                               key={att.id}
-                              variant="outline"
-                              className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 max-w-[120px] truncate"
-                              title={`${att.title}: ${att.fileName}`}
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex"
                             >
-                              {att.title}
-                            </Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 max-w-[120px] truncate hover:bg-sky-500/10 cursor-pointer flex items-center gap-1"
+                                title={`Download: ${att.title}`}
+                              >
+                                <Download className="h-2 w-2" />
+                                {att.title}
+                              </Badge>
+                            </a>
                           ))}
                         </div>
                       ) : (
@@ -279,11 +291,18 @@ export default function LeavePage() {
                       )}
                     </TableCell>
                     <TableCell className="py-3">
-                      <Badge
-                        className={req.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : req.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
-                      >
-                        {req.status}
-                      </Badge>
+                      <div>
+                        <Badge
+                          className={req.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : req.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
+                        >
+                          {req.status}
+                        </Badge>
+                        {req.status === "Rejected" && req.rejectionReason && (
+                          <p className="text-[9px] text-rose-500 font-medium max-w-[120px] truncate" title={req.rejectionReason}>
+                            Reason: {req.rejectionReason}
+                          </p>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       {req.status === "Pending" ? (

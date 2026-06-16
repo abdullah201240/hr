@@ -1,7 +1,6 @@
 import { useMemo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { GripVertical } from "lucide-react"
-import { cn } from "@/lib/utils"
 import type { LeaveBalance } from "./types"
 
 interface LeaveBalanceChipsProps {
@@ -27,9 +26,8 @@ export function LeaveBalanceChips({ balances }: LeaveBalanceChipsProps) {
           {remainingTotal} / {totalDays} days left
         </Badge>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+      <div className="flex flex-wrap gap-2 w-full">
         {balances.map(b => {
-          const Icon = b.icon as any
           const remaining = b.total - b.used
           return (
             <div
@@ -39,10 +37,9 @@ export function LeaveBalanceChips({ balances }: LeaveBalanceChipsProps) {
                 e.dataTransfer.setData("leaveType", b.key)
                 e.dataTransfer.effectAllowed = "copy"
               }}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold cursor-grab active:cursor-grabbing border border-border/40 bg-background hover:bg-muted/30 transition-colors select-none"
+              className="flex-1 min-w-[140px] flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold cursor-grab active:cursor-grabbing border border-border/40 bg-background hover:bg-muted/30 transition-colors select-none"
             >
               <GripVertical className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-              <Icon className={cn("h-4 w-4 shrink-0", b.light)} />
               <span className="truncate">{b.label.replace(" Leave", "")}</span>
               <Badge variant="secondary" className="text-[10px] h-5 px-1.5 py-0 font-bold ml-auto shrink-0">
                 {remaining}/{b.total}

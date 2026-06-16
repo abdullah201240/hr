@@ -74,11 +74,11 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
         {/* Logo Section */}
         <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border/30 px-4">
           <Link to="/" onClick={onLinkClick} className="flex items-center gap-2.5 min-w-0">
-            <img src="/logo.png" alt="Sadoshima HR" className="h-8 w-8 shrink-0 rounded object-contain" />
+            <img src="/logo.jpeg" alt="Sadoshima HR" className="h-8 w-8 shrink-0 rounded object-contain" />
             {!collapsed && (
               <div className="flex flex-col overflow-hidden">
                 <span className="text-xs font-semibold text-sidebar-foreground truncate tracking-wide">
-                  Sadoshima HR
+                  ASG HR
                 </span>
                 <span className="text-[10px] text-muted-foreground truncate">
                   Management System

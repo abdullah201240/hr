@@ -4,8 +4,11 @@ import {
   IsNotEmpty,
   MaxLength,
   IsIn,
+  IsInt,
+  Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateAnnouncementDto {
   @ApiProperty()
@@ -75,4 +78,50 @@ export class UpdateAnnouncementDto {
   @IsString()
   @IsIn(['Published', 'Draft'])
   status?: string;
+}
+
+export class AnnouncementQueryDto {
+  @ApiPropertyOptional({
+    description: 'Cursor for pagination (base64 encoded timestamp:id)',
+    example: 'MTcwMDAwMDAwMDAwMDowMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDA=',
+  })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({
+    description: 'Number of items to return',
+    default: 20,
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  limit?: number = 20;
+
+  @ApiPropertyOptional({
+    description: 'Filter by status',
+    enum: ['Published', 'Draft', 'all'],
+    default: 'all',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Published', 'Draft', 'all'])
+  status?: string = 'all';
+
+  @ApiPropertyOptional({
+    description: 'Search by title, content, or author',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
+export interface AnnouncementCursorPage {
+  data: any[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  limit: number;
 }

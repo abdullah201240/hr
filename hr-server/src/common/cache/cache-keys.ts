@@ -181,11 +181,18 @@ export const CacheKeys = {
     description: 'Cached JWT user validation result',
   },
 
-  /** Announcement list */
+  /** Announcement list (legacy, non-paginated) */
   announcementList: {
     key: key('announcements:list'),
     ttl: 300, // 5 min
-    description: 'All announcements',
+    description: 'All announcements (legacy)',
+  },
+
+  /** Announcement paginated list (cursor-based) */
+  announcementCursorPage: {
+    key: key('announcements:cursor:*'), // cursor:limit:status:search
+    ttl: 300, // 5 min
+    description: 'Cursor-paginated announcements page',
   },
 
   /** Single announcement by ID */
@@ -235,6 +242,27 @@ export const CacheKeys = {
     key: key('provident-fund:settings'),
     ttl: 1800, // 30 min
     description: 'Provident fund configuration settings',
+  },
+
+  /** Leave applications list (paginated/filtered) */
+  leaveApplicationsList: {
+    key: key('leave:applications:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated and filtered leave applications list',
+  },
+
+  /** Single leave application by ID */
+  leaveApplicationById: {
+    key: key('leave:applications:id:*'),
+    ttl: 300, // 5 min
+    description: 'Single leave application details by ID',
+  },
+
+  /** Employee leave balances by year */
+  leaveBalances: {
+    key: key('leave:balances:*:*'), // employeeId:year
+    ttl: 300, // 5 min
+    description: 'Calculated leave balances for employee by year',
   },
 } as const;
 

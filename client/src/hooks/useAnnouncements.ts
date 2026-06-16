@@ -16,6 +16,13 @@ export interface Announcement {
   updatedAt?: string;
 }
 
+export interface AnnouncementPage {
+  data: Announcement[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
+  limit: number;
+}
+
 export type CreateAnnouncementData = {
   title: string;
   content: string;
@@ -27,7 +34,35 @@ export type CreateAnnouncementData = {
 }
 export type UpdateAnnouncementData = Partial<CreateAnnouncementData>;
 
+export type AnnouncementsQueryParams = {
+  cursor?: string;
+  limit?: number;
+  status?: 'Published' | 'Draft' | 'all';
+  search?: string;
+}
+
 // API calls
+const fetchAnnouncementsPaginated = async (params: AnnouncementsQueryParams = {}): Promise<AnnouncementPage> => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.cursor) queryParams.set('cursor', params.cursor);
+  if (params.limit) queryParams.set('limit', params.limit.toString());
+  if (params.status) queryParams.set('status', params.status);
+  if (params.search) queryParams.set('search', params.search);
+
+  const queryString = queryParams.toString();
+  const url = queryString ? `announcements?${queryString}` : 'announcements';
+  
+  const data = await api.get<AnnouncementPage>(url);
+  return {
+    ...data,
+    data: data.data.map(item => ({
+      ...item,
+      author: item.authorName || 'HR Admin'
+    }))
+  };
+};
+
 const fetchAnnouncements = async (): Promise<Announcement[]> => {
   const data = await api.get<any[]>('announcements');
   return data.map((item: any) => ({
@@ -58,6 +93,13 @@ export const useAnnouncements = () => {
   });
 };
 
+export const useAnnouncementsPaginated = (params: AnnouncementsQueryParams = {}) => {
+  return useQuery({
+    queryKey: ['announcements', 'paginated', params],
+    queryFn: () => fetchAnnouncementsPaginated(params),
+  });
+};
+
 export const useCreateAnnouncement = () => {
   const queryClient = useQueryClient();
 
@@ -65,6 +107,7 @@ export const useCreateAnnouncement = () => {
     mutationFn: createAnnouncement,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements', 'paginated'] });
     },
   });
 };
@@ -76,6 +119,7 @@ export const useUpdateAnnouncement = () => {
     mutationFn: updateAnnouncement,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements', 'paginated'] });
     },
   });
 };
@@ -87,6 +131,7 @@ export const useDeleteAnnouncement = () => {
     mutationFn: deleteAnnouncement,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['announcements', 'paginated'] });
     },
   });
 };
