@@ -75,8 +75,7 @@ function App() {
       <TooltipProvider>
         <BrowserRouter>
           <ErrorBoundary>
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
+            <Routes>
               {/* Public auth routes */}
               <Route element={<AuthLayout />}>
                 <Route path="/login" element={<LoginPage />} />
@@ -121,11 +120,10 @@ function App() {
               </Route>
 
               {/* Printable templates */}
-              <Route path="/recruitment/print/:candidateId" element={<PrintJoiningLetterPage />} />
-              <Route path="/recruitment/print-offer/:candidateId" element={<PrintOfferLetterPage />} />
-              <Route path="/letters/print/:id" element={<PrintHRLetterPage />} />
+              <Route path="/recruitment/print/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintJoiningLetterPage /></Suspense>} />
+              <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
+              <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />
             </Routes>
-          </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
         <Toaster />

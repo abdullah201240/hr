@@ -1,4 +1,6 @@
+import { Suspense } from "react"
 import { Outlet } from "react-router"
+import { Spinner } from "@/components/ui/spinner"
 
 export function AuthLayout() {
   return (
@@ -25,7 +27,13 @@ export function AuthLayout() {
 
         {/* Auth card */}
         <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
-          <Outlet />
+          <Suspense fallback={
+            <div className="flex justify-center items-center py-8">
+              <Spinner className="h-6 w-6 text-primary animate-spin" />
+            </div>
+          }>
+            <Outlet />
+          </Suspense>
         </div>
 
         {/* Footer */}

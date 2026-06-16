@@ -1272,6 +1272,8 @@ export default function AttendancePage() {
         open={isDayDetailOpen}
         onOpenChange={setIsDayDetailOpen}
         selectedDayNumber={selectedDayNumber}
+        calMonth={calMonth}
+        calYear={calYear}
         record={selectedRecord}
         leaveApplications={mappedLeaveApplications as any}
         balances={balances}

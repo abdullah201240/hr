@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Outlet } from "react-router"
 import { Sidebar } from "@/layouts/sidebar"
 import { Header } from "@/layouts/header"
@@ -6,6 +6,7 @@ import { Footer } from "@/layouts/footer"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { useTheme } from "@/hooks/use-theme"
 import { cn } from "@/lib/utils"
+import { PageSkeleton } from "@/components/common/page-skeleton"
 
 export function DashboardLayout() {
   const { sidebarSize, setSidebarSize } = useTheme()
@@ -57,7 +58,9 @@ export function DashboardLayout() {
 
         <main className="flex-1 p-3 pb-12 lg:p-5 lg:pb-14">
           <div className="mx-auto w-full">
-            <Outlet />
+            <Suspense fallback={<PageSkeleton />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
 

@@ -37,11 +37,21 @@ interface AuthState {
   initialize: () => Promise<void>;
 }
 
+const getInitialUser = (): UserProfile | null => {
+  const stored = localStorage.getItem("user");
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
+  user: getInitialUser(),
   accessToken: localStorage.getItem("access_token"),
   isAuthenticated: !!localStorage.getItem("access_token"),
-  isLoading: true,
+  isLoading: !!localStorage.getItem("access_token") && !localStorage.getItem("user"),
 
   login: async (email, password) => {
     set({ isLoading: true });
@@ -89,32 +99,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initialize: async () => {
-    const { user, accessToken } = get()
-
-    // Skip if already authenticated with fresh user data
-    if (user && accessToken) {
-      return
-    }
-
     const token = localStorage.getItem("access_token");
-    const storedUser = localStorage.getItem("user");
+    const storedUserStr = localStorage.getItem("user");
     
     if (!token) {
       set({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
       return;
     }
 
-    // Prefill with stored user if available for fast UI load
-    if (storedUser) {
+    let parsedUser = null;
+    if (storedUserStr) {
       try {
-        set({
-          user: JSON.parse(storedUser),
-          accessToken: token,
-          isAuthenticated: true,
-        });
+        parsedUser = JSON.parse(storedUserStr);
       } catch {
         // ignore JSON parse error
       }
+    }
+
+    const currentUser = get().user || parsedUser;
+
+    // Prefill state and immediately unblock UI if user details are present
+    if (token && currentUser) {
+      set({
+        user: currentUser,
+        accessToken: token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
     }
 
     try {
@@ -124,6 +135,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: profile,
         accessToken: token,
         isAuthenticated: true,
+        isLoading: false,
       });
     } catch (error: unknown) {
       const err = error as { status?: number };
