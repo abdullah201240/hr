@@ -7,7 +7,6 @@ import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
 import { useAuthStore } from "@/store/useAuthStore"
@@ -35,8 +34,6 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -46,8 +43,6 @@ export default function LoginPage() {
       rememberMe: false,
     },
   })
-
-  const rememberMe = watch("rememberMe")
 
   const login = useAuthStore((state) => state.login)
 
@@ -149,22 +144,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Remember Me */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="rememberMe"
-            checked={rememberMe}
-            onCheckedChange={(checked) =>
-              setValue("rememberMe", checked === true)
-            }
-          />
-          <Label
-            htmlFor="rememberMe"
-            className="text-sm font-normal cursor-pointer"
-          >
-            Remember me for 30 days
-          </Label>
-        </div>
+       
 
         {/* Submit */}
         <Button

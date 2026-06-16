@@ -11,6 +11,8 @@ import {
   Coffee,
   Timer,
   Loader2,
+  Plus,
+  X,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
@@ -19,7 +21,7 @@ import {
   useAttendanceSettingsQuery,
   useUpdateAttendanceSettingsMutation,
 } from "@/hooks/useAttendanceSettings"
-import type { UpdateAttendanceSettingsPayload } from "@/types"
+import type { UpdateAttendanceSettingsPayload, LateRule } from "@/types"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface OfficeSettings {
@@ -29,6 +31,7 @@ interface OfficeSettings {
   breakEnd: string
   lateThreshold: number
   halfDayThreshold: number
+  lateRules: LateRule[]
 }
 
 const DEFAULT_SETTINGS: OfficeSettings = {
@@ -38,6 +41,12 @@ const DEFAULT_SETTINGS: OfficeSettings = {
   breakEnd: "14:00",
   lateThreshold: 15,
   halfDayThreshold: 240,
+  lateRules: [
+    { minMinutes: 1, maxMinutes: 30, penalty: '30 Minutes Basic Salary Deduction' },
+    { minMinutes: 31, maxMinutes: 60, penalty: '1 Hour Basic Salary Deduction' },
+    { minMinutes: 61, maxMinutes: 120, penalty: '2 Hours Basic Salary Deduction' },
+    { minMinutes: 121, maxMinutes: 240, penalty: 'Half-Day Leave Deduction or Equivalent Basic Salary Deduction' }
+  ],
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -78,6 +87,7 @@ export function OfficeHours() {
         breakEnd: d.breakEnd || DEFAULT_SETTINGS.breakEnd,
         lateThreshold: d.lateThreshold || DEFAULT_SETTINGS.lateThreshold,
         halfDayThreshold: d.halfDayThreshold || DEFAULT_SETTINGS.halfDayThreshold,
+        lateRules: d.lateRules || DEFAULT_SETTINGS.lateRules,
       })
     }
   }, [settingsQuery.data])
@@ -140,6 +150,7 @@ export function OfficeHours() {
       breakEnd: settings.breakEnd,
       lateThreshold: settings.lateThreshold,
       halfDayThreshold: settings.halfDayThreshold,
+      lateRules: settings.lateRules,
     }
 
     updateSettingsMut.mutate(payload, {
@@ -400,6 +411,126 @@ export function OfficeHours() {
                 color="red"
                 rule="No clock-in recorded for the day"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Late Attendance Penalty Card (Table 10) ── */}
+        <Card className="shadow-none border-border/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Timer className="h-5 w-5 text-primary" />
+              Late Attendance Penalty
+            </CardTitle>
+            <CardDescription>Configure basic salary or leave deduction rules based on late duration</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="border border-border/30 rounded-xl overflow-hidden">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-muted/30 border-b border-border/30 text-muted-foreground font-semibold">
+                    <th className="p-3">Late Duration</th>
+                    <th className="p-3">Penalty / Deduction</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {settings.lateRules && settings.lateRules.length > 0 ? (
+                    settings.lateRules.map((rule, index) => (
+                      <tr key={index} className="border-b border-border/20 hover:bg-muted/10">
+                        <td className="p-3 font-medium text-foreground">
+                          {rule.minMinutes} – {rule.maxMinutes} Min
+                        </td>
+                        <td className="p-3 text-muted-foreground">{rule.penalty}</td>
+                        <td className="p-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const updatedRules = settings.lateRules.filter((_, idx) => idx !== index)
+                              updateField("lateRules", updatedRules)
+                            }}
+                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="p-4 text-center text-muted-foreground italic">
+                        No late penalty rules configured.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-3 rounded-xl bg-muted/20 border border-border/30 space-y-3">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Add New Penalty Rule
+              </p>
+              <div className="grid gap-2 grid-cols-2">
+                <div className="space-y-1">
+                  <Label className="text-[9px] uppercase">Min Minutes</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 1"
+                    id="new-rule-min"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] uppercase">Max Minutes</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 30"
+                    id="new-rule-max"
+                    className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[9px] uppercase">Penalty Description</Label>
+                <Input
+                  type="text"
+                  placeholder="e.g. 30 Minutes Basic Salary Deduction"
+                  id="new-rule-penalty"
+                  className="h-8 text-xs"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const minEl = document.getElementById("new-rule-min") as HTMLInputElement
+                  const maxEl = document.getElementById("new-rule-max") as HTMLInputElement
+                  const penEl = document.getElementById("new-rule-penalty") as HTMLInputElement
+                  
+                  const min = parseInt(minEl?.value)
+                  const max = parseInt(maxEl?.value)
+                  const penalty = penEl?.value?.trim()
+
+                  if (isNaN(min) || isNaN(max) || !penalty) {
+                    toast.error("Please fill in all rule fields correctly.")
+                    return
+                  }
+
+                  const newRule = { minMinutes: min, maxMinutes: max, penalty }
+                  const updatedRules = [...(settings.lateRules || []), newRule].sort((a, b) => a.minMinutes - b.minMinutes)
+                  updateField("lateRules", updatedRules)
+
+                  // Clear fields
+                  if (minEl) minEl.value = ""
+                  if (maxEl) maxEl.value = ""
+                  if (penEl) penEl.value = ""
+                }}
+                className="w-full h-8 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" /> Add Rule to Table
+              </Button>
             </div>
           </CardContent>
         </Card>

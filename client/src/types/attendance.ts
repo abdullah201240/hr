@@ -1,3 +1,9 @@
+export interface LateRule {
+  minMinutes: number;
+  maxMinutes: number;
+  penalty: string;
+}
+
 export interface AttendanceSettings {
   id: string;
   startTime: string;
@@ -7,6 +13,7 @@ export interface AttendanceSettings {
   lateThreshold: number;
   halfDayThreshold: number;
   weeklyHolidays: string[];
+  lateRules: LateRule[];
 }
 
 export interface Holiday {
@@ -26,6 +33,7 @@ export interface UpdateAttendanceSettingsPayload {
   lateThreshold?: number;
   halfDayThreshold?: number;
   weeklyHolidays?: string[];
+  lateRules?: LateRule[];
 }
 
 export interface CreateHolidayPayload {

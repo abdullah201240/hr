@@ -87,6 +87,8 @@ export class AttendanceSettingsService {
         updateData.halfDayThreshold = dto.halfDayThreshold;
       if (dto.weeklyHolidays !== undefined)
         updateData.weeklyHolidays = dto.weeklyHolidays;
+      if (dto.lateRules !== undefined)
+        updateData.lateRules = dto.lateRules;
 
       const [updated] = await tx
         .update(attendanceSettings)

@@ -59,6 +59,16 @@ export class UpdateAttendanceSettingsDto {
   @IsOptional()
   @IsArray()
   weeklyHolidays?: string[];
+
+  @ApiPropertyOptional({
+    example: [
+      { minMinutes: 1, maxMinutes: 30, penalty: '30 Minutes Basic Salary Deduction' }
+    ],
+    type: [Object],
+  })
+  @IsOptional()
+  @IsArray()
+  lateRules?: Array<{ minMinutes: number; maxMinutes: number; penalty: string }>;
 }
 
 // ─── Holiday DTOs ────────────────────────────────────────────────────────

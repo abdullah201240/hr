@@ -35,6 +35,17 @@ export const attendanceSettings = pgTable('attendance_settings', {
     .default(['Saturday', 'Sunday'])
     .notNull()
     .$type<string[]>(),
+
+  // Late Rules (Table 10)
+  lateRules: jsonb('late_rules')
+    .default([
+      { minMinutes: 1, maxMinutes: 30, penalty: '30 Minutes Basic Salary Deduction' },
+      { minMinutes: 31, maxMinutes: 60, penalty: '1 Hour Basic Salary Deduction' },
+      { minMinutes: 61, maxMinutes: 120, penalty: '2 Hours Basic Salary Deduction' },
+      { minMinutes: 121, maxMinutes: 240, penalty: 'Half-Day Leave Deduction or Equivalent Basic Salary Deduction' }
+    ])
+    .notNull()
+    .$type<Array<{ minMinutes: number; maxMinutes: number; penalty: string }>>(),
 });
 
 // ─── Holidays ──────────────────────────────────────────────────────────────
