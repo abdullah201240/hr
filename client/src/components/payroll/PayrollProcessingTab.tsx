@@ -50,12 +50,14 @@ interface PayrollProcessingTabProps {
 }
 
 // Date helpers
-const getMonthDateRange = (monthKey: string) => {
+const getMonthDateRange = (monthKey: string, fromDay = 1, toDay?: number) => {
   const [year, month] = monthKey.split("-").map(Number)
-  const startDateStr = `${year}-${String(month).padStart(2, "0")}-01`
-  const lastDay = new Date(year, month, 0).getDate()
-  const endDateStr = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
-  return { startDateStr, endDateStr, daysInMonth: lastDay }
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const effectiveToDay = Math.min(toDay ?? daysInMonth, daysInMonth)
+  const effectiveFromDay = Math.max(fromDay, 1)
+  const startDateStr = `${year}-${String(month).padStart(2, "0")}-${String(effectiveFromDay).padStart(2, "0")}`
+  const endDateStr   = `${year}-${String(month).padStart(2, "0")}-${String(effectiveToDay).padStart(2, "0")}`
+  return { startDateStr, endDateStr, daysInMonth, effectiveFromDay, effectiveToDay }
 }
 
 const getTenureMonths = (joinDateStr: string | null | undefined, targetMonthKey: string) => {
@@ -83,7 +85,16 @@ export default function PayrollProcessingTab({
   festivalBonusRules,
 }: PayrollProcessingTabProps) {
   const [selectedMonth, setSelectedMonth] = useState("2026-06")
-  const { startDateStr, endDateStr, daysInMonth } = useMemo(() => getMonthDateRange(selectedMonth), [selectedMonth])
+  const [salaryMode, setSalaryMode] = useState<"full" | "partial">("full")
+  const [partialFromDay, setPartialFromDay] = useState(1)
+  const [partialToDay, setPartialToDay]   = useState(30)
+
+  const { startDateStr, endDateStr, daysInMonth, effectiveFromDay, effectiveToDay } = useMemo(() => {
+    if (salaryMode === "partial") {
+      return getMonthDateRange(selectedMonth, partialFromDay, partialToDay)
+    }
+    return getMonthDateRange(selectedMonth)
+  }, [selectedMonth, salaryMode, partialFromDay, partialToDay])
 
   // Fetch API dependencies
   const { data: attendancePage, isLoading: attendanceLoading } = useRangeAttendanceQuery(startDateStr, endDateStr, 1000)
@@ -229,12 +240,18 @@ export default function PayrollProcessingTab({
         }
       }
 
-      // Calculate deductions
-      const lopDeduction = basic > 0 ? Math.round((basic / daysInMonth) * lopDays) : 0
+      // Partial salary: scale basic by effective window vs full month
+      const effectiveDays = effectiveToDay - effectiveFromDay + 1
+      const partialBasic = salaryMode === "partial"
+        ? Math.round(basic * (effectiveDays / daysInMonth))
+        : basic
+
+      // Calculate deductions (use effectiveDays as denominator for partial mode)
+      const lopDeduction = partialBasic > 0 ? Math.round((partialBasic / effectiveDays) * lopDays) : 0
       
       // Every 3 late entries deducts 0.5 days of salary
       const latePenaltyDays = Math.floor(lateDays / 3) * 0.5
-      const lateDeduction = basic > 0 ? Math.round((basic / daysInMonth) * latePenaltyDays) : 0
+      const lateDeduction = partialBasic > 0 ? Math.round((partialBasic / effectiveDays) * latePenaltyDays) : 0
 
       if (lopDeduction > 0) deductions["Loss of Pay (LOP)"] = lopDeduction
       if (lateDeduction > 0) deductions["Late Entry Penalty"] = lateDeduction
@@ -288,14 +305,14 @@ export default function PayrollProcessingTab({
       }
 
       const totalBonus = festivalBonus + specialBonus
-      const netPay = (basic + sumAllowances + totalBonus) - sumDeductions
+      const netPay = (partialBasic + sumAllowances + totalBonus) - sumDeductions
 
       return {
         employeeEmail: emp.email,
         name: emp.fullNameEnglish,
         role: emp.designationName || "Staff",
         dept: emp.departmentName || "Management",
-        basicSalary: basic,
+        basicSalary: partialBasic,
         allowances,
         deductions,
         bonus: totalBonus,
@@ -327,7 +344,7 @@ export default function PayrollProcessingTab({
       status: existing?.status || "Draft",
       payslips: compiledPayslips,
     } as PayrollCycle
-  }, [selectedMonth, employees, salariesMap, templatesMap, payrolls, attendanceLogs, leaves, weeklyHolidays, holidays, daysInMonth, empPfRate, festivalBonusRules, startDateStr, endDateStr])
+  }, [selectedMonth, salaryMode, effectiveFromDay, effectiveToDay, employees, salariesMap, templatesMap, payrolls, attendanceLogs, leaves, weeklyHolidays, holidays, daysInMonth, empPfRate, festivalBonusRules, startDateStr, endDateStr])
 
   // Count employees lacking salary setups
   const pendingConfigCount = useMemo(() => {
@@ -511,6 +528,11 @@ export default function PayrollProcessingTab({
           <h3 className="text-sm font-bold">Monthly Payroll Processing</h3>
           <p className="text-xs text-muted-foreground">
             Calculate, finalize, and disburse monthly employee compensation based on attendance.
+            {salaryMode === "partial" && (
+              <span className="ml-1.5 font-bold text-violet-600">
+                (Partial: Day {effectiveFromDay}–{effectiveToDay} of {daysInMonth})
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -548,26 +570,99 @@ export default function PayrollProcessingTab({
       <Card className="shadow-none border-border/40">
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-sm font-bold">
-              Monthly Compensation Ledger
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              {salaryMode === "partial" ? "Partial" : "Monthly"} Compensation Ledger
+              {salaryMode === "partial" && (
+                <span className="text-[10px] font-bold text-violet-600 bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 rounded-full">
+                  Day {effectiveFromDay}–{effectiveToDay} / {daysInMonth}d
+                </span>
+              )}
             </CardTitle>
             <CardDescription className="text-xs">
               Net payable:{" "}
               <span className="font-bold text-foreground">
                 {formatCurrency(totalNetPay)}
               </span>
+              {salaryMode === "partial" && (
+                <span className="ml-2 text-violet-600 font-medium">
+                  · {effectiveToDay - effectiveFromDay + 1} working days
+                </span>
+              )}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* Month selector */}
             <select
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value)
+                // Reset partial days to fit new month
+                const newLastDay = new Date(Number(e.target.value.split("-")[0]), Number(e.target.value.split("-")[1]), 0).getDate()
+                setPartialToDay(newLastDay)
+                setPartialFromDay(1)
+              }}
               className="bg-transparent border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2"
             >
               <option value="2026-06">June 2026</option>
               <option value="2026-05">May 2026</option>
               <option value="2026-04">April 2026</option>
             </select>
+
+            {/* Salary Mode Toggle */}
+            <div className="flex items-center rounded-lg border border-border/60 overflow-hidden h-9">
+              <button
+                type="button"
+                onClick={() => setSalaryMode("full")}
+                className={cn(
+                  "px-3 text-xs font-semibold h-full transition-colors",
+                  salaryMode === "full"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                )}
+              >
+                Full Month
+              </button>
+              <button
+                type="button"
+                onClick={() => setSalaryMode("partial")}
+                className={cn(
+                  "px-3 text-xs font-semibold h-full transition-colors",
+                  salaryMode === "partial"
+                    ? "bg-violet-600 text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                )}
+              >
+                Partial
+              </button>
+            </div>
+
+            {/* Partial day range inputs */}
+            {salaryMode === "partial" && (
+              <div className="flex items-center gap-1.5 border border-violet-500/30 bg-violet-500/5 rounded-lg px-2.5 py-1">
+                <span className="text-[10px] font-semibold text-violet-600">Day</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={effectiveToDay}
+                  value={partialFromDay}
+                  onChange={e => setPartialFromDay(Math.min(Number(e.target.value), partialToDay))}
+                  className="w-10 h-7 text-xs text-center bg-background border border-border/60 rounded px-1"
+                />
+                <span className="text-[10px] text-muted-foreground">to</span>
+                <input
+                  type="number"
+                  min={partialFromDay}
+                  max={daysInMonth}
+                  value={partialToDay}
+                  onChange={e => setPartialToDay(Math.max(Number(e.target.value), partialFromDay))}
+                  className="w-10 h-7 text-xs text-center bg-background border border-border/60 rounded px-1"
+                />
+                <span className="text-[10px] font-semibold text-violet-600">
+                  ({effectiveToDay - effectiveFromDay + 1}d)
+                </span>
+              </div>
+            )}
+
             <Badge
               variant="outline"
               className={cn(
@@ -664,7 +759,11 @@ export default function PayrollProcessingTab({
                       )}
                     </TableCell>
                     <TableCell className="py-3 text-xs text-center font-medium text-muted-foreground">
-                      {daysInMonth}d
+                      {salaryMode === "partial" ? (
+                        <span className="text-violet-600 font-semibold">{effectiveToDay - effectiveFromDay + 1}d</span>
+                      ) : (
+                        <span>{daysInMonth}d</span>
+                      )}
                     </TableCell>
                     <TableCell className="py-3 text-xs text-center">
                       <Badge variant="secondary" className="text-[9px] bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15">
