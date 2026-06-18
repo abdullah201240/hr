@@ -292,6 +292,20 @@ export const CacheKeys = {
     ttl: 300, // 5 min
     description: 'Employee salary by employee ID',
   },
+
+  /** Claims list (paginated/filtered) */
+  claimsList: {
+    key: key('claims:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated and filtered claims list',
+  },
+
+  /** Single claim by ID */
+  claimById: {
+    key: key('claims:id:*'),
+    ttl: 300, // 5 min
+    description: 'Claim record by ID',
+  },
 } as const;
 
 

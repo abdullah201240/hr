@@ -130,6 +130,12 @@ export class LeaveApplicationProcessor extends WorkerHost {
           throw new Error('This leave type is currently inactive');
         }
 
+        // 2.5 Verify single day duration for Early Out and Movement
+        const lowerLeaveTypeName = leaveType.name.toLowerCase();
+        if ((lowerLeaveTypeName.includes('early out') || lowerLeaveTypeName.includes('movement')) && days !== 1) {
+          throw new Error(`"${leaveType.name}" requests must be for a single day only.`);
+        }
+
         // 3. Verify gender eligibility
         if (leaveType.eligibility) {
           const eligibilityLower = leaveType.eligibility.toLowerCase();
@@ -277,6 +283,22 @@ export class LeaveApplicationProcessor extends WorkerHost {
 
         const timeDiff = end.getTime() - start.getTime();
         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+        const targetLeaveTypeId = dto.leaveTypeId || app.leaveTypeId;
+        const [leaveType] = await tx
+          .select()
+          .from(leaveTypes)
+          .where(eq(leaveTypes.id, targetLeaveTypeId))
+          .limit(1);
+
+        if (!leaveType) {
+          throw new Error(`Leave type with ID "${targetLeaveTypeId}" not found`);
+        }
+
+        const lowerLeaveTypeName = leaveType.name.toLowerCase();
+        if ((lowerLeaveTypeName.includes('early out') || lowerLeaveTypeName.includes('movement')) && days !== 1) {
+          throw new Error(`"${leaveType.name}" requests must be for a single day only.`);
+        }
 
         const updateData: Record<string, any> = {
           startDate: dto.startDate || app.startDate,

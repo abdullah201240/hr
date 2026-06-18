@@ -254,16 +254,33 @@ export function EmployeeAttendanceTab({
                           </TableCell>
                           <TableCell className="py-3 font-bold">{log.hours ? `${log.hours} hrs` : <span className="text-muted-foreground/30">—</span>}</TableCell>
                           <TableCell className="py-3">
-                            <Badge className={`text-[9px] font-bold capitalize border-none ${
-                              log.status === "present" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                                : log.status === "late" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-                                : log.status === "absent" ? "bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                                : log.status === "leave" ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10"
-                                : log.status === "holiday" ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10"
-                                : "bg-muted text-muted-foreground"
-                            }`}>
-                              {log.status}
-                            </Badge>
+                            {log.status === "leave" ? (() => {
+                              const leaveName = log.notes || "Leave"
+                              const leaveNameLower = leaveName.toLowerCase()
+                              let badgeStyle = "bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10"
+                              if (leaveNameLower.includes("early out")) {
+                                badgeStyle = "bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                              } else if (leaveNameLower.includes("movement")) {
+                                badgeStyle = "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10"
+                              } else if (leaveNameLower.includes("travel") || leaveNameLower.includes("tour")) {
+                                badgeStyle = "bg-teal-500/10 text-teal-600 dark:text-teal-400 hover:bg-teal-500/10"
+                              }
+                              return (
+                                <Badge className={`text-[9px] font-bold capitalize border-none ${badgeStyle}`}>
+                                  {leaveName}
+                                </Badge>
+                              )
+                            })() : (
+                              <Badge className={`text-[9px] font-bold capitalize border-none ${
+                                log.status === "present" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                                  : log.status === "late" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                                  : log.status === "absent" ? "bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                                  : log.status === "holiday" ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10"
+                                  : "bg-muted text-muted-foreground"
+                              }`}>
+                                {log.status}
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="py-3 text-muted-foreground italic max-w-[160px] truncate text-xs">{log.notes || "—"}</TableCell>
                           <TableCell className="py-3 text-right">

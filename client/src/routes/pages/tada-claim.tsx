@@ -39,85 +39,18 @@ import {
   MapPin,
   Upload,
   Receipt,
-  Filter
+  Filter,
+  Loader2
 } from "lucide-react"
 import { z } from "zod"
-
-interface TADAClaim {
-  id: string
-  employee: string
-  travelType: string
-  from: string
-  to: string
-  startDate: string
-  endDate: string
-  amount: number
-  status: "Pending" | "Approved" | "Rejected"
-  purpose: string
-}
-
-const initialClaims: TADAClaim[] = [
-  {
-    id: "TA-001",
-    employee: "Sarah Mitchell",
-    travelType: "Domestic Flight",
-    from: "New York",
-    to: "Boston",
-    startDate: "2026-06-15",
-    endDate: "2026-06-17",
-    amount: 450,
-    status: "Pending",
-    purpose: "Client meeting and project presentation"
-  },
-  {
-    id: "TA-002",
-    employee: "David Kim",
-    travelType: "Train",
-    from: "Chicago",
-    to: "Milwaukee",
-    startDate: "2026-06-10",
-    endDate: "2026-06-10",
-    amount: 85,
-    status: "Approved",
-    purpose: "Vendor visit and contract negotiation"
-  },
-  {
-    id: "TA-003",
-    employee: "Emily Zhang",
-    travelType: "International Flight",
-    from: "San Francisco",
-    to: "Toronto",
-    startDate: "2026-06-20",
-    endDate: "2026-06-25",
-    amount: 1200,
-    status: "Pending",
-    purpose: "International conference and networking"
-  },
-  {
-    id: "TA-004",
-    employee: "Marcus Brown",
-    travelType: "Personal Vehicle",
-    from: "Seattle",
-    to: "Portland",
-    startDate: "2026-06-08",
-    endDate: "2026-06-09",
-    amount: 180,
-    status: "Approved",
-    purpose: "Site inspection and team coordination"
-  },
-  {
-    id: "TA-005",
-    employee: "Lisa Johnson",
-    travelType: "Bus",
-    from: "Washington DC",
-    to: "Baltimore",
-    startDate: "2026-06-05",
-    endDate: "2026-06-05",
-    amount: 45,
-    status: "Rejected",
-    purpose: "Training session attendance"
-  },
-]
+import { toast } from "sonner"
+import { useAuthStore } from "@/store/useAuthStore"
+import {
+  useClaimsQuery,
+  useCreateClaimMutation,
+  useUpdateClaimStatusMutation,
+} from "@/hooks/useClaims"
+import type { ClaimStatus } from "@/types"
 
 const tadaClaimSchema = z.object({
   travelType: z.string().min(1, "Travel Type is required"),
@@ -142,10 +75,21 @@ const tadaClaimSchema = z.object({
 })
 
 export default function TADAClaimPage() {
-  const [claims, setClaims] = useState<TADAClaim[]>(initialClaims)
+  const user = useAuthStore((s) => s.user)
+  const isAdmin = user?.role === "admin" || user?.role === "hr"
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+
+  const { data, isLoading } = useClaimsQuery({
+    claimType: "tada",
+    search: searchTerm || undefined,
+    status: filterStatus !== "all" ? (filterStatus as ClaimStatus) : undefined,
+    limit: 100,
+  })
+
+  const claims = data?.data ?? []
 
   const [formData, setFormData] = useState({
     travelType: "",
@@ -158,20 +102,14 @@ export default function TADAClaimPage() {
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
-  const filteredClaims = claims.filter(claim => {
-    const matchesSearch = claim.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          claim.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          claim.to.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === "all" || claim.status === filterStatus
-    return matchesSearch && matchesFilter
-  })
+  const createMutation = useCreateClaimMutation()
+  const statusMutation = useUpdateClaimStatusMutation()
 
   const pendingClaims = claims.filter(c => c.status === "Pending").length
   const approvedClaims = claims.filter(c => c.status === "Approved").length
   const rejectedClaims = claims.filter(c => c.status === "Rejected").length
-  const totalAmount = claims.reduce((sum, c) => sum + c.amount, 0)
-  const approvedAmount = claims.filter(c => c.status === "Approved").reduce((sum, c) => sum + c.amount, 0)
+  const totalAmount = claims.reduce((sum, c) => sum + parseFloat(c.amount || "0"), 0)
+  const approvedAmount = claims.filter(c => c.status === "Approved").reduce((sum, c) => sum + parseFloat(c.amount || "0"), 0)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -198,28 +136,50 @@ export default function TADAClaimPage() {
       return
     }
 
-    const newClaim: TADAClaim = {
-      id: `TA-${String(claims.length + 1).padStart(3, '0')}`,
-      employee: "Current User",
-      travelType: formData.travelType,
-      from: formData.from,
-      to: formData.to,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      amount: parseFloat(formData.amount),
-      status: "Pending",
-      purpose: formData.purpose,
-    }
-    setClaims([newClaim, ...claims])
-    setFormData({ travelType: "", from: "", to: "", startDate: "", endDate: "", amount: "", purpose: "" })
-    setErrors({})
-    setDialogOpen(false)
+    createMutation.mutate(
+      {
+        claimType: "tada",
+        amount: parseFloat(formData.amount),
+        description: formData.purpose,
+        details: {
+          travelType: formData.travelType,
+          from: formData.from,
+          to: formData.to,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          purpose: formData.purpose,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("TA/DA claim submitted successfully")
+          setFormData({ travelType: "", from: "", to: "", startDate: "", endDate: "", amount: "", purpose: "" })
+          setErrors({})
+          setDialogOpen(false)
+        },
+        onError: (err: any) => {
+          toast.error("Failed to submit claim", {
+            description: err?.message || "Please try again",
+          })
+        },
+      }
+    )
   }
 
   const handleStatusChange = (id: string, status: "Approved" | "Rejected") => {
-    setClaims(claims.map(claim => 
-      claim.id === id ? { ...claim, status } : claim
-    ))
+    statusMutation.mutate(
+      { id, payload: { status } },
+      {
+        onSuccess: () => {
+          toast.success(`Claim ${status.toLowerCase()} successfully`)
+        },
+        onError: (err: any) => {
+          toast.error(`Failed to ${status.toLowerCase()} claim`, {
+            description: err?.message || "Please try again",
+          })
+        },
+      }
+    )
   }
 
   return (
@@ -354,7 +314,10 @@ export default function TADAClaimPage() {
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Submit Claim</Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Submit Claim
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -396,7 +359,7 @@ export default function TADAClaimPage() {
           <div className="space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rejected</span>
             <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{rejectedClaims}</p>
-            <p className="text-[10px] text-muted-foreground">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rejection rate</p>
+            <p className="text-[10px] text-muted-foreground">{claims.length > 0 ? ((rejectedClaims / claims.length) * 100).toFixed(1) : "0.0"}% rejection rate</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
             <XCircle className="h-5 w-5" />
@@ -433,7 +396,12 @@ export default function TADAClaimPage() {
 
       {/* Claims Table */}
       <div className="w-full overflow-x-auto bg-transparent">
-        {filteredClaims.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
+            <Loader2 className="mx-auto h-8 w-8 mb-4 animate-spin text-muted-foreground" />
+            <p className="text-sm font-semibold text-muted-foreground">Loading claims...</p>
+          </div>
+        ) : claims.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
             <Car className="mx-auto h-10 w-10 mb-3 text-muted-foreground/30" />
             <p className="text-sm font-semibold text-muted-foreground">No travel claims found</p>
@@ -454,39 +422,46 @@ export default function TADAClaimPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClaims.map((claim) => (
+              {claims.map((claim) => {
+                const d = claim.details || {}
+                return (
                 <TableRow key={claim.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                   <TableCell className="py-3">
                     <div>
-                      <p className="font-mono text-xs text-muted-foreground">{claim.id}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{claim.id.slice(0, 8)}</p>
                       <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <Receipt className="h-3 w-3" /> Purpose
+                        <Receipt className="h-3 w-3" /> {new Date(claim.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell className="py-3">
-                    <span className="font-semibold text-sm">{claim.employee}</span>
+                    <span className="font-semibold text-sm">{claim.employeeName}</span>
                   </TableCell>
                   <TableCell className="py-3">
                     <Badge variant="secondary" className="text-[10px] font-bold tracking-wide uppercase">
-                      {claim.travelType}
+                      {d.travelType || "N/A"}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3 shrink-0" />
-                      <span>{claim.from} → {claim.to}</span>
+                      <span>{d.from || "?"} → {d.to || "?"}</span>
                     </div>
                   </TableCell>
                   <TableCell className="py-3">
                     <div className="text-xs">
                       <p className="font-medium text-primary">
-                        {new Date(claim.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(claim.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {d.startDate
+                          ? new Date(d.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                          : "—"}{" — "}
+                        {d.endDate
+                          ? new Date(d.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : "—"}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell className="py-3 font-bold text-sm">
-                    ৳{claim.amount.toLocaleString()}
+                    ৳{parseFloat(claim.amount || "0").toLocaleString()}
                   </TableCell>
                   <TableCell className="py-3">
                     <Badge
@@ -496,12 +471,13 @@ export default function TADAClaimPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3 text-right">
-                    {claim.status === "Pending" ? (
+                    {isAdmin && claim.status === "Pending" ? (
                       <div className="inline-flex gap-2 justify-end">
                         <Button
                           variant="default"
                           size="sm"
                           className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                          disabled={statusMutation.isPending}
                           onClick={() => handleStatusChange(claim.id, "Approved")}
                         >
                           Approve
@@ -510,17 +486,21 @@ export default function TADAClaimPage() {
                           variant="outline"
                           size="sm"
                           className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                          disabled={statusMutation.isPending}
                           onClick={() => handleStatusChange(claim.id, "Rejected")}
                         >
                           Reject
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground italic">Processed</span>
+                      <span className="text-xs text-muted-foreground italic">
+                        {claim.status === "Pending" && !isAdmin ? "Pending Review" : "Processed"}
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         )}

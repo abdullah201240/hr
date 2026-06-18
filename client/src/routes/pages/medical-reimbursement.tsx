@@ -39,67 +39,18 @@ import {
   Calendar,
   FileText,
   Upload,
-  Filter
+  Filter,
+  Loader2
 } from "lucide-react"
 import { z } from "zod"
-
-interface MedicalClaim {
-  id: string
-  employee: string
-  type: string
-  amount: number
-  date: string
-  status: "Pending" | "Approved" | "Rejected"
-  description: string
-}
-
-const initialClaims: MedicalClaim[] = [
-  {
-    id: "MED-001",
-    employee: "Sarah Mitchell",
-    type: "Health Checkup",
-    amount: 250,
-    date: "2026-06-10",
-    status: "Pending",
-    description: "Annual health screening and blood tests"
-  },
-  {
-    id: "MED-002",
-    employee: "David Kim",
-    type: "Dental Treatment",
-    amount: 450,
-    date: "2026-06-08",
-    status: "Approved",
-    description: "Root canal treatment and crown"
-  },
-  {
-    id: "MED-003",
-    employee: "Emily Zhang",
-    type: "Medical Test",
-    amount: 180,
-    date: "2026-06-12",
-    status: "Pending",
-    description: "MRI scan and consultation"
-  },
-  {
-    id: "MED-004",
-    employee: "Marcus Brown",
-    type: "Prescription",
-    amount: 95,
-    date: "2026-06-05",
-    status: "Approved",
-    description: "Monthly prescription medications"
-  },
-  {
-    id: "MED-005",
-    employee: "Lisa Johnson",
-    type: "Vision Care",
-    amount: 320,
-    date: "2026-06-01",
-    status: "Rejected",
-    description: "New prescription glasses"
-  },
-]
+import { toast } from "sonner"
+import { useAuthStore } from "@/store/useAuthStore"
+import {
+  useClaimsQuery,
+  useCreateClaimMutation,
+  useUpdateClaimStatusMutation,
+} from "@/hooks/useClaims"
+import type { ClaimStatus } from "@/types"
 
 const medicalClaimSchema = z.object({
   type: z.string().min(1, "Claim Type is required"),
@@ -113,10 +64,21 @@ const medicalClaimSchema = z.object({
 })
 
 export default function MedicalReimbursementPage() {
-  const [claims, setClaims] = useState<MedicalClaim[]>(initialClaims)
+  const user = useAuthStore((s) => s.user)
+  const isAdmin = user?.role === "admin" || user?.role === "hr"
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+
+  const { data, isLoading } = useClaimsQuery({
+    claimType: "medical_reimbursement",
+    search: searchTerm || undefined,
+    status: filterStatus !== "all" ? (filterStatus as ClaimStatus) : undefined,
+    limit: 100,
+  })
+
+  const claims = data?.data ?? []
 
   const [formData, setFormData] = useState({
     type: "",
@@ -126,19 +88,14 @@ export default function MedicalReimbursementPage() {
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
-  const filteredClaims = claims.filter(claim => {
-    const matchesSearch = claim.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          claim.type.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === "all" || claim.status === filterStatus
-    return matchesSearch && matchesFilter
-  })
+  const createMutation = useCreateClaimMutation()
+  const statusMutation = useUpdateClaimStatusMutation()
 
   const pendingClaims = claims.filter(c => c.status === "Pending").length
   const approvedClaims = claims.filter(c => c.status === "Approved").length
   const rejectedClaims = claims.filter(c => c.status === "Rejected").length
-  const totalAmount = claims.reduce((sum, c) => sum + c.amount, 0)
-  const approvedAmount = claims.filter(c => c.status === "Approved").reduce((sum, c) => sum + c.amount, 0)
+  const totalAmount = claims.reduce((sum, c) => sum + parseFloat(c.amount || "0"), 0)
+  const approvedAmount = claims.filter(c => c.status === "Approved").reduce((sum, c) => sum + parseFloat(c.amount || "0"), 0)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,25 +119,46 @@ export default function MedicalReimbursementPage() {
       return
     }
 
-    const newClaim: MedicalClaim = {
-      id: `MED-${String(claims.length + 1).padStart(3, '0')}`,
-      employee: "Current User",
-      type: formData.type,
-      amount: parseFloat(formData.amount),
-      date: formData.date,
-      status: "Pending",
-      description: formData.description,
-    }
-    setClaims([newClaim, ...claims])
-    setFormData({ type: "", amount: "", date: "", description: "" })
-    setErrors({})
-    setDialogOpen(false)
+    createMutation.mutate(
+      {
+        claimType: "medical_reimbursement",
+        amount: parseFloat(formData.amount),
+        description: formData.description,
+        details: {
+          type: formData.type,
+          serviceDate: formData.date,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Claim submitted successfully")
+          setFormData({ type: "", amount: "", date: "", description: "" })
+          setErrors({})
+          setDialogOpen(false)
+        },
+        onError: (err: any) => {
+          toast.error("Failed to submit claim", {
+            description: err?.message || "Please try again",
+          })
+        },
+      }
+    )
   }
 
   const handleStatusChange = (id: string, status: "Approved" | "Rejected") => {
-    setClaims(claims.map(claim => 
-      claim.id === id ? { ...claim, status } : claim
-    ))
+    statusMutation.mutate(
+      { id, payload: { status } },
+      {
+        onSuccess: () => {
+          toast.success(`Claim ${status.toLowerCase()} successfully`)
+        },
+        onError: (err: any) => {
+          toast.error(`Failed to ${status.toLowerCase()} claim`, {
+            description: err?.message || "Please try again",
+          })
+        },
+      }
+    )
   }
 
   return (
@@ -280,7 +258,10 @@ export default function MedicalReimbursementPage() {
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Submit Claim</Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Submit Claim
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -322,7 +303,7 @@ export default function MedicalReimbursementPage() {
           <div className="space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rejected</span>
             <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{rejectedClaims}</p>
-            <p className="text-[10px] text-muted-foreground">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rejection rate</p>
+            <p className="text-[10px] text-muted-foreground">{claims.length > 0 ? ((rejectedClaims / claims.length) * 100).toFixed(1) : "0.0"}% rejection rate</p>
           </div>
           <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
             <XCircle className="h-5 w-5" />
@@ -359,7 +340,12 @@ export default function MedicalReimbursementPage() {
 
       {/* Claims Table */}
       <div className="w-full overflow-x-auto bg-transparent">
-            {filteredClaims.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
+                <Loader2 className="mx-auto h-8 w-8 mb-4 animate-spin text-muted-foreground" />
+                <p className="text-sm font-semibold text-muted-foreground">Loading claims...</p>
+              </div>
+            ) : claims.length === 0 ? (
               <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
                 <HeartPulse className="mx-auto h-12 w-12 mb-4 opacity-20 text-muted-foreground" />
                 <p className="text-sm font-semibold text-muted-foreground">No medical claims found</p>
@@ -379,35 +365,39 @@ export default function MedicalReimbursementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClaims.map((claim) => (
+                  {claims.map((claim) => (
                     <TableRow key={claim.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                       <TableCell className="py-3">
                         <div>
-                          <p className="font-mono text-xs text-muted-foreground">{claim.id}</p>
+                          <p className="font-mono text-xs text-muted-foreground">{claim.id.slice(0, 8)}</p>
                           <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                             <Calendar className="h-3 w-3" />
-                            {new Date(claim.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {claim.details?.serviceDate
+                              ? new Date(claim.details.serviceDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                              : new Date(claim.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell className="py-3">
-                        <span className="font-semibold text-sm">{claim.employee}</span>
+                        <span className="font-semibold text-sm">{claim.employeeName}</span>
                       </TableCell>
                       <TableCell className="py-3">
                         <Badge variant="secondary" className="text-[10px] font-bold tracking-wide uppercase">
-                          {claim.type}
+                          {claim.details?.type || "Medical"}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3 max-w-xs truncate text-xs text-muted-foreground" title={claim.description}>
                         <div className="flex items-center gap-1.5">
                           <span className="truncate">{claim.description}</span>
-                          <Badge variant="outline" className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 shrink-0">
-                            <FileText className="h-2.5 w-2.5 mr-0.5 inline" /> Docs
-                          </Badge>
+                          {claim.attachments.length > 0 && (
+                            <Badge variant="outline" className="text-[9px] bg-sky-500/5 text-sky-600 dark:text-sky-400 border-sky-500/20 shrink-0">
+                              <FileText className="h-2.5 w-2.5 mr-0.5 inline" /> Docs
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="py-3 font-bold text-sm">
-                        ৳{claim.amount.toLocaleString()}
+                        ৳{parseFloat(claim.amount || "0").toLocaleString()}
                       </TableCell>
                       <TableCell className="py-3">
                         <Badge
@@ -417,12 +407,13 @@ export default function MedicalReimbursementPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3 text-right">
-                        {claim.status === "Pending" ? (
+                        {isAdmin && claim.status === "Pending" ? (
                           <div className="inline-flex gap-2 justify-end">
                             <Button
                               variant="default"
                               size="sm"
                               className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                              disabled={statusMutation.isPending}
                               onClick={() => handleStatusChange(claim.id, "Approved")}
                             >
                               Approve
@@ -431,13 +422,16 @@ export default function MedicalReimbursementPage() {
                               variant="outline"
                               size="sm"
                               className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                              disabled={statusMutation.isPending}
                               onClick={() => handleStatusChange(claim.id, "Rejected")}
                             >
                               Reject
                             </Button>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground italic">Processed</span>
+                          <span className="text-xs text-muted-foreground italic">
+                            {claim.status === "Pending" && !isAdmin ? "Pending Review" : "Processed"}
+                          </span>
                         )}
                       </TableCell>
                     </TableRow>

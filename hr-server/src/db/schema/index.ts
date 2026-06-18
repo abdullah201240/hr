@@ -12,5 +12,6 @@ export * from './festival-bonus';
 export * from './provident-fund';
 export * from './leave-application';
 export * from './salary';
+export * from './claims';
 
 

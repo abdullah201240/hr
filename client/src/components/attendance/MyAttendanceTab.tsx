@@ -293,16 +293,33 @@ export function MyAttendanceTab({
                           )}
                         </TableCell>
                         <TableCell className="py-3">
-                          <Badge className={`text-[9px] font-bold capitalize border-none ${
-                            log.status === "present" ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10"
-                              : log.status === "late" ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/10"
-                              : log.status === "absent" ? "bg-red-500/10 text-red-500 hover:bg-red-500/10"
-                              : log.status === "leave" ? "bg-sky-500/10 text-sky-500 hover:bg-sky-500/10"
-                              : log.status === "holiday" ? "bg-violet-500/10 text-violet-500 hover:bg-violet-500/10"
-                              : "bg-muted text-muted-foreground"
-                          }`}>
-                            {log.status}
-                          </Badge>
+                          {log.status === "leave" ? (() => {
+                            const leaveName = log.notes || "Leave"
+                            const leaveNameLower = leaveName.toLowerCase()
+                            let badgeStyle = "bg-sky-500/10 text-sky-500 hover:bg-sky-500/10"
+                            if (leaveNameLower.includes("early out")) {
+                              badgeStyle = "bg-orange-500/10 text-orange-500 hover:bg-orange-500/10"
+                            } else if (leaveNameLower.includes("movement")) {
+                              badgeStyle = "bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/10"
+                            } else if (leaveNameLower.includes("travel") || leaveNameLower.includes("tour")) {
+                              badgeStyle = "bg-teal-500/10 text-teal-500 hover:bg-teal-500/10"
+                            }
+                            return (
+                              <Badge className={`text-[9px] font-bold capitalize border-none ${badgeStyle}`}>
+                                {leaveName}
+                              </Badge>
+                            )
+                          })() : (
+                            <Badge className={`text-[9px] font-bold capitalize border-none ${
+                              log.status === "present" ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10"
+                                : log.status === "late" ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/10"
+                                : log.status === "absent" ? "bg-red-500/10 text-red-500 hover:bg-red-500/10"
+                                : log.status === "holiday" ? "bg-violet-500/10 text-violet-500 hover:bg-violet-500/10"
+                                : "bg-muted text-muted-foreground"
+                            }`}>
+                              {log.status}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           {log.correctionStatus === "pending" ? (

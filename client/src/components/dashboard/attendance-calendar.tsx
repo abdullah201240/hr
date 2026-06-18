@@ -121,8 +121,21 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                   cellBg = "bg-red-500/10 hover:bg-red-500/15 dark:bg-red-500/[0.04]"
                   textColor = "text-red-600 dark:text-red-400 font-semibold"
                 } else if (record.status === "leave") {
-                  cellBg = "bg-sky-500/10 hover:bg-sky-500/15 dark:bg-sky-500/[0.04]"
-                  textColor = "text-sky-600 dark:text-sky-400 font-semibold"
+                  const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                  const leaveKey = matchingLeave?.leaveType?.toLowerCase() || ""
+                  if (leaveKey === "earlyout") {
+                    cellBg = "bg-orange-500/10 hover:bg-orange-500/15 dark:bg-orange-500/[0.04]"
+                    textColor = "text-orange-600 dark:text-orange-400 font-semibold"
+                  } else if (leaveKey === "movement") {
+                    cellBg = "bg-indigo-500/10 hover:bg-indigo-500/15 dark:bg-indigo-500/[0.04]"
+                    textColor = "text-indigo-600 dark:text-indigo-400 font-semibold"
+                  } else if (leaveKey === "travels" || leaveKey === "travel") {
+                    cellBg = "bg-teal-500/10 hover:bg-teal-500/15 dark:bg-teal-500/[0.04]"
+                    textColor = "text-teal-600 dark:text-teal-400 font-semibold"
+                  } else {
+                    cellBg = "bg-sky-500/10 hover:bg-sky-500/15 dark:bg-sky-500/[0.04]"
+                    textColor = "text-sky-600 dark:text-sky-400 font-semibold"
+                  }
                 } else if (record.status === "holiday") {
                   cellBg = "bg-violet-500/10 hover:bg-violet-500/15 dark:bg-violet-500/[0.04]"
                   textColor = "text-violet-600 dark:text-violet-400 font-semibold"
@@ -212,7 +225,17 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                                 onSelectDay(day)
                                 onOpenDayDetail("leave")
                               }}
-                              className="text-[9px] font-bold uppercase tracking-tight leading-normal px-1.5 py-0.5 bg-sky-500/20 text-sky-700 dark:text-sky-400 rounded w-fit block truncate max-w-full cursor-pointer hover:bg-sky-500/30 transition-colors"
+                              className={cn(
+                                "text-[9px] font-bold uppercase tracking-tight leading-normal px-1.5 py-0.5 rounded w-fit block truncate max-w-full cursor-pointer transition-colors",
+                                (() => {
+                                  const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                                  const leaveKey = matchingLeave?.leaveType?.toLowerCase() || ""
+                                  if (leaveKey === "earlyout") return "bg-orange-500/20 text-orange-700 dark:text-orange-400 hover:bg-orange-500/30"
+                                  if (leaveKey === "movement") return "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/30"
+                                  if (leaveKey === "travels" || leaveKey === "travel") return "bg-teal-500/20 text-teal-700 dark:text-teal-400 hover:bg-teal-500/30"
+                                  return "bg-sky-500/20 text-sky-700 dark:text-sky-400 hover:bg-sky-500/30"
+                                })()
+                              )}
                             >
                               {(() => {
                                 const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay) as any
