@@ -26,6 +26,7 @@ export * from "./leave"
 export * from "./attendance"
 export * from "./festival-bonus"
 export * from "./provident-fund"
+export * from "./salary"
 
 
 

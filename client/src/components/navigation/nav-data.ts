@@ -87,7 +87,7 @@ export const navGroups: NavGroup[] = [
     label: "Finance",
     items: [
       {
-        title: "Payroll",
+        title: "Salary & Payroll",
         href: "/payroll",
         icon: Coins,
       },

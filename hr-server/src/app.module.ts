@@ -24,6 +24,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { FestivalBonusModule } from './modules/festival-bonus/festival-bonus.module';
 import { ProvidentFundModule } from './modules/provident-fund/provident-fund.module';
+import { SalaryModule } from './modules/salary/salary.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -82,6 +83,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     AnnouncementsModule,
     FestivalBonusModule,
     ProvidentFundModule,
+    SalaryModule,
   ],
   providers: [
     {

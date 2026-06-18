@@ -264,7 +264,36 @@ export const CacheKeys = {
     ttl: 300, // 5 min
     description: 'Calculated leave balances for employee by year',
   },
+
+  /** Salary templates list */
+  salaryTemplates: {
+    key: key('salary:templates'),
+    ttl: 600, // 10 min
+    description: 'All salary templates with components',
+  },
+
+  /** Single salary template by ID */
+  salaryTemplateById: {
+    key: key('salary:templates:id:*'),
+    ttl: 600, // 10 min
+    description: 'Salary template by ID',
+  },
+
+  /** Employee salary assignments list */
+  employeeSalaryList: {
+    key: key('salary:employee:list'),
+    ttl: 300, // 5 min
+    description: 'All employee salary assignments',
+  },
+
+  /** Employee salary by employee ID */
+  employeeSalaryById: {
+    key: key('salary:employee:id:*'),
+    ttl: 300, // 5 min
+    description: 'Employee salary by employee ID',
+  },
 } as const;
+
 
 export type CacheKeyDefinition = (typeof CacheKeys)[keyof typeof CacheKeys];
 

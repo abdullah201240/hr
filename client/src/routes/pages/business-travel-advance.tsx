@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,7 +20,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { 
   Plane, 
   Plus, 
@@ -29,10 +35,10 @@ import {
   CheckCircle2, 
   AlertCircle,
   Coins,
-  Calendar,
   Briefcase,
   Upload,
-  Clock
+  Clock,
+  Filter
 } from "lucide-react"
 import { z } from "zod"
 
@@ -253,9 +259,9 @@ export default function BusinessTravelAdvancePage() {
                 Request advance payment for upcoming business travel
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="destination">Destination *</Label>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="destination" className="text-xs">Destination *</Label>
                 <Input
                   id="destination"
                   type="text"
@@ -265,8 +271,8 @@ export default function BusinessTravelAdvancePage() {
                 />
                 {errors.destination && <p className="text-[10px] text-red-500">{errors.destination}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="purpose">Purpose of Travel *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="purpose" className="text-xs">Purpose of Travel *</Label>
                 <Input
                   id="purpose"
                   type="text"
@@ -276,9 +282,9 @@ export default function BusinessTravelAdvancePage() {
                 />
                 {errors.purpose && <p className="text-[10px] text-red-500">{errors.purpose}</p>}
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date *</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDate" className="text-xs">Start Date *</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -287,8 +293,8 @@ export default function BusinessTravelAdvancePage() {
                   />
                   {errors.startDate && <p className="text-[10px] text-red-500">{errors.startDate}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDate" className="text-xs">End Date *</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -298,8 +304,8 @@ export default function BusinessTravelAdvancePage() {
                   {errors.endDate && <p className="text-[10px] text-red-500">{errors.endDate}</p>}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="requestedAmount">Requested Amount (৳) *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="requestedAmount" className="text-xs">Requested Amount (৳) *</Label>
                 <Input
                   id="requestedAmount"
                   type="number"
@@ -309,8 +315,8 @@ export default function BusinessTravelAdvancePage() {
                 />
                 {errors.requestedAmount && <p className="text-[10px] text-red-500">{errors.requestedAmount}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="justification">Justification *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="justification" className="text-xs">Justification *</Label>
                 <Textarea
                   id="justification"
                   placeholder="Provide detailed justification for the advance request..."
@@ -319,17 +325,13 @@ export default function BusinessTravelAdvancePage() {
                 />
                 {errors.justification && <p className="text-[10px] text-red-500">{errors.justification}</p>}
               </div>
-              <div className="space-y-2">
-                <Label>Upload Supporting Documents</Label>
-                <div className="flex items-center gap-2 rounded-lg border border-dashed border-border p-8 text-center">
-                  <div className="flex-1">
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Drag and drop files here, or click to browse
-                    </p>
-                    <p className="text-xs text-muted-foreground/70">
-                      PDF, JPG, PNG up to 10MB (itinerary, invitation letters, etc.)
-                    </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Upload Supporting Documents</Label>
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-border/60 p-4 text-center">
+                  <Upload className="h-5 w-5 text-muted-foreground/50 shrink-0" />
+                  <div className="text-left">
+                    <p className="text-xs text-muted-foreground font-medium">Drag & drop or click to browse</p>
+                    <p className="text-[10px] text-muted-foreground/60">PDF, JPG, PNG up to 10MB (itinerary, invitation letters, etc.)</p>
                   </div>
                 </div>
               </div>
@@ -344,174 +346,182 @@ export default function BusinessTravelAdvancePage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Requested</p>
-                <p className="text-2xl font-bold mt-1">৳{totalRequested.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{advances.length} total requests</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Coins className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold mt-1">{pendingAdvances}</p>
-                <Progress value={(pendingAdvances / advances.length) * 100} className="h-1 mt-1.5 w-16" />
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Approved</p>
-                <p className="text-2xl font-bold mt-1">৳{totalApproved.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{approvedAdvances} approved</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Settled</p>
-                <p className="text-2xl font-bold mt-1">{settledAdvances}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{settledAdvances} settled</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Requested</span>
+            <p className="text-3xl font-bold tracking-tight">৳{totalRequested.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">{advances.length} total requests</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <Coins className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending</span>
+            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{pendingAdvances}</p>
+            <p className="text-[10px] text-muted-foreground">Awaiting review</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approved</span>
+            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">৳{totalApproved.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">{approvedAdvances} approved</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Settled</span>
+            <p className="text-3xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{settledAdvances}</p>
+            <p className="text-[10px] text-muted-foreground">{settledAdvances} advances settled</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
+            <Clock className="h-5 w-5" />
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Travel Advance Requests</CardTitle>
-          <CardDescription>Track and manage business travel advance payments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by employee, advance ID, or destination..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Settled">Settled</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by employee, advance ID, or destination..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors text-xs h-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36 text-xs h-9 bg-transparent border-border/60">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All Status</SelectItem>
+              <SelectItem value="Pending" className="text-xs">Pending Only</SelectItem>
+              <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
+              <SelectItem value="Settled" className="text-xs">Settled Only</SelectItem>
+              <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          <div className="space-y-3">
-            {filteredAdvances.map((advance) => (
-              <div key={advance.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-border p-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{advance.id}</span>
-                    {advance.status === "Approved" && (
-                      <Badge variant="secondary" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20">
-                        Approved: ৳{advance.approvedAmount}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium">{advance.employee}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Briefcase className="h-3 w-3" />
-                    <span>{advance.purpose} - {advance.destination}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(advance.startDate).toLocaleDateString()} - {new Date(advance.endDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{advance.justification}</p>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Requested</p>
-                    <p className="text-lg font-bold">৳{advance.requestedAmount.toLocaleString()}</p>
-                  </div>
-                  {advance.status === "Pending" ? (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="default" 
-                        size="sm" 
-                        className="h-7 text-xs bg-emerald-500 hover:bg-emerald-600"
-                        onClick={() => handleStatusChange(advance.id, "Approved")}
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 text-xs"
-                        onClick={() => handleStatusChange(advance.id, "Rejected")}
-                      >
-                        Reject
-                      </Button>
+      {/* Advance Requests Table */}
+      <div className="w-full overflow-x-auto bg-transparent">
+        {filteredAdvances.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
+            <Plane className="mx-auto h-10 w-10 mb-3 text-muted-foreground/30" />
+            <p className="text-sm font-semibold text-muted-foreground">No travel advance requests found</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Try modifying your search or filter keywords</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-muted/10 border-b border-border/30">
+              <TableRow className="border-b-0 hover:bg-transparent">
+                <TableHead className="font-semibold text-xs text-muted-foreground">Request Info</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Purpose</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Destination</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Duration</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Amount</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                <TableHead className="w-40 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAdvances.map((advance) => (
+                <TableRow key={advance.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                  <TableCell className="py-3">
+                    <div>
+                      <p className="font-mono text-xs text-muted-foreground">{advance.id}</p>
                     </div>
-                  ) : advance.status === "Approved" ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-7 text-xs"
-                      onClick={() => handleSettle(advance.id)}
-                    >
-                      Mark Settled
-                    </Button>
-                  ) : (
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className="font-semibold text-sm">{advance.employee}</span>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Briefcase className="h-3 w-3 shrink-0" />
+                      <span className="truncate max-w-[140px]" title={advance.purpose}>{advance.purpose}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Badge variant="secondary" className="text-[10px] font-bold tracking-wide">
+                      {advance.destination}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <div className="text-xs">
+                      <p className="font-medium text-primary">
+                        {new Date(advance.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(advance.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <div>
+                      <p className="font-bold text-sm">৳{advance.requestedAmount.toLocaleString()}</p>
+                      {advance.approvedAmount > 0 && advance.approvedAmount !== advance.requestedAmount && (
+                        <p className="text-[10px] text-muted-foreground">Approved: ৳{advance.approvedAmount.toLocaleString()}</p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3">
                     <Badge
-                      variant={advance.status === "Settled" ? "default" : "destructive"}
-                      className={advance.status === "Settled" ? "bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10" : ""}
+                      className={advance.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : advance.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : advance.status === "Settled" ? "bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
                     >
                       {advance.status}
                     </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredAdvances.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Plane className="mx-auto h-12 w-12 mb-4 opacity-20" />
-              <p>No travel advance requests found</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TableCell>
+                  <TableCell className="py-3 text-right">
+                    {advance.status === "Pending" ? (
+                      <div className="inline-flex gap-2 justify-end">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                          onClick={() => handleStatusChange(advance.id, "Approved")}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                          onClick={() => handleStatusChange(advance.id, "Rejected")}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    ) : advance.status === "Approved" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs font-semibold border-blue-500/20 text-blue-500 hover:bg-blue-500/10"
+                        onClick={() => handleSettle(advance.id)}
+                      >
+                        Mark Settled
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Processed</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   )
 }

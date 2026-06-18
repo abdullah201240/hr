@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,7 +20,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { 
   Car, 
   Plus, 
@@ -30,10 +36,10 @@ import {
   XCircle, 
   AlertCircle,
   Coins,
-  Calendar,
   MapPin,
   Upload,
-  Receipt
+  Receipt,
+  Filter
 } from "lucide-react"
 import { z } from "zod"
 
@@ -246,10 +252,10 @@ export default function TADAClaimPage() {
                 Fill in the details for your travel and daily allowance claim
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="travelType">Travel Type *</Label>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="travelType" className="text-xs">Travel Type *</Label>
                   <Select value={formData.travelType} onValueChange={(value) => setFormData({ ...formData, travelType: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
@@ -266,8 +272,8 @@ export default function TADAClaimPage() {
                   </Select>
                   {errors.travelType && <p className="text-[10px] text-red-500">{errors.travelType}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Total Amount (৳) *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="amount" className="text-xs">Total Amount (৳) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -278,9 +284,9 @@ export default function TADAClaimPage() {
                   {errors.amount && <p className="text-[10px] text-red-500">{errors.amount}</p>}
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="from">From *</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="from" className="text-xs">From *</Label>
                   <Input
                     id="from"
                     type="text"
@@ -290,8 +296,8 @@ export default function TADAClaimPage() {
                   />
                   {errors.from && <p className="text-[10px] text-red-500">{errors.from}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="to">To *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="to" className="text-xs">To *</Label>
                   <Input
                     id="to"
                     type="text"
@@ -302,9 +308,9 @@ export default function TADAClaimPage() {
                   {errors.to && <p className="text-[10px] text-red-500">{errors.to}</p>}
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date *</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="startDate" className="text-xs">Start Date *</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -313,8 +319,8 @@ export default function TADAClaimPage() {
                   />
                   {errors.startDate && <p className="text-[10px] text-red-500">{errors.startDate}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="endDate" className="text-xs">End Date *</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -324,8 +330,8 @@ export default function TADAClaimPage() {
                   {errors.endDate && <p className="text-[10px] text-red-500">{errors.endDate}</p>}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="purpose">Purpose of Travel *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="purpose" className="text-xs">Purpose of Travel *</Label>
                 <Textarea
                   id="purpose"
                   placeholder="Describe the purpose of your travel..."
@@ -334,17 +340,13 @@ export default function TADAClaimPage() {
                 />
                 {errors.purpose && <p className="text-[10px] text-red-500">{errors.purpose}</p>}
               </div>
-              <div className="space-y-2">
-                <Label>Upload Travel Documents</Label>
-                <div className="flex items-center gap-2 rounded-lg border border-dashed border-border p-8 text-center">
-                  <div className="flex-1">
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Drag and drop files here, or click to browse
-                    </p>
-                    <p className="text-xs text-muted-foreground/70">
-                      PDF, JPG, PNG up to 10MB (tickets, receipts, invoices)
-                    </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Upload Travel Documents</Label>
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-border/60 p-4 text-center">
+                  <Upload className="h-5 w-5 text-muted-foreground/50 shrink-0" />
+                  <div className="text-left">
+                    <p className="text-xs text-muted-foreground font-medium">Drag & drop or click to browse</p>
+                    <p className="text-[10px] text-muted-foreground/60">PDF, JPG, PNG up to 10MB (tickets, receipts, invoices)</p>
                   </div>
                 </div>
               </div>
@@ -359,163 +361,170 @@ export default function TADAClaimPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Claims</p>
-                <p className="text-2xl font-bold mt-1">৳{totalAmount.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{claims.length} total claims</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Coins className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold mt-1">{pendingClaims}</p>
-                <Progress value={(pendingClaims / claims.length) * 100} className="h-1 mt-1.5 w-16" />
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Approved</p>
-                <p className="text-2xl font-bold mt-1">৳{approvedAmount.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{approvedClaims} claims</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Rejected</p>
-                <p className="text-2xl font-bold mt-1">{rejectedClaims}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rate</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <XCircle className="h-5 w-5 text-red-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Claims</span>
+            <p className="text-3xl font-bold tracking-tight">৳{totalAmount.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">{claims.length} total claims</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <Coins className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending</span>
+            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{pendingClaims}</p>
+            <p className="text-[10px] text-muted-foreground">Awaiting review</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approved</span>
+            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">৳{approvedAmount.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">{approvedClaims} claims approved</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rejected</span>
+            <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{rejectedClaims}</p>
+            <p className="text-[10px] text-muted-foreground">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rejection rate</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
+            <XCircle className="h-5 w-5" />
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Travel Claims</CardTitle>
-          <CardDescription>Track and manage TA/DA reimbursement requests</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by employee, claim ID, or route..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by employee, claim ID, or route..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors text-xs h-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36 text-xs h-9 bg-transparent border-border/60">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All Status</SelectItem>
+              <SelectItem value="Pending" className="text-xs">Pending Only</SelectItem>
+              <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
+              <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          <div className="space-y-3">
-            {filteredClaims.map((claim) => (
-              <div key={claim.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg border border-border p-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{claim.id}</span>
-                    <Badge variant="secondary" className="text-[10px]">{claim.travelType}</Badge>
-                  </div>
-                  <p className="text-sm font-medium">{claim.employee}</p>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    <span>{claim.from} → {claim.to}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(claim.startDate).toLocaleDateString()} - {new Date(claim.endDate).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Receipt className="h-3 w-3" />
-                      Documents attached
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{claim.purpose}</p>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                  <div className="text-right">
-                    <p className="text-lg font-bold">৳{claim.amount.toLocaleString()}</p>
-                  </div>
-                  {claim.status === "Pending" ? (
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="default" 
-                        size="sm" 
-                        className="h-7 text-xs bg-emerald-500 hover:bg-emerald-600"
-                        onClick={() => handleStatusChange(claim.id, "Approved")}
-                      >
-                        Approve
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 text-xs"
-                        onClick={() => handleStatusChange(claim.id, "Rejected")}
-                      >
-                        Reject
-                      </Button>
+      {/* Claims Table */}
+      <div className="w-full overflow-x-auto bg-transparent">
+        {filteredClaims.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
+            <Car className="mx-auto h-10 w-10 mb-3 text-muted-foreground/30" />
+            <p className="text-sm font-semibold text-muted-foreground">No travel claims found</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Try modifying your search or filter keywords</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-muted/10 border-b border-border/30">
+              <TableRow className="border-b-0 hover:bg-transparent">
+                <TableHead className="font-semibold text-xs text-muted-foreground">Claim Info</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Travel Type</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Route</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Duration</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Amount</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                <TableHead className="w-36 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClaims.map((claim) => (
+                <TableRow key={claim.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                  <TableCell className="py-3">
+                    <div>
+                      <p className="font-mono text-xs text-muted-foreground">{claim.id}</p>
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Receipt className="h-3 w-3" /> Purpose
+                      </p>
                     </div>
-                  ) : (
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <span className="font-semibold text-sm">{claim.employee}</span>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Badge variant="secondary" className="text-[10px] font-bold tracking-wide uppercase">
+                      {claim.travelType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span>{claim.from} → {claim.to}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <div className="text-xs">
+                      <p className="font-medium text-primary">
+                        {new Date(claim.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(claim.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 font-bold text-sm">
+                    ৳{claim.amount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="py-3">
                     <Badge
-                      variant={claim.status === "Approved" ? "default" : "destructive"}
-                      className={claim.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : ""}
+                      className={claim.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : claim.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
                     >
                       {claim.status}
                     </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredClaims.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Car className="mx-auto h-12 w-12 mb-4 opacity-20" />
-              <p>No travel claims found</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </TableCell>
+                  <TableCell className="py-3 text-right">
+                    {claim.status === "Pending" ? (
+                      <div className="inline-flex gap-2 justify-end">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                          onClick={() => handleStatusChange(claim.id, "Approved")}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                          onClick={() => handleStatusChange(claim.id, "Rejected")}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Processed</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,7 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Progress } from "@/components/ui/progress"
 import { 
   HeartPulse, 
   Plus, 
@@ -40,7 +38,8 @@ import {
   Coins,
   Calendar,
   FileText,
-  Upload
+  Upload,
+  Filter
 } from "lucide-react"
 import { z } from "zod"
 
@@ -214,10 +213,10 @@ export default function MedicalReimbursementPage() {
                 Fill in the details for your medical reimbursement request
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="type">Medical Type *</Label>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="type" className="text-xs">Medical Type *</Label>
                   <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
@@ -235,8 +234,8 @@ export default function MedicalReimbursementPage() {
                   </Select>
                   {errors.type && <p className="text-[10px] text-red-500">{errors.type}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (৳) *</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="amount" className="text-xs">Amount (৳) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -247,8 +246,8 @@ export default function MedicalReimbursementPage() {
                   {errors.amount && <p className="text-[10px] text-red-500">{errors.amount}</p>}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">Date of Service *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="date" className="text-xs">Date of Service *</Label>
                 <Input
                   id="date"
                   type="date"
@@ -257,8 +256,8 @@ export default function MedicalReimbursementPage() {
                 />
                 {errors.date && <p className="text-[10px] text-red-500">{errors.date}</p>}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-xs">Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Provide details about the medical service..."
@@ -267,17 +266,13 @@ export default function MedicalReimbursementPage() {
                 />
                 {errors.description && <p className="text-[10px] text-red-500">{errors.description}</p>}
               </div>
-              <div className="space-y-2">
-                <Label>Upload Medical Documents</Label>
-                <div className="flex items-center gap-2 rounded-lg border border-dashed border-border p-8 text-center">
-                  <div className="flex-1">
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Drag and drop files here, or click to browse
-                    </p>
-                    <p className="text-xs text-muted-foreground/70">
-                      PDF, JPG, PNG up to 10MB
-                    </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Upload Medical Documents</Label>
+                <div className="flex items-center gap-3 rounded-lg border border-dashed border-border/60 p-4 text-center">
+                  <Upload className="h-5 w-5 text-muted-foreground/50 shrink-0" />
+                  <div className="text-left">
+                    <p className="text-xs text-muted-foreground font-medium">Drag & drop or click to browse</p>
+                    <p className="text-[10px] text-muted-foreground/60">PDF, JPG, PNG up to 10MB</p>
                   </div>
                 </div>
               </div>
@@ -292,95 +287,78 @@ export default function MedicalReimbursementPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Total Claims</p>
-                <p className="text-2xl font-bold mt-1">৳{totalAmount.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{claims.length} total claims</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Coins className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold mt-1">{pendingClaims}</p>
-                <Progress value={(pendingClaims / claims.length) * 100} className="h-1 mt-1.5 w-16" />
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Approved</p>
-                <p className="text-2xl font-bold mt-1">৳{approvedAmount.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{approvedClaims} claims</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="p-4">
-          <CardContent className="p-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Rejected</p>
-                <p className="text-2xl font-bold mt-1">{rejectedClaims}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rate</p>
-              </div>
-              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <XCircle className="h-5 w-5 text-red-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Claims</span>
+            <p className="text-3xl font-bold tracking-tight">৳{totalAmount.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">{claims.length} total claims</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <Coins className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pending</span>
+            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{pendingClaims}</p>
+            <p className="text-[10px] text-muted-foreground">Awaiting review</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Approved</span>
+            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">৳{approvedAmount.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground">{approvedClaims} claims approved</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rejected</span>
+            <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{rejectedClaims}</p>
+            <p className="text-[10px] text-muted-foreground">{((rejectedClaims / claims.length) * 100).toFixed(1)}% rejection rate</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
+            <XCircle className="h-5 w-5" />
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Medical Claims</CardTitle>
-          <CardDescription>Track and manage medical reimbursement requests</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by employee, claim ID, or type..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by employee, claim ID, or type..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors text-xs h-9"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-36 text-xs h-9 bg-transparent border-border/60">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All Status</SelectItem>
+              <SelectItem value="Pending" className="text-xs">Pending Only</SelectItem>
+              <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
+              <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          <div className="w-full overflow-x-auto bg-transparent">
+      {/* Claims Table */}
+      <div className="w-full overflow-x-auto bg-transparent">
             {filteredClaims.length === 0 ? (
               <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
                 <HeartPulse className="mx-auto h-12 w-12 mb-4 opacity-20 text-muted-foreground" />
@@ -467,9 +445,7 @@ export default function MedicalReimbursementPage() {
                 </TableBody>
               </Table>
             )}
-          </div>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   )
 }
