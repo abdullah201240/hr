@@ -7,6 +7,7 @@ interface Candidate {
   id: string
   name: string
   email: string
+  phone?: string
   role: string
   source: string
   stage: string
@@ -119,14 +120,16 @@ export default function PrintOfferLetterPage() {
           <div className="text-right text-xs text-muted-foreground print:text-slate-600">
             <p className="font-bold text-slate-800 dark:text-slate-200 print:text-black">JOB OFFER LETTER</p>
             <p className="mt-1">Date: {todayStr}</p>
+            <p className="mt-0.5 font-mono">REF: OFR-{new Date().getFullYear()}-{candidate.id.toUpperCase().slice(-6)}</p>
           </div>
         </div>
 
         {/* Letter Body */}
         <div className="space-y-6 text-sm text-slate-800 dark:text-slate-200 leading-relaxed print:text-black">
           <div>
-            <p className="font-bold text-slate-900 dark:text-slate-50">{candidate.name}</p>
-            <p className="text-muted-foreground">{candidate.email}</p>
+            <p className="font-bold text-slate-900 dark:text-slate-50 print:text-black">{candidate.name}</p>
+            <p className="text-muted-foreground print:text-slate-600">{candidate.email}</p>
+            {candidate.phone && <p className="text-muted-foreground print:text-slate-600">{candidate.phone}</p>}
           </div>
 
           <div className="pt-2">
