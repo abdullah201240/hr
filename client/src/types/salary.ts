@@ -99,3 +99,52 @@ export interface SalarySummary {
   avgSalary: number;
   pfContributors: number;
 }
+
+export interface Payslip {
+  employeeEmail: string;
+  name: string;
+  role: string;
+  dept: string;
+  basicSalary: number;
+  allowances: Record<string, number>;
+  deductions: Record<string, number>;
+  bonus: number;
+  bonusDescription: string;
+  netPay: number;
+  paymentStatus: "Unpaid" | "Paid";
+  paymentMethod?: string;
+  paymentDate?: string;
+  paymentReference?: string;
+  // Dynamic stats
+  lopDays: number;
+  lopDeduction: number;
+  lateDays: number;
+  lateDeduction: number;
+  presentDays: number;
+  leaveDays: number;
+  movementDays: number;
+  travelDays: number;
+  earlyOutDays: number;
+  // Added fields
+  festivalBonus?: number;
+  specialBonus?: number;
+  festivalBonusDescription?: string;
+  specialBonusDescription?: string;
+  bonusWarning?: string;
+}
+
+export interface PayrollCycle {
+  monthKey: string;
+  status: "Draft" | "Processed" | "Distributed";
+  payslips: Payslip[];
+}
+
+export interface DisbursementRecord {
+  monthKey: string;
+  disbursementDate: string;
+  paymentMethod: string;
+  referenceId: string;
+  totalDisbursed: number;
+  employeeCount: number;
+}
+

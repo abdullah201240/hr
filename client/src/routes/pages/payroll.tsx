@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -96,8 +97,16 @@ const getBasicSalary = (role: string): number => {
 }
 
 export default function PayrollPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get("tab") || "processing"
+  
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value }, { replace: true })
+  }
+  
+  console.log('Current activeTab:', activeTab)
+  
   const [employees, setEmployees] = useState<EmployeeSalaryDef[]>([])
-  const [activeTab, setActiveTab] = useState("processing")
   
   // Selected payroll cycle month
   const [selectedMonth, setSelectedMonth] = useState("2026-06")
@@ -491,7 +500,7 @@ export default function PayrollPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full max-w-[500px] grid-cols-3 shadow-none border border-border/40 bg-muted/20">
           <TabsTrigger value="processing" className="text-xs">Payroll Processing</TabsTrigger>
           <TabsTrigger value="pf" className="text-xs">Provident Fund (PF)</TabsTrigger>
