@@ -324,250 +324,274 @@ export function SalarySetup() {
     setEditingTemplate(null)
   }
 
-  const basicSalary = currentTemplate.basicSalary || 50000
-
-  const getComponentAmount = (comp: SalaryComponent) => {
-    if (comp.id === "basic") return basicSalary
-    if (comp.isFixed) return comp.amount
-    return Math.round((basicSalary * (comp.percentage || 0)) / 100)
-  }
-
-  const totalEarnings = currentTemplate.components
-    .reduce((sum, c) => sum + getComponentAmount(c), 0)
-
-  const netSalary = totalEarnings
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4">
         <div>
-          <h3 className="text-base font-bold flex items-center gap-2">
+          <h3 className="text-lg font-bold flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-emerald-500" />
             Salary Structure & Policies
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            Configure salary components, breakdown structure, and festival bonus policies
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure salary components, festival bonus rules, and provident fund settings
           </p>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select template" />
-            </SelectTrigger>
-            <SelectContent>
-              {templates.map(template => (
-                <SelectItem key={template.id} value={template.id}>
-                  {template.name} - {template.grade}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditingTemplate(null)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Template
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[95vw] !max-w-[1200px] max-h-[90vh] overflow-y-auto">
-              <SalaryTemplateForm
-                template={editingTemplate}
-                onSave={handleSaveTemplate}
-                onCancel={() => {
-                  setDialogOpen(false)
-                  setEditingTemplate(null)
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Salary Breakdown Table */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="shadow-none border border-border/40">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{currentTemplate.name} - {currentTemplate.grade}</CardTitle>
-                  <CardDescription>Monthly salary breakdown structure</CardDescription>
-                </div>
+        
+        {/* Template Selector & Actions */}
+        <Card className="shadow-none border border-border/40">
+          <CardContent className="py-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Active Salary Template</Label>
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger className="w-full sm:w-[280px]">
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name} - Grade {template.grade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Button 
                   variant="outline" 
-                  size="sm"
                   onClick={() => {
                     setEditingTemplate(currentTemplate)
                     setDialogOpen(true)
                   }}
-                  className="gap-2"
+                  className="gap-2 flex-1 sm:flex-initial"
                 >
                   <Edit3 className="h-4 w-4" />
-                  Edit Structure
+                  Edit Template
                 </Button>
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setEditingTemplate(null)} className="gap-2 flex-1 sm:flex-initial">
+                      <Plus className="h-4 w-4" />
+                      New Template
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="w-[95vw] !max-w-[1200px] max-h-[90vh] overflow-y-auto">
+                    <SalaryTemplateForm
+                      template={editingTemplate}
+                      onSave={handleSaveTemplate}
+                      onCancel={() => {
+                        setDialogOpen(false)
+                        setEditingTemplate(null)
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* All Components Table */}
-                <div>
-                  <div className="rounded-lg border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Component</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Rule / Formula</TableHead>
-                          <TableHead>Calculated Value</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {currentTemplate.components.map((component) => {
-                          const amt = getComponentAmount(component)
-                          return (
-                            <TableRow key={component.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="text-[10px]">
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Grid - Improved Layout */}
+      <div className="grid gap-6">
+        {/* Top Row: All Templates Salary Breakdown (Full Width) */}
+        <Card className="shadow-none border border-border/40">
+          <CardHeader className="pb-4">
+         
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calculator className="h-5 w-5 text-emerald-500" />
+                  Salary Breakdown - All Templates
+                </CardTitle>
+                <CardDescription>Compare salary components across all templates</CardDescription>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                {templates.length} Template{templates.length !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* All Templates Card View */}
+            {templates.length === 0 ? (
+              <div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl">
+                <Calculator className="h-10 w-10 text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">No salary templates configured yet.</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Click "New Template" to create your first salary structure.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {templates.map((template) => {
+                  const templateTotal = template.components.reduce((sum, c) => {
+                    const amt = c.id === "basic" ? template.basicSalary : 
+                                c.isFixed ? c.amount : 
+                                Math.round((template.basicSalary * (c.percentage || 0)) / 100)
+                    return sum + amt
+                  }, 0)
+                  
+                  return (
+                    <Card key={template.id} className="shadow-none border border-border/40 hover:shadow-md transition-shadow duration-200">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                              <DollarSign className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-sm font-bold">{template.name}</CardTitle>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Badge variant="outline" className="text-[10px] h-5">
+                                  Grade: {template.grade}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-muted"
+                            onClick={() => {
+                              setEditingTemplate(template)
+                              setDialogOpen(true)
+                            }}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-border/30">
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Basic Salary</p>
+                          <p className="text-lg font-bold text-foreground">৳{template.basicSalary.toLocaleString()}</p>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-2">
+                        <div className="space-y-1.5">
+                          {template.components.map((component) => {
+                            const amt = component.id === "basic" ? template.basicSalary : 
+                                        component.isFixed ? component.amount : 
+                                        Math.round((template.basicSalary * (component.percentage || 0)) / 100)
+                            return (
+                              <div key={component.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center shrink-0">
                                     {getIcon(component.icon)}
                                   </Badge>
-                                  {component.name}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-medium truncate">{component.name}</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {component.id === "basic" ? (
+                                        "Base"
+                                      ) : component.isFixed ? (
+                                        `Fixed: ৳${component.amount.toLocaleString()}`
+                                      ) : (
+                                        `${component.percentage}% of Basic`
+                                      )}
+                                    </p>
+                                  </div>
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs">
-                                  {component.category}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-xs font-mono text-muted-foreground">
-                                {component.id === "basic" ? (
-                                  "Base Reference"
-                                ) : component.isFixed ? (
-                                  `Fixed amount`
-                                ) : (
-                                  `${component.percentage}% of Basic`
-                                )}
-                              </TableCell>
-                              <TableCell className="font-semibold text-emerald-600">
-                                ৳{amt.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setEditingTemplate(currentTemplate)
-                                    setDialogOpen(true)
-                                  }}
-                                >
-                                  <Edit3 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                        <TableRow className="bg-emerald-500/5 font-semibold">
-                          <TableCell colSpan={3}>Total Gross Salary</TableCell>
-                          <TableCell className="text-emerald-600">৳{totalEarnings.toLocaleString()}</TableCell>
-                          <TableCell></TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                {/* Net Salary Summary */}
-                <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Gross Monthly Salary</p>
-                      <p className="text-xs text-muted-foreground mt-1">Total salary before any deductions</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-blue-600">৳{netSalary.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Annual: ৳{(netSalary * 12).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                                <span className="text-xs font-semibold text-emerald-600 ml-2">
+                                  ৳{amt.toLocaleString()}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        <div className="pt-2 mt-2 border-t-2 border-emerald-500/20 bg-emerald-500/5 -mx-6 px-6 py-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gross Salary</span>
+                            <span className="text-base font-bold text-emerald-600">৳{templateTotal.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[10px] text-muted-foreground">Annual</span>
+                            <span className="text-xs font-semibold text-muted-foreground">৳{(templateTotal * 12).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
 
-        {/* Festival Bonus Policy Card */}
-        <div className="space-y-6">
+          </CardContent>
+        </Card>
+
+        {/* Bottom Row: Festival Bonus & PF (Two Column) */}
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-none border border-border/40">
-            <CardHeader>
+            <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Gift className="h-5 w-5 text-primary" />
-                Festival Bonus (Clause 7.6.1)
+                Festival Bonus Policy
               </CardTitle>
-              <CardDescription>Configure festival bonus entitlement and pro-rata calculation rules</CardDescription>
+              <CardDescription>Configure bonus entitlement rules (Clause 7.6.1)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {/* Dynamic Rules Table */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold">Active Rules & Thresholds</Label>
+                  <Label className="text-xs font-semibold">Active Rules</Label>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-7 px-2 text-xs gap-1 hover:bg-primary/5 hover:text-primary"
+                    className="h-8 px-3 text-xs gap-1.5"
                     onClick={handleOpenAddRule}
                   >
-                    <Plus className="h-3 w-3" /> Add Rule
+                    <Plus className="h-3.5 w-3.5" /> Add Rule
                   </Button>
                 </div>
 
                 {isLoadingRules ? (
-                  <div className="text-center py-4 text-xs text-muted-foreground">Loading rules...</div>
+                  <div className="text-center py-6 text-xs text-muted-foreground">Loading rules...</div>
                 ) : rules.length === 0 ? (
-                  <div className="text-center py-4 text-xs text-muted-foreground">No rules configured.</div>
+                  <div className="text-center py-6 text-xs text-muted-foreground border border-dashed border-border rounded-lg">
+                    No rules configured yet
+                  </div>
                 ) : (
-                  <div className="border border-border/60 rounded-lg overflow-hidden">
+                  <div className="border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader className="bg-muted/40">
                         <TableRow>
-                          <TableHead className="h-8 text-[10px] uppercase font-bold px-3">Service Range</TableHead>
-                          <TableHead className="h-8 text-[10px] uppercase font-bold px-3">Payout</TableHead>
-                          <TableHead className="h-8 text-[10px] uppercase font-bold px-3 text-right">Actions</TableHead>
+                          <TableHead className="h-9 text-[10px] uppercase font-bold px-3">Service Range</TableHead>
+                          <TableHead className="h-9 text-[10px] uppercase font-bold px-3">Payout</TableHead>
+                          <TableHead className="h-9 text-[10px] uppercase font-bold px-3 text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {rules.map((rule) => (
                           <TableRow key={rule.id} className="hover:bg-muted/20">
-                            <TableCell className="py-2 px-3 text-xs">
-                              <div className="font-medium">{rule.minServiceMonths}–{rule.maxServiceMonths >= 999 ? '∞' : `${rule.maxServiceMonths}`} Months</div>
+                            <TableCell className="py-2.5 px-3 text-xs">
+                              <div className="font-semibold">{rule.minServiceMonths}–{rule.maxServiceMonths >= 999 ? '∞' : `${rule.maxServiceMonths}`} Months</div>
                               {rule.description && (
-                                <div className="text-[10px] text-muted-foreground">{rule.description}</div>
+                                <div className="text-[10px] text-muted-foreground mt-0.5">{rule.description}</div>
                               )}
                             </TableCell>
-                            <TableCell className="py-2 px-3 text-xs">
+                            <TableCell className="py-2.5 px-3 text-xs">
                               <div className="font-semibold text-emerald-600">{rule.bonusPercentage}%</div>
                               {rule.isProRata && (
-                                <Badge variant="secondary" className="text-[8px] h-3.5 px-1 py-0 bg-blue-500/10 text-blue-600 border-blue-500/20 font-bold">Pro-rata</Badge>
+                                <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 bg-blue-500/10 text-blue-600 border-blue-500/20 font-bold mt-1">Pro-rata</Badge>
                               )}
                             </TableCell>
-                            <TableCell className="py-2 px-3 text-right space-x-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => handleOpenEditRule(rule)}
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteRule(rule.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                            <TableCell className="py-2.5 px-3 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleOpenEditRule(rule)}
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleDeleteRule(rule.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -583,12 +607,12 @@ export function SalarySetup() {
               <div className="space-y-3">
                 <Label className="text-xs font-semibold flex items-center gap-1.5">
                   <Calculator className="h-4 w-4 text-primary" />
-                  Pro-rata Calculator Simulation
+                  Pro-rata Calculator
                 </Label>
-                <div className="p-4 rounded-xl bg-muted/20 border border-border/30 space-y-3.5">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/40 space-y-3.5">
                   <div className="grid gap-3 grid-cols-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Basic Salary (৳)</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wide">Basic Salary (৳)</Label>
                       <Input
                         type="number"
                         value={simBasic}
@@ -596,8 +620,8 @@ export function SalarySetup() {
                         className="h-9 text-xs"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Service Days</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wide">Service Days</Label>
                       <Input
                         type="number"
                         value={simDays}
@@ -607,17 +631,17 @@ export function SalarySetup() {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-border/30 space-y-2 text-xs">
-                    <div className="flex justify-between">
+                  <div className="pt-3 border-t border-border/40 space-y-2.5 text-xs">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Service Months:</span>
-                      <span className="font-mono">{simDays} Days ÷ 30 = {simMonths.toFixed(2)} Months</span>
+                      <span className="font-mono font-medium">{simDays} Days ÷ 30 = {simMonths.toFixed(2)} Months</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Eligibility Check:</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Eligibility:</span>
                       <span>
                         {isEligible ? (
                           matchedRule?.isProRata ? (
-                            <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px] font-bold">Pro-rata (Pending Approval)</Badge>
+                            <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px] font-bold">Pro-rata (Pending)</Badge>
                           ) : (
                             <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">Eligible (Full)</Badge>
                           )
@@ -629,12 +653,12 @@ export function SalarySetup() {
                     {simFormulaLabel && (
                       <div className="flex justify-between text-[10px] text-muted-foreground italic">
                         <span>Formula:</span>
-                        <span>{simFormulaLabel}</span>
+                        <span className="font-mono">{simFormulaLabel}</span>
                       </div>
                     )}
-                    <div className="flex justify-between pt-2 border-t border-border/30 text-sm font-semibold">
+                    <div className="flex justify-between pt-3 border-t border-border/40 text-sm font-semibold">
                       <span className="text-foreground">Calculated Bonus:</span>
-                      <span className="text-blue-600">৳{simBonus.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-blue-600 text-base">৳{simBonus.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -644,18 +668,18 @@ export function SalarySetup() {
 
           {/* Provident Fund (PF) Settings Card */}
           <Card className="shadow-none border border-border/40">
-            <CardHeader>
+            <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                Provident Fund (PF) Settings
+                Provident Fund Settings
               </CardTitle>
-              <CardDescription>Configure employee/employer contributions and eligibility rules</CardDescription>
+              <CardDescription>Configure employee/employer contributions and eligibility</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-4">
                 <div className="grid gap-3 grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="pfMinMonths" className="text-xs font-semibold">Eligibility (Min Months)</Label>
+                    <Label htmlFor="pfMinMonths" className="text-xs font-semibold">Eligibility (Months)</Label>
                     <Input
                       id="pfMinMonths"
                       type="number"
@@ -681,7 +705,7 @@ export function SalarySetup() {
 
                 <div className="grid gap-3 grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="pfEmployeeRate" className="text-xs font-semibold">Employee Contribution (%)</Label>
+                    <Label htmlFor="pfEmployeeRate" className="text-xs font-semibold">Employee %</Label>
                     <Input
                       id="pfEmployeeRate"
                       type="number"
@@ -691,7 +715,7 @@ export function SalarySetup() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="pfEmployerRate" className="text-xs font-semibold">Employer Contribution (%)</Label>
+                    <Label htmlFor="pfEmployerRate" className="text-xs font-semibold">Employer %</Label>
                     <Input
                       id="pfEmployerRate"
                       type="number"
@@ -745,20 +769,20 @@ export function SalarySetup() {
               <div className="space-y-3">
                 <Label className="text-xs font-semibold flex items-center gap-1.5">
                   <Calculator className="h-4 w-4 text-primary" />
-                  PF Contribution Simulation
+                  PF Contribution Calculator
                 </Label>
-                <div className="p-4 rounded-xl bg-muted/20 border border-border/30 space-y-3.5">
-                  <div className="pt-1 space-y-2 text-xs">
-                    <div className="flex justify-between">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/40 space-y-3.5">
+                  <div className="pt-1 space-y-2.5 text-xs">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Basic Salary (Sim):</span>
-                      <span className="font-mono">৳{simBasic.toLocaleString()}</span>
+                      <span className="font-mono font-medium">৳{simBasic.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Service Months (Sim):</span>
-                      <span className="font-mono">{simMonths.toFixed(2)} Months</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Service Months:</span>
+                      <span className="font-mono font-medium">{simMonths.toFixed(2)} Months</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Eligibility Check:</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Eligibility:</span>
                       <span>
                         {simMonths >= pfMinMonths ? (
                           <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">Eligible</Badge>
@@ -768,20 +792,20 @@ export function SalarySetup() {
                       </span>
                     </div>
 
-                    <div className="pt-2 border-t border-border/30 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Employee contribution ({pfEmployeeRate}%):</span>
-                        <span className="font-mono text-foreground">৳{((simBasic * pfEmployeeRate) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <div className="pt-3 border-t border-border/40 space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Employee ({pfEmployeeRate}%):</span>
+                        <span className="font-mono text-foreground font-medium">৳{((simBasic * pfEmployeeRate) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Employer contribution ({pfEmployerRate}%):</span>
-                        <span className="font-mono text-foreground">৳{((simBasic * pfEmployerRate) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Employer ({pfEmployerRate}%):</span>
+                        <span className="font-mono text-foreground font-medium">৳{((simBasic * pfEmployerRate) / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
                     </div>
 
-                    <div className="flex justify-between pt-2 border-t border-border/30 text-sm font-semibold">
+                    <div className="flex justify-between pt-3 border-t border-border/40 text-sm font-semibold">
                       <span className="text-foreground">Total Monthly Deposit:</span>
-                      <span className="text-blue-600">৳{(((simBasic * pfEmployeeRate) / 100) + ((simBasic * pfEmployerRate) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-blue-600 text-base">৳{(((simBasic * pfEmployeeRate) / 100) + ((simBasic * pfEmployerRate) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -789,78 +813,78 @@ export function SalarySetup() {
             </CardContent>
           </Card>
         </div>
+      </div>
 
-        {/* Festival Bonus Rule Dialog Form */}
-        <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingRule ? "Edit" : "Add"} Festival Bonus Rule</DialogTitle>
-              <DialogDescription>
-                Configure the service duration threshold and bonus payout percentage.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minMonths">Min Service (Months)</Label>
-                  <Input
-                    id="minMonths"
-                    type="number"
-                    value={ruleMinMonths}
-                    onChange={(e) => setRuleMinMonths(parseInt(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxMonths">Max Service (Months)</Label>
-                  <Input
-                    id="maxMonths"
-                    type="number"
-                    value={ruleMaxMonths}
-                    onChange={(e) => setRuleMaxMonths(parseInt(e.target.value) || 0)}
-                  />
-                </div>
-              </div>
+      {/* Festival Bonus Rule Dialog Form */}
+      <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingRule ? "Edit" : "Add"} Festival Bonus Rule</DialogTitle>
+            <DialogDescription>
+              Configure the service duration threshold and bonus payout percentage.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="percentage">Bonus Percentage of Basic (%)</Label>
+                <Label htmlFor="minMonths">Min Service (Months)</Label>
                 <Input
-                  id="percentage"
+                  id="minMonths"
                   type="number"
-                  value={rulePercentage}
-                  onChange={(e) => setRulePercentage(parseFloat(e.target.value) || 0)}
+                  value={ruleMinMonths}
+                  onChange={(e) => setRuleMinMonths(parseInt(e.target.value) || 0)}
                 />
-              </div>
-              <div className="flex items-center space-x-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="isProRata"
-                  checked={ruleIsProRata}
-                  onChange={(e) => setRuleIsProRata(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <Label htmlFor="isProRata" className="cursor-pointer">Enable Pro-rata calculation based on service months</Label>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="maxMonths">Max Service (Months)</Label>
                 <Input
-                  id="description"
-                  value={ruleDescription}
-                  onChange={(e) => setRuleDescription(e.target.value)}
-                  placeholder="e.g. One Month Basic Salary"
+                  id="maxMonths"
+                  type="number"
+                  value={ruleMaxMonths}
+                  onChange={(e) => setRuleMaxMonths(parseInt(e.target.value) || 0)}
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveRule} className="gap-2">
-                <Save className="h-4 w-4" />
-                Save Rule
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="percentage">Bonus Percentage of Basic (%)</Label>
+              <Input
+                id="percentage"
+                type="number"
+                value={rulePercentage}
+                onChange={(e) => setRulePercentage(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <input
+                type="checkbox"
+                id="isProRata"
+                checked={ruleIsProRata}
+                onChange={(e) => setRuleIsProRata(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="isProRata" className="cursor-pointer">Enable Pro-rata calculation based on service months</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={ruleDescription}
+                onChange={(e) => setRuleDescription(e.target.value)}
+                placeholder="e.g. One Month Basic Salary"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveRule} className="gap-2">
+              <Save className="h-4 w-4" />
+              Save Rule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

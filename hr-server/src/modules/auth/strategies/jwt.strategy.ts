@@ -1,4 +1,4 @@
-import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -29,6 +29,8 @@ export interface JwtUser {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     configService: ConfigService,
     @Inject(DB_CONNECTION) private readonly db: Database,
@@ -74,20 +76,43 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       };
     }
 
-    // 3. Cache miss — verify user exists and is active
-    const [user] = await this.db
-      .select({
-        id: employees.id,
-        email: employees.email,
-        role: employees.role,
-        status: employees.status,
-        refreshTokenVersion: employees.refreshTokenVersion,
-        fullNameEnglish: employees.fullNameEnglish,
-        employeePhotoUrl: employees.employeePhotoUrl,
-      })
-      .from(employees)
-      .where(eq(employees.id, payload.sub))
-      .limit(1);
+    // 3. Cache miss — verify user exists and is active (with retry logic)
+    let user;
+    let retries = 0;
+    const maxRetries = 3;
+
+    while (retries < maxRetries) {
+      try {
+        [user] = await this.db
+          .select({
+            id: employees.id,
+            email: employees.email,
+            role: employees.role,
+            status: employees.status,
+            refreshTokenVersion: employees.refreshTokenVersion,
+            fullNameEnglish: employees.fullNameEnglish,
+            employeePhotoUrl: employees.employeePhotoUrl,
+          })
+          .from(employees)
+          .where(eq(employees.id, payload.sub))
+          .limit(1);
+        break; // Success - exit retry loop
+      } catch (error) {
+        retries++;
+        if (retries === maxRetries) {
+          this.logger.error(
+            `Database query failed after ${maxRetries} attempts for user ${payload.sub}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+          throw new UnauthorizedException('Authentication service temporarily unavailable');
+        }
+        // Exponential backoff: 100ms, 200ms, 400ms
+        await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retries - 1)));
+        this.logger.warn(
+          `Database query attempt ${retries}/${maxRetries} failed, retrying...`,
+        );
+      }
+    }
 
     if (!user) {
       throw new UnauthorizedException('User not found');
