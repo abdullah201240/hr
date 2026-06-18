@@ -23,11 +23,8 @@ import {
 import {
   CheckCircle,
   CreditCard,
-  Gift,
-  Eye,
   Printer,
   AlertTriangle,
-  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
@@ -407,62 +404,10 @@ export default function PayrollProcessingTab({
 
   // Modals view states
   const [viewPayslip, setViewPayslip] = useState<Payslip | null>(null)
-  const [editingBonusEmail, setEditingBonusEmail] = useState("")
-  const [isBonusOpen, setIsBonusOpen] = useState(false)
   const [isDisburseOpen, setIsDisburseOpen] = useState(false)
-  
-  const [bonusVal, setBonusVal] = useState(0)
-  const [bonusReason, setBonusReason] = useState("")
   const [payoutMethod, setPayoutMethod] = useState("Bank Transfer")
   const [payoutDate, setPayoutDate] = useState("2026-06-30")
   const [payoutRef, setPayoutRef] = useState("")
-
-  const handleOpenBonus = (email: string) => {
-    const slip = computedCycle.payslips.find((p) => p.employeeEmail === email)
-    if (slip) {
-      setBonusVal(slip.specialBonus ?? (slip.festivalBonus === undefined ? slip.bonus : 0))
-      setBonusReason(slip.specialBonusDescription ?? (slip.festivalBonus === undefined ? slip.bonusDescription : ""))
-      setEditingBonusEmail(email)
-      setIsBonusOpen(true)
-    }
-  }
-
-  const handleSaveBonus = () => {
-    const updatedPayslips = computedCycle.payslips.map((slip) => {
-      if (slip.employeeEmail === editingBonusEmail) {
-        const sumAllowances = Object.values(slip.allowances).reduce((a, b) => a + b, 0)
-        const sumDeductions = Object.values(slip.deductions).reduce((a, b) => a + b, 0)
-        const festBonus = slip.festivalBonus || 0
-        const totalBonus = festBonus + bonusVal
-        const netPay = (slip.basicSalary + sumAllowances + totalBonus) - sumDeductions
-
-        return {
-          ...slip,
-          bonus: totalBonus,
-          specialBonus: bonusVal,
-          specialBonusDescription: bonusReason,
-          bonusDescription: bonusReason || slip.festivalBonusDescription || "",
-          netPay: Math.max(0, netPay),
-        }
-      }
-      return slip
-    })
-    const updatedCycle: PayrollCycle = { ...computedCycle, payslips: updatedPayslips }
-    const nextPayrolls = payrolls.filter((p) => p.monthKey !== selectedMonth)
-    savePayrolls([...nextPayrolls, updatedCycle])
-    setIsBonusOpen(false)
-    Swal.fire({
-      title: "Bonus Saved!",
-      text: "Bonus allocations and net payable amounts updated.",
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton:
-          "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
-      },
-    })
-  }
 
   const handleRunPayroll = () => {
     if (pendingConfigCount > 0) {
@@ -679,9 +624,6 @@ export default function PayrollProcessingTab({
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">
                   Status
                 </TableHead>
-                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 text-right w-44">
-                  Action
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -778,42 +720,7 @@ export default function PayrollProcessingTab({
                         {payslip.paymentStatus}
                       </Badge>
                     </TableCell>
-                    <TableCell className="py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {computedCycle.status === "Draft" && payslip.basicSalary > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[10px] gap-1"
-                            onClick={() =>
-                              handleOpenBonus(payslip.employeeEmail)
-                            }
-                          >
-                            <Gift className="h-3 w-3" />
-                            Bonus
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 gap-1 text-[10px] text-muted-foreground hover:text-primary rounded-md"
-                          onClick={() => setAuditEmployeeEmail(payslip.employeeEmail)}
-                        >
-                          <CalendarDays className="h-3 w-3" />
-                          Audit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 gap-1 text-[10px] text-muted-foreground hover:text-primary rounded-md"
-                          onClick={() => setViewPayslip(payslip)}
-                          disabled={payslip.basicSalary === 0}
-                        >
-                          <Eye className="h-3 w-3" />
-                          Payslip
-                        </Button>
-                      </div>
-                    </TableCell>
+                    
                   </TableRow>
                 )
               })}
@@ -921,57 +828,6 @@ export default function PayrollProcessingTab({
         </DialogContent>
       </Dialog>
 
-      {/* Configure Bonus Dialog */}
-      <Dialog open={isBonusOpen} onOpenChange={setIsBonusOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold">
-              Configure Special Bonus
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Allocate performance or festival incentives for this employee's
-              draft payslip.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Bonus Amount (৳)
-              </Label>
-              <Input
-                type="number"
-                value={bonusVal}
-                onChange={(e) => setBonusVal(Number(e.target.value))}
-                className="text-xs"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Reason / Description
-              </Label>
-              <Input
-                placeholder="e.g. Q2 Performance Bonus, Festival Incentive"
-                value={bonusReason}
-                onChange={(e) => setBonusReason(e.target.value)}
-                className="text-xs"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsBonusOpen(false)}
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleSaveBonus} className="text-xs">
-              Save Allocation
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Salary Disbursement Dialog */}
       <Dialog open={isDisburseOpen} onOpenChange={setIsDisburseOpen}>
@@ -1041,7 +897,8 @@ export default function PayrollProcessingTab({
               onClick={handleExecuteDisbursement}
               className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none"
             >
-              Execute Payout
+              Execute PayoutMonthly Compensation Ledger
+
             </Button>
           </DialogFooter>
         </DialogContent>
