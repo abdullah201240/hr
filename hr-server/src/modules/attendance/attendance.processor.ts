@@ -1,7 +1,7 @@
 import { Inject, Logger } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
-import { eq, and, isNull, isNotNull, lte, gte } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull, lte, gte, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { attendanceLogs, holidays, employees } from '../../db/schema';
 import { ATTENDANCE_QUEUE } from '../queue/queue.module';
@@ -182,25 +182,20 @@ export class AttendanceProcessor extends WorkerHost {
       return { status: 'success', processed: 0 };
     }
 
-    let processedCount = 0;
+    const logIds = unCheckedLogs.map((log) => log.id);
+    this.logger.log(`Auto-checking in ${logIds.length} employees for date ${todayStr}`);
 
-    for (const log of unCheckedLogs) {
-      this.logger.log(`Auto-checking in employee ${log.employeeId} for date ${todayStr}`);
+    await this.db
+      .update(attendanceLogs)
+      .set({
+        checkIn: checkInStr,
+        status: 'present',
+        notes: 'Auto checked-in at office start time',
+      })
+      .where(inArray(attendanceLogs.id, logIds));
 
-      await this.db
-        .update(attendanceLogs)
-        .set({
-          checkIn: checkInStr,
-          status: 'present',
-          notes: 'Auto checked-in at office start time',
-        })
-        .where(eq(attendanceLogs.id, log.id));
-
-      processedCount++;
-    }
-
-    this.logger.log(`Auto-checkin completed: processed ${processedCount} employees`);
-    return { status: 'success', processed: processedCount };
+    this.logger.log(`Auto-checkin completed: processed ${logIds.length} employees`);
+    return { status: 'success', processed: logIds.length };
   }
 
   // ─── Auto Check-Out ───────────────────────────────────────────────────────
@@ -234,51 +229,50 @@ export class AttendanceProcessor extends WorkerHost {
       return { status: 'success', processed: 0 };
     }
 
-    let processedCount = 0;
+    await this.db.transaction(async (tx) => {
+      const promises = activeLogs.map(async (log) => {
+        const officeEnd = this.attendanceService.parseOfficeTime(settings.endTime, log.date);
+        const officeEndStr = this.attendanceService.formatTime(officeEnd);
 
-    for (const log of activeLogs) {
-      const officeEnd = this.attendanceService.parseOfficeTime(settings.endTime, log.date);
-      const officeEndStr = this.attendanceService.formatTime(officeEnd);
+        this.logger.log(
+          `Auto-checking out employee ${log.employeeId} for date ${log.date} (check-in: ${log.checkIn})`,
+        );
 
-      this.logger.log(
-        `Auto-checking out employee ${log.employeeId} for date ${log.date} (check-in: ${log.checkIn})`,
-      );
+        const checkInTime = this.attendanceService.parseTimeString(log.checkIn!, log.date);
 
-      const checkInTime = this.attendanceService.parseTimeString(log.checkIn!, log.date);
+        // Compute hours
+        const diffMs = officeEnd.getTime() - checkInTime.getTime();
+        const totalHours = diffMs / (1000 * 60 * 60);
 
-      // Compute hours
-      const diffMs = officeEnd.getTime() - checkInTime.getTime();
-      const totalHours = diffMs / (1000 * 60 * 60);
-
-      let logBreakHours = 0;
-      if (settings.breakStart && settings.breakEnd) {
-        const breakS = this.attendanceService.parseOfficeTime(settings.breakStart, log.date);
-        const breakE = this.attendanceService.parseOfficeTime(settings.breakEnd, log.date);
-        if (checkInTime < breakE && officeEnd > breakS) {
-          const overlapStart = new Date(Math.max(checkInTime.getTime(), breakS.getTime()));
-          const overlapEnd = new Date(Math.min(officeEnd.getTime(), breakE.getTime()));
-          logBreakHours = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60);
+        let logBreakHours = 0;
+        if (settings.breakStart && settings.breakEnd) {
+          const breakS = this.attendanceService.parseOfficeTime(settings.breakStart, log.date);
+          const breakE = this.attendanceService.parseOfficeTime(settings.breakEnd, log.date);
+          if (checkInTime < breakE && officeEnd > breakS) {
+            const overlapStart = new Date(Math.max(checkInTime.getTime(), breakS.getTime()));
+            const overlapEnd = new Date(Math.min(officeEnd.getTime(), breakE.getTime()));
+            logBreakHours = (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60);
+          }
         }
-      }
 
-      const finalHours = Math.max(0, Math.round((totalHours - logBreakHours) * 100) / 100);
+        const finalHours = Math.max(0, Math.round((totalHours - logBreakHours) * 100) / 100);
 
-      await this.db
-        .update(attendanceLogs)
-        .set({
-          checkOut: officeEndStr,
-          hours: finalHours,
-          breakHours: Math.round(logBreakHours * 100) / 100,
-          notes: log.notes
-            ? `${log.notes} (Auto checked-out)`
-            : 'Auto checked-out at end of shift',
-        })
-        .where(eq(attendanceLogs.id, log.id));
+        await tx
+          .update(attendanceLogs)
+          .set({
+            checkOut: officeEndStr,
+            hours: finalHours,
+            breakHours: Math.round(logBreakHours * 100) / 100,
+            notes: log.notes
+              ? `${log.notes} (Auto checked-out)`
+              : 'Auto checked-out at end of shift',
+          })
+          .where(eq(attendanceLogs.id, log.id));
+      });
+      await Promise.all(promises);
+    });
 
-      processedCount++;
-    }
-
-    this.logger.log(`Auto-checkout completed: processed ${processedCount} logs`);
-    return { status: 'success', processed: processedCount };
+    this.logger.log(`Auto-checkout completed: processed ${activeLogs.length} logs`);
+    return { status: 'success', processed: activeLogs.length };
   }
 }

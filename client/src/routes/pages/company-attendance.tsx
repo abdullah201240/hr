@@ -142,7 +142,7 @@ export default function CompanyAttendancePage() {
   }, [filterMode, selectedDate, selectedYear, selectedMonth, customStartDate, customEndDate])
 
   // Queries & Mutations
-  const { data: pageData, isLoading: isLoadingLogs, refetch } = useRangeAttendanceQuery(
+  const { data: pageData, isLoading: isLoadingLogs, isFetching: isFetchingLogs, refetch } = useRangeAttendanceQuery(
     queryStartDate,
     queryEndDate,
     limit,
@@ -555,7 +555,7 @@ export default function CompanyAttendancePage() {
       </div>
 
       {/* Daily Logs Table */}
-      <Card className="shadow-none border-border/40">
+      <Card className="shadow-none border-border/40 overflow-hidden">
         <CardContent className="p-0">
           <div className="px-5 py-4 border-b border-border/30 flex items-center justify-between">
             <div>
@@ -566,135 +566,148 @@ export default function CompanyAttendancePage() {
               <Info className="h-3 w-3" /> Showing {processedLogs.length} entries
             </div>
           </div>
-          <div className="overflow-x-auto">
-            {isLoadingLogs ? (
-              <div className="flex justify-center items-center py-16">
+          <div className="overflow-x-auto relative">
+            {/* Smooth transition indicator when refetching page data */}
+            {isFetchingLogs && !isLoadingLogs && (
+              <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px] z-10 flex items-center justify-center transition-all duration-300">
                 <Spinner className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : (
-              <Table>
-                <TableHeader className="bg-muted/10 border-b border-border/30">
-                  <TableRow className="border-b-0 hover:bg-transparent">
-                    {filterMode !== "day" && (
-                      <TableHead className="font-semibold text-xs text-muted-foreground">Date</TableHead>
-                    )}
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">ID Code</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Check In</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Check Out</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Logged Hours</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Notes</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground text-right w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {processedLogs.length > 0 ? (
-                    processedLogs.map((log) => (
-                      <TableRow key={log.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
-                        {filterMode !== "day" && (
-                          <TableCell className="py-3 text-xs font-medium text-muted-foreground">
-                            {format(new Date(log.date), "dd-MM-yyyy")}
-                          </TableCell>
-                        )}
-                        <TableCell className="py-3 font-semibold">{log.employeeName}</TableCell>
-                        <TableCell className="py-3 text-muted-foreground text-xs">{log.employeeIdCode}</TableCell>
-                        <TableCell className="py-3 text-muted-foreground text-xs">{log.departmentName}</TableCell>
-                        <TableCell className="py-3">
-                          {log.checkIn ? <span className="font-semibold text-emerald-600 dark:text-emerald-400">{log.checkIn}</span> : <span className="text-muted-foreground/30">—</span>}
+            )}
+            <Table>
+              <TableHeader className="bg-muted/10 border-b border-border/30">
+                <TableRow className="border-b-0 hover:bg-transparent">
+                  {filterMode !== "day" && (
+                    <TableHead className="font-semibold text-xs text-muted-foreground">Date</TableHead>
+                  )}
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">ID Code</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Check In</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Check Out</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Logged Hours</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground">Notes</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground text-right w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingLogs ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <TableRow key={idx} className="border-b border-border/20">
+                      {filterMode !== "day" && (
+                        <TableCell className="py-4"><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
+                      )}
+                      <TableCell className="py-4"><div className="h-4 w-28 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4"><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4"><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4"><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4"><div className="h-4 w-16 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4"><div className="h-4 w-12 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4"><div className="h-6 w-16 bg-muted animate-pulse rounded-full" /></TableCell>
+                      <TableCell className="py-4"><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
+                      <TableCell className="py-4 text-right"><div className="h-7 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : processedLogs.length > 0 ? (
+                  processedLogs.map((log) => (
+                    <TableRow key={log.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      {filterMode !== "day" && (
+                        <TableCell className="py-3 text-xs font-medium text-muted-foreground">
+                          {format(new Date(log.date), "dd-MM-yyyy")}
                         </TableCell>
-                        <TableCell className="py-3">
-                          {log.checkOut ? <span className="font-semibold text-amber-600 dark:text-amber-400">{log.checkOut}</span> : <span className="text-muted-foreground/30">—</span>}
-                        </TableCell>
-                        <TableCell className="py-3 font-bold">{log.hours ? `${log.hours} hrs` : <span className="text-muted-foreground/30">—</span>}</TableCell>
-                        <TableCell className="py-3">
-                          <Badge className={`text-[9px] font-bold capitalize border-none ${
-                            log.status === "present" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                              : log.status === "late" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-                              : log.status === "absent" ? "bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                              : log.status === "leave" ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10"
-                              : log.status === "holiday" ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10"
-                              : "bg-muted text-muted-foreground"
-                          }`}>
-                            {log.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 text-muted-foreground italic max-w-[160px] truncate text-xs">{log.notes || "—"}</TableCell>
-                        <TableCell className="py-3 text-right">
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenOverride(log)} className="h-7 text-[10px] font-semibold text-primary hover:text-primary/95 hover:bg-primary/5 rounded-lg px-2.5">
-                            Override
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={9} className="py-16 text-center text-muted-foreground">
-                        <Users className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                        <p className="text-sm font-semibold">No attendance records found</p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">Try selecting a different date or clearing filters</p>
+                      )}
+                      <TableCell className="py-3 font-semibold">{log.employeeName}</TableCell>
+                      <TableCell className="py-3 text-muted-foreground text-xs">{log.employeeIdCode}</TableCell>
+                      <TableCell className="py-3 text-muted-foreground text-xs">{log.departmentName}</TableCell>
+                      <TableCell className="py-3">
+                        {log.checkIn ? <span className="font-semibold text-emerald-600 dark:text-emerald-400">{log.checkIn}</span> : <span className="text-muted-foreground/30">—</span>}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {log.checkOut ? <span className="font-semibold text-amber-600 dark:text-amber-400">{log.checkOut}</span> : <span className="text-muted-foreground/30">—</span>}
+                      </TableCell>
+                      <TableCell className="py-3 font-bold">{log.hours ? `${log.hours} hrs` : <span className="text-muted-foreground/30">—</span>}</TableCell>
+                      <TableCell className="py-3">
+                        <Badge className={`text-[9px] font-bold capitalize border-none ${
+                          log.status === "present" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                            : log.status === "late" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                            : log.status === "absent" ? "bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                            : log.status === "leave" ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10"
+                            : log.status === "holiday" ? "bg-violet-500/10 text-violet-600 dark:text-violet-400 hover:bg-violet-500/10"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {log.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 text-muted-foreground italic max-w-[160px] truncate text-xs">{log.notes || "—"}</TableCell>
+                      <TableCell className="py-3 text-right">
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenOverride(log)} className="h-7 text-[10px] font-semibold text-primary hover:text-primary/95 hover:bg-primary/5 rounded-lg px-2.5">
+                          Override
+                        </Button>
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={filterMode !== "day" ? 10 : 9} className="py-16 text-center text-muted-foreground">
+                      <Users className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-sm font-semibold">No attendance records found</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Try selecting a different date or clearing filters</p>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
-      </Card>
 
-      {/* Pagination Controls */}
-      {dailyLogs.length > 0 && (
-        <Card className="shadow-none border-border/40">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                Showing <span className="font-semibold text-foreground">{dailyLogs.length}</span> logs
-                {cursorHistory.length > 0 && ` (Page ${currentPage})`}
+        {/* Cohesive Pagination Footer */}
+        {!isLoadingLogs && dailyLogs.length > 0 && (
+          <div className="px-5 py-4 border-t border-border/30 bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-muted-foreground font-medium">
+              Showing <span className="font-semibold text-foreground">{dailyLogs.length}</span> logs
+              {cursorHistory.length > 0 && ` (Page ${currentPage})`}
+            </div>
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">Rows per page:</span>
+                <Select value={String(limit)} onValueChange={(val) => setLimit(Number(val))}>
+                  <SelectTrigger className="w-16 h-8 text-[11px] bg-transparent border-border/60 font-semibold focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10" className="text-xs font-semibold">10</SelectItem>
+                    <SelectItem value="20" className="text-xs font-semibold">20</SelectItem>
+                    <SelectItem value="50" className="text-xs font-semibold">50</SelectItem>
+                    <SelectItem value="100" className="text-xs font-semibold">100</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-muted-foreground font-medium">Rows per page:</span>
-                  <Select value={String(limit)} onValueChange={(val) => setLimit(Number(val))}>
-                    <SelectTrigger className="w-16 h-7 text-[11px] bg-transparent border-border/60">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10" className="text-xs">10</SelectItem>
-                      <SelectItem value="20" className="text-xs">20</SelectItem>
-                      <SelectItem value="50" className="text-xs">50</SelectItem>
-                      <SelectItem value="100" className="text-xs">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevPage}
-                    disabled={cursorHistory.length === 0}
-                    className="text-xs gap-1"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNextPage}
-                    disabled={!hasNextPage}
-                    className="text-xs gap-1"
-                  >
-                    Next
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={cursorHistory.length === 0}
+                  className="h-8 text-xs font-semibold gap-1 hover:bg-muted/50 border-border/60"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={!hasNextPage}
+                  className="h-8 text-xs font-semibold gap-1 hover:bg-muted/50 border-border/60"
+                >
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
+      </Card>
 
       {/* Manual Entry / Override Dialog */}
       <Dialog open={isOverrideDialogOpen} onOpenChange={setIsOverrideDialogOpen}>

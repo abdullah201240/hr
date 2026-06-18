@@ -39,6 +39,31 @@ export class AttendanceController {
     return this.attendanceService.getLogs(employeeId, Number(year), Number(month));
   }
 
+  @Get('my-range')
+  @ApiOperation({ summary: 'Get attendance logs for the logged-in employee within a date range with cursor pagination' })
+  @ApiResponse({ status: 200, description: 'Attendance logs list' })
+  async getMyRangeLogs(
+    @Req() req: any,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('limit') limit?: number,
+    @Query('cursor') cursor?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    const employeeId = req.user.id;
+    return this.attendanceService.getRangeLogs(
+      startDate,
+      endDate,
+      limit ? Number(limit) : undefined,
+      cursor,
+      undefined,
+      status,
+      search,
+      employeeId,
+    );
+  }
+
   @Post('check-in')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Record employee check-in' })

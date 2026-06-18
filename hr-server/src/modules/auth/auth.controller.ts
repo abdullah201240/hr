@@ -11,6 +11,7 @@ import {
   UseGuards,
   UnauthorizedException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import '@fastify/cookie';
+import { ConfigService } from '@nestjs/config';
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -31,7 +33,29 @@ import { LoginThrottleGuard } from './guards/login-throttle.guard';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly isProduction: boolean;
+
+  constructor(
+    private readonly authService: AuthService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
+  ) {
+    this.isProduction = this.configService.get<string>('app.nodeEnv') === 'production';
+  }
+
+  /**
+   * Get cookie options based on environment
+   * Production: secure=true, sameSite='none' (requires HTTPS)
+   * Development: secure=false, sameSite='lax' (works with HTTP)
+   */
+  private getCookieOptions() {
+    return {
+      httpOnly: true,
+      secure: this.isProduction, // true only in production (HTTPS)
+      sameSite: this.isProduction ? ('none' as const) : ('lax' as const),
+      path: '/api/auth' as const,
+      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    };
+  }
 
   // ─── Login ──────────────────────────────────────────────────────────────
 
@@ -51,13 +75,7 @@ export class AuthController {
   ) {
     const loginResult = await this.authService.login(dto);
 
-    res.setCookie('refresh_token', loginResult.tokens.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      path: '/api/auth',
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
-    });
+    res.setCookie('refresh_token', loginResult.tokens.refreshToken, this.getCookieOptions());
 
     const { refreshToken, ...restTokens } = loginResult.tokens;
     return {
@@ -86,13 +104,7 @@ export class AuthController {
 
     const newTokens = await this.authService.refreshToken(refreshToken);
 
-    res.setCookie('refresh_token', newTokens.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      path: '/api/auth',
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    res.setCookie('refresh_token', newTokens.refreshToken, this.getCookieOptions());
 
     const { refreshToken: _, ...restTokens } = newTokens;
     return { tokens: restTokens };
@@ -124,8 +136,8 @@ export class AuthController {
     res.clearCookie('refresh_token', {
       path: '/api/auth',
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: this.isProduction,
+      sameSite: this.isProduction ? 'none' : 'lax',
     });
 
     return this.authService.logout(accessToken, refreshToken);

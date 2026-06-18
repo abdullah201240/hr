@@ -399,6 +399,7 @@ export class AttendanceService implements OnModuleInit {
     departmentId?: string,
     status?: string,
     search?: string,
+    employeeId?: string,
   ) {
     let cursorDateStr: string | null = null;
     let cursorId: string | null = null;
@@ -415,6 +416,10 @@ export class AttendanceService implements OnModuleInit {
     }
 
     const conditions = [between(attendanceLogs.date, startDateStr, endDateStr)];
+
+    if (employeeId) {
+      conditions.push(eq(attendanceLogs.employeeId, employeeId));
+    }
 
     if (departmentId && departmentId !== 'all') {
       conditions.push(eq(employees.departmentId, departmentId));

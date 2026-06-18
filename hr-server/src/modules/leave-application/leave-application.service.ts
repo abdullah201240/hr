@@ -516,38 +516,54 @@ export class LeaveApplicationService {
       // ─── If Approved: Sync attendance logs ───
       if (dto.status === 'Approved') {
         const totalDays = app.days;
+        const dateStrings: string[] = [];
         for (let i = 0; i < totalDays; i++) {
           const currentDate = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
-          const dateStr = this.getLocalDateStr(currentDate);
+          dateStrings.push(this.getLocalDateStr(currentDate));
+        }
 
-          // Check if log exists
-          const [existingLog] = await tx
-            .select()
-            .from(attendanceLogs)
-            .where(
-              and(
-                eq(attendanceLogs.employeeId, app.employeeId),
-                eq(attendanceLogs.date, dateStr),
-              ),
-            )
-            .limit(1);
+        // Fetch existing logs in a single query
+        const existingLogs = await tx
+          .select()
+          .from(attendanceLogs)
+          .where(
+            and(
+              eq(attendanceLogs.employeeId, app.employeeId),
+              inArray(attendanceLogs.date, dateStrings),
+            ),
+          );
 
+        const existingLogsMap = new Map(existingLogs.map((log) => [log.date, log]));
+
+        const toUpdateIds: string[] = [];
+        const toInsert: any[] = [];
+
+        for (const dateStr of dateStrings) {
+          const existingLog = existingLogsMap.get(dateStr);
           if (existingLog) {
-            await tx
-              .update(attendanceLogs)
-              .set({
-                status: 'leave',
-                notes: leaveType ? `${leaveType.name}` : 'Leave Approved',
-              })
-              .where(eq(attendanceLogs.id, existingLog.id));
+            toUpdateIds.push(existingLog.id);
           } else {
-            await tx.insert(attendanceLogs).values({
+            toInsert.push({
               employeeId: app.employeeId,
               date: dateStr,
               status: 'leave',
               notes: leaveType ? `${leaveType.name}` : 'Leave Approved',
             });
           }
+        }
+
+        if (toUpdateIds.length > 0) {
+          await tx
+            .update(attendanceLogs)
+            .set({
+              status: 'leave',
+              notes: leaveType ? `${leaveType.name}` : 'Leave Approved',
+            })
+            .where(inArray(attendanceLogs.id, toUpdateIds));
+        }
+
+        if (toInsert.length > 0) {
+          await tx.insert(attendanceLogs).values(toInsert);
         }
       }
 
@@ -606,21 +622,22 @@ export class LeaveApplicationService {
       // ─── If previous status was Approved: Remove attendance logs of status 'leave' ───
       if (previousStatus === 'Approved') {
         const totalDays = app.days;
+        const dateStrings: string[] = [];
         for (let i = 0; i < totalDays; i++) {
           const currentDate = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
-          const dateStr = this.getLocalDateStr(currentDate);
-
-          // Delete attendance logs with status 'leave' so they fall back to dynamic weekend/holiday/absent
-          await tx
-            .delete(attendanceLogs)
-            .where(
-              and(
-                eq(attendanceLogs.employeeId, app.employeeId),
-                eq(attendanceLogs.date, dateStr),
-                eq(attendanceLogs.status, 'leave'),
-              ),
-            );
+          dateStrings.push(this.getLocalDateStr(currentDate));
         }
+
+        // Delete attendance logs with status 'leave' so they fall back to dynamic weekend/holiday/absent
+        await tx
+          .delete(attendanceLogs)
+          .where(
+            and(
+              eq(attendanceLogs.employeeId, app.employeeId),
+              eq(attendanceLogs.status, 'leave'),
+              inArray(attendanceLogs.date, dateStrings),
+            ),
+          );
       }
 
       await this.invalidateCache(app.employeeId, startYear, id);

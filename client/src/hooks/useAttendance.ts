@@ -31,6 +31,13 @@ export interface DailyAttendanceLog {
   hours: number | null;
   status: string;
   notes: string | null;
+  location?: "Office" | "Remote" | null;
+  ipAddress?: string | null;
+  device?: string | null;
+  correctionStatus?: "none" | "pending" | "approved" | "rejected";
+  proposedCheckIn?: string | null;
+  proposedCheckOut?: string | null;
+  correctionReason?: string | null;
 }
 
 export interface CorrectionRequest {
@@ -128,6 +135,28 @@ export function useRangeAttendanceQuery(
           (limit ? `&limit=${limit}` : "") +
           (cursor ? `&cursor=${cursor}` : "") +
           (departmentId ? `&departmentId=${departmentId}` : "") +
+          (status ? `&status=${status}` : "") +
+          (search ? `&search=${encodeURIComponent(search)}` : "")
+      ),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useMyRangeAttendanceQuery(
+  startDateStr: string,
+  endDateStr: string,
+  limit?: number,
+  cursor?: string,
+  status?: string,
+  search?: string
+) {
+  return useQuery<AttendanceCursorPage>({
+    queryKey: ["attendance", "my-range", startDateStr, endDateStr, limit, cursor, status, search],
+    queryFn: () =>
+      apiClient.get<AttendanceCursorPage>(
+        `attendance/my-range?startDate=${startDateStr}&endDate=${endDateStr}` +
+          (limit ? `&limit=${limit}` : "") +
+          (cursor ? `&cursor=${cursor}` : "") +
           (status ? `&status=${status}` : "") +
           (search ? `&search=${encodeURIComponent(search)}` : "")
       ),
