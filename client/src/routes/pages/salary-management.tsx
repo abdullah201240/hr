@@ -147,7 +147,7 @@ export default function SalaryManagementPage() {
   const { data: templates = [], isLoading: templatesLoading } = useSalaryTemplatesQuery()
   const { data: employeeSalaries = [], isLoading: salariesLoading } = useEmployeeSalariesQuery()
   const { data: summary } = useSalarySummaryQuery()
-  const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 500, status: "active" })
+  const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 100, status: "active" })
   const { data: pfSettings } = useProvidentFundSettingsQuery()
   const { data: festivalBonusRules = [] } = useFestivalBonusRulesQuery()
 

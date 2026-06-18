@@ -11,7 +11,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,  
+  TableRow,
 } from "@/components/ui/table"
 import {
   Dialog,
@@ -29,23 +29,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { 
-  DollarSign, 
-  Plus, 
-  Edit3, 
+import {
+  DollarSign,
+  Plus,
+  Edit3,
   Save,
   TrendingUp,
-  Building2,
-  HeartPulse,
-  Bus,
-  Coffee,
-  BookOpen,
   Gift,
   Calculator,
   Trash2,
-  CircleDollarSign
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import Swal from "sweetalert2"
 import {
   useFestivalBonusRulesQuery,
   useCreateFestivalBonusRuleMutation,
@@ -56,114 +52,23 @@ import {
   useProvidentFundSettingsQuery,
   useUpdateProvidentFundSettingsMutation,
 } from "@/hooks/useProvidentFund"
-import type { FestivalBonusRule } from "@/types"
-
-
-
-interface SalaryComponent {
-  id: string
-  name: string
-  type: "earning"
-  category: string
-  amount: number
-  percentage?: number
-  isFixed: boolean
-  icon: string
-  description: string
-}
-
-interface SalaryTemplate {
-  id: string
-  name: string
-  grade: string
-  basicSalary: number
-  components: SalaryComponent[]
-  totalEarnings: number
-  netSalary: number
-}
-
-const defaultComponents: SalaryComponent[] = [
-  {
-    id: "basic",
-    name: "Basic Salary",
-    type: "earning",
-    category: "Fixed",
-    amount: 50000,
-    isFixed: true,
-    icon: "DollarSign",
-    description: "Base salary component"
-  },
-  {
-    id: "house_rent",
-    name: "House Rent Allowance",
-    type: "earning",
-    category: "Allowance",
-    amount: 25000,
-    percentage: 50,
-    isFixed: false,
-    icon: "Building2",
-    description: "50% of basic salary"
-  },
-  {
-    id: "medical",
-    name: "Medical Allowance",
-    type: "earning",
-    category: "Allowance",
-    amount: 10000,
-    percentage: 20,
-    isFixed: false,
-    icon: "HeartPulse",
-    description: "20% of basic salary"
-  },
-  {
-    id: "conveyance",
-    name: "Conveyance Allowance",
-    type: "earning",
-    category: "Allowance",
-    amount: 3000,
-    isFixed: true,
-    icon: "Bus",
-    description: "Transportation allowance"
-  },
-  {
-    id: "special",
-    name: "Special Allowance",
-    type: "earning",
-    category: "Allowance",
-    amount: 12000,
-    isFixed: true,
-    icon: "Gift",
-    description: "Additional special allowance"
-  },
-  {
-    id: "education",
-    name: "Education Allowance",
-    type: "earning",
-    category: "Allowance",
-    amount: 5000,
-    isFixed: true,
-    icon: "BookOpen",
-    description: "Education support allowance"
-  }
-]
-
-const initialTemplates: SalaryTemplate[] = [
-  {
-    id: "template-1",
-    name: "Software Engineer",
-    grade: "L3",
-    basicSalary: 50000,
-    components: defaultComponents,
-    totalEarnings: 105000,
-    netSalary: 105000
-  }
-]
+import {
+  useSalaryTemplatesQuery,
+  useCreateSalaryTemplateMutation,
+  useUpdateSalaryTemplateMutation,
+  useDeleteSalaryTemplateMutation,
+} from "@/hooks/useSalary"
+import type { FestivalBonusRule, SalaryTemplate } from "@/types"
 
 export function SalarySetup() {
-  const [templates, setTemplates] = useState<SalaryTemplate[]>(initialTemplates)
+  const { data: templates = [], isLoading: isLoadingTemplates } = useSalaryTemplatesQuery()
+  const createTemplateMutation = useCreateSalaryTemplateMutation()
+  const updateTemplateMutation = useUpdateSalaryTemplateMutation()
+  const deleteTemplateMutation = useDeleteSalaryTemplateMutation()
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<SalaryTemplate | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("template-1")
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("")
 
   // Festival Bonus Rules (Clause 7.6.1) from Database
   const { data: rules = [], isLoading: isLoadingRules } = useFestivalBonusRulesQuery()
@@ -204,6 +109,15 @@ export function SalarySetup() {
       simFormulaLabel = `৳${simBasic.toLocaleString()} × ${matchedRule.bonusPercentage}%`
     }
   }
+
+  // Initialize selectedTemplate automatically
+  useEffect(() => {
+    if (templates.length > 0 && (!selectedTemplate || !templates.some(t => t.id === selectedTemplate))) {
+      setSelectedTemplate(templates[0].id)
+    }
+  }, [templates, selectedTemplate])
+
+  const currentTemplate = templates.find(t => t.id === selectedTemplate) || templates[0]
 
   const handleOpenAddRule = () => {
     setEditingRule(null)
@@ -305,23 +219,65 @@ export function SalarySetup() {
     }
   }
 
-  const currentTemplate = templates.find(t => t.id === selectedTemplate) || templates[0]
-
-  const handleSaveTemplate = (template: SalaryTemplate) => {
-    const exists = templates.find(t => t.id === template.id)
-    if (exists) {
-      setTemplates(templates.map(t => t.id === template.id ? template : t))
-      toast.success("Salary template updated!", {
-        description: `${template.name} salary structure saved.`
-      })
-    } else {
-      setTemplates([...templates, template])
-      toast.success("Salary template created!", {
-        description: `${template.name} structure added.`
-      })
+  const handleSaveTemplate = async (templateData: any) => {
+    const payload = {
+      name: templateData.name,
+      description: templateData.description,
+      components: templateData.components.map((c: any) => ({
+        name: c.name,
+        type: c.type,
+        calculationType: c.calculationType,
+        value: c.value,
+        isTaxable: c.isTaxable ?? false,
+      }))
     }
-    setDialogOpen(false)
-    setEditingTemplate(null)
+
+    try {
+      if (editingTemplate) {
+        await updateTemplateMutation.mutateAsync({
+          id: editingTemplate.id,
+          payload
+        })
+        toast.success("Salary template updated successfully!")
+      } else {
+        await createTemplateMutation.mutateAsync(payload)
+        toast.success("Salary template created successfully!")
+      }
+      setDialogOpen(false)
+      setEditingTemplate(null)
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save template")
+    }
+  }
+
+  const handleDeleteTemplate = async (id: string, name: string) => {
+    Swal.fire({
+      title: `Delete "${name}"?`,
+      text: "This will permanently remove the template and all its components.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton:
+          "swal2-confirm swal2-styled bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton:
+          "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deleteTemplateMutation.mutateAsync(id)
+          toast.success("Template deleted successfully")
+          if (selectedTemplate === id) {
+            setSelectedTemplate("")
+          }
+        } catch (error: any) {
+          toast.error(error?.message || "Failed to delete template")
+        }
+      }
+    })
   }
 
   return (
@@ -337,7 +293,7 @@ export function SalarySetup() {
             Configure salary components, festival bonus rules, and provident fund settings
           </p>
         </div>
-        
+
         {/* Template Selector & Actions */}
         <Card className="shadow-none border border-border/40">
           <CardContent className="py-4">
@@ -351,20 +307,21 @@ export function SalarySetup() {
                   <SelectContent>
                     {templates.map(template => (
                       <SelectItem key={template.id} value={template.id}>
-                        {template.name} - Grade {template.grade}
+                        {template.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="flex gap-2 w-full sm:w-auto">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setEditingTemplate(currentTemplate)
                     setDialogOpen(true)
                   }}
+                  disabled={!currentTemplate}
                   className="gap-2 flex-1 sm:flex-initial"
                 >
                   <Edit3 className="h-4 w-4" />
@@ -377,7 +334,7 @@ export function SalarySetup() {
                       New Template
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="w-[95vw] !max-w-[1200px] max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="w-[95vw] !max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <SalaryTemplateForm
                       template={editingTemplate}
                       onSave={handleSaveTemplate}
@@ -399,7 +356,6 @@ export function SalarySetup() {
         {/* Top Row: All Templates Salary Breakdown (Full Width) */}
         <Card className="shadow-none border border-border/40">
           <CardHeader className="pb-4">
-         
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -415,7 +371,11 @@ export function SalarySetup() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* All Templates Card View */}
-            {templates.length === 0 ? (
+            {isLoadingTemplates ? (
+              <div className="flex justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : templates.length === 0 ? (
               <div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl">
                 <Calculator className="h-10 w-10 text-muted-foreground/40 mb-2" />
                 <p className="text-sm text-muted-foreground">No salary templates configured yet.</p>
@@ -424,87 +384,114 @@ export function SalarySetup() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {templates.map((template) => {
-                  const templateTotal = template.components.reduce((sum, c) => {
-                    const amt = c.id === "basic" ? template.basicSalary : 
-                                c.isFixed ? c.amount : 
-                                Math.round((template.basicSalary * (c.percentage || 0)) / 100)
-                    return sum + amt
-                  }, 0)
-                  
+                  let totalEarnings = simBasic
+                  let totalDeductions = 0
+
+                  template.components.forEach((c) => {
+                    const amt =
+                      c.calculationType === "percentage"
+                        ? Math.round(simBasic * (c.value / 100))
+                        : c.value
+                    if (c.type === "earning") {
+                      totalEarnings += amt
+                    } else {
+                      totalDeductions += amt
+                    }
+                  })
+
+                  const netSalary = totalEarnings - totalDeductions
+
                   return (
                     <Card key={template.id} className="shadow-none border border-border/40 hover:shadow-md transition-shadow duration-200">
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
                               <DollarSign className="h-5 w-5" />
                             </div>
-                            <div>
-                              <CardTitle className="text-sm font-bold">{template.name}</CardTitle>
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <Badge variant="outline" className="text-[10px] h-5">
-                                  Grade: {template.grade}
-                                </Badge>
-                              </div>
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="text-sm font-bold truncate">{template.name}</CardTitle>
+                              {template.description && (
+                                <p className="text-[10px] text-muted-foreground truncate mt-0.5">{template.description}</p>
+                              )}
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 hover:bg-muted"
-                            onClick={() => {
-                              setEditingTemplate(template)
-                              setDialogOpen(true)
-                            }}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1 shrink-0 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-muted"
+                              onClick={() => {
+                                setEditingTemplate(template)
+                                setDialogOpen(true)
+                              }}
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                              onClick={() => handleDeleteTemplate(template.id, template.name)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="mt-2 pt-2 border-t border-border/30">
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Basic Salary</p>
-                          <p className="text-lg font-bold text-foreground">৳{template.basicSalary.toLocaleString()}</p>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Base Basic Salary</p>
+                          <p className="text-lg font-bold text-foreground">৳{simBasic.toLocaleString()}</p>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
                           {template.components.map((component) => {
-                            const amt = component.id === "basic" ? template.basicSalary : 
-                                        component.isFixed ? component.amount : 
-                                        Math.round((template.basicSalary * (component.percentage || 0)) / 100)
+                            const amt =
+                              component.calculationType === "percentage"
+                                ? Math.round(simBasic * (component.value / 100))
+                                : component.value
                             return (
-                              <div key={component.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0">
+                              <div key={component.id} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-0 text-xs">
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center shrink-0">
-                                    {getIcon(component.icon)}
-                                  </Badge>
+                                  <div
+                                    className={cn(
+                                      "h-1.5 w-1.5 rounded-full shrink-0",
+                                      component.type === "earning"
+                                        ? "bg-emerald-500"
+                                        : "bg-rose-500"
+                                    )}
+                                  />
                                   <div className="min-w-0 flex-1">
                                     <p className="text-xs font-medium truncate">{component.name}</p>
                                     <p className="text-[10px] text-muted-foreground">
-                                      {component.id === "basic" ? (
-                                        "Base"
-                                      ) : component.isFixed ? (
-                                        `Fixed: ৳${component.amount.toLocaleString()}`
+                                      {component.calculationType === "percentage" ? (
+                                        `${component.value}% of Basic`
                                       ) : (
-                                        `${component.percentage}% of Basic`
+                                        `Fixed Amount`
                                       )}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="text-xs font-semibold text-emerald-600 ml-2">
-                                  ৳{amt.toLocaleString()}
+                                <span
+                                  className={cn(
+                                    "text-xs font-semibold ml-2 shrink-0",
+                                    component.type === "earning" ? "text-emerald-600" : "text-rose-500"
+                                  )}
+                                >
+                                  {component.type === "earning" ? "+" : "-"}৳{amt.toLocaleString()}
                                 </span>
                               </div>
                             )
                           })}
                         </div>
-                        <div className="pt-2 mt-2 border-t-2 border-emerald-500/20 bg-emerald-500/5 -mx-6 px-6 py-3">
+                        <div className="pt-2 mt-2 border-t border-border/20 bg-muted/10 -mx-6 px-6 py-3 space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gross Salary</span>
-                            <span className="text-base font-bold text-emerald-600">৳{templateTotal.toLocaleString()}</span>
+                            <span className="text-base font-bold text-emerald-600">৳{totalEarnings.toLocaleString()}</span>
                           </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-[10px] text-muted-foreground">Annual</span>
-                            <span className="text-xs font-semibold text-muted-foreground">৳{(templateTotal * 12).toLocaleString()}</span>
+                          <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/20">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Net Pay</span>
+                            <span className="text-base font-bold text-primary">৳{netSalary.toLocaleString()}</span>
                           </div>
                         </div>
                       </CardContent>
@@ -513,7 +500,6 @@ export function SalarySetup() {
                 })}
               </div>
             )}
-
           </CardContent>
         </Card>
 
@@ -532,9 +518,9 @@ export function SalarySetup() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold">Active Rules</Label>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="h-8 px-3 text-xs gap-1.5"
                     onClick={handleOpenAddRule}
                   >
@@ -889,349 +875,275 @@ export function SalarySetup() {
   )
 }
 
+interface FormComponent {
+  name: string
+  type: "earning" | "deduction"
+  calculationType: "percentage" | "fixed"
+  value: number
+  isTaxable: boolean
+}
 
-function SalaryTemplateForm({ 
-  template, 
-  onSave, 
-  onCancel 
-}: { 
+interface FormTemplate {
+  name: string
+  description: string
+  components: FormComponent[]
+}
+
+function SalaryTemplateForm({
+  template,
+  onSave,
+  onCancel
+}: {
   template: SalaryTemplate | null
-  onSave: (template: SalaryTemplate) => void
+  onSave: (template: any) => void
   onCancel: () => void
 }) {
-  const [formData, setFormData] = useState<SalaryTemplate>(
-    template || {
-      id: `template-${Date.now()}`,
+  const [formData, setFormData] = useState<FormTemplate>(() => {
+    if (template) {
+      return {
+        name: template.name,
+        description: template.description || "",
+        components: template.components.map((c) => ({
+          name: c.name,
+          type: c.type,
+          calculationType: c.calculationType,
+          value: c.value,
+          isTaxable: c.isTaxable,
+        })),
+      }
+    }
+    return {
       name: "",
-      grade: "",
-      basicSalary: 50000,
+      description: "",
       components: [
-        {
-          id: "basic",
-          name: "Basic Salary",
-          type: "earning",
-          category: "Fixed",
-          amount: 50000,
-          isFixed: true,
-          icon: "DollarSign",
-          description: "Base salary component"
-        }
+        { name: "House Rent Allowance", type: "earning", calculationType: "percentage", value: 20, isTaxable: false },
+        { name: "Transport Allowance", type: "earning", calculationType: "percentage", value: 10, isTaxable: false },
+        { name: "Medical Allowance", type: "earning", calculationType: "percentage", value: 5, isTaxable: false },
       ],
-      totalEarnings: 50000,
-      netSalary: 50000
     }
-  )
-  const [showAddComponent, setShowAddComponent] = useState(false)
+  })
 
-  const presetComponents = [
-    { id: "basic", name: "Basic Salary", category: "Fixed", icon: "CircleDollarSign" },
-    { id: "house_rent", name: "House Rent Allowance", category: "Allowance", icon: "Building2" },
-    { id: "medical", name: "Medical Allowance", category: "Allowance", icon: "HeartPulse" },
-    { id: "conveyance", name: "Conveyance Allowance", category: "Allowance", icon: "Bus" },
-    { id: "special", name: "Special Allowance", category: "Allowance", icon: "Gift" },
-    { id: "education", name: "Education Allowance", category: "Allowance", icon: "BookOpen" },
-    { id: "health_insurance", name: "Health Insurance", category: "Benefits", icon: "HeartPulse" },
-    { id: "bonus", name: "Performance Bonus", category: "Variable", icon: "Gift" },
-    { id: "others", name: "Others", category: "Other", icon: "CircleDollarSign" },
-  ]
-
-  const availablePresets = presetComponents.filter(
-    preset => !formData.components.find(comp => comp.id === preset.id)
-  )
-
-  const calculateTotals = (components: SalaryComponent[]) => {
-    const basic = formData.basicSalary || 50000
-    const getCompAmt = (comp: SalaryComponent) => {
-      if (comp.id === "basic") return basic
-      if (comp.isFixed) return comp.amount
-      return Math.round((basic * (comp.percentage || 0)) / 100)
-    }
-    const earnings = components.reduce((sum, c) => sum + getCompAmt(c), 0)
-    return { earnings, net: earnings }
+  const handleAddComponent = () => {
+    setFormData((prev) => ({
+      ...prev,
+      components: [
+        ...prev.components,
+        {
+          name: "",
+          type: "earning",
+          calculationType: "percentage",
+          value: 0,
+          isTaxable: false,
+        },
+      ],
+    }))
   }
 
-  const handleAddComponent = (presetId: string) => {
-    const preset = presetComponents.find(p => p.id === presetId)
-    if (!preset) return
-
-    const isPercentageBased = ["house_rent", "medical"].includes(preset.id)
-    const defaultPercentage = preset.id === "house_rent" ? 50 : preset.id === "medical" ? 20 : undefined
-    
-    const newComponent: SalaryComponent = {
-      id: preset.id,
-      name: preset.name,
-      type: "earning" as const,
-      category: preset.category,
-      amount: isPercentageBased ? 0 : 3000,
-      percentage: defaultPercentage,
-      isFixed: !isPercentageBased,
-      icon: preset.icon,
-      description: preset.name
-    }
-
-    setFormData({ ...formData, components: [...formData.components, newComponent] })
-    setShowAddComponent(false)
+  const handleRemoveComponent = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      components: prev.components.filter((_, idx) => idx !== index),
+    }))
   }
 
-  const handleRemoveComponent = (id: string) => {
-    if (id === "basic") return
-    setFormData({ ...formData, components: formData.components.filter(c => c.id !== id) })
-    toast.success("Component removed")
-  }
-
-  const handleComponentChange = (index: number, field: keyof SalaryComponent, value: any) => {
-    const newComponents = [...formData.components]
-    newComponents[index] = { ...newComponents[index], [field]: value }
-    setFormData({ ...formData, components: newComponents })
-  }
-
-  const handleSave = () => {
-    if (!formData.name || !formData.grade) {
-      toast.error("Validation Error", {
-        description: "Please fill in template name and grade."
-      })
-      return
-    }
-    
-    const totals = calculateTotals(formData.components)
-    onSave({
-      ...formData,
-      totalEarnings: totals.earnings,
-      netSalary: totals.net
+  const handleComponentChange = (
+    index: number,
+    field: keyof FormComponent,
+    value: any
+  ) => {
+    setFormData((prev) => {
+      const nextComponents = [...prev.components]
+      nextComponents[index] = {
+        ...nextComponents[index],
+        [field]: value,
+      }
+      return { ...prev, components: nextComponents }
     })
   }
 
-  const totals = calculateTotals(formData.components)
+  const handleSave = () => {
+    if (!formData.name.trim()) {
+      toast.error("Template name is required")
+      return
+    }
+    if (formData.components.length === 0) {
+      toast.error("Please add at least one component")
+      return
+    }
+    if (formData.components.some((c) => !c.name.trim())) {
+      toast.error("All components must have a name")
+      return
+    }
+
+    onSave(formData)
+  }
+
+  const previewBasic = 50000
+  let previewEarnings = previewBasic
+  let previewDeductions = 0
+
+  formData.components.forEach((c) => {
+    const amt =
+      c.calculationType === "percentage"
+        ? Math.round(previewBasic * (c.value / 100))
+        : c.value
+    if (c.type === "earning") {
+      previewEarnings += amt
+    } else {
+      previewDeductions += amt
+    }
+  })
+
+  const previewGross = previewEarnings
+  const previewNet = previewEarnings - previewDeductions
 
   return (
     <>
       <DialogHeader>
         <DialogTitle>{template ? "Edit" : "Create"} Salary Template</DialogTitle>
         <DialogDescription>
-          Configure salary components and structure for this template
+          Configure name, description, and components for this salary template.
         </DialogDescription>
       </DialogHeader>
-      
-      <div className="space-y-4 py-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="name">Template Name *</Label>
+
+      <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-1">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-xs font-semibold">Template Name *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Software Engineer"
+              placeholder="e.g. Standard Full-Time Package"
+              className="text-xs h-9"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="grade">Grade/Level *</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="description" className="text-xs font-semibold">Description</Label>
             <Input
-              id="grade"
-              value={formData.grade}
-              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-              placeholder="e.g., L3, Senior"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="basicSalary">Reference Basic Salary *</Label>
-            <Input
-              id="basicSalary"
-              type="number"
-              value={formData.basicSalary || ""}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value) || 0
-                setFormData({ ...formData, basicSalary: val })
-              }}
-              placeholder="e.g., 50000"
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Optional description"
+              className="text-xs h-9"
             />
           </div>
         </div>
 
-        <Separator />
+        <Separator className="my-2 bg-border/40" />
 
-        {/* Add Component Button */}
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold">Salary Components</h4>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
-            onClick={() => setShowAddComponent(true)}
+          <Label className="text-xs font-bold text-foreground">Salary Components</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1 text-xs"
+            onClick={handleAddComponent}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             Add Component
           </Button>
         </div>
 
-        {/* Add Component Dialog */}
-        {showAddComponent && (
-          <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-            <CardHeader>
-              <CardTitle className="text-sm">Select Component to Add</CardTitle>
-              <CardDescription className="text-xs">Choose an earning component to add to this template</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {availablePresets.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    variant="outline"
-                    className="justify-start gap-2 h-auto py-3"
-                    onClick={() => handleAddComponent(preset.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {getIcon(preset.icon)}
-                      <div className="text-left">
-                        <div className="text-xs font-medium">{preset.name}</div>
-                        <div className="text-[10px] text-muted-foreground">{preset.category}</div>
-                      </div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-
-              {availablePresets.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">All components have been added</p>
-                </div>
-              )}
-
-              <Button
-                variant="ghost"
-                onClick={() => setShowAddComponent(false)}
-                className="w-full"
-              >
-                Cancel
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Components List */}
         <div className="space-y-3">
-          {formData.components.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-border rounded-lg">
-              <DollarSign className="mx-auto h-12 w-12 mb-4 opacity-20" />
-              <p className="text-sm font-medium">No components added yet</p>
-              <p className="text-xs mt-1">Click "Add Component" to start building your salary structure</p>
+          {formData.components.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-lg text-xs">
+              No components added yet. Click "Add Component" to start.
             </div>
-          )}
-          
-          {formData.components.map((component, index) => (
-            <div key={component.id} className="rounded-lg border border-border p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{component.name}</span>
-                  <Badge variant="outline" className="text-xs">{component.category}</Badge>
-                </div>
-                {component.id !== "basic" && (
+          ) : (
+            formData.components.map((component, index) => (
+              <div key={index} className="rounded-lg border border-border/40 p-3 bg-muted/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-muted-foreground">Component #{index + 1}</span>
                   <Button
                     variant="ghost"
-                    size="icon-sm"
-                    onClick={() => handleRemoveComponent(component.id)}
-                    className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive"
+                    size="sm"
+                    onClick={() => handleRemoveComponent(index)}
+                    className="h-7 w-7 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                )}
-              </div>
-              
-              {component.id === "basic" ? (
-                <div className="p-3 bg-muted/40 rounded-lg text-xs text-muted-foreground">
-                  Basic Salary is configured as the reference amount at the top.
                 </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Calculation Rule</Label>
-                    <Select 
-                      value={component.isFixed ? "fixed" : "variable"} 
-                      onValueChange={(value) => handleComponentChange(index, "isFixed", value === "fixed")}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fixed">Fixed Amount</SelectItem>
-                        <SelectItem value="variable">Percentage-based (% of Basic)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {component.isFixed ? (
-                    <div className="space-y-2">
-                      <Label className="text-xs">Fixed Amount (৳)</Label>
-                      <Input
-                        type="number"
-                        value={component.amount}
-                        onChange={(e) => handleComponentChange(index, "amount", parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label className="text-xs">Percentage of Basic (%)</Label>
-                      <Input
-                        type="number"
-                        value={component.percentage || 0}
-                        onChange={(e) => handleComponentChange(index, "percentage", parseFloat(e.target.value) || 0)}
-                      />
-                    </div>
-                  )}
 
-                  <div className="space-y-2">
-                    <Label className="text-xs">Preview Value</Label>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Name</Label>
                     <Input
-                      type="text"
-                      disabled
-                      className="bg-muted/40 cursor-not-allowed text-xs font-semibold"
-                      value={component.isFixed ? 
-                        `৳${component.amount.toLocaleString()}` : 
-                        `৳${Math.round(((formData.basicSalary || 50000) * (component.percentage || 0)) / 100).toLocaleString()}`
-                      }
+                      value={component.name}
+                      onChange={(e) => handleComponentChange(index, "name", e.target.value)}
+                      placeholder="e.g. HRA"
+                      className="text-xs h-8"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Type</Label>
+                    <select
+                      value={component.type}
+                      onChange={(e) => handleComponentChange(index, "type", e.target.value as any)}
+                      className="w-full bg-background border border-border text-xs h-8 rounded-md px-2"
+                    >
+                      <option value="earning">Earning</option>
+                      <option value="deduction">Deduction</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Calculation Rule</Label>
+                    <select
+                      value={component.calculationType}
+                      onChange={(e) => handleComponentChange(index, "calculationType", e.target.value as any)}
+                      className="w-full bg-background border border-border text-xs h-8 rounded-md px-2"
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed Amount</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Value</Label>
+                    <Input
+                      type="number"
+                      value={component.value || ""}
+                      onChange={(e) => handleComponentChange(index, "value", parseFloat(e.target.value) || 0)}
+                      placeholder={component.calculationType === 'percentage' ? "e.g. 10" : "e.g. 5000"}
+                      className="text-xs h-8"
                     />
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            ))
+          )}
         </div>
 
-        <Separator />
+        <Separator className="my-2 bg-border/40" />
 
-        {/* Summary */}
-        <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-          <div className="flex justify-between">
-            <span className="font-semibold">Gross Salary:</span>
-            <span className="font-bold text-emerald-600 text-lg">৳{totals.earnings.toLocaleString()}</span>
+        <div className="rounded-lg bg-muted/20 border border-border/40 p-4 space-y-2 text-xs">
+          <p className="font-bold text-[10px] uppercase text-muted-foreground tracking-wide">Breakdown Preview (Based on ৳{previewBasic.toLocaleString()} Basic)</p>
+          <div className="flex justify-between items-center pt-1">
+            <span className="text-muted-foreground">Basic Reference Salary:</span>
+            <span className="font-semibold text-foreground">৳{previewBasic.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Gross Salary:</span>
+            <span className="font-bold text-emerald-600">৳{previewGross.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Net Pay:</span>
+            <span className="font-bold text-primary">৳{previewNet.toLocaleString()}</span>
           </div>
         </div>
       </div>
 
       <DialogFooter>
-        <Button variant="outline" onClick={onCancel}>
+        <Button variant="outline" size="sm" onClick={onCancel} className="text-xs">
           Cancel
         </Button>
-        <Button onClick={handleSave} className="gap-2">
+        <Button onClick={handleSave} size="sm" className="gap-2 text-xs">
           <Save className="h-4 w-4" />
           Save Template
         </Button>
       </DialogFooter>
     </>
   )
-}
-
-function getIcon(iconName: string) {
-  const icons: Record<string, any> = {
-    DollarSign: <DollarSign className="h-3 w-3" />,
-    CircleDollarSign: <CircleDollarSign className="h-3 w-3" />,
-    Building2: <Building2 className="h-3 w-3" />,
-    HeartPulse: <HeartPulse className="h-3 w-3" />,
-    Bus: <Bus className="h-3 w-3" />,
-    Gift: <Gift className="h-3 w-3" />,
-    BookOpen: <BookOpen className="h-3 w-3" />,
-    TrendingUp: <TrendingUp className="h-3 w-3" />,
-    Calculator: <Calculator className="h-3 w-3" />,
-    Coffee: <Coffee className="h-3 w-3" />
-  }
-  return icons[iconName] || <CircleDollarSign className="h-3 w-3" />
 }
