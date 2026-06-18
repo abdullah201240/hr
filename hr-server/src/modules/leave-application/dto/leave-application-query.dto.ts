@@ -41,6 +41,11 @@ export class LeaveApplicationQueryDto {
   @IsUUID()
   employeeId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by leave type ID' })
+  @IsOptional()
+  @IsUUID()
+  leaveTypeId?: string;
+
   @ApiPropertyOptional({ enum: ['startDate', 'createdAt', 'days'], default: 'createdAt' })
   @IsOptional()
   @IsString()

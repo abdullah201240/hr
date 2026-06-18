@@ -96,6 +96,7 @@ export interface LeaveApplication {
   employeePhone?: string;
   employeeEmergencyPhone?: string;
   leaveTypePaid?: boolean;
+  leaveTypeColor?: string;
   approvedByName?: string;
   approvedAt?: string;
   rejectedAt?: string;
@@ -130,6 +131,7 @@ export interface LeaveApplicationQuery {
   limit?: number;
   search?: string;
   status?: 'Pending' | 'Approved' | 'Rejected';
+  leaveTypeId?: string;
   employeeId?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';

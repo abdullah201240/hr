@@ -166,6 +166,14 @@ html.theme-transition *::after {
   z-index: 9999 !important;
 }
 
+/* Fix: When SweetAlert is open, disable Dialog overlay pointer-events so Swal buttons are clickable */
+body:has(.swal2-container) [data-slot="dialog-overlay"] {
+  pointer-events: none !important;
+}
+body:has(.swal2-container) [data-slot="dialog-content"] {
+  pointer-events: none !important;
+}
+
 .swal2-popup {
   font-family: 'Geist Variable', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   border-radius: 1rem !important; /* var(--radius-xl) style */

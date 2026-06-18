@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { apiClient } from "@/lib/api"
-import Swal from "sweetalert2"
+import { toast } from "sonner"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -306,32 +306,17 @@ export function ApplyLeaveDialog({
 
   const handleSubmit = () => {
     if (!leaveTypeId) {
-      Swal.fire({
-        title: "Leave Type Required",
-        text: "Please select a leave type before submitting.",
-        icon: "warning",
-        confirmButtonColor: "#0ea5e9",
-      })
+      toast.warning("Please select a leave type before submitting.")
       return
     }
 
     if (new Date(startDate) > new Date(endDate)) {
-      Swal.fire({
-        title: "Invalid Dates",
-        text: "Start date cannot be after end date.",
-        icon: "warning",
-        confirmButtonColor: "#0ea5e9",
-      })
+      toast.warning("Start date cannot be after end date.")
       return
     }
 
     if (!reason.trim()) {
-      Swal.fire({
-        title: "Reason Required",
-        text: "Please provide a reason for your leave.",
-        icon: "warning",
-        confirmButtonColor: "#0ea5e9",
-      })
+      toast.warning("Please provide a reason for your leave.")
       return
     }
 

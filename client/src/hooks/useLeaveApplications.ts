@@ -54,6 +54,7 @@ export function useLeaveApplicationsQuery(query: LeaveApplicationQuery) {
   if (query.limit) params.set("limit", String(query.limit));
   if (query.search) params.set("search", query.search);
   if (query.status) params.set("status", query.status);
+  if (query.leaveTypeId) params.set("leaveTypeId", query.leaveTypeId);
   if (query.employeeId) params.set("employeeId", query.employeeId);
   if (query.sortBy) params.set("sortBy", query.sortBy);
   if (query.sortOrder) params.set("sortOrder", query.sortOrder);

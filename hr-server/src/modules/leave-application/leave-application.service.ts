@@ -297,6 +297,7 @@ export class LeaveApplicationService {
       search,
       status,
       employeeId,
+      leaveTypeId,
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = query;
@@ -309,12 +310,15 @@ export class LeaveApplicationService {
     if (employeeId) {
       conditions.push(eq(leaveApplications.employeeId, employeeId));
     }
+    if (leaveTypeId) {
+      conditions.push(eq(leaveApplications.leaveTypeId, leaveTypeId));
+    }
 
     // Handle search by employee name or reason
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     // Cache key parts for deterministic retrieval
-    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${status ?? ''}:${employeeId ?? ''}:${sortBy}:${sortOrder}`;
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${status ?? ''}:${employeeId ?? ''}:${leaveTypeId ?? ''}:${sortBy}:${sortOrder}`;
     const cached = await this.cache.getByKey<any>(
       CacheKeys.leaveApplicationsList,
       cacheKeyParts,
@@ -327,6 +331,7 @@ export class LeaveApplicationService {
     const dbWhereConditions = [];
     if (status) dbWhereConditions.push(eq(leaveApplications.status, status));
     if (employeeId) dbWhereConditions.push(eq(leaveApplications.employeeId, employeeId));
+    if (leaveTypeId) dbWhereConditions.push(eq(leaveApplications.leaveTypeId, leaveTypeId));
 
     const finalWhere = dbWhereConditions.length > 0 ? and(...dbWhereConditions) : undefined;
 
@@ -348,6 +353,7 @@ export class LeaveApplicationService {
         leaveTypeName: leaveTypes.name,
         leaveTypeId: leaveTypes.id,
         leaveTypePaid: leaveTypes.paid,
+        leaveTypeColor: leaveTypes.color,
         rejectionReason: leaveApplications.rejectionReason,
         approvedByName: approver.fullNameEnglish,
         approvedAt: leaveApplications.approvedAt,
@@ -444,6 +450,7 @@ export class LeaveApplicationService {
         leaveTypeName: leaveTypes.name,
         leaveTypeId: leaveTypes.id,
         leaveTypePaid: leaveTypes.paid,
+        leaveTypeColor: leaveTypes.color,
         rejectionReason: leaveApplications.rejectionReason,
         approvedByName: approver.fullNameEnglish,
         approvedAt: leaveApplications.approvedAt,
