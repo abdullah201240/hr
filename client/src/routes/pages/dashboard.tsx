@@ -23,7 +23,7 @@ import {
   useUpdateLeaveMutation,
 } from "@/hooks/useLeaveApplications"
 import { useAuthStore } from "@/store/useAuthStore"
-import Swal from "sweetalert2"
+import { toast } from "sonner"
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
@@ -143,20 +143,12 @@ export default function DashboardPage() {
           onSuccess: () => {
             setIsLeaveDialogOpen(false)
             setEditLeaveData(null)
-            Swal.fire({
-              title: "Updated!",
-              text: "Your leave application has been updated/resubmitted successfully.",
-              icon: "success",
-              confirmButtonText: "Ok",
-            })
+            toast.success("Leave application updated/resubmitted successfully.")
           },
           onError: (err: any) => {
-            Swal.fire({
-              title: "Update Failed",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-              confirmButtonText: "Ok",
-            })
+            setIsLeaveDialogOpen(false)
+            setEditLeaveData(null)
+            toast.error(err?.response?.data?.message || err?.message || "Something went wrong.")
           },
         }
       )
@@ -172,20 +164,11 @@ export default function DashboardPage() {
         {
           onSuccess: () => {
             setIsLeaveDialogOpen(false)
-            Swal.fire({
-              title: "Applied!",
-              text: "Your leave application has been submitted successfully.",
-              icon: "success",
-              confirmButtonText: "Ok",
-            })
+            toast.success("Leave application submitted successfully.")
           },
           onError: (err: any) => {
-            Swal.fire({
-              title: "Failed to Apply",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-              confirmButtonText: "Ok",
-            })
+            setIsLeaveDialogOpen(false)
+            toast.error(err?.response?.data?.message || err?.message || "Something went wrong.")
           },
         }
       )
@@ -193,31 +176,13 @@ export default function DashboardPage() {
   }
 
   const handleCancelLeaveById = (id: string) => {
-    Swal.fire({
-      title: "Cancel Leave?",
-      text: "Are you sure you want to cancel this leave application?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, cancel it",
-      cancelButtonText: "No",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        cancelLeaveMutation.mutate(id, {
-          onSuccess: () => {
-            Swal.fire({
-              title: "Cancelled!",
-              text: "Leave application cancelled.",
-              icon: "info",
-            })
-          },
-          onError: (err: any) => {
-            Swal.fire({
-              title: "Cancel Failed",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-            })
-          }
-        })
+    setIsDayDetailOpen(false) // Close DayDetailDialog first
+    cancelLeaveMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success("Leave application cancelled.")
+      },
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || err?.message || "Something went wrong.")
       }
     })
   }

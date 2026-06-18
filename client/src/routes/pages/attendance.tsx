@@ -4,7 +4,6 @@ import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
 import type { AttendanceRecord as DashAttendanceRecord } from "@/components/dashboard/types"
 import { DEFAULT_LEAVE_BALANCES, resolveLeaveIcon } from "@/components/dashboard/types"
-import Swal from "sweetalert2"
 import { useAttendanceSettingsQuery, useHolidaysQuery } from "@/hooks/useAttendanceSettings"
 import {
   useLeaveApplicationsQuery,
@@ -176,22 +175,12 @@ export default function AttendancePage() {
           onSuccess: () => {
             setIsLeaveDialogOpen(false)
             setEditLeaveData(null)
-            Swal.fire({
-              title: "Updated!",
-              text: "Your leave application has been updated/resubmitted successfully.",
-              icon: "success",
-              confirmButtonText: "Ok",
-            })
+            toast.success("Leave application updated/resubmitted successfully.")
           },
           onError: (err: any) => {
             setIsLeaveDialogOpen(false)
             setEditLeaveData(null)
-            Swal.fire({
-              title: "Failed to Update",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-              confirmButtonText: "Ok",
-            })
+            toast.error(err?.response?.data?.message || err?.message || "Something went wrong.")
           },
         }
       )
@@ -207,21 +196,11 @@ export default function AttendancePage() {
         {
           onSuccess: () => {
             setIsLeaveDialogOpen(false)
-            Swal.fire({
-              title: "Applied!",
-              text: "Your leave application has been submitted successfully.",
-              icon: "success",
-              confirmButtonText: "Ok",
-            })
+            toast.success("Leave application submitted successfully.")
           },
           onError: (err: any) => {
             setIsLeaveDialogOpen(false)
-            Swal.fire({
-              title: "Failed to Apply",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-              confirmButtonText: "Ok",
-            })
+            toast.error(err?.response?.data?.message || err?.message || "Something went wrong.")
           },
         }
       )
@@ -229,31 +208,13 @@ export default function AttendancePage() {
   }
 
   const handleCancelLeaveById = async (id: string) => {
-    Swal.fire({
-      title: "Cancel Leave?",
-      text: "Are you sure you want to cancel this leave application?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, cancel it",
-      cancelButtonText: "No",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        cancelLeaveMutation.mutate(id, {
-          onSuccess: () => {
-            Swal.fire({
-              title: "Cancelled!",
-              text: "Leave application cancelled.",
-              icon: "info",
-            })
-          },
-          onError: (err: any) => {
-            Swal.fire({
-              title: "Cancel Failed",
-              text: err?.response?.data?.message || err?.message || "Something went wrong.",
-              icon: "error",
-            })
-          }
-        })
+    setIsDayDetailOpen(false) // Close DayDetailDialog first
+    cancelLeaveMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success("Leave application cancelled.")
+      },
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || err?.message || "Something went wrong.")
       }
     })
   }

@@ -38,6 +38,7 @@ import {
   ChevronsRight,
 } from "lucide-react"
 import Swal from "sweetalert2"
+import { toast } from "sonner"
 import {
   useLeaveApplicationsQuery,
   useApproveLeaveMutation,
@@ -225,47 +226,22 @@ export default function LeavePage() {
 
   // Action Handlers
   const handleApprove = (id: string) => {
-    Swal.fire({
-      title: "Approve Request?",
-      text: "Are you sure you want to approve this leave request?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Yes, approve it",
-      cancelButtonText: "Cancel",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-md mr-2 text-xs font-semibold",
-        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-md text-xs font-semibold"
+    setIsDialogOpen(false) // Close detail dialog if open
+    approveMutation.mutate(
+      { id, payload: { status: "Approved" } },
+      {
+        onSuccess: () => {
+          toast.success("Leave request approved successfully.")
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || "An error occurred.")
+        }
       }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        approveMutation.mutate(
-          { id, payload: { status: "Approved" } },
-          {
-            onSuccess: () => {
-              Swal.fire({
-                title: "Approved!",
-                text: "The leave request has been approved successfully.",
-                icon: "success",
-                confirmButtonText: "Done",
-                buttonsStyling: false,
-                customClass: { confirmButton: "swal2-confirm swal2-styled px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-xs font-semibold" }
-              })
-            },
-            onError: (err: any) => {
-              Swal.fire({
-                title: "Failed to Approve",
-                text: err?.response?.data?.message || err?.message || "An error occurred.",
-                icon: "error",
-              })
-            }
-          }
-        )
-      }
-    })
+    )
   }
 
   const handleReject = (id: string) => {
+    setIsDialogOpen(false) // Close detail dialog if open
     Swal.fire({
       title: "Reject Request?",
       text: "Provide a reason to reject this leave request:",
@@ -287,21 +263,10 @@ export default function LeavePage() {
           { id, payload: { status: "Rejected", rejectionReason } },
           {
             onSuccess: () => {
-              Swal.fire({
-                title: "Rejected!",
-                text: "Leave request status updated to Rejected.",
-                icon: "info",
-                confirmButtonText: "Done",
-                buttonsStyling: false,
-                customClass: { confirmButton: "swal2-confirm swal2-styled px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-md text-xs font-semibold" }
-              })
+              toast.success("Leave request rejected.")
             },
             onError: (err: any) => {
-              Swal.fire({
-                title: "Failed to Reject",
-                text: err?.response?.data?.message || err?.message || "An error occurred.",
-                icon: "error",
-              })
+              toast.error(err?.response?.data?.message || err?.message || "An error occurred.")
             }
           }
         )
