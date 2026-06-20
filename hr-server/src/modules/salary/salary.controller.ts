@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -21,10 +22,14 @@ import {
   UpdateSalaryTemplateDto,
   AssignEmployeeSalaryDto,
   UpdateEmployeeSalaryDto,
+  EmployeeSalaryQueryDto,
+  BulkSalaryRevisionDto,
 } from './dto/salary.dto';
+import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Salary Management')
 @ApiBearerAuth()
+@Roles('admin', 'hr')
 @Controller()
 export class SalaryController {
   constructor(private readonly service: SalaryService) {}
@@ -80,8 +85,8 @@ export class SalaryController {
     status: 200,
     description: 'Return all employee salary records',
   })
-  async findAllEmployeeSalaries() {
-    return this.service.findAllEmployeeSalaries();
+  async findAllEmployeeSalaries(@Query() query: EmployeeSalaryQueryDto) {
+    return this.service.findAllEmployeeSalaries(query);
   }
 
   @Get('employee-salaries/summary')
@@ -118,5 +123,19 @@ export class SalaryController {
     @Body() dto: UpdateEmployeeSalaryDto,
   ) {
     return this.service.updateSalary(id, dto);
+  }
+
+  @Get('employee-salaries/:employeeId/history')
+  @ApiOperation({ summary: 'Get salary progression history for an employee' })
+  @ApiResponse({ status: 200, description: 'Return salary history records' })
+  async getSalaryHistory(@Param('employeeId') employeeId: string) {
+    return this.service.getSalaryHistory(employeeId);
+  }
+
+  @Post('employee-salaries/bulk-revision')
+  @ApiOperation({ summary: 'Queue a bulk salary revision (e.g. raise) for matching employees' })
+  @ApiResponse({ status: 202, description: 'Bulk revision queued' })
+  async bulkRevision(@Body() dto: BulkSalaryRevisionDto) {
+    return this.service.bulkRevision(dto);
   }
 }

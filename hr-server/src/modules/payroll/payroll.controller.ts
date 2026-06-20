@@ -62,4 +62,18 @@ export class PayrollController {
   async getDisbursements() {
     return this.payrollService.getDisbursements();
   }
+
+  @Get('pf-balances')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Get accumulated PF balances for all employees' })
+  async getPfBalances() {
+    return this.payrollService.getPfBalances();
+  }
+
+  @Get('cycles/:monthKey/status')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Get payroll cycle processing status' })
+  async getCycleStatus(@Param('monthKey') monthKey: string) {
+    return this.payrollService.getCycleStatus(monthKey);
+  }
 }

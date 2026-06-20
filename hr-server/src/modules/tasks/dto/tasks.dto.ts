@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, IsBoolean, IsDateString, IsIn, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, IsNumber, IsBoolean, IsDateString, IsIn, IsArray, ValidateNested, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateProjectDto {
@@ -104,11 +104,13 @@ export class CreateTaskDto {
   @IsOptional()
   reporterId?: string;
 
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   @IsOptional()
   estimatedHours?: number;
 
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   @IsOptional()
   actualHours?: number;
 
@@ -153,6 +155,8 @@ export class CreateTaskDto {
   approvalStatus?: string;
 
   @IsInt()
+  @Min(1)
+  @Max(5)
   @IsOptional()
   reviewRating?: number;
 
@@ -200,11 +204,13 @@ export class UpdateTaskDto {
   @IsOptional()
   reporterId?: string;
 
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   @IsOptional()
   estimatedHours?: number;
 
-  @IsInt()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   @IsOptional()
   actualHours?: number;
 
@@ -249,6 +255,8 @@ export class UpdateTaskDto {
   approvalStatus?: string;
 
   @IsInt()
+  @Min(1)
+  @Max(5)
   @IsOptional()
   reviewRating?: number;
 
@@ -471,4 +479,10 @@ export class BulkTimeLogDto {
   @ValidateNested({ each: true })
   @Type(() => BulkTimeLogEntryDto)
   logs!: BulkTimeLogEntryDto[];
+}
+
+export class BulkDeleteDto {
+  @IsArray()
+  @IsUUID('4', { each: true })
+  ids!: string[];
 }

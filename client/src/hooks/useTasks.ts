@@ -276,6 +276,17 @@ export function useDeleteTaskMutation() {
   });
 }
 
+export function useBulkDeleteTasksMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ deleted: number }, Error, string[]>({
+    mutationFn: (ids) => apiClient.delete<{ deleted: number }>("tasks/bulk", { data: { ids } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task-projects"] });
+    },
+  });
+}
+
 // ─── Checklist Hooks ─────────────────────────────────────────────────────────
 
 export function useAddChecklistItemMutation() {

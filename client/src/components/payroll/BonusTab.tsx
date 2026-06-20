@@ -2,15 +2,18 @@ import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Gift, CalendarDays, AlertTriangle, ShieldCheck, ShieldAlert } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Gift, CalendarDays, AlertTriangle, ShieldCheck, ShieldAlert, FileSpreadsheet } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { EmployeeSalary, FestivalBonusRule, Employee } from "@/types"
+import { exportToCsv } from "@/lib/export"
 
 interface BonusTabProps {
   festivalBonusRules: FestivalBonusRule[]
   employees: Employee[]
   employeeSalaries: EmployeeSalary[]
   formatCurrency: (val: number) => string
+  monthsOptions: Array<{ key: string; label: string }>
 }
 
 const getTenureMonths = (joinDateStr: string | null | undefined, targetMonthKey: string) => {
@@ -29,8 +32,9 @@ export default function BonusTab({
   employees,
   employeeSalaries,
   formatCurrency,
+  monthsOptions,
 }: BonusTabProps) {
-  const [selectedMonth, setSelectedMonth] = useState("2026-06")
+  const [selectedMonth, setSelectedMonth] = useState(() => monthsOptions[0]?.key || "2026-06")
 
   // Map employee salaries by employee ID
   const salariesMap = useMemo(() => {
@@ -98,11 +102,51 @@ export default function BonusTab({
     })
   }, [employees, salariesMap, festivalBonusRules, selectedMonth])
 
+  const exportPolicyRules = () => {
+    const headers = ["Min Service Months", "Max Service Months", "Bonus Percentage", "Pro-Rata Scaling", "Description"]
+    const rows = festivalBonusRules.map((rule) => [
+      rule.minServiceMonths,
+      rule.maxServiceMonths,
+      rule.bonusPercentage,
+      rule.isProRata ? "Enabled" : "Disabled",
+      rule.description || ""
+    ])
+    exportToCsv("FestivalBonusPolicyRules", headers, rows)
+  }
+
+  const exportEligibilityLedger = () => {
+    const headers = [
+      "Employee Name",
+      "Department",
+      "Designation",
+      "Basic Salary",
+      "Join Date",
+      "Tenure Months",
+      "Eligibility Status",
+      "Matched Rule",
+      "Computed Bonus",
+      "Alert/Description"
+    ]
+    const rows = bonusList.map((item) => [
+      item.employee.fullNameEnglish,
+      item.employee.departmentName || "",
+      item.employee.designationName || "",
+      item.basic,
+      item.employee.joinDate || "",
+      item.tenureMonths,
+      item.status,
+      item.ruleInfo,
+      item.bonusAmount,
+      item.description
+    ])
+    exportToCsv(`BonusEligibility-${selectedMonth}`, headers, rows)
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Policy Rules Overview */}
       <Card className="shadow-none border-border/40">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-sm font-bold flex items-center gap-1.5">
               <Gift className="h-4 w-4 text-primary" />
@@ -111,6 +155,18 @@ export default function BonusTab({
             <CardDescription className="text-xs">
               System-wide rules that determine festival bonus eligibility and percentages by service tenure.
             </CardDescription>
+          </div>
+          <div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportPolicyRules}
+              disabled={festivalBonusRules.length === 0}
+              className="gap-1 text-xs h-9"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -181,7 +237,7 @@ export default function BonusTab({
 
       {/* Dynamic Ledger */}
       <Card className="shadow-none border-border/40">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-sm font-bold flex items-center gap-1.5">
               <CalendarDays className="h-4 w-4 text-primary" />
@@ -192,14 +248,26 @@ export default function BonusTab({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportEligibilityLedger}
+              disabled={bonusList.length === 0}
+              className="gap-1 text-xs h-9"
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5" />
+              Export CSV
+            </Button>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="bg-transparent border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2"
             >
-              <option value="2026-06">June 2026</option>
-              <option value="2026-05">May 2026</option>
-              <option value="2026-04">April 2026</option>
+              {monthsOptions.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
         </CardHeader>
@@ -234,63 +302,71 @@ export default function BonusTab({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {bonusList.map((item) => (
-                <TableRow
-                  key={item.employee.id}
-                  className="border-b border-border/20 hover:bg-muted/10 transition-colors"
-                >
-                  <TableCell className="py-3">
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">
-                        {item.employee.fullNameEnglish}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {item.employee.designationName || "Staff"} · {item.employee.departmentName || "Management"}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3 text-xs font-semibold text-muted-foreground">
-                    {item.basic > 0 ? formatCurrency(item.basic) : "—"}
-                  </TableCell>
-                  <TableCell className="py-3 text-xs text-muted-foreground">
-                    {item.employee.joinDate || "—"}
-                  </TableCell>
-                  <TableCell className="py-3 text-xs text-center font-medium">
-                    {item.tenureMonths} months
-                  </TableCell>
-                  <TableCell className="py-3 text-center">
-                    {item.status === "eligible" ? (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-bold py-0.5 px-2">
-                        <ShieldCheck className="h-3 w-3 shrink-0 mr-1" />
-                        Qualified
-                      </Badge>
-                    ) : item.status === "nomatch" ? (
-                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] font-bold py-0.5 px-2">
-                        <AlertTriangle className="h-3 w-3 shrink-0 mr-1" />
-                        No Match
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-muted text-muted-foreground text-[9px] font-bold py-0.5 px-2">
-                        <ShieldAlert className="h-3 w-3 shrink-0 mr-1" />
-                        Not Eligible
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="py-3 text-xs font-medium text-muted-foreground">
-                    {item.ruleInfo}
-                  </TableCell>
-                  <TableCell className="py-3 text-xs font-bold text-foreground">
-                    {item.bonusAmount > 0 ? formatCurrency(item.bonusAmount) : "—"}
-                  </TableCell>
-                  <TableCell className="py-3 text-xs text-muted-foreground">
-                    {item.status === "nomatch" ? (
-                      <span className="text-amber-600 font-medium">{item.description}</span>
-                    ) : (
-                      item.description
-                    )}
+              {bonusList.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-xs">
+                    No employees found.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                bonusList.map((item) => (
+                  <TableRow
+                    key={item.employee.id}
+                    className="border-b border-border/20 hover:bg-muted/10 transition-colors"
+                  >
+                    <TableCell className="py-3">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">
+                          {item.employee.fullNameEnglish}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {item.employee.designationName || "Staff"} · {item.employee.departmentName || "Management"}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-xs font-semibold text-muted-foreground">
+                      {item.basic > 0 ? formatCurrency(item.basic) : "—"}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-muted-foreground">
+                      {item.employee.joinDate || "—"}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-center font-medium">
+                      {item.tenureMonths} months
+                    </TableCell>
+                    <TableCell className="py-3 text-center">
+                      {item.status === "eligible" ? (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[9px] font-bold py-0.5 px-2">
+                          <ShieldCheck className="h-3 w-3 shrink-0 mr-1" />
+                          Qualified
+                        </Badge>
+                      ) : item.status === "nomatch" ? (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] font-bold py-0.5 px-2">
+                          <AlertTriangle className="h-3 w-3 shrink-0 mr-1" />
+                          No Match
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-muted text-muted-foreground text-[9px] font-bold py-0.5 px-2">
+                          <ShieldAlert className="h-3 w-3 shrink-0 mr-1" />
+                          Not Eligible
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs font-medium text-muted-foreground">
+                      {item.ruleInfo}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs font-bold text-foreground">
+                      {item.bonusAmount > 0 ? formatCurrency(item.bonusAmount) : "—"}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-muted-foreground">
+                      {item.status === "nomatch" ? (
+                        <span className="text-amber-600 font-medium">{item.description}</span>
+                      ) : (
+                        item.description
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

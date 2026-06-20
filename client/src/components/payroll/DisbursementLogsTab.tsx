@@ -1,27 +1,70 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { History } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { History, FileSpreadsheet, Loader2 } from "lucide-react"
+import { exportToCsv } from "@/lib/export"
 
 interface DisbursementLogsTabProps {
   disbursements: any[]
   formatCurrency: (amount: number) => string
+  isLoading?: boolean
 }
 
-export function DisbursementLogsTab({ disbursements, formatCurrency }: DisbursementLogsTabProps) {
+export function DisbursementLogsTab({ disbursements, formatCurrency, isLoading }: DisbursementLogsTabProps) {
+
+  const handleExport = () => {
+    const headers = [
+      "Payout Month",
+      "Disbursement Date",
+      "Payment Method",
+      "Transaction Reference",
+      "Employee Count",
+      "Total Disbursed"
+    ]
+    const rows = disbursements.map((rec) => [
+      rec.monthKey,
+      rec.disbursementDate,
+      rec.paymentMethod,
+      rec.referenceId,
+      rec.employeeCount,
+      rec.totalDisbursed
+    ])
+    exportToCsv("SalaryDisbursements", headers, rows)
+  }
+
   return (
     <Card className="shadow-none border-border/40">
-      <CardHeader>
-        <CardTitle className="text-sm font-bold flex items-center gap-1.5">
-          <History className="h-4 w-4 text-primary" />
-          Salary Disbursement Transactions
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Audit history of completed monthly payouts and distribution networks.
-        </CardDescription>
+      <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+            <History className="h-4 w-4 text-primary" />
+            Salary Disbursement Transactions
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Audit history of completed monthly payouts and distribution networks.
+          </CardDescription>
+        </div>
+        <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={disbursements.length === 0}
+            className="gap-1 text-xs h-9"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
-        {disbursements.length > 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center p-12 gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">Loading disbursement logs...</span>
+          </div>
+        ) : disbursements.length > 0 ? (
           <Table>
             <TableHeader className="bg-muted/10 border-b border-border/30">
               <TableRow className="border-b-0 hover:bg-transparent">

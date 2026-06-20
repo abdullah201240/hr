@@ -1,45 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import type { Payslip, PayrollCycle, DisbursementRecord } from "@/types/salary";
 
-export interface Payslip {
-  id: string;
-  employeeId: string;
-  basicSalary: number;
-  allowanceHra: number;
-  allowanceTransport: number;
-  allowanceMedical: number;
-  deductionTax: number;
-  deductionPf: number;
-  bonusAmount: number;
-  bonusDescription: string;
-  festivalBonusAmount: number;
-  netPay: number;
-  paymentStatus: "Unpaid" | "Paid";
-  paymentMethod?: string;
-  paymentDate?: string;
-  paymentReference?: string;
-  name: string;
-  email: string;
-  role: string;
-  department?: string;
-  joinDate?: string;
-}
+export type { Payslip, PayrollCycle, DisbursementRecord };
 
-export interface PayrollCycle {
-  id: string;
-  monthKey: string;
-  status: "Draft" | "Processed" | "Distributed";
-  payslips: Payslip[];
-}
-
-export interface DisbursementRecord {
-  id: string;
-  monthKey: string;
-  disbursementDate: string;
-  paymentMethod: string;
-  referenceId: string;
-  totalDisbursed: number;
-  employeeCount: number;
+export function usePfBalancesQuery() {
+  return useQuery<Array<{ employeeId: string; totalPf: number; monthsContributed: number }>>({
+    queryKey: ["pfBalances"],
+    queryFn: () => apiClient.get<any>("payroll/pf-balances"),
+  });
 }
 
 export function usePayrollCycleQuery(monthKey: string) {

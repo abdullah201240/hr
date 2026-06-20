@@ -211,16 +211,17 @@ export function TaskDetailsSheet({
   }, [isOpen, onClose]);
 
   useEffect(() => {
+    const baseSeconds = Math.round((task?.actualHours || 0) * 3600) + (task?.timerElapsedSeconds || 0);
     if (!task?.timerStartedAt) {
-      setTimerVal(formatSeconds(task?.timerElapsedSeconds || 0));
+      setTimerVal(formatSeconds(baseSeconds));
       return;
     }
     const interval = setInterval(() => {
-      const elapsed = (task.timerElapsedSeconds || 0) + Math.floor((Date.now() - new Date(task.timerStartedAt!).getTime()) / 1000);
+      const elapsed = baseSeconds + Math.floor((Date.now() - new Date(task.timerStartedAt!).getTime()) / 1000);
       setTimerVal(formatSeconds(elapsed));
     }, 1000);
     return () => clearInterval(interval);
-  }, [task?.timerStartedAt, task?.timerElapsedSeconds]);
+  }, [task?.timerStartedAt, task?.timerElapsedSeconds, task?.actualHours]);
 
   const handleStartTimer = () => {
     handleMetaUpdate("timerStartedAt", new Date().toISOString());
@@ -228,15 +229,17 @@ export function TaskDetailsSheet({
 
   const handleStopTimer = () => {
     if (!task || !task.timerStartedAt) return;
-    const elapsed = (task.timerElapsedSeconds || 0) + Math.floor((Date.now() - new Date(task.timerStartedAt).getTime()) / 1000);
     if (!taskId) return;
+    const sessionSeconds = Math.floor((Date.now() - new Date(task.timerStartedAt).getTime()) / 1000);
+    const existingHours = task.actualHours || 0;
+    const sessionHours = Number((sessionSeconds / 3600).toFixed(2));
     updateTaskMut.mutate(
       {
         id: taskId,
         data: {
           timerStartedAt: null,
-          timerElapsedSeconds: elapsed,
-          actualHours: Number((elapsed / 3600).toFixed(2)),
+          timerElapsedSeconds: 0,
+          actualHours: Number((existingHours + sessionHours).toFixed(2)),
         },
       },
       {

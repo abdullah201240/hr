@@ -23,6 +23,7 @@ import {
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
+  useBulkDeleteTasksMutation,
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useMilestonesQuery,
@@ -168,6 +169,7 @@ export default function TasksPage() {
   const createTaskMut = useCreateTaskMutation();
   const updateTaskMut = useUpdateTaskMutation();
   const deleteTaskMut = useDeleteTaskMutation();
+  const bulkDeleteTasksMut = useBulkDeleteTasksMutation();
 
   // Milestone hooks
   const { data: milestones = [] } = useMilestonesQuery(workplaceProjectId || "");
@@ -391,16 +393,23 @@ export default function TasksPage() {
       try {
         const text = evt.target?.result as string;
         const parsed = parseCSV(text);
-        const tasksToImport = parsed.map((item: any) => ({
-          projectId: workplaceProjectId || undefined,
-          title: item.Title || item.title || "Untitled Task",
-          description: item.Description || item.description || "",
-          priority: item.Priority || item.priority || "Medium",
-          status: item.Status || item.status || "Todo",
-          estimatedHours: Number(item["Estimated Hours"] || item.estimatedHours || item.estimated_hours) || 0,
-          tags: item.Tags || item.tags || "",
-          dueDate: item["Due Date"] || item.dueDate ? `${item["Due Date"] || item.dueDate}T00:00:00.000Z` : undefined,
-        }));
+        const tasksToImport = parsed.map((item: any) => {
+          const assigneeName = item.Assignee || item.assignee || item["Assignee Name"] || "";
+          const matchedEmployee = assigneeName
+            ? employees.find(e => e.fullNameEnglish?.toLowerCase() === assigneeName.toLowerCase())
+            : undefined;
+          return {
+            projectId: workplaceProjectId || undefined,
+            title: item.Title || item.title || "Untitled Task",
+            description: item.Description || item.description || "",
+            priority: item.Priority || item.priority || "Medium",
+            status: item.Status || item.status || "Todo",
+            estimatedHours: Number(item["Estimated Hours"] || item.estimatedHours || item.estimated_hours) || 0,
+            tags: item.Tags || item.tags || "",
+            dueDate: item["Due Date"] || item.dueDate ? `${item["Due Date"] || item.dueDate}T00:00:00.000Z` : undefined,
+            ...(matchedEmployee ? { assigneeId: matchedEmployee.id } : {}),
+          };
+        });
         
         if (tasksToImport.length === 0) {
           toast.error("No tasks found in CSV");
@@ -411,7 +420,7 @@ export default function TasksPage() {
         queryClient.invalidateQueries({ queryKey: ["tasks"] });
         toast.success(`Successfully imported ${tasksToImport.length} tasks!`);
       } catch (err) {
-        toast.error("Failed to import CSV: check headers 'Title, Description, Priority, Status, Estimated Hours, Tags, Due Date'");
+        toast.error("Failed to import CSV: check headers 'Title, Description, Priority, Status, Estimated Hours, Assignee, Tags, Due Date'");
       } finally {
         setIsImporting(false);
         e.target.value = "";
@@ -756,7 +765,7 @@ export default function TasksPage() {
                     toast.success(`Updated ${ids.length} tasks`);
                   }}
                   onBulkDelete={(ids) => {
-                    ids.forEach(id => deleteTaskMut.mutate(id));
+                    bulkDeleteTasksMut.mutate(ids);
                     toast.success(`Deleted ${ids.length} tasks`);
                   }}
                 />

@@ -2,8 +2,10 @@ import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, 
 import { Server, WebSocket } from 'ws';
 import { Logger, Injectable } from '@nestjs/common';
 
+const WS_PORT = parseInt(process.env.WS_PORT || '3001', 10);
+
 @Injectable()
-@WebSocketGateway(3001, {
+@WebSocketGateway(WS_PORT, {
   path: '/ws',
   cors: {
     origin: '*',
@@ -16,7 +18,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   private readonly logger = new Logger(RealtimeGateway.name);
 
   afterInit(server: Server) {
-    this.logger.log('Realtime WebSocket Gateway initialized on port 3001');
+    this.logger.log(`Realtime WebSocket Gateway initialized on port ${WS_PORT}`);
   }
 
   handleConnection(client: WebSocket) {

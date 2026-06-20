@@ -67,10 +67,39 @@ export function useDeleteSalaryTemplateMutation() {
 
 // ─── Employee Salaries ──────────────────────────────────────────────────────
 
-export function useEmployeeSalariesQuery() {
-  return useQuery<EmployeeSalary[]>({
-    queryKey: ["employeeSalaries"],
-    queryFn: () => apiClient.get<EmployeeSalary[]>("employee-salaries"),
+export interface EmployeeSalaryQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  departmentId?: string;
+  templateId?: string;
+  status?: string;
+}
+
+export interface PaginatedEmployeeSalaries {
+  data: EmployeeSalary[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export function useEmployeeSalariesQuery(params?: EmployeeSalaryQuery) {
+  return useQuery<PaginatedEmployeeSalaries>({
+    queryKey: ["employeeSalaries", params],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, val]) => {
+          if (val !== undefined && val !== null && val !== "") {
+            searchParams.append(key, String(val));
+          }
+        });
+      }
+      return apiClient.get<PaginatedEmployeeSalaries>(`employee-salaries?${searchParams.toString()}`);
+    },
   });
 }
 
@@ -82,6 +111,31 @@ export function useEmployeeSalaryQuery(employeeId: string) {
         `employee-salaries/${employeeId}`
       ),
     enabled: !!employeeId,
+  });
+}
+
+export function useEmployeeSalaryHistoryQuery(employeeId: string) {
+  return useQuery<EmployeeSalary[]>({
+    queryKey: ["employeeSalaries", employeeId, "history"],
+    queryFn: () =>
+      apiClient.get<EmployeeSalary[]>(`employee-salaries/${employeeId}/history`),
+    enabled: !!employeeId,
+  });
+}
+
+export function useBulkSalaryRevisionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    { jobId: string; status: string },
+    Error,
+    { departmentId?: string; templateId?: string; percentageIncrease: number; effectiveDate: string; notes?: string }
+  >({
+    mutationFn: (payload) =>
+      apiClient.post<{ jobId: string; status: string }>("employee-salaries/bulk-revision", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employeeSalaries"] });
+      queryClient.invalidateQueries({ queryKey: ["salarySummary"] });
+    },
   });
 }
 

@@ -54,8 +54,16 @@ export function DetailedPayslipDialog({
               <p className="font-semibold mt-0.5">{viewPayslip.name}</p>
             </div>
             <div>
+              <p className="text-[10px] text-muted-foreground print:text-foreground">Employee ID</p>
+              <p className="font-semibold mt-0.5">{viewPayslip.employeeDisplayId || "—"}</p>
+            </div>
+            <div>
               <p className="text-[10px] text-muted-foreground print:text-foreground">Designation</p>
               <p className="font-semibold mt-0.5">{viewPayslip.role}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground print:text-foreground">Department</p>
+              <p className="font-semibold mt-0.5">{viewPayslip.departmentName || "—"}</p>
             </div>
           </div>
 
@@ -66,9 +74,19 @@ export function DetailedPayslipDialog({
               <p className="font-bold text-[10px] uppercase text-emerald-600 tracking-wider">Earnings</p>
               <div className="space-y-1">
                 <div className="flex justify-between"><span>Basic Salary:</span><span className="font-semibold">{formatCurrency(viewPayslip.basicSalary)}</span></div>
-                <div className="flex justify-between"><span>HRA Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceHra)}</span></div>
-                <div className="flex justify-between"><span>Transport Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceTransport)}</span></div>
-                <div className="flex justify-between"><span>Medical Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceMedical)}</span></div>
+                {viewPayslip.allowances && Object.entries(viewPayslip.allowances).map(([name, val]) => (
+                  <div key={name} className="flex justify-between">
+                    <span>{name}:</span>
+                    <span className="font-semibold">{formatCurrency(val as number)}</span>
+                  </div>
+                ))}
+                {(!viewPayslip.allowances || Object.keys(viewPayslip.allowances).length === 0) && (
+                  <>
+                    <div className="flex justify-between"><span>HRA Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceHra)}</span></div>
+                    <div className="flex justify-between"><span>Transport Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceTransport)}</span></div>
+                    <div className="flex justify-between"><span>Medical Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceMedical)}</span></div>
+                  </>
+                )}
                 {viewPayslip.festivalBonusAmount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Tenure Bonus:</span>
@@ -88,8 +106,18 @@ export function DetailedPayslipDialog({
             <div className="space-y-2">
               <p className="font-bold text-[10px] uppercase text-rose-500 tracking-wider">Deductions</p>
               <div className="space-y-1">
-                <div className="flex justify-between"><span>Income Tax:</span><span className="font-semibold">{formatCurrency(viewPayslip.deductionTax)}</span></div>
-                <div className="flex justify-between"><span>PF Contribution ({empPfRate}%):</span><span className="font-semibold">{formatCurrency(viewPayslip.deductionPf)}</span></div>
+                {viewPayslip.deductions && Object.entries(viewPayslip.deductions).map(([name, val]) => (
+                  <div key={name} className="flex justify-between">
+                    <span>{name}:</span>
+                    <span className="font-semibold">{formatCurrency(val as number)}</span>
+                  </div>
+                ))}
+                {(!viewPayslip.deductions || Object.keys(viewPayslip.deductions).length === 0) && (
+                  <>
+                    <div className="flex justify-between"><span>Income Tax:</span><span className="font-semibold">{formatCurrency(viewPayslip.deductionTax)}</span></div>
+                    <div className="flex justify-between"><span>PF Contribution ({empPfRate}%):</span><span className="font-semibold">{formatCurrency(viewPayslip.deductionPf)}</span></div>
+                  </>
+                )}
               </div>
             </div>
           </div>

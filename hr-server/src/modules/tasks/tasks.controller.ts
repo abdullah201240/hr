@@ -21,6 +21,7 @@ import {
   UpdateTimeEntryDto,
   BulkTaskImportDto,
   BulkTimeLogDto,
+  BulkDeleteDto,
 } from './dto/tasks.dto';
 
 @ApiTags('Tasks & Projects')
@@ -291,5 +292,12 @@ export class TasksController {
   @ApiOperation({ summary: 'Bulk log time entries' })
   async bulkLogTime(@Body() dto: BulkTimeLogDto) {
     return this.tasksService.bulkLogTime(dto.logs);
+  }
+
+  @Delete('bulk')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Bulk delete tasks' })
+  async bulkDeleteTasks(@Body() dto: BulkDeleteDto) {
+    return this.tasksService.bulkDeleteTasks(dto.ids);
   }
 }

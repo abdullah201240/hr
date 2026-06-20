@@ -350,7 +350,7 @@ export class TasksService {
       })
       .from(tasks)
       .leftJoin(employees, eq(tasks.assigneeId, employees.id))
-      .leftJoin(taskProjects, eq(tasks.projectId, taskProjects.id))
+      .leftJoin(taskProjects, and(eq(tasks.projectId, taskProjects.id), isNull(taskProjects.deletedAt)))
       .where(whereClause)
       .orderBy(desc(tasks.createdAt), desc(tasks.id));
 
@@ -496,7 +496,7 @@ export class TasksService {
       })
       .from(tasks)
       .leftJoin(employees, eq(tasks.assigneeId, employees.id))
-      .leftJoin(taskProjects, eq(tasks.projectId, taskProjects.id))
+      .leftJoin(taskProjects, and(eq(tasks.projectId, taskProjects.id), isNull(taskProjects.deletedAt)))
       .where(eq(tasks.id, id))
       .limit(1);
 
@@ -1049,31 +1049,19 @@ export class TasksService {
   // ─── Dependencies CRUD ──────────────────────────────────────────────────────
 
   async hasDependencyPath(startId: string, targetId: string): Promise<boolean> {
-    const allDeps = await this.db.select().from(taskDependencies);
-    const adjMap = new Map<string, string[]>();
-    for (const d of allDeps) {
-      const list = adjMap.get(d.taskId) || [];
-      list.push(d.dependsOnTaskId);
-      adjMap.set(d.taskId, list);
-    }
-
-    const queue = [startId];
-    const visited = new Set<string>([startId]);
-
-    while (queue.length > 0) {
-      const curr = queue.shift()!;
-      if (curr === targetId) {
-        return true;
-      }
-      const neighbors = adjMap.get(curr) || [];
-      for (const next of neighbors) {
-        if (!visited.has(next)) {
-          visited.add(next);
-          queue.push(next);
-        }
-      }
-    }
-    return false;
+    const result = await this.db.execute(sql`
+      WITH RECURSIVE dep_chain AS (
+        SELECT depends_on_task_id AS current_id
+        FROM task_dependencies
+        WHERE task_id = ${startId}
+        UNION ALL
+        SELECT td.depends_on_task_id
+        FROM task_dependencies td
+        INNER JOIN dep_chain dc ON td.task_id = dc.current_id
+      )
+      SELECT 1 FROM dep_chain WHERE current_id = ${targetId} LIMIT 1
+    `);
+    return (result as any).length > 0;
   }
 
   async addDependency(taskId: string, dto: CreateDependencyDto) {
@@ -1232,39 +1220,53 @@ export class TasksService {
   }
 
   async bulkCreateTasks(dtos: CreateTaskDto[]) {
-    const createdTasks = [];
-    for (const dto of dtos) {
-      const task = await this.createTask(dto);
-      createdTasks.push(task);
-    }
-    return createdTasks;
+    return Promise.all(dtos.map(dto => this.createTask(dto)));
   }
 
   async bulkLogTime(dtos: BulkTimeLogEntryDto[]) {
-    const logged = [];
-    for (const dto of dtos) {
-      const [entry] = await this.db
-        .insert(timeEntries)
-        .values({
-          taskId: dto.taskId,
-          employeeId: dto.employeeId,
-          startTime: new Date(dto.startTime),
-          endTime: dto.endTime ? new Date(dto.endTime) : null,
-          durationSeconds: dto.durationSeconds || 0,
-          description: dto.description || '',
-        })
-        .returning();
+    if (!dtos.length) return [];
 
-      const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, dto.taskId)).limit(1);
+    // Batch insert all time entries
+    const entries = await this.db
+      .insert(timeEntries)
+      .values(dtos.map(dto => ({
+        taskId: dto.taskId,
+        employeeId: dto.employeeId,
+        startTime: new Date(dto.startTime),
+        endTime: dto.endTime ? new Date(dto.endTime) : null,
+        durationSeconds: dto.durationSeconds || 0,
+        description: dto.description || '',
+      })))
+      .returning();
+
+    // Group added hours by taskId
+    const hoursByTask = new Map<string, number>();
+    for (const dto of dtos) {
       const addedHours = Math.round(((dto.durationSeconds || 0) / 3600) * 100) / 100;
+      hoursByTask.set(dto.taskId, (hoursByTask.get(dto.taskId) || 0) + addedHours);
+    }
+
+    // Batch update actualHours per task
+    for (const [taskId, addedHours] of hoursByTask) {
+      const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, taskId)).limit(1);
       await this.db
         .update(tasks)
         .set({ actualHours: Number(task?.actualHours || 0) + addedHours })
-        .where(eq(tasks.id, dto.taskId));
-
-      this.broadcastMutation('task_updated', dto.taskId);
-      logged.push(entry);
+        .where(eq(tasks.id, taskId));
+      this.broadcastMutation('task_updated', taskId);
     }
-    return logged;
+
+    return entries;
+  }
+
+  async bulkDeleteTasks(ids: string[]) {
+    if (!ids.length) return { deleted: 0 };
+    const result = await this.db
+      .update(tasks)
+      .set({ deletedAt: new Date() })
+      .where(inArray(tasks.id, ids))
+      .returning({ id: tasks.id });
+    ids.forEach(id => this.broadcastMutation('tasks_mutated', id));
+    return { deleted: result.length };
   }
 }

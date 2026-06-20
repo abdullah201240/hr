@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useSearchParams } from "react-router"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import {
   Settings,
   CheckCircle,
   CreditCard,
-  Loader2,
   RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -23,6 +22,7 @@ import {
   useDisburseMutation,
   useDisbursementsQuery,
   useSyncPayrollMutation,
+  usePfBalancesQuery,
   type Payslip,
 } from "@/hooks/usePayroll"
 import { useProvidentFundSettingsQuery, useUpdateProvidentFundSettingsMutation } from "@/hooks/useProvidentFund"
@@ -33,6 +33,7 @@ import {
   useAssignEmployeeSalaryMutation,
 } from "@/hooks/useSalary"
 import { useFestivalBonusRulesQuery } from "@/hooks/useFestivalBonus"
+import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import EmployeeSalaryTab from "@/components/payroll/EmployeeSalaryTab"
 import BonusTab from "@/components/payroll/BonusTab"
 import { ProvidentFundTab } from "@/components/payroll/ProvidentFundTab"
@@ -53,17 +54,51 @@ export default function PayrollPage() {
     setSearchParams({ tab: value }, { replace: true })
   }
 
-  // Selected payroll cycle month
-  const [selectedMonth, setSelectedMonth] = useState("2026-06")
+  // Dynamic months list options based on current date, going 12 months backwards
+  const monthsOptions = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date()
+      d.setMonth(d.getMonth() - i)
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const key = `${year}-${month}`
+      const label = d.toLocaleString('default', { month: 'long', year: 'numeric' })
+      return { key, label }
+    })
+  }, [])
+
+  // Selected payroll cycle month (default to current month)
+  const [selectedMonth, setSelectedMonth] = useState(() => monthsOptions[0]?.key || "2026-06")
 
   // API Queries & Mutations
   const { data: cycle, isLoading: isCycleLoading } = usePayrollCycleQuery(selectedMonth)
   const { data: pfSettings, isLoading: isPfLoading } = useProvidentFundSettingsQuery()
   const { data: employeesData, isLoading: employeesLoading } = useEmployeesQuery({ status: "active", limit: 100 })
-  const { data: salariesData, isLoading: salariesLoading } = useEmployeeSalariesQuery()
   const { data: disbursements = [], isLoading: isDisbursementsLoading } = useDisbursementsQuery()
   const { data: templates = [] } = useSalaryTemplatesQuery()
   const { data: festivalBonusRules = [] } = useFestivalBonusRulesQuery()
+  const { data: departmentOptions = [] } = useDepartmentOptionsQuery()
+  const { data: pfBalances = [], isLoading: isPfBalancesLoading } = usePfBalancesQuery()
+
+  // Salary Directory Query Parameters (State)
+  const [salaryPage, setSalaryPage] = useState(1)
+  const [salaryLimit, setSalaryLimit] = useState(10)
+  const [salarySearch, setSalarySearch] = useState("")
+  const [salaryDeptId, setSalaryDeptId] = useState("")
+  const [salaryTemplateId, setSalaryTemplateId] = useState("")
+
+  // Paginated directory lookup
+  const { data: salariesPaginated, isLoading: salariesLoading } = useEmployeeSalariesQuery({
+    page: salaryPage,
+    limit: salaryLimit,
+    search: salarySearch,
+    departmentId: salaryDeptId || undefined,
+    templateId: salaryTemplateId || undefined,
+    status: "active",
+  })
+
+  // Full lookup for Provident Fund calculation details
+  const { data: allSalariesData } = useEmployeeSalariesQuery({ limit: 1000, status: "active" })
 
   const updateBonusMutation = useUpdatePayslipBonusMutation()
   const processPayrollMutation = useProcessPayrollMutation()
@@ -85,7 +120,7 @@ export default function PayrollPage() {
           .toUpperCase()
       : "EM"
 
-  // PF settings
+  // PF settings rates
   const empPfRate = pfSettings?.employeeContributionRate ?? 10
   const employerPfRate = pfSettings?.employerContributionRate ?? 10
 
@@ -102,12 +137,27 @@ export default function PayrollPage() {
 
   // Payout states
   const [payoutMethod, setPayoutMethod] = useState("Bank Transfer")
-  const [payoutDate, setPayoutDate] = useState("2026-06-30")
+  
+  // Dynamic default payout date based on the last day of the selected month
+  const getLastDayOfMonth = (monthKey: string) => {
+    const [year, month] = monthKey.split("-").map(Number)
+    const d = new Date(year, month, 0)
+    const lastDay = String(d.getDate()).padStart(2, "0")
+    const mm = String(d.getMonth() + 1).padStart(2, "0")
+    return `${d.getFullYear()}-${mm}-${lastDay}`
+  }
+
+  const [payoutDate, setPayoutDate] = useState(() => getLastDayOfMonth(selectedMonth))
   const [payoutRef, setPayoutRef] = useState("")
 
   // Edit PF rates local states
   const [localEmpPfRate, setLocalEmpPfRate] = useState(empPfRate)
   const [localEmployerPfRate, setLocalEmployerPfRate] = useState(employerPfRate)
+
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month)
+    setPayoutDate(getLastDayOfMonth(month))
+  }
 
   const handleOpenBonus = (payslip: Payslip) => {
     setBonusVal(payslip.bonusAmount || 0)
@@ -225,19 +275,35 @@ export default function PayrollPage() {
   }
 
   const handleSyncLedger = () => {
-    syncPayrollMutation.mutate(selectedMonth, {
-      onSuccess: () => {
-        Swal.fire({
-          title: "Ledger Synchronized!",
-          text: "Recalculated active employee metrics and pulled any new profile records.",
-          icon: "success",
-          confirmButtonText: "Done",
-          buttonsStyling: false,
-          customClass: {
-            confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
+    Swal.fire({
+      title: "Recalculate and Sync Ledger?",
+      text: "This will reset all payslips for this draft cycle to their base templates, discarding any custom manual bonuses. Are you sure?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Sync",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        syncPayrollMutation.mutate(selectedMonth, {
+          onSuccess: () => {
+            Swal.fire({
+              title: "Ledger Synchronized!",
+              text: "Recalculated active employee metrics and pulled any new profile records.",
+              icon: "success",
+              confirmButtonText: "Done",
+              buttonsStyling: false,
+              customClass: {
+                confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
+              },
+            })
           },
         })
-      },
+      }
     })
   }
 
@@ -279,38 +345,30 @@ export default function PayrollPage() {
   )
   const totalDeductionsSum = payslipsList.reduce((sum, p) => sum + p.deductionTax + p.deductionPf, 0)
 
-  // Calculate PF balances based on historic payrolls & join duration seed
+  // Accrued PF calculation from actual paid payslips via API
   const activeEmployees = employeesData?.data || []
-  const getEmployeePfStats = (empId: string, joinDate?: string) => {
-    const salRecord = salariesData?.find((s) => s.employeeId === empId)
+  const getEmployeePfStats = (empId: string, _joinDate?: string) => {
+    const salRecord = allSalariesData?.data?.find((s) => s.employeeId === empId)
     const basic = salRecord?.basicSalary ?? 50000
 
-    const joinDateObj = joinDate ? new Date(joinDate) : new Date("2023-01-01")
-    const today = new Date()
-    const diffMonths = (today.getFullYear() - joinDateObj.getFullYear()) * 12 + today.getMonth() - joinDateObj.getMonth()
-    const months = Math.max(1, diffMonths)
+    const balanceRecord = pfBalances?.find((b) => b.employeeId === empId)
+    const totalPfEmployeeAccrued = balanceRecord ? Number(balanceRecord.totalPf) : 0
+    const monthsContributed = balanceRecord ? Number(balanceRecord.monthsContributed) : 0
 
     const empContribution = Math.round(basic * (empPfRate / 100))
     const employerMatch = Math.round(basic * (employerPfRate / 100))
-    const monthlyTotal = empContribution + employerMatch
-    const cumulativeTotal = monthlyTotal * months
+    
+    // Accrued cumulative matching share
+    const employerAccrued = totalPfEmployeeAccrued * (employerPfRate / (empPfRate || 10))
+    const cumulativeTotal = Math.round(totalPfEmployeeAccrued + employerAccrued)
 
     return {
       basic,
       monthlyEmp: empContribution,
       monthlyEmployer: employerMatch,
       cumulative: cumulativeTotal,
-      monthsActive: months,
+      monthsActive: monthsContributed,
     }
-  }
-
-  if (isCycleLoading || isPfLoading || isDisbursementsLoading) {
-    return (
-      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading enterprise payroll ledger...</p>
-      </div>
-    )
   }
 
   const cycleStatus = cycle?.status || "Draft"
@@ -463,12 +521,14 @@ export default function PayrollPage() {
         <TabsContent value="processing" className="space-y-4 outline-none">
           <PayrollProcessingTab
             selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
+            setSelectedMonth={handleMonthChange}
             cycleStatus={cycleStatus}
             payslipsList={payslipsList}
             formatCurrency={formatCurrency}
             handleOpenBonus={handleOpenBonus}
             setViewPayslip={setViewPayslip}
+            monthsOptions={monthsOptions}
+            isLoading={isCycleLoading}
           />
         </TabsContent>
 
@@ -480,6 +540,7 @@ export default function PayrollPage() {
             activeEmployees={activeEmployees}
             getEmployeePfStats={getEmployeePfStats}
             formatCurrency={formatCurrency}
+            isLoading={isPfLoading || isPfBalancesLoading || salariesLoading || employeesLoading}
           />
         </TabsContent>
 
@@ -488,6 +549,7 @@ export default function PayrollPage() {
           <DisbursementLogsTab
             disbursements={disbursements}
             formatCurrency={formatCurrency}
+            isLoading={isDisbursementsLoading}
           />
         </TabsContent>
 
@@ -495,7 +557,7 @@ export default function PayrollPage() {
         <TabsContent value="overview" className="outline-none">
           <EmployeeSalaryTab
             templates={templates}
-            employeeSalaries={salariesData || []}
+            employeeSalaries={salariesPaginated?.data || []}
             employees={employees}
             salariesLoading={salariesLoading}
             employeesDataLoading={employeesLoading}
@@ -503,6 +565,19 @@ export default function PayrollPage() {
             pfSettings={pfSettings}
             formatCurrency={formatCurrency}
             getInitials={getInitials}
+
+            salaryPage={salaryPage}
+            setSalaryPage={setSalaryPage}
+            salaryLimit={salaryLimit}
+            setSalaryLimit={setSalaryLimit}
+            salarySearch={salarySearch}
+            setSalarySearch={setSalarySearch}
+            salaryDeptId={salaryDeptId}
+            setSalaryDeptId={setSalaryDeptId}
+            salaryTemplateId={salaryTemplateId}
+            setSalaryTemplateId={setSalaryTemplateId}
+            salariesMeta={salariesPaginated?.meta}
+            departmentOptions={departmentOptions}
           />
         </TabsContent>
 
@@ -511,8 +586,9 @@ export default function PayrollPage() {
           <BonusTab
             festivalBonusRules={festivalBonusRules}
             employees={employees}
-            employeeSalaries={salariesData || []}
+            employeeSalaries={allSalariesData?.data || []}
             formatCurrency={formatCurrency}
+            monthsOptions={monthsOptions}
           />
         </TabsContent>
       </Tabs>

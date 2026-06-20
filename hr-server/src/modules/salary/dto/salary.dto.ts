@@ -205,3 +205,66 @@ export class UpdateEmployeeSalaryDto {
   @IsString()
   notes?: string;
 }
+
+export class EmployeeSalaryQueryDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  limit?: number = 20;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  departmentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  templateId?: string;
+
+  @ApiPropertyOptional({ example: 'active' })
+  @IsOptional()
+  @IsString()
+  status?: string = 'active';
+}
+
+export class BulkSalaryRevisionDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  departmentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  templateId?: string;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  percentageIncrease?: number;
+
+  @ApiProperty({ example: '2026-07-01' })
+  @IsDateString()
+  effectiveDate!: string;
+
+  @ApiPropertyOptional({ example: 'Annual 10% raise' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}

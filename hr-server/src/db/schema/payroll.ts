@@ -8,6 +8,8 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  boolean,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
@@ -19,6 +21,7 @@ export const payrollCycles = pgTable(
     ...baseTable,
     monthKey: varchar('month_key', { length: 10 }).notNull(), // e.g. "2026-06"
     status: varchar('status', { length: 20 }).default('Draft').notNull(), // 'Draft' | 'Processed' | 'Distributed'
+    isProcessing: boolean('is_processing').default(false).notNull(),
   },
   (table) => [
     uniqueIndex('payroll_cycles_month_key_idx').on(table.monthKey),
@@ -53,6 +56,8 @@ export const employeePayslips = pgTable(
     paymentMethod: varchar('payment_method', { length: 50 }),
     paymentDate: date('payment_date'),
     paymentReference: varchar('payment_reference', { length: 255 }),
+    allowances: jsonb('allowances').$type<Record<string, number>>().default({}).notNull(),
+    deductions: jsonb('deductions').$type<Record<string, number>>().default({}).notNull(),
   },
   (table) => [
     uniqueIndex('employee_payslips_cycle_employee_idx').on(table.payrollCycleId, table.employeeId),

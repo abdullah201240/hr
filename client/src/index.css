@@ -163,10 +163,13 @@ html.theme-transition *::after {
 
 /* SweetAlert2 Premium Theme Customization */
 .swal2-container {
-  z-index: 9999 !important;
+  z-index: 99999 !important;
 }
 
-/* Fix: When SweetAlert is open, disable Dialog overlay pointer-events so Swal buttons are clickable */
+/* Fix: When SweetAlert is open, disable Dialog overlay pointer-events and enable pointer events on body so Swal buttons are clickable */
+body:has(.swal2-container) {
+  pointer-events: auto !important;
+}
 body:has(.swal2-container) [data-slot="dialog-overlay"] {
   pointer-events: none !important;
 }

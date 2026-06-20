@@ -101,45 +101,43 @@ export interface SalarySummary {
 }
 
 export interface Payslip {
-  employeeEmail: string;
-  name: string;
-  role: string;
-  dept: string;
+  id: string;
+  employeeId: string;
   basicSalary: number;
-  allowances: Record<string, number>;
-  deductions: Record<string, number>;
-  bonus: number;
+  allowanceHra: number;
+  allowanceTransport: number;
+  allowanceMedical: number;
+  deductionTax: number;
+  deductionPf: number;
+  bonusAmount: number;
   bonusDescription: string;
+  festivalBonusAmount: number;
   netPay: number;
   paymentStatus: "Unpaid" | "Paid";
   paymentMethod?: string;
   paymentDate?: string;
   paymentReference?: string;
-  // Dynamic stats
-  lopDays: number;
-  lopDeduction: number;
-  lateDays: number;
-  lateDeduction: number;
-  presentDays: number;
-  leaveDays: number;
-  movementDays: number;
-  travelDays: number;
-  earlyOutDays: number;
-  // Added fields
-  festivalBonus?: number;
-  specialBonus?: number;
-  festivalBonusDescription?: string;
-  specialBonusDescription?: string;
-  bonusWarning?: string;
+  name: string;
+  email: string;
+  role: string;
+  department?: string;
+  departmentName?: string;
+  employeeDisplayId?: string;
+  joinDate?: string;
+  allowances: Record<string, number>;
+  deductions: Record<string, number>;
 }
 
 export interface PayrollCycle {
+  id: string;
   monthKey: string;
   status: "Draft" | "Processed" | "Distributed";
+  isProcessing?: boolean;
   payslips: Payslip[];
 }
 
 export interface DisbursementRecord {
+  id: string;
   monthKey: string;
   disbursementDate: string;
   paymentMethod: string;
