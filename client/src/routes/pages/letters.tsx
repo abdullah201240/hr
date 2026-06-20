@@ -1,28 +1,11 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
-import { z } from "zod"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { LetterCreateDialog } from "@/components/letters/LetterCreateDialog"
+import { LetterPreviewDialog } from "@/components/letters/LetterPreviewDialog"
 import {
   Table,
   TableBody,
@@ -235,14 +218,7 @@ const getCategoryLabel = (category: string) => {
   return labels[category] || category
 }
 
-const letterFormSchema = z.object({
-  selectedType: z.string().min(1, "Letter Type is required"),
-  formEmployeeId: z.string().min(1, "Employee is required"),
-  formSubject: z.string().trim().min(1, "Subject is required"),
-  formIssueDate: z.string().min(1, "Issue Date is required"),
-  formEffectiveDate: z.string().min(1, "Effective Date is required"),
-  formBody: z.string().trim().min(1, "Letter Body is required"),
-})
+
 
 export default function LettersPage() {
   const navigate = useNavigate()
@@ -271,17 +247,6 @@ export default function LettersPage() {
   const [previewLetter, setPreviewLetter] = useState<HRLetter | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
 
-  // Form state
-  const [selectedType, setSelectedType] = useState("")
-  const [formEmployeeId, setFormEmployeeId] = useState("")
-  const [formSubject, setFormSubject] = useState("")
-  const [formIssueDate, setFormIssueDate] = useState("")
-  const [formEffectiveDate, setFormEffectiveDate] = useState("")
-  const [formBody, setFormBody] = useState("")
-  const [formFields, setFormFields] = useState<Record<string, string>>({})
-  const [formStatus, setFormStatus] = useState<HRLetter["status"]>("Draft")
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
-
   // Stats
   const lettersList = lettersData?.data || []
   const totalLetters = lettersData?.meta?.total || 0
@@ -289,79 +254,14 @@ export default function LettersPage() {
   const sentLetters = lettersList.filter((l) => l.status === "Sent").length
   const signedLetters = lettersList.filter((l) => l.status === "Signed").length
 
-  // Reset form
-  const resetForm = () => {
-    setSelectedType("")
-    setFormEmployeeId("")
-    setFormSubject("")
-    setFormIssueDate("")
-    setFormEffectiveDate("")
-    setFormBody("")
-    setFormFields({})
-    setFormStatus("Draft")
-    setErrors({})
-  }
-
-  // Handle type selection - prefill template
-  const handleTypeSelect = (typeId: string) => {
-    setSelectedType(typeId)
-    setErrors((prev) => ({ ...prev, selectedType: "" }))
-    const config = getLetterTypeConfig(typeId)
-    if (config) {
-      setFormSubject(config.name)
-      // Initialize empty fields
-      const emptyFields: Record<string, string> = {}
-      config.templateFields.forEach((f) => (emptyFields[f] = ""))
-      setFormFields(emptyFields)
-      // Set default body template
-      setFormBody(`This ${config.name} is issued to confirm the following details.\n\n[Letter content based on ${config.name} type]\n\nPlease review and acknowledge receipt of this letter.`)
+  const handleCreateLetterSubmit = async (payload: any) => {
+    try {
+      await createMutation.mutateAsync(payload)
+      Swal.fire("Success", "HR Letter has been successfully created.", "success")
+      setDialogOpen(false)
+    } catch (err: any) {
+      Swal.fire("Error", err.message || "Failed to create letter.", "error")
     }
-  }
-
-  // Handle form submit
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrors({})
-
-    const result = letterFormSchema.safeParse({
-      selectedType,
-      formEmployeeId,
-      formSubject,
-      formIssueDate,
-      formEffectiveDate,
-      formBody,
-    })
-
-    if (!result.success) {
-      const fieldErrors: { [key: string]: string } = {}
-      result.error.issues.forEach((err: any) => {
-        if (err.path[0]) {
-          fieldErrors[err.path[0].toString()] = err.message
-        }
-      })
-      setErrors(fieldErrors)
-      return
-    }
-
-    createMutation.mutate(
-      {
-        type: selectedType,
-        employeeId: formEmployeeId,
-        subject: formSubject,
-        issueDate: formIssueDate,
-        effectiveDate: formEffectiveDate,
-        body: formBody,
-        fields: formFields,
-        status: formStatus,
-      },
-      {
-        onSuccess: () => {
-          Swal.fire("Success", "HR Letter has been successfully created.", "success")
-          resetForm()
-          setDialogOpen(false)
-        },
-      }
-    )
   }
 
   // Handle status change
@@ -420,201 +320,22 @@ export default function LettersPage() {
           </h2>
           <p className="text-muted-foreground">Create, manage and track all HR letters</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm() }}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none">
-              <Plus className="h-4 w-4" />
-              Create Letter
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create HR Letter</DialogTitle>
-              <DialogDescription>
-                Select a letter type and fill in the details to generate an HR letter
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Letter Type Selection */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Letter Type *</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {letterTypes.map((lt) => {
-                    const Icon = lt.icon
-                    return (
-                      <button
-                        key={lt.id}
-                        type="button"
-                        onClick={() => handleTypeSelect(lt.id)}
-                        className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${
-                          selectedType === lt.id
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
-                            : "border-border hover:border-primary/50 hover:bg-muted/50"
-                        }`}
-                      >
-                        <div className={`h-8 w-8 rounded-lg ${lt.bgColor} flex items-center justify-center shrink-0`}>
-                          <Icon className={`h-4 w-4 ${lt.color}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold truncate">{lt.name}</p>
-                          <p className="text-[9px] text-muted-foreground truncate">{getCategoryLabel(lt.category)}</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-                {errors.selectedType && (
-                  <p className="text-[10px] text-destructive mt-0.5">{errors.selectedType}</p>
-                )}
-              </div>
-
-              {selectedType && (
-                <>
-                  {/* Employee + Subject */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Employee Name *</Label>
-                      <select
-                        value={formEmployeeId}
-                        onChange={(e) => {
-                          setFormEmployeeId(e.target.value)
-                          if (errors.formEmployeeId) setErrors(prev => ({ ...prev, formEmployeeId: "" }))
-                        }}
-                        required
-                        className="w-full bg-background border border-border hover:border-primary transition-colors text-xs h-9 rounded-md px-2"
-                      >
-                        <option value="">Select Employee</option>
-                        {employeeOptions.map((emp) => (
-                          <option key={emp.id} value={emp.id}>
-                            {emp.fullNameEnglish} ({emp.employeeId})
-                          </option>
-                        ))}
-                      </select>
-                      {errors.formEmployeeId && (
-                        <p className="text-[10px] text-destructive mt-0.5">{errors.formEmployeeId}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Subject *</Label>
-                      <Input
-                        placeholder="Letter subject"
-                        value={formSubject}
-                        onChange={(e) => {
-                          setFormSubject(e.target.value)
-                          if (errors.formSubject) setErrors(prev => ({ ...prev, formSubject: "" }))
-                        }}
-                        required
-                        className="text-xs"
-                      />
-                      {errors.formSubject && (
-                        <p className="text-[10px] text-destructive mt-0.5">{errors.formSubject}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Dates */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Issue Date *</Label>
-                      <Input
-                        type="date"
-                        value={formIssueDate}
-                        onChange={(e) => {
-                          setFormIssueDate(e.target.value)
-                          if (errors.formIssueDate) setErrors(prev => ({ ...prev, formIssueDate: "" }))
-                        }}
-                        required
-                        className="text-xs"
-                      />
-                      {errors.formIssueDate && (
-                        <p className="text-[10px] text-destructive mt-0.5">{errors.formIssueDate}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Effective Date *</Label>
-                      <Input
-                        type="date"
-                        value={formEffectiveDate}
-                        onChange={(e) => {
-                          setFormEffectiveDate(e.target.value)
-                          if (errors.formEffectiveDate) setErrors(prev => ({ ...prev, formEffectiveDate: "" }))
-                        }}
-                        required
-                        className="text-xs"
-                      />
-                      {errors.formEffectiveDate && (
-                        <p className="text-[10px] text-destructive mt-0.5">{errors.formEffectiveDate}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Dynamic Fields based on letter type */}
-                  <div className="space-y-3">
-                    <Label className="text-xs font-semibold">Letter Details</Label>
-                    <div className="grid gap-3 sm:grid-cols-2 p-3 rounded-lg border border-border/50 bg-muted/10">
-                      {getLetterTypeConfig(selectedType)?.templateFields.map((field) => (
-                        <div key={field} className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground font-medium capitalize">
-                            {field.replace(/([A-Z])/g, " $1").trim()}
-                          </Label>
-                          <Input
-                            placeholder={`Enter ${field.replace(/([A-Z])/g, " $1").trim().toLowerCase()}`}
-                            value={formFields[field] || ""}
-                            onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
-                            className="text-xs h-8"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Letter Body */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Letter Body *</Label>
-                    <Textarea
-                      placeholder="Enter letter content..."
-                      value={formBody}
-                      onChange={(e) => {
-                        setFormBody(e.target.value)
-                        if (errors.formBody) setErrors(prev => ({ ...prev, formBody: "" }))
-                      }}
-                      required
-                      className="text-xs min-h-[120px] resize-y"
-                    />
-                    {errors.formBody && (
-                      <p className="text-[10px] text-destructive mt-0.5">{errors.formBody}</p>
-                    )}
-                  </div>
-
-                  {/* Status */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Status</Label>
-                    <Select value={formStatus} onValueChange={(v) => setFormStatus(v as HRLetter["status"])}>
-                      <SelectTrigger className="text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Draft">Draft</SelectItem>
-                        <SelectItem value="Sent">Sent</SelectItem>
-                        <SelectItem value="Signed">Signed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm() }}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={!selectedType || createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Letter"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none"
+          onClick={() => setDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+          Create Letter
+        </Button>
       </div>
+
+      <LetterCreateDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        employeeOptions={employeeOptions}
+        onSubmit={handleCreateLetterSubmit}
+        isPending={createMutation.isPending}
+      />
 
       {/* KPI Cards - Compact Style */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -806,72 +527,12 @@ export default function LettersPage() {
       </Card>
 
       {/* Detailed Document Preview Dialog */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-          {previewLetter && (
-            <>
-              <DialogHeader className="print:hidden">
-                <DialogTitle className="text-base font-bold flex items-center justify-between">
-                  <span>Document Preview Statement</span>
-                  <span className="text-[10px] text-muted-foreground mr-4">Reference: {previewLetter.id}</span>
-                </DialogTitle>
-                <DialogDescription className="text-[10px] uppercase font-bold tracking-wider text-primary">Sadoshima Global Corp</DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 border-t border-b border-border/40 py-4 text-xs">
-                {/* Visual template details in dialog */}
-                <div className="space-y-1 pb-4 border-b border-border">
-                  <h1 className="text-base font-extrabold uppercase tracking-widest text-center text-foreground">Sadoshima Global Corp</h1>
-                  <p className="text-[9px] text-center text-muted-foreground">OFFICIAL CORRESPONDENCE AND RECORD</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 bg-muted/20 p-3 rounded-lg">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Recipient Name</p>
-                    <p className="font-semibold mt-0.5">{previewLetter.employeeName}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground">Effective Date</p>
-                    <p className="font-semibold mt-0.5">{previewLetter.effectiveDate}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="font-bold text-[10px] uppercase tracking-wider text-indigo-600">Letter Subject</p>
-                  <p className="font-bold text-sm text-foreground">{previewLetter.subject}</p>
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-border/20">
-                  <p className="font-bold text-[10px] uppercase tracking-wider text-indigo-600">Content</p>
-                  <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">{previewLetter.body}</p>
-                </div>
-
-                {Object.keys(previewLetter.fields || {}).length > 0 && (
-                  <div className="p-3 bg-muted/20 rounded-lg space-y-1.5 mt-2">
-                    <p className="font-bold text-[10px] uppercase text-indigo-600 tracking-wide">Placeholder Mapping</p>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
-                      {Object.entries(previewLetter.fields).map(([key, val]) => (
-                        <div key={key}>
-                          <span className="font-medium text-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}:</span>{" "}
-                          <span className="text-muted-foreground">{val || "—"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter className="print:hidden">
-                <Button variant="outline" size="sm" onClick={() => setPreviewOpen(false)} className="text-xs">Close</Button>
-                <Button size="sm" className="gap-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white border-none" onClick={() => handlePrintLetter(previewLetter.id)}>
-                  <Printer className="h-4 w-4" />
-                  Print Letter
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <LetterPreviewDialog
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        previewLetter={previewLetter}
+        onPrint={handlePrintLetter}
+      />
     </div>
   )
 }

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
-import type { AttendanceRecord as DashAttendanceRecord } from "@/components/dashboard/types"
 import { DEFAULT_LEAVE_BALANCES, resolveLeaveIcon } from "@/components/dashboard/types"
 import { useAttendanceSettingsQuery, useHolidaysQuery } from "@/hooks/useAttendanceSettings"
 import {
@@ -36,6 +35,12 @@ import { RequestCorrectionDialog, convert24to12 } from "@/components/attendance/
 import { OverrideAttendanceDialog } from "@/components/attendance/OverrideAttendanceDialog"
 import { MyAttendanceTab } from "@/components/attendance/MyAttendanceTab"
 import { EmployeeAttendanceTab } from "@/components/attendance/EmployeeAttendanceTab"
+import {
+  mapBalances,
+  mapRegularHolidays,
+  mapLeaveApplications,
+  computeFinalAttendance,
+} from "@/components/attendance/attendance-utils"
 
 export default function AttendancePage() {
   const { user } = useAuthStore()
@@ -72,43 +77,7 @@ export default function AttendancePage() {
   const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear)
 
   const balances = useMemo(() => {
-    const normalized = dbBalances && dbBalances.length > 0
-      ? dbBalances.map(b => ({
-          id: b.id,
-          key: b.key,
-          label: b.label,
-          total: b.total,
-          used: b.used,
-          color: b.color || "bg-sky-500",
-          icon: b.icon || "coffee",
-          requiresDocument: b.requiresDocument
-        }))
-      : DEFAULT_LEAVE_BALANCES.map(db => ({
-          id: db.key,
-          key: db.key,
-          label: db.label,
-          total: db.total,
-          used: db.used,
-          color: db.color,
-          icon: db.key,
-          requiresDocument: false
-        }))
-
-    return normalized.map(item => {
-      const resolvedIcon = resolveLeaveIcon(item.icon)
-
-      return {
-        id: item.id,
-        label: item.label,
-        used: item.used,
-        total: item.total,
-        color: item.color,
-        light: item.color.replace("bg-", "text-"),
-        icon: resolvedIcon,
-        key: item.key,
-        requiresDocument: item.requiresDocument
-      }
-    })
+    return mapBalances(dbBalances, DEFAULT_LEAVE_BALANCES, resolveLeaveIcon)
   }, [dbBalances])
 
   // ── Holiday Settings (Dynamic from API) ────────────────────────────────────
@@ -117,14 +86,7 @@ export default function AttendancePage() {
   const [weeklyHolidays, setWeeklyHolidays] = useState<string[]>(["Saturday", "Sunday"])
 
   const regularHolidays = useMemo(() => {
-    return holidaysData.map((h: any) => ({
-      id: h.id,
-      name: h.name,
-      startDate: h.startDate,
-      endDate: h.endDate,
-      startDay: h.startDate ? new Date(h.startDate).getDate() : 1,
-      endDay: h.endDate ? new Date(h.endDate).getDate() : 1
-    }))
+    return mapRegularHolidays(holidaysData)
   }, [holidaysData])
 
   useEffect(() => {
@@ -281,88 +243,13 @@ export default function AttendancePage() {
 
   // Map API leave applications to format expected by internal components
   const mappedLeaveApplications = useMemo(() => {
-    return leaveApplications
-      .filter((la) => {
-        const startStr = typeof la.startDate === 'string' ? la.startDate.split('T')[0] : new Date(la.startDate).toISOString().split('T')[0]
-        const endStr = typeof la.endDate === 'string' ? la.endDate.split('T')[0] : new Date(la.endDate).toISOString().split('T')[0]
-        const firstDayStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-01`
-        const lastDayStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(new Date(calYear, calMonth + 1, 0).getDate()).padStart(2, '0')}`
-        return startStr <= lastDayStr && endStr >= firstDayStr
-      })
-      .map((la) => {
-        const startStr = typeof la.startDate === 'string' ? la.startDate.split('T')[0] : new Date(la.startDate).toISOString().split('T')[0]
-        const endStr = typeof la.endDate === 'string' ? la.endDate.split('T')[0] : new Date(la.endDate).toISOString().split('T')[0]
-        const [startYear, startMonth, startDayVal] = startStr.split('-').map(Number)
-        const [endYear, endMonth, endDayVal] = endStr.split('-').map(Number)
-
-        let startDay = 1
-        if (startYear === calYear && (startMonth - 1) === calMonth) {
-          startDay = startDayVal
-        }
-        let endDay = new Date(calYear, calMonth + 1, 0).getDate()
-        if (endYear === calYear && (endMonth - 1) === calMonth) {
-          endDay = endDayVal
-        }
-
-        return {
-          id: la.id,
-          startDay,
-          endDay,
-          leaveType: la.leaveTypeName.toLowerCase().replace(" leave", "").replace(" ", ""),
-          reason: la.reason,
-          attachments: la.attachments,
-          status: la.status,
-          rawLeave: la,
-        }
-      })
+    return mapLeaveApplications(leaveApplications, calYear, calMonth)
   }, [leaveApplications, calYear, calMonth])
 
   // Computed final attendance matching dashboard logic
-  const finalAttendance = useMemo(() => attendanceRecords.map((record): DashAttendanceRecord => {
-    const matchingLeave = mappedLeaveApplications.find(la => record.day >= la.startDay && record.day <= la.endDay)
-    if (matchingLeave) {
-      const selectedTypeObj = balances.find(b => b.key === matchingLeave.leaveType)
-      const typeLabel = selectedTypeObj?.label || "Leave"
-      return {
-        ...record,
-        status: "leave" as const,
-        notes: `${matchingLeave.status} ${typeLabel}: ${matchingLeave.reason}`,
-        attachments: matchingLeave.attachments as any,
-        breakHours: record.breakHours || 0
-      }
-    }
-
-    if (record.status === "upcoming") return { ...record, breakHours: record.breakHours || 0 }
-
-    const matchingRegularHoliday = regularHolidays.find((h: any) => {
-      if (h.startDate && h.endDate) {
-        const recordDate = new Date(calYear, calMonth, record.day)
-        const start = new Date(h.startDate)
-        const end = new Date(h.endDate)
-        recordDate.setHours(0, 0, 0, 0)
-        start.setHours(0, 0, 0, 0)
-        end.setHours(0, 0, 0, 0)
-        return recordDate >= start && recordDate <= end
-      }
-      return record.day >= h.startDay && record.day <= h.endDay
-    })
-    if (matchingRegularHoliday) {
-      return { ...record, status: "holiday" as const, notes: matchingRegularHoliday.name, checkIn: null, checkOut: null, hours: null, breakHours: record.breakHours || 0 }
-    }
-
-    const isWeeklyHoliday = weeklyHolidays.includes(record.dayName)
-    if (isWeeklyHoliday) {
-      if (!record.checkIn) {
-        return { ...record, status: "weekend" as const, checkIn: null, checkOut: null, hours: null, breakHours: record.breakHours || 0 }
-      }
-    } else {
-      if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
-        return { ...record, status: "absent" as const, breakHours: record.breakHours || 0 }
-      }
-    }
-
-    return { ...record, breakHours: record.breakHours || 0 }
-  }), [attendanceRecords, leaveApplications, balances, regularHolidays, weeklyHolidays, calYear, calMonth])
+  const finalAttendance = useMemo(() => {
+    return computeFinalAttendance(attendanceRecords, mappedLeaveApplications, balances, regularHolidays, weeklyHolidays, calYear, calMonth)
+  }, [attendanceRecords, mappedLeaveApplications, balances, regularHolidays, weeklyHolidays, calYear, calMonth])
 
   // Selected Day Record
   const selectedRecord = useMemo(

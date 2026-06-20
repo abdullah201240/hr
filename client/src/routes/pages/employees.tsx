@@ -3,7 +3,6 @@ import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -33,14 +32,6 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -48,10 +39,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { useEmployeesQuery, useChangeEmployeeStatusMutation } from "@/hooks/useEmployees"
+import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
-import { toast } from "sonner"
+import { StatusChangeDialog } from "@/components/employee/status-change-dialog"
 
 
 export default function EmployeesPage() {
@@ -75,9 +66,7 @@ export default function EmployeesPage() {
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
-  // Status change dialog state
   const [statusDialogEmployee, setStatusDialogEmployee] = useState<{ id: string; name: string; currentStatus: string } | null>(null)
-  const [inactiveDate, setInactiveDate] = useState<string>("")
 
   // API Hooks
   const { data: deptOptions } = useDepartmentOptionsQuery()
@@ -166,27 +155,7 @@ export default function EmployeesPage() {
 
   const pagesArray = getPageNumbers(meta.page, meta.totalPages)
 
-  // Status change mutation (uses the selected employee's ID)
-  const statusMutation = useChangeEmployeeStatusMutation(statusDialogEmployee?.id || "")
 
-  const handleStatusChange = () => {
-    if (!statusDialogEmployee) return
-
-    const payload = statusDialogEmployee.currentStatus === "active"
-      ? { status: "inactive" as const, inactiveDate: inactiveDate || undefined }
-      : { status: "active" as const }
-
-    statusMutation.mutate(payload, {
-      onSuccess: (res) => {
-        toast.success(res.message)
-        setStatusDialogEmployee(null)
-        setInactiveDate("")
-      },
-      onError: (err: any) => {
-        toast.error(err.message || "Failed to change employee status")
-      },
-    })
-  }
 
   return (
     <div className="space-y-8">
@@ -535,7 +504,6 @@ export default function EmployeesPage() {
                           }`}
                           onClick={() => {
                             setStatusDialogEmployee({ id: emp.id, name: emp.fullNameEnglish, currentStatus: emp.status })
-                            setInactiveDate("")
                           }}
                         >
                           {emp.status === "active" ? (
@@ -604,75 +572,10 @@ export default function EmployeesPage() {
       </div>
 
       {/* Status Change Dialog */}
-      <Dialog open={!!statusDialogEmployee} onOpenChange={(open) => {
-        if (!open) {
-          setStatusDialogEmployee(null)
-          setInactiveDate("")
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {statusDialogEmployee?.currentStatus === "active" ? "Set Employee Inactive" : "Reactivate Employee"}
-            </DialogTitle>
-            <DialogDescription>
-              {statusDialogEmployee?.currentStatus === "active"
-                ? `Schedule or immediately deactivate ${statusDialogEmployee?.name}.`
-                : `Reactivate ${statusDialogEmployee?.name} to active status.`}
-            </DialogDescription>
-          </DialogHeader>
-
-          {statusDialogEmployee?.currentStatus === "active" && (
-            <div className="space-y-3 py-2">
-              <Label htmlFor="inactive-date" className="text-sm font-medium">
-                Inactive Effective Date <span className="text-muted-foreground font-normal">(optional)</span>
-              </Label>
-              <Input
-                id="inactive-date"
-                type="date"
-                value={inactiveDate}
-                onChange={(e) => setInactiveDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="bg-transparent border-border/60"
-              />
-              <p className="text-xs text-muted-foreground">
-                {inactiveDate
-                  ? `Employee will become inactive on ${inactiveDate}. A scheduled job will handle the transition automatically.`
-                  : "Leave empty to mark inactive immediately."}
-              </p>
-            </div>
-          )}
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStatusDialogEmployee(null)
-                setInactiveDate("")
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleStatusChange}
-              disabled={statusMutation.isPending}
-              className={cn(
-                statusDialogEmployee?.currentStatus === "active"
-                  ? "bg-amber-500 hover:bg-amber-600 text-white"
-                  : "bg-emerald-500 hover:bg-emerald-600 text-white"
-              )}
-            >
-              {statusMutation.isPending
-                ? "Processing..."
-                : statusDialogEmployee?.currentStatus === "active"
-                  ? inactiveDate
-                    ? `Schedule Inactive (${inactiveDate})`
-                    : "Mark Inactive Now"
-                  : "Reactivate Employee"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <StatusChangeDialog
+        employee={statusDialogEmployee}
+        onClose={() => setStatusDialogEmployee(null)}
+      />
 
     </div>
   )

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
+import { OverrideAttendanceDialog } from "@/components/attendance/OverrideAttendanceDialog"
 import {
   Table,
   TableBody,
@@ -18,24 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
+import { AttendanceKPIs } from "@/components/attendance/AttendanceKPIs"
 import {
   Search,
   Plus,
-  Clock,
-  CalendarCheck,
-  CalendarX,
-  Palmtree,
   CalendarDays,
   Users,
   Download,
@@ -52,30 +40,9 @@ import {
 import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import { toast } from "sonner"
+import { exportAttendanceCSV } from "@/components/attendance/attendance-utils"
 
-function convert24to12(time24: string): string {
-  if (!time24) return ""
-  const [hourStr, minStr] = time24.split(":")
-  let hour = parseInt(hourStr, 10)
-  const min = parseInt(minStr, 10)
-  const ampm = hour >= 12 ? "PM" : "AM"
-  hour = hour % 12
-  hour = hour ? hour : 12
-  const hrStr = hour.toString().padStart(2, "0")
-  const minFormatted = min.toString().padStart(2, "0")
-  return `${hrStr}:${minFormatted} ${ampm}`
-}
 
-function convert12to24(time12: string | null | undefined): string {
-  if (!time12) return ""
-  const match = time12.match(/^(\d{2}):(\d{2}) ([AP]M)$/)
-  if (!match) return ""
-  let [_, hoursStr, minutesStr, modifier] = match
-  let hours = parseInt(hoursStr, 10)
-  if (modifier === "PM" && hours < 12) hours += 12
-  if (modifier === "AM" && hours === 12) hours = 0
-  return `${hours.toString().padStart(2, "0")}:${minutesStr}`
-}
 
 export default function CompanyAttendancePage() {
   const [filterMode, setFilterMode] = useState<"day" | "month" | "year" | "range">("day")
@@ -117,12 +84,7 @@ export default function CompanyAttendancePage() {
 
   // Override Dialog State
   const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false)
-  const [overrideEmployeeId, setOverrideEmployeeId] = useState("")
-  const [overrideDate, setOverrideDate] = useState("")
-  const [overrideStatus, setOverrideStatus] = useState("present")
-  const [overrideCheckIn, setOverrideCheckIn] = useState("09:00")
-  const [overrideCheckOut, setOverrideCheckOut] = useState("18:00")
-  const [overrideNotes, setOverrideNotes] = useState("")
+  const [overrideRecord, setOverrideRecord] = useState<any>(null)
 
   // Compute actual date range for API query
   const { queryStartDate, queryEndDate } = useMemo(() => {
@@ -233,40 +195,11 @@ export default function CompanyAttendancePage() {
   }, [pageData?.counts])
 
   const handleOpenOverride = (log?: DailyAttendanceLog) => {
-    if (log) {
-      setOverrideEmployeeId(log.employeeId)
-      setOverrideDate(log.date)
-      setOverrideStatus(log.status)
-      setOverrideCheckIn(convert12to24(log.checkIn) || "09:00")
-      setOverrideCheckOut(convert12to24(log.checkOut) || "18:00")
-      setOverrideNotes(log.notes || "")
-    } else {
-      setOverrideEmployeeId("")
-      setOverrideDate(queryStartDate)
-      setOverrideStatus("present")
-      setOverrideCheckIn("09:00")
-      setOverrideCheckOut("18:00")
-      setOverrideNotes("")
-    }
+    setOverrideRecord(log || null)
     setIsOverrideDialogOpen(true)
   }
 
-  const handleOverrideSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!overrideEmployeeId) {
-      toast.error("Please select an employee")
-      return
-    }
-
-    const payload = {
-      employeeId: overrideEmployeeId,
-      date: overrideDate,
-      status: overrideStatus,
-      checkIn: (overrideStatus === "present" || overrideStatus === "late") ? convert24to12(overrideCheckIn) : undefined,
-      checkOut: (overrideStatus === "present" || overrideStatus === "late") ? convert24to12(overrideCheckOut) : undefined,
-      notes: overrideNotes || undefined,
-    }
-
+  const handleOverrideSubmit = async (payload: any) => {
     try {
       await overrideMut.mutateAsync(payload)
       toast.success("Attendance overridden successfully")
@@ -283,22 +216,7 @@ export default function CompanyAttendancePage() {
       toast.error("No data available to export")
       return
     }
-    const headers = "Date,Employee Name,Employee ID,Department,Check In,Check Out,Hours,Status,Notes\n"
-    const rows = processedLogs
-      .map(
-        (log) =>
-          `"${log.date}","${log.employeeName}","${log.employeeIdCode}","${log.departmentName}","${log.checkIn || "—"}","${
-            log.checkOut || "—"
-          }",${log.hours || 0},"${log.status}","${log.notes || ""}"`
-      )
-      .join("\n")
-    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    link.setAttribute("download", `company_attendance_${queryStartDate}_to_${queryEndDate}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    exportAttendanceCSV(processedLogs, queryStartDate, queryEndDate)
   }
 
   return (
@@ -312,53 +230,7 @@ export default function CompanyAttendancePage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Present</span>
-            <p className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-500">{counts.present}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-            <CalendarCheck className="h-5 w-5" />
-          </div>
-        </div>
-        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Late</span>
-            <p className="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-500">{counts.late}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-            <Clock className="h-5 w-5" />
-          </div>
-        </div>
-        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Absent</span>
-            <p className="text-3xl font-bold tracking-tight text-red-600 dark:text-red-500">{counts.absent}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center">
-            <CalendarX className="h-5 w-5" />
-          </div>
-        </div>
-        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">On Leave</span>
-            <p className="text-3xl font-bold tracking-tight text-sky-600 dark:text-sky-500">{counts.leave}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center">
-            <Palmtree className="h-5 w-5" />
-          </div>
-        </div>
-        <div className="p-5 rounded-2xl bg-muted/30 flex items-center justify-between transition-all duration-300 hover:bg-muted/40 col-span-2 sm:col-span-1">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Holiday / Off</span>
-            <p className="text-3xl font-bold tracking-tight text-violet-600 dark:text-violet-500">{counts.holiday + counts.weekend}</p>
-          </div>
-          <div className="h-10 w-10 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center">
-            <CalendarDays className="h-5 w-5" />
-          </div>
-        </div>
-      </div>
+      <AttendanceKPIs counts={counts} />
 
       {/* Filter Options */}
       <div className="flex flex-col gap-4 bg-muted/10 p-5 border border-border/30 rounded-xl">
@@ -710,128 +582,15 @@ export default function CompanyAttendancePage() {
       </Card>
 
       {/* Manual Entry / Override Dialog */}
-      <Dialog open={isOverrideDialogOpen} onOpenChange={setIsOverrideDialogOpen}>
-        <DialogContent className="p-6 sm:max-w-[500px]">
-          <form onSubmit={handleOverrideSubmit} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle className="text-base font-bold">
-                {overrideEmployeeId ? "Override Attendance Log" : "Manual Attendance Entry"}
-              </DialogTitle>
-              <DialogDescription className="text-xs">
-                Manually check in, check out, or update attendance status for any employee.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              {/* Employee Selection */}
-              {!overrideEmployeeId ? (
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs">Select Employee</Label>
-                  <Select value={overrideEmployeeId} onValueChange={setOverrideEmployeeId}>
-                    <SelectTrigger className="w-full text-xs">
-                      <SelectValue placeholder="Choose employee..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.id} className="text-xs">
-                          {emp.fullNameEnglish} ({emp.employeeId})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs">Employee</Label>
-                  <Input
-                    value={activeEmployees.find(e => e.id === overrideEmployeeId)?.fullNameEnglish || "Selected Employee"}
-                    disabled
-                    className="text-xs font-semibold bg-muted"
-                  />
-                </div>
-              )}
-
-              {/* Date selection */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">Date</Label>
-                <Input
-                  type="date"
-                  value={overrideDate}
-                  onChange={(e) => setOverrideDate(e.target.value)}
-                  className="text-xs font-semibold"
-                />
-              </div>
-
-              {/* Status selection */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">Status</Label>
-                <Select value={overrideStatus} onValueChange={setOverrideStatus}>
-                  <SelectTrigger className="w-full text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="present" className="text-xs">Present</SelectItem>
-                    <SelectItem value="late" className="text-xs">Late</SelectItem>
-                    <SelectItem value="absent" className="text-xs">Absent</SelectItem>
-                    <SelectItem value="leave" className="text-xs">Leave</SelectItem>
-                    <SelectItem value="holiday" className="text-xs">Holiday</SelectItem>
-                    <SelectItem value="weekend" className="text-xs">Weekend</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Check in & out times (only if present/late) */}
-              {(overrideStatus === "present" || overrideStatus === "late") && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Check In Time</Label>
-                    <Input
-                      type="time"
-                      value={overrideCheckIn}
-                      onChange={(e) => setOverrideCheckIn(e.target.value)}
-                      className="text-xs font-semibold"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label className="text-xs">Check Out Time</Label>
-                    <Input
-                      type="time"
-                      value={overrideCheckOut}
-                      onChange={(e) => setOverrideCheckOut(e.target.value)}
-                      className="text-xs font-semibold"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs">Notes / Override Reason</Label>
-                <Textarea
-                  placeholder="Reason for manual entry or override..."
-                  value={overrideNotes}
-                  onChange={(e) => setOverrideNotes(e.target.value)}
-                  className="text-xs min-h-[70px]"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="gap-2 mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsOverrideDialogOpen(false)}
-                className="h-8 text-xs"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={overrideMut.isPending} className="h-8 text-xs">
-                {overrideMut.isPending ? "Submitting..." : "Save Entry"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <OverrideAttendanceDialog
+        open={isOverrideDialogOpen}
+        onOpenChange={setIsOverrideDialogOpen}
+        activeEmployees={activeEmployees}
+        record={overrideRecord}
+        defaultDate={queryStartDate}
+        onSubmit={handleOverrideSubmit}
+        isPending={overrideMut.isPending}
+      />
     </div>
   )
 }
