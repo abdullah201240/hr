@@ -63,7 +63,7 @@ export interface LeaveBalance {
 }
 
 export interface Task {
-  id: number
+  id: string
   text: string
   priority: string
   due: string
@@ -71,14 +71,14 @@ export interface Task {
 }
 
 export interface Announcement {
-  id: string
-  title: string
-  content: string
-  category: string
-  department: string
-  date: string
-  author: string
-  status: string
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  department: string;
+  date: string;
+  author: string;
+  status: string;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -108,9 +108,14 @@ export const LEAVE_TYPE_SHORT: Record<string, string> = {
 }
 
 export const PRIORITY_STYLE: Record<string, string> = {
-  high: "text-rose-500 bg-rose-500/10",
-  medium: "text-amber-500 bg-amber-500/10",
-  low: "text-emerald-500 bg-emerald-500/10",
+  high: "text-rose-500 bg-rose-500/10 hover:bg-rose-500/10",
+  High: "text-rose-500 bg-rose-500/10 hover:bg-rose-500/10",
+  medium: "text-amber-500 bg-amber-500/10 hover:bg-amber-500/10",
+  Medium: "text-amber-500 bg-amber-500/10 hover:bg-amber-500/10",
+  low: "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/10",
+  Low: "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/10",
+  urgent: "text-rose-600 bg-rose-600/10 hover:bg-rose-600/10 font-bold",
+  Urgent: "text-rose-600 bg-rose-600/10 hover:bg-rose-600/10 font-bold",
 }
 
 /** Format month+year using Intl (e.g. "June 2026") */

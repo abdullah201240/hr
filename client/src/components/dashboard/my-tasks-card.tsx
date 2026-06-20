@@ -17,12 +17,13 @@ import { PRIORITY_STYLE } from "./types"
 
 interface MyTasksCardProps {
   tasks: Task[]
-  onToggleTask: (id: number) => void
-  onDeleteTask: (id: number) => void
+  onToggleTask: (id: string) => void
+  onDeleteTask: (id: string) => void
   onToggleAll: (checked: boolean) => void
+  onAddTask?: () => void
 }
 
-export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll }: MyTasksCardProps) {
+export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll, onAddTask }: MyTasksCardProps) {
   const doneTasks = tasks.filter(t => t.done).length
   const totalTasks = tasks.length
   const taskPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
@@ -116,6 +117,7 @@ export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll }: 
             <TableRow className="border-b-0 hover:bg-transparent">
               <TableCell colSpan={6} className="py-3">
                 <button
+                  onClick={onAddTask}
                   className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add Task

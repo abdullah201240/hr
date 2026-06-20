@@ -9,7 +9,6 @@ import type {
 } from "@/components/dashboard/types"
 import {
   DEFAULT_LEAVE_BALANCES,
-  INITIAL_TASKS,
   resolveLeaveIcon,
 } from "@/components/dashboard/types"
 import { useMyAttendanceQuery } from "@/hooks/useAttendance"
@@ -23,10 +22,18 @@ import {
   useUpdateLeaveMutation,
 } from "@/hooks/useLeaveApplications"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useNavigate } from "react-router"
+import {
+  useTasksQuery,
+  useUpdateTaskMutation,
+  useDeleteTaskMutation,
+} from "@/hooks/useTasks"
 import { toast } from "sonner"
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const { user } = useAuthStore()
+
   // ── Announcements (fetch only published, limit to 10 for dashboard) ──────────────────────────────────
   const { data: announcementsPage } = useAnnouncementsPaginated({
     limit: 10,
@@ -34,10 +41,54 @@ export default function DashboardPage() {
   })
   const announcements = announcementsPage?.data || []
 
-  // ── Tasks ──────────────────────────────────────────────────────────────────
-  const [tasks, setTasks] = useState(INITIAL_TASKS)
-  const toggleTask = (id: number) =>
-    setTasks(ts => ts.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  const navigate = useNavigate()
+
+  // ── Tasks (Fetch user's live assigned tasks from DB) ──────────────────────
+  const { data: dbTasks = [] } = useTasksQuery({ assigneeId: user?.id })
+  const updateTaskMut = useUpdateTaskMutation()
+  const deleteTaskMut = useDeleteTaskMutation()
+
+  const mappedTasks = useMemo(() => {
+    return dbTasks.map(t => ({
+      id: t.id,
+      text: t.title,
+      priority: t.priority,
+      due: t.dueDate ? new Date(t.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date",
+      done: t.status === "Done",
+    }))
+  }, [dbTasks])
+
+  const toggleTask = (id: string) => {
+    const taskItem = dbTasks.find(t => t.id === id)
+    if (!taskItem) return
+    const nextStatus = taskItem.status === "Done" ? "Todo" : "Done"
+    updateTaskMut.mutate(
+      { id, data: { status: nextStatus } },
+      {
+        onSuccess: () => {
+          toast.success("Task status updated")
+        },
+      }
+    )
+  }
+
+  const deleteTask = (id: string) => {
+    deleteTaskMut.mutate(id, {
+      onSuccess: () => {
+        toast.success("Task deleted successfully")
+      },
+    })
+  }
+
+  const toggleAllTasks = (checked: boolean) => {
+    const nextStatus = checked ? "Done" : "Todo"
+    dbTasks.forEach(t => {
+      const isCurrentlyDone = t.status === "Done"
+      if (isCurrentlyDone !== checked) {
+        updateTaskMut.mutate({ id: t.id, data: { status: nextStatus } })
+      }
+    })
+  }
 
   // ── Calendar State ─────────────────────────────────────────────────────────
   const todayDate = new Date()
@@ -56,7 +107,6 @@ export default function DashboardPage() {
   const [draggedLeaveType, setDraggedLeaveType] = useState<string | null>(null)
 
   // ── Leave Applications & Balances (Dynamic from API) ───────────────────────
-  const { user } = useAuthStore()
 
   const { data: leaveApplicationsData } = useLeaveApplicationsQuery({
     employeeId: user?.id,
@@ -356,10 +406,11 @@ export default function DashboardPage() {
         {/* ── Two-Column: Tasks + Announcements ─────────────────────────────── */}
         <div className="grid gap-6 lg:grid-cols-2">
           <MyTasksCard
-            tasks={tasks}
+            tasks={mappedTasks}
             onToggleTask={toggleTask}
-            onDeleteTask={(id) => setTasks(ts => ts.filter(t => t.id !== id))}
-            onToggleAll={(checked) => setTasks(ts => ts.map(t => ({ ...t, done: checked })))}
+            onDeleteTask={deleteTask}
+            onToggleAll={toggleAllTasks}
+            onAddTask={() => navigate("/tasks")}
           />
           <AnnouncementsCard announcements={announcements} />
         </div>

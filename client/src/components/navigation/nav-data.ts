@@ -16,6 +16,7 @@ import {
   UserMinus,
   Scale,
   Target,
+  CheckSquare,
 } from "lucide-react"
 import type { NavGroup } from "@/types"
 
@@ -43,6 +44,11 @@ export const navGroups: NavGroup[] = [
         title: "Recruitment",
         href: "/recruitment",
         icon: UserPlus,
+      },
+      {
+        title: "Task Management",
+        href: "/tasks",
+        icon: CheckSquare,
       },
       {
         title: "Attendance",

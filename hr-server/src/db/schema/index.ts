@@ -20,3 +20,4 @@ export * from './performance';
 export * from './disciplinary';
 export * from './separation';
 export * from './org-chart';
+export * from './tasks';

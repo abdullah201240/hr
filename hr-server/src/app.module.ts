@@ -33,6 +33,7 @@ import { PerformanceModule } from './modules/performance/performance.module';
 import { DisciplinaryModule } from './modules/disciplinary/disciplinary.module';
 import { SeparationModule } from './modules/separation/separation.module';
 import { OrgChartModule } from './modules/org-chart/org-chart.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -100,6 +101,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     DisciplinaryModule,
     SeparationModule,
     OrgChartModule,
+    TasksModule,
   ],
   providers: [
     {

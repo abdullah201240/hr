@@ -43,6 +43,7 @@ const PrintJoiningLetterPage = lazy(() => import("@/routes/pages/print/joining-l
 const PrintOfferLetterPage = lazy(() => import("@/routes/pages/print/offer-letter"))
 const PrintHRLetterPage = lazy(() => import("@/routes/pages/print/hr-letter"))
 const ProfilePage = lazy(() => import("@/routes/pages/profile"))
+const TasksPage = lazy(() => import("@/routes/pages/tasks"))
 
 function NotFoundPage() {
   return (
@@ -110,6 +111,7 @@ function App() {
                   <Route path="designations/view/:id" element={<ViewDesignationPage />} />
                   <Route path="documents" element={<DocumentsPage />} />
                   <Route path="recruitment" element={<RecruitmentPage />} />
+                  <Route path="tasks" element={<TasksPage />} />
                   <Route path="announcements" element={<AnnouncementsPage />} />
                   <Route path="separation" element={<SeparationPage />} />
                   <Route path="disciplinary" element={<DisciplinaryPage />} />
