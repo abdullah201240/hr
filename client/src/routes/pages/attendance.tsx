@@ -117,33 +117,19 @@ export default function AttendancePage() {
   const [weeklyHolidays, setWeeklyHolidays] = useState<string[]>(["Saturday", "Sunday"])
 
   const regularHolidays = useMemo(() => {
-    if (holidaysData && holidaysData.length > 0) {
-      return holidaysData.map((h: any) => ({
-        id: h.id,
-        name: h.name,
-        startDate: h.startDate,
-        endDate: h.endDate,
-        startDay: h.startDate ? new Date(h.startDate).getDate() : 1,
-        endDay: h.endDate ? new Date(h.endDate).getDate() : 1
-      }))
-    }
-    const savedRegular = localStorage.getItem("hr_regular_holidays")
-    if (savedRegular) {
-      try { return JSON.parse(savedRegular) } catch (e) { console.error(e) }
-    }
-    return [
-      { id: "default-1", name: "National Holiday - Independence Celebration", startDay: 18, endDay: 18 }
-    ]
+    return holidaysData.map((h: any) => ({
+      id: h.id,
+      name: h.name,
+      startDate: h.startDate,
+      endDate: h.endDate,
+      startDay: h.startDate ? new Date(h.startDate).getDate() : 1,
+      endDay: h.endDate ? new Date(h.endDate).getDate() : 1
+    }))
   }, [holidaysData])
 
   useEffect(() => {
     if (settings?.weeklyHolidays) {
       setWeeklyHolidays(settings.weeklyHolidays)
-    } else {
-      const savedWeekly = localStorage.getItem("hr_weekly_holidays")
-      if (savedWeekly) {
-        try { setWeeklyHolidays(JSON.parse(savedWeekly)) } catch (e) { console.error(e) }
-      }
     }
   }, [settings])
 

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,6 +41,9 @@ import {
   Key,
   ShieldAlert,
   Loader2,
+  DollarSign,
+  Receipt,
+  TrendingUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -48,6 +51,11 @@ import {
   useCreateSeparationMutation,
   useUpdateSeparationMutation,
 } from "@/hooks/useSeparation"
+import {
+  useSettlementQuery,
+  useSaveSettlementMutation,
+  useUpdateSettlementStatusMutation,
+} from "@/hooks/useSettlement"
 
 export interface SeparationRecord {
   id: string
@@ -103,6 +111,11 @@ export default function SeparationPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [currentSep, setCurrentSep] = useState<SeparationRecord | null>(null)
+
+  // F&F Modal States
+  const [isSettlementOpen, setIsSettlementOpen] = useState(false)
+  const [selectedSepId, setSelectedSepId] = useState<string | null>(null)
+  const [selectedSepName, setSelectedSepName] = useState<string>("")
 
   // Form States
   const [newEmpName, setNewEmpName] = useState("")
@@ -314,7 +327,7 @@ export default function SeparationPage() {
                   <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Last Working Day</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Clearance Checklist</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-[200px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -353,17 +366,31 @@ export default function SeparationPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 text-xs font-medium"
-                            onClick={() => {
-                              setCurrentSep(sep)
-                              setIsDetailOpen(true)
-                            }}
-                          >
-                            Manage Exit
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs font-medium"
+                              onClick={() => {
+                                setCurrentSep(sep)
+                                setIsDetailOpen(true)
+                              }}
+                            >
+                              Manage Exit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs font-semibold border-primary/20 text-primary hover:bg-primary/5 transition-colors"
+                              onClick={() => {
+                                setSelectedSepId(sep.id)
+                                setSelectedSepName(sep.employeeName)
+                                setIsSettlementOpen(true)
+                              }}
+                            >
+                              F&F Settlement
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -526,6 +553,523 @@ export default function SeparationPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* F&F Settlement Modal */}
+      {selectedSepId && (
+        <SettlementCalculatorModal
+          isOpen={isSettlementOpen}
+          onClose={() => {
+            setIsSettlementOpen(false)
+            setSelectedSepId(null)
+          }}
+          separationId={selectedSepId}
+          employeeName={selectedSepName}
+        />
+      )}
     </div>
+  )
+}
+
+function SettlementCalculatorModal({
+  isOpen,
+  onClose,
+  separationId,
+  employeeName,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  separationId: string
+  employeeName: string
+}) {
+  const { data: settlement, isLoading, refetch } = useSettlementQuery(separationId, isOpen)
+  const saveMutation = useSaveSettlementMutation()
+  const statusMutation = useUpdateSettlementStatusMutation()
+
+  // Form states
+  const [separationType, setSeparationType] = useState("Resignation")
+  const [payableDays, setPayableDays] = useState(0)
+  const [encashableAlDays, setEncashableAlDays] = useState(0)
+  const [pfInterest, setPfInterest] = useState(0)
+  const [medicalReimbursement, setMedicalReimbursement] = useState(0)
+  const [wellnessAllowance, setWellnessAllowance] = useState(0)
+  const [otherReimbursements, setOtherReimbursements] = useState(0)
+  const [salaryAdvanceRecovery, setSalaryAdvanceRecovery] = useState(0)
+  const [loanRecovery, setLoanRecovery] = useState(0)
+  const [noticePayRecovery, setNoticePayRecovery] = useState(0)
+  const [assetRecovery, setAssetRecovery] = useState(0)
+  const [taxAdjustment, setTaxAdjustment] = useState(0)
+  const [otherCompanyDues, setOtherCompanyDues] = useState(0)
+  const [paymentDetails, setPaymentDetails] = useState("")
+
+  // Initialize form state from loaded settlement data
+  useEffect(() => {
+    if (settlement) {
+      setSeparationType(settlement.separationType)
+      setPayableDays(settlement.payableDays)
+      setEncashableAlDays(settlement.encashableAlDays)
+      setPfInterest(settlement.pfInterest)
+      setMedicalReimbursement(settlement.medicalReimbursement)
+      setWellnessAllowance(settlement.wellnessAllowance)
+      setOtherReimbursements(settlement.otherReimbursements)
+      setSalaryAdvanceRecovery(settlement.salaryAdvanceRecovery)
+      setLoanRecovery(settlement.loanRecovery)
+      setNoticePayRecovery(settlement.noticePayRecovery)
+      setAssetRecovery(settlement.assetRecovery)
+      setTaxAdjustment(settlement.taxAdjustment)
+      setOtherCompanyDues(settlement.otherCompanyDues)
+      setPaymentDetails(settlement.paymentDetails || "")
+    }
+  }, [settlement])
+
+  if (!isOpen) return null
+
+  if (isLoading || !settlement) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[400px]">
+          <div className="h-[200px] flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Loading settlement matrix...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // Live Calculations (to update instantly on user input!)
+  const basicSalary = settlement.basicSalary || 50000
+  const grossSalary = settlement.grossSalary || 67500
+  const serviceYears = settlement.serviceYears || 0
+  const employeePfBalance = settlement.employeePfBalance || 0
+  const employerPfBalance = settlement.employerPfBalance || 0
+  const festivalBonusAdjustment = settlement.festivalBonusAdjustment || 0
+
+  // 1. Salary Payable
+  const salaryPayable = Number(((grossSalary / 30) * payableDays).toFixed(2))
+
+  // 2. Separation Benefit
+  let separationBenefit = 0
+  if (separationType === "Retirement") {
+    separationBenefit = (serviceYears <= 10 ? 1 : 1.5) * basicSalary * serviceYears
+  } else if (separationType === "Resignation") {
+    if (serviceYears >= 5 && serviceYears <= 10) {
+      separationBenefit = (14 / 30) * basicSalary * serviceYears
+    } else if (serviceYears > 10) {
+      separationBenefit = 1 * basicSalary * serviceYears
+    }
+  } else if (separationType === "Termination") {
+    separationBenefit = (serviceYears <= 10 ? 1 : 1.5) * basicSalary * serviceYears
+  }
+  separationBenefit = Number(separationBenefit.toFixed(2))
+
+  // 3. Leave Encashment
+  const leaveEncashment = Number(((basicSalary / 30) * encashableAlDays).toFixed(2))
+
+  // Totals
+  const totalEarnings = 
+    salaryPayable +
+    separationBenefit +
+    leaveEncashment +
+    festivalBonusAdjustment +
+    employeePfBalance +
+    employerPfBalance +
+    pfInterest +
+    medicalReimbursement +
+    wellnessAllowance +
+    otherReimbursements
+
+  const totalRecoveries =
+    salaryAdvanceRecovery +
+    loanRecovery +
+    noticePayRecovery +
+    assetRecovery +
+    taxAdjustment +
+    otherCompanyDues
+
+  const netSettlementAmount = Number((totalEarnings - totalRecoveries).toFixed(2))
+
+  const handleSave = () => {
+    saveMutation.mutate({
+      separationId,
+      payload: {
+        separationType,
+        payableDays,
+        encashableAlDays,
+        pfInterest,
+        medicalReimbursement,
+        wellnessAllowance,
+        otherReimbursements,
+        salaryAdvanceRecovery,
+        loanRecovery,
+        noticePayRecovery,
+        assetRecovery,
+        taxAdjustment,
+        otherCompanyDues,
+      }
+    }, {
+      onSuccess: () => {
+        refetch()
+      }
+    })
+  }
+
+  const handleUpdateStatus = (newStatus: "Approved" | "Paid") => {
+    statusMutation.mutate({
+      separationId,
+      status: newStatus,
+      paymentDetails: newStatus === "Paid" ? paymentDetails : undefined
+    }, {
+      onSuccess: () => {
+        refetch()
+      }
+    })
+  }
+
+  const isReadOnly = settlement.status === "Paid" || settlement.status === "Approved"
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-primary" />
+                F&F Settlement Matrix — {employeeName}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Computes 16-step separation payouts, provident funds, and recoveries based on service terms.
+              </DialogDescription>
+            </div>
+            <Badge className={cn("text-xs font-bold border-none px-3 py-1",
+              settlement.status === "Paid" && "bg-emerald-500/10 text-emerald-600",
+              settlement.status === "Approved" && "bg-amber-500/10 text-amber-600",
+              settlement.status === "Draft" && "bg-sky-500/10 text-sky-600"
+            )}>
+              Status: {settlement.status}
+            </Badge>
+          </div>
+        </DialogHeader>
+
+        {/* Matrix Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 text-xs">
+          {/* Left Column: parameters and earnings */}
+          <div className="space-y-4">
+            <div className="p-4 border border-border/40 bg-muted/10 rounded-2xl space-y-3">
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                1. Service Parameters
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">Separation Type</Label>
+                  <Select 
+                    disabled={isReadOnly}
+                    value={separationType} 
+                    onValueChange={setSeparationType}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Resignation" className="text-xs">Resignation</SelectItem>
+                      <SelectItem value="Retirement" className="text-xs">Retirement</SelectItem>
+                      <SelectItem value="Termination" className="text-xs">Termination</SelectItem>
+                      <SelectItem value="Dismissal" className="text-xs">Dismissal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">Completed Years</Label>
+                  <Input disabled value={serviceYears} className="h-8 text-xs bg-muted/50" />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">Payable Days (Month)</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={payableDays} 
+                    onChange={e => setPayableDays(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">Encashable AL Days</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={encashableAlDays} 
+                    onChange={e => setEncashableAlDays(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/20 grid grid-cols-2 gap-4 text-[11px] text-muted-foreground">
+                <div>Basic Salary: <span className="font-semibold text-foreground">৳{basicSalary.toLocaleString()}</span></div>
+                <div>Gross Salary: <span className="font-semibold text-foreground">৳{grossSalary.toLocaleString()}</span></div>
+              </div>
+            </div>
+
+            <div className="p-4 border border-border/40 bg-emerald-500/[0.02] rounded-2xl space-y-3">
+              <h3 className="font-bold text-emerald-600 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                2. Payouts & Earnings (৳)
+              </h3>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center py-1 border-b border-border/10">
+                  <span className="text-muted-foreground">Salary Payable</span>
+                  <span className="font-semibold text-foreground">৳{salaryPayable.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border/10">
+                  <span className="text-muted-foreground">Separation Benefit (Gratuity/Tenure)</span>
+                  <span className="font-semibold text-foreground">৳{separationBenefit.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border/10">
+                  <span className="text-muted-foreground">Leave Encashment</span>
+                  <span className="font-semibold text-foreground">৳{leaveEncashment.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border/10">
+                  <span className="text-muted-foreground">Festival Bonus Adj.</span>
+                  <span className="font-semibold text-foreground">৳{festivalBonusAdjustment.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-border/10">
+                  <span className="text-muted-foreground">Provident Fund Balance (Emp+Empr)</span>
+                  <span className="font-semibold text-foreground">৳{(employeePfBalance + employerPfBalance).toLocaleString()}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] text-muted-foreground">PF Interest</Label>
+                    <Input 
+                      disabled={isReadOnly}
+                      type="number" 
+                      value={pfInterest} 
+                      onChange={e => setPfInterest(Number(e.target.value))} 
+                      className="h-7 text-[11px]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] text-muted-foreground">Medical Reimbursement</Label>
+                    <Input 
+                      disabled={isReadOnly}
+                      type="number" 
+                      value={medicalReimbursement} 
+                      onChange={e => setMedicalReimbursement(Number(e.target.value))} 
+                      className="h-7 text-[11px]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] text-muted-foreground">Wellness Allowance</Label>
+                    <Input 
+                      disabled={isReadOnly}
+                      type="number" 
+                      value={wellnessAllowance} 
+                      onChange={e => setWellnessAllowance(Number(e.target.value))} 
+                      className="h-7 text-[11px]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] text-muted-foreground">Other Reimbursements</Label>
+                    <Input 
+                      disabled={isReadOnly}
+                      type="number" 
+                      value={otherReimbursements} 
+                      onChange={e => setOtherReimbursements(Number(e.target.value))} 
+                      className="h-7 text-[11px]" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 border-t border-emerald-500/20 text-emerald-700 font-bold text-sm">
+                  <span>Total Earnings</span>
+                  <span>৳{totalEarnings.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Recoveries & Deductions */}
+          <div className="space-y-4 flex flex-col justify-between">
+            <div className="p-4 border border-border/40 bg-rose-500/[0.02] rounded-2xl space-y-3">
+              <h3 className="font-bold text-rose-600 flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-rose-500" />
+                3. Recoveries & Deductions (৳)
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase">Salary Advance Recovery</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={salaryAdvanceRecovery} 
+                    onChange={e => setSalaryAdvanceRecovery(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase">Loan Recovery</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={loanRecovery} 
+                    onChange={e => setLoanRecovery(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase">Notice Pay Recovery</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={noticePayRecovery} 
+                    onChange={e => setNoticePayRecovery(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase">Asset Recovery</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={assetRecovery} 
+                    onChange={e => setAssetRecovery(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase">Tax Adjustment</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={taxAdjustment} 
+                    onChange={e => setTaxAdjustment(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground uppercase">Other Company Dues</Label>
+                  <Input 
+                    disabled={isReadOnly}
+                    type="number" 
+                    value={otherCompanyDues} 
+                    onChange={e => setOtherCompanyDues(Number(e.target.value))} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t border-rose-500/20 text-rose-700 font-bold text-sm">
+                <span>Total Recoveries</span>
+                <span>৳{totalRecoveries.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Net payout summary */}
+            <div className="p-4 border border-border bg-muted/30 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center text-sm font-extrabold text-foreground">
+                <span className="flex items-center gap-1.5">
+                  <DollarSign className="h-4.5 w-4.5 text-primary" />
+                  Net Settlement Payable
+                </span>
+                <span className="text-lg text-primary">৳{netSettlementAmount.toLocaleString()}</span>
+              </div>
+
+              {settlement.status === "Approved" && (
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">Payment Details (Reference/Method)</Label>
+                  <Input 
+                    placeholder="e.g. Bank Transfer Ref TXN-12345" 
+                    value={paymentDetails} 
+                    onChange={e => setPaymentDetails(e.target.value)} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+              )}
+
+              {settlement.status === "Paid" && settlement.paymentDetails && (
+                <div className="p-2 bg-emerald-500/5 border border-emerald-500/10 rounded-xl text-[11px] text-emerald-800">
+                  <strong>Payment Reference:</strong> {settlement.paymentDetails}
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end pt-2">
+                {settlement.status === "Draft" && (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={handleSave} 
+                      disabled={saveMutation.isPending}
+                      className="text-xs h-8"
+                    >
+                      {saveMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                      Save Draft
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        saveMutation.mutate({
+                          separationId,
+                          payload: {
+                            separationType,
+                            payableDays,
+                            encashableAlDays,
+                            pfInterest,
+                            medicalReimbursement,
+                            wellnessAllowance,
+                            otherReimbursements,
+                            salaryAdvanceRecovery,
+                            loanRecovery,
+                            noticePayRecovery,
+                            assetRecovery,
+                            taxAdjustment,
+                            otherCompanyDues,
+                          }
+                        }, {
+                          onSuccess: () => {
+                            handleUpdateStatus("Approved")
+                          }
+                        })
+                      }} 
+                      disabled={statusMutation.isPending || saveMutation.isPending}
+                      className="text-xs h-8 bg-amber-600 hover:bg-amber-700"
+                    >
+                      {statusMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                      Approve & Lock
+                    </Button>
+                  </>
+                )}
+
+                {settlement.status === "Approved" && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleUpdateStatus("Paid")}
+                    disabled={statusMutation.isPending || !paymentDetails.trim()}
+                    className="text-xs h-8 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {statusMutation.isPending && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                    Mark as Paid
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={onClose} className="text-xs h-8">Close</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

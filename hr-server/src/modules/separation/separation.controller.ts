@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestj
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SeparationService } from './separation.service';
 import { CreateSeparationDto, UpdateSeparationDto, SeparationQueryDto } from './dto/separation.dto';
+import { CalculateSettlementDto, UpdateSettlementStatusDto } from './dto/settlement.dto';
 import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Separation')
@@ -37,4 +38,29 @@ export class SeparationController {
   async delete(@Param('id') id: string) {
     return this.separationService.delete(id);
   }
+
+  @Get(':id/settlement')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Get or calculate draft settlement' })
+  async getSettlement(@Param('id') id: string) {
+    return this.separationService.getSettlement(id);
+  }
+
+  @Post(':id/settlement')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Save or update final settlement' })
+  async saveSettlement(@Param('id') id: string, @Body() dto: CalculateSettlementDto) {
+    return this.separationService.saveOrUpdateSettlement(id, dto);
+  }
+
+  @Patch(':id/settlement/status')
+  @Roles('admin', 'hr')
+  @ApiOperation({ summary: 'Update final settlement status' })
+  async updateSettlementStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateSettlementStatusDto,
+  ) {
+    return this.separationService.updateSettlementStatus(id, dto.status, dto.paymentDetails);
+  }
 }
+
