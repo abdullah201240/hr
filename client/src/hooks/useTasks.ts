@@ -44,6 +44,11 @@ export interface Task {
   recurrencePattern: string;
   recurrenceInterval: number;
   nextRecurrenceDate: string | null;
+  progress: number;
+  workStatus: "Idle" | "Active Working" | "Paused" | "Blocked";
+  approvalStatus: "Pending" | "Approved" | "Changes Requested";
+  reviewRating: number | null;
+  reviewFeedback: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +68,9 @@ export interface TaskComment {
   userId: string;
   userName: string | null;
   userPhotoUrl: string | null;
+  isPinned: boolean;
+  category: "general" | "status" | "blocker" | "feedback";
+  reactions: string;
 }
 
 export interface TaskActivity {
@@ -287,8 +295,8 @@ export function useDeleteChecklistItemMutation(taskId: string) {
 
 export function useAddCommentMutation() {
   const queryClient = useQueryClient();
-  return useMutation<TaskComment, Error, { taskId: string; content: string }>({
-    mutationFn: (payload) => apiClient.post<TaskComment>(`tasks/${payload.taskId}/comments`, { content: payload.content }),
+  return useMutation<TaskComment, Error, { taskId: string; content: string; category?: string }>({
+    mutationFn: (payload) => apiClient.post<TaskComment>(`tasks/${payload.taskId}/comments`, { content: payload.content, category: payload.category }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "detail", variables.taskId] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -303,6 +311,16 @@ export function useDeleteCommentMutation(taskId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+}
+
+export function useUpdateCommentMutation(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<TaskComment, Error, { commentId: string; data: { content?: string; isPinned?: boolean; reactions?: string } }>({
+    mutationFn: (payload) => apiClient.patch<TaskComment>(`tasks/comments/${payload.commentId}`, payload.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
     },
   });
 }

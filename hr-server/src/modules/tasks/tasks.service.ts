@@ -23,6 +23,7 @@ import {
   CreateChecklistItemDto,
   UpdateChecklistItemDto,
   CreateCommentDto,
+  UpdateCommentDto,
   CreateMilestoneDto,
   UpdateMilestoneDto,
   CreateDependencyDto,
@@ -264,6 +265,11 @@ export class TasksService {
         recurrencePattern: tasks.recurrencePattern,
         recurrenceInterval: tasks.recurrenceInterval,
         nextRecurrenceDate: tasks.nextRecurrenceDate,
+        progress: tasks.progress,
+        workStatus: tasks.workStatus,
+        approvalStatus: tasks.approvalStatus,
+        reviewRating: tasks.reviewRating,
+        reviewFeedback: tasks.reviewFeedback,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
         assigneeName: employees.fullNameEnglish,
@@ -329,6 +335,11 @@ export class TasksService {
         recurrencePattern: tasks.recurrencePattern,
         recurrenceInterval: tasks.recurrenceInterval,
         nextRecurrenceDate: tasks.nextRecurrenceDate,
+        progress: tasks.progress,
+        workStatus: tasks.workStatus,
+        approvalStatus: tasks.approvalStatus,
+        reviewRating: tasks.reviewRating,
+        reviewFeedback: tasks.reviewFeedback,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
         assigneeName: employees.fullNameEnglish,
@@ -352,6 +363,9 @@ export class TasksService {
         content: taskComments.content,
         createdAt: taskComments.createdAt,
         userId: taskComments.userId,
+        isPinned: taskComments.isPinned,
+        category: taskComments.category,
+        reactions: taskComments.reactions,
         userName: employees.fullNameEnglish,
         userPhotoUrl: employees.employeePhotoUrl,
       })
@@ -467,6 +481,11 @@ export class TasksService {
         ...(dto.recurrencePattern !== undefined && { recurrencePattern: dto.recurrencePattern }),
         ...(dto.recurrenceInterval !== undefined && { recurrenceInterval: dto.recurrenceInterval }),
         ...(dto.nextRecurrenceDate !== undefined && { nextRecurrenceDate: dto.nextRecurrenceDate ? dto.nextRecurrenceDate.split('T')[0] : null }),
+        ...(dto.progress !== undefined && { progress: dto.progress }),
+        ...(dto.workStatus !== undefined && { workStatus: dto.workStatus }),
+        ...(dto.approvalStatus !== undefined && { approvalStatus: dto.approvalStatus }),
+        ...(dto.reviewRating !== undefined && { reviewRating: dto.reviewRating }),
+        ...(dto.reviewFeedback !== undefined && { reviewFeedback: dto.reviewFeedback }),
       })
       .where(eq(tasks.id, id))
       .returning();
@@ -609,6 +628,8 @@ export class TasksService {
         taskId,
         userId,
         content: dto.content,
+        category: dto.category || 'general',
+        reactions: '{}',
       })
       .returning();
 
@@ -620,6 +641,35 @@ export class TasksService {
         action: 'comment',
         details: 'Added a comment',
       });
+
+    // Notify task assignee if someone else comments
+    const [task] = await this.db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
+    if (task && task.assigneeId && task.assigneeId !== userId) {
+      const [commenter] = await this.db
+        .select({ name: employees.fullNameEnglish })
+        .from(employees)
+        .where(eq(employees.id, userId))
+        .limit(1);
+      const commenterName = commenter?.name || 'A team member';
+      await this.createNotification(
+        task.assigneeId,
+        'New Comment on Task',
+        `${commenterName} commented on your assigned task "${task.title}": "${dto.content.substring(0, 45)}..."`,
+      );
+    }
+
+    // Parse @mentions
+    const allEmps = await this.db.select({ id: employees.id, name: employees.fullNameEnglish }).from(employees);
+    for (const emp of allEmps) {
+      const mentionTag = `@${emp.name}`;
+      if (dto.content.includes(mentionTag) && emp.id !== userId) {
+        await this.createNotification(
+          emp.id,
+          'Mentioned in Task Comment',
+          `You were mentioned in a comment on task: "${task?.title || 'Task'}"`,
+        );
+      }
+    }
 
     return comment;
   }
@@ -634,6 +684,36 @@ export class TasksService {
       throw new NotFoundException(`Comment with ID "${commentId}" not found or unauthorized to delete`);
     }
     return { message: 'Comment deleted successfully' };
+  }
+
+  async updateComment(commentId: string, userId: string, dto: UpdateCommentDto) {
+    // For reactions, anyone can update reactions (add/toggle reactions)
+    // For pinning, anyone can pin (collaborative task settings)
+    // For editing content, only the author can edit
+    const [existing] = await this.db
+      .select()
+      .from(taskComments)
+      .where(eq(taskComments.id, commentId))
+      .limit(1);
+    if (!existing) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    if (dto.content !== undefined && existing.userId !== userId) {
+      throw new NotFoundException('Unauthorized to edit this comment');
+    }
+
+    const [updated] = await this.db
+      .update(taskComments)
+      .set({
+        ...(dto.content !== undefined && { content: dto.content }),
+        ...(dto.isPinned !== undefined && { isPinned: dto.isPinned }),
+        ...(dto.reactions !== undefined && { reactions: dto.reactions }),
+      })
+      .where(eq(taskComments.id, commentId))
+      .returning();
+
+    return updated;
   }
 
   async findProjectActivities(projectId: string) {

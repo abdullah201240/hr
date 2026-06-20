@@ -167,6 +167,16 @@ export default function TaskListView({
                   Assignee <ArrowUpDown className="w-3 h-3" />
                 </div>
               </th>
+              <th className="p-4 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100" onClick={() => handleSort("progress")}>
+                <div className="flex items-center gap-1">
+                  Progress <ArrowUpDown className="w-3 h-3" />
+                </div>
+              </th>
+              <th className="p-4 cursor-pointer hover:text-slate-800 dark:hover:text-slate-100" onClick={() => handleSort("approvalStatus")}>
+                <div className="flex items-center gap-1">
+                  Review <ArrowUpDown className="w-3 h-3" />
+                </div>
+              </th>
               <th className="p-4 text-center">Hours</th>
               <th className="p-4 text-right">Actions</th>
             </tr>
@@ -249,7 +259,27 @@ export default function TaskListView({
                       ))}
                     </select>
                   </td>
-                  <td className="p-4 text-center text-slate-500">
+                  {/* Progress bar cell */}
+                  <td className="p-4">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-7 font-bold text-[10px] text-slate-600 dark:text-slate-400 text-right">{task.progress || 0}%</span>
+                      <div className="w-12 bg-slate-100 dark:bg-slate-800/80 h-1.5 rounded-full overflow-hidden shrink-0">
+                        <div className="h-full bg-primary" style={{ width: `${task.progress || 0}%` }} />
+                      </div>
+                    </div>
+                  </td>
+                  {/* Approval outcome badge cell */}
+                  <td className="p-4">
+                    <span className={cn(
+                      "text-[9px] font-bold px-2 py-0.5 rounded uppercase border border-transparent",
+                      task.approvalStatus === "Approved" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/10" :
+                      task.approvalStatus === "Changes Requested" ? "bg-rose-500/10 text-rose-500 border-rose-500/10" :
+                      "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                    )}>
+                      {task.approvalStatus || "Pending"}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center font-medium text-slate-500">
                     {task.actualHours}h / {task.estimatedHours}h
                   </td>
                   <td className="p-4 text-right">

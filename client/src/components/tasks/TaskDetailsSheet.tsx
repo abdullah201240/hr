@@ -28,6 +28,7 @@ import {
   useDeleteChecklistItemMutation,
   useAddCommentMutation,
   useDeleteCommentMutation,
+  useUpdateCommentMutation,
   useCreateDependencyMutation,
   useDeleteDependencyMutation,
   useCreateTimeEntryMutation,
@@ -38,7 +39,7 @@ import {
 } from "@/hooks/useTasks";
 import { useEmployeeOptionsQuery } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/store/useAuthStore";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isAfter } from "date-fns";
 import {
   Calendar,
   Clock,
@@ -58,6 +59,12 @@ import {
   Eye,
   File,
   Download,
+  Pin,
+  Star,
+  Edit,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -105,6 +112,7 @@ export function TaskDetailsSheet({
   const deleteChecklistMut = useDeleteChecklistItemMutation(taskId || "");
   const addCommentMut = useAddCommentMutation();
   const deleteCommentMut = useDeleteCommentMutation(taskId || "");
+  const updateCommentMut = useUpdateCommentMutation(taskId || "");
 
   // Advanced feature mutations
   const createDependencyMut = useCreateDependencyMutation(taskId || "");
@@ -117,6 +125,9 @@ export function TaskDetailsSheet({
   // Form local states
   const [newChecklistTitle, setNewChecklistTitle] = useState("");
   const [commentText, setCommentText] = useState("");
+  const [commentCategory, setCommentCategory] = useState("general");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
   const [titleText, setTitleText] = useState("");
   const [descText, setDescText] = useState("");
 
@@ -233,14 +244,61 @@ export function TaskDetailsSheet({
     e.preventDefault();
     if (!commentText.trim() || !taskId) return;
     addCommentMut.mutate(
-      { taskId, content: commentText },
+      { taskId, content: commentText, category: commentCategory },
       {
         onSuccess: () => {
           setCommentText("");
+          setCommentCategory("general");
           toast.success("Comment posted successfully");
         },
       }
     );
+  };
+
+  const handlePinComment = (commentId: string, currentPinned: boolean) => {
+    updateCommentMut.mutate({
+      commentId,
+      data: { isPinned: !currentPinned },
+    }, {
+      onSuccess: () => {
+        toast.success(!currentPinned ? "Comment pinned to top" : "Comment unpinned");
+      }
+    });
+  };
+
+  const handleSaveCommentEdit = (commentId: string) => {
+    if (!editingCommentText.trim()) return;
+    updateCommentMut.mutate({
+      commentId,
+      data: { content: editingCommentText },
+    }, {
+      onSuccess: () => {
+        setEditingCommentId(null);
+        toast.success("Comment updated");
+      }
+    });
+  };
+
+  const handleToggleReaction = (commentId: string, emoji: string, reactionsStr: string) => {
+    if (!currentUser?.id) return;
+    let parsed: Record<string, string[]> = {};
+    try {
+      parsed = JSON.parse(reactionsStr || "{}");
+    } catch {
+      parsed = {};
+    }
+    if (!parsed[emoji]) {
+      parsed[emoji] = [];
+    }
+    if (parsed[emoji].includes(currentUser.id)) {
+      parsed[emoji] = parsed[emoji].filter(id => id !== currentUser.id);
+    } else {
+      parsed[emoji].push(currentUser.id);
+    }
+    updateCommentMut.mutate({
+      commentId,
+      data: { reactions: JSON.stringify(parsed) },
+    });
   };
 
   // Advanced features handlers
@@ -305,6 +363,17 @@ export function TaskDetailsSheet({
     toast.success("Watcher removed");
   };
 
+  const isOverdue = task?.dueDate ? isAfter(new Date(), parseISO(task.dueDate)) && task.status !== "Done" : false;
+  let health: "Healthy" | "At Risk" | "Critical" = "Healthy";
+  if (task) {
+    if (isOverdue || task.approvalStatus === "Changes Requested") {
+      health = "Critical";
+    } else if (task.workStatus === "Blocked" || (task.actualHours > task.estimatedHours && task.estimatedHours > 0)) {
+      health = "At Risk";
+    }
+  }
+  const timeVariance = task ? (task.estimatedHours || 0) - (task.actualHours || 0) : 0;
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent
@@ -322,7 +391,7 @@ export function TaskDetailsSheet({
             <div className="flex-1 flex flex-col h-full border-r border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
               <SheetHeader className="p-5 border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col gap-1.5 shrink-0">
                 <SheetTitle className="sr-only">Task details side sheet</SheetTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center flex-wrap gap-2">
                   <Badge variant="secondary" className="bg-primary/5 text-primary border-none py-0.5 px-2 font-bold uppercase tracking-wider text-[9px]">
                     {task.projectName || "Independent Task"}
                   </Badge>
@@ -335,6 +404,16 @@ export function TaskDetailsSheet({
                   )}>
                     {task.priority} Priority
                   </Badge>
+                  {task.approvalStatus === "Approved" && (
+                    <Badge className="bg-emerald-500/15 hover:bg-emerald-500/20 text-emerald-600 border-none py-0.5 px-2 text-[9px] font-bold uppercase flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Approved
+                    </Badge>
+                  )}
+                  {task.approvalStatus === "Changes Requested" && (
+                    <Badge className="bg-rose-500/15 hover:bg-rose-500/20 text-rose-600 border-none py-0.5 px-2 text-[9px] font-bold uppercase flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Changes Requested
+                    </Badge>
+                  )}
                 </div>
 
                 {isEditingTitle ? (
@@ -476,7 +555,31 @@ export function TaskDetailsSheet({
                     {/* Tab: COMMENTS (Threads with Textarea) */}
                     {activeTab === "comments" && (
                       <div className="space-y-4">
-                        <form onSubmit={handlePostComment} className="flex flex-col gap-2">
+                        <form onSubmit={handlePostComment} className="flex flex-col gap-2.5 p-3 rounded-lg border border-slate-200/50 dark:border-slate-800/50 bg-slate-50/10 dark:bg-slate-900/5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-semibold text-slate-400 uppercase">Category:</span>
+                            <div className="flex gap-1">
+                              {["general", "status", "blocker", "feedback"].map((cat) => (
+                                <button
+                                  key={cat}
+                                  type="button"
+                                  onClick={() => setCommentCategory(cat)}
+                                  className={cn(
+                                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase border transition-all cursor-pointer",
+                                    commentCategory === cat
+                                      ? cat === "blocker" ? "bg-rose-500/10 border-rose-500 text-rose-600"
+                                        : cat === "status" ? "bg-blue-500/10 border-blue-500 text-blue-600"
+                                        : cat === "feedback" ? "bg-emerald-500/10 border-emerald-500 text-emerald-600"
+                                        : "bg-primary/10 border-primary text-primary"
+                                      : "border-slate-200 dark:border-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  )}
+                                >
+                                  {cat}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          
                           <Textarea
                             placeholder="Write collaborative updates/feedback... Use Shift+Enter for new line."
                             value={commentText}
@@ -498,36 +601,153 @@ export function TaskDetailsSheet({
 
                         <div className="space-y-3">
                           {task.comments && task.comments.length > 0 ? (
-                            task.comments.map((comm) => (
-                              <div key={comm.id} className="p-3 bg-slate-50/20 dark:bg-slate-900/10 rounded-lg border border-slate-200/50 dark:border-slate-800/50 flex gap-2.5 items-start">
-                                <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 overflow-hidden">
-                                  {comm.userPhotoUrl ? (
-                                    <img src={comm.userPhotoUrl} alt="" className="h-full w-full object-cover" />
-                                  ) : (
-                                    comm.userName?.[0] || "U"
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-1">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300">{comm.userName}</span>
-                                    <span className="text-[10px] text-slate-400">
-                                      {format(new Date(comm.createdAt), "MMM d, yyyy h:mm a")}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{comm.content}</p>
-                                </div>
-                                {comm.userId === currentUser?.id && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => deleteCommentMut.mutate(comm.id)}
-                                    className="h-6 w-6 text-slate-400 hover:text-rose-500 hover:bg-transparent"
+                            // Sort comments: pinned first, then by date
+                            [...task.comments]
+                              .sort((a, b) => {
+                                if (a.isPinned && !b.isPinned) return -1;
+                                if (!a.isPinned && b.isPinned) return 1;
+                                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                              })
+                              .map((comm) => {
+                                let reactionObj: Record<string, string[]> = {};
+                                try {
+                                  reactionObj = JSON.parse(comm.reactions || "{}");
+                                } catch {
+                                  reactionObj = {};
+                                }
+
+                                return (
+                                  <div
+                                    key={comm.id}
+                                    className={cn(
+                                      "group p-3 rounded-lg border flex gap-2.5 items-start transition-all duration-300",
+                                      comm.isPinned
+                                        ? "bg-amber-500/5 dark:bg-amber-500/2 border-amber-300/60 dark:border-amber-900/40 shadow-sm"
+                                        : "bg-slate-50/20 dark:bg-slate-900/10 border-slate-200/50 dark:border-slate-800/50"
+                                    )}
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))
+                                    <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 overflow-hidden">
+                                      {comm.userPhotoUrl ? (
+                                        <img src={comm.userPhotoUrl} alt="" className="h-full w-full object-cover" />
+                                      ) : (
+                                        comm.userName?.[0] || "U"
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-semibold text-slate-700 dark:text-slate-300">{comm.userName}</span>
+                                          {comm.category && comm.category !== "general" && (
+                                            <Badge
+                                              variant="outline"
+                                              className={cn(
+                                                "text-[8px] px-1 py-0 border-none font-bold uppercase",
+                                                comm.category === "blocker" ? "bg-rose-500/10 text-rose-500"
+                                                  : comm.category === "status" ? "bg-blue-500/10 text-blue-500"
+                                                  : "bg-emerald-500/10 text-emerald-500"
+                                              )}
+                                            >
+                                              {comm.category}
+                                            </Badge>
+                                          )}
+                                          {comm.isPinned && (
+                                            <span className="flex items-center text-amber-500 gap-0.5 text-[8px] font-bold uppercase">
+                                              <Pin className="w-2.5 h-2.5 fill-amber-500 rotate-45" /> Pinned
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] text-slate-400">
+                                          {format(new Date(comm.createdAt), "MMM d, h:mm a")}
+                                        </span>
+                                      </div>
+
+                                      {editingCommentId === comm.id ? (
+                                        <div className="space-y-1.5 pt-1">
+                                          <Textarea
+                                            value={editingCommentText}
+                                            onChange={(e) => setEditingCommentText(e.target.value)}
+                                            className="text-xs min-h-[60px] resize-none"
+                                          />
+                                          <div className="flex justify-end gap-1">
+                                            <Button size="xs" variant="outline" className="text-[9px] h-6" onClick={() => setEditingCommentId(null)}>Cancel</Button>
+                                            <Button size="xs" className="text-[9px] h-6 bg-primary" onClick={() => handleSaveCommentEdit(comm.id)}>Save</Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{comm.content}</p>
+                                      )}
+
+                                      {/* Reactions Bar */}
+                                      <div className="flex items-center gap-1 mt-2.5 pt-1 border-t border-slate-100 dark:border-slate-800/40">
+                                        {["👍", "❤️", "🚀", "👀"].map((emoji) => {
+                                          const userList = reactionObj[emoji] || [];
+                                          const hasReacted = currentUser?.id ? userList.includes(currentUser.id) : false;
+                                          const count = userList.length;
+
+                                          return (
+                                            <button
+                                              key={emoji}
+                                              onClick={() => handleToggleReaction(comm.id, emoji, comm.reactions)}
+                                              className={cn(
+                                                "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border transition-all cursor-pointer",
+                                                hasReacted
+                                                  ? "bg-primary/10 border-primary/20 text-primary font-bold"
+                                                  : "border-transparent text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/40 hover:text-slate-600"
+                                              )}
+                                            >
+                                              <span>{emoji}</span>
+                                              {count > 0 && <span className="text-[9px]">{count}</span>}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons: Pin, Edit, Delete */}
+                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 group-hover:block shrink-0 transition-opacity ml-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handlePinComment(comm.id, comm.isPinned)}
+                                        className={cn(
+                                          "h-6 w-6 text-slate-400 hover:text-amber-500 hover:bg-transparent",
+                                          comm.isPinned && "text-amber-500"
+                                        )}
+                                        title={comm.isPinned ? "Unpin Comment" : "Pin Comment"}
+                                      >
+                                        <Pin className="h-3 w-3 rotate-45" />
+                                      </Button>
+                                      
+                                      {comm.userId === currentUser?.id && (
+                                        <>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              setEditingCommentId(comm.id);
+                                              setEditingCommentText(comm.content);
+                                            }}
+                                            className="h-6 w-6 text-slate-400 hover:text-primary hover:bg-transparent"
+                                            title="Edit Comment"
+                                          >
+                                            <Edit className="h-3 w-3" />
+                                          </Button>
+
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => deleteCommentMut.mutate(comm.id)}
+                                            className="h-6 w-6 text-slate-400 hover:text-rose-500 hover:bg-transparent"
+                                            title="Delete Comment"
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })
                           ) : (
                             <div className="py-8 text-center text-slate-400 italic">No discussion logged. Start the conversation!</div>
                           )}
@@ -761,6 +981,130 @@ export function TaskDetailsSheet({
                   onChange={(e) => handleMetaUpdate("dueDate", e.target.value ? `${e.target.value}T00:00:00.000Z` : null)}
                   className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
                 />
+              </div>
+
+              {/* ─── Work Monitoring Options ─── */}
+              <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  Monitoring Metrics
+                </span>
+                
+                {/* Work Status */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-semibold text-slate-400">Work Status</label>
+                  <Select value={task.workStatus || "Idle"} onValueChange={(val) => handleMetaUpdate("workStatus", val)}>
+                    <SelectTrigger className="h-7 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Idle" className="text-xs">Idle</SelectItem>
+                      <SelectItem value="Active Working" className="text-xs">Active Working</SelectItem>
+                      <SelectItem value="Paused" className="text-xs">Paused</SelectItem>
+                      <SelectItem value="Blocked" className="text-xs">Blocked</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Progress */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400">
+                    <span>Progress</span>
+                    <span className="font-bold text-primary">{task.progress || 0}%</span>
+                  </div>
+                  <Select value={String(task.progress || 0)} onValueChange={(val) => handleMetaUpdate("progress", Number(val))}>
+                    <SelectTrigger className="h-7 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(p => (
+                        <SelectItem key={p} value={String(p)} className="text-xs">{p}%</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Health Index Card */}
+                <div className="space-y-1 pt-1 border-t border-slate-200/40 dark:border-slate-800/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-slate-400 font-semibold">Health Index:</span>
+                    <span className={cn(
+                      "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5",
+                      health === "Healthy" ? "bg-emerald-500/10 text-emerald-500" :
+                      health === "At Risk" ? "bg-amber-500/10 text-amber-500" :
+                      "bg-rose-500/10 text-rose-500"
+                    )}>
+                      {health === "Healthy" && <CheckCircle2 className="h-2.5 w-2.5" />}
+                      {health === "At Risk" && <AlertTriangle className="h-2.5 w-2.5" />}
+                      {health === "Critical" && <AlertCircle className="h-2.5 w-2.5" />}
+                      {health}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Time Variance Card */}
+                {task.estimatedHours > 0 && (
+                  <div className="flex items-center justify-between pt-1 text-[9px]">
+                    <span className="text-slate-400 font-semibold">Time Variance:</span>
+                    <span className={cn(
+                      "font-bold",
+                      timeVariance >= 0 ? "text-emerald-500" : "text-rose-500"
+                    )}>
+                      {timeVariance >= 0 ? `+${timeVariance}h under` : `${timeVariance}h over`}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* ─── Supervisor Feedback Options ─── */}
+              <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Supervisor Reviews
+                </span>
+
+                {/* Approval Status */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-semibold text-slate-400">Review Result</label>
+                  <Select value={task.approvalStatus || "Pending"} onValueChange={(val) => handleMetaUpdate("approvalStatus", val)}>
+                    <SelectTrigger className="h-7 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pending" className="text-xs">Pending Review</SelectItem>
+                      <SelectItem value="Approved" className="text-xs">Approved</SelectItem>
+                      <SelectItem value="Changes Requested" className="text-xs">Changes Requested</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Rating (1-5 clickable stars) */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-semibold text-slate-400 block">Rating Score</label>
+                  <div className="flex gap-1 items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        onClick={() => handleMetaUpdate("reviewRating", star)}
+                        className={cn(
+                          "w-4 h-4 cursor-pointer transition-colors",
+                          star <= (task.reviewRating || 0)
+                            ? "text-amber-500 fill-amber-500"
+                            : "text-slate-300 dark:text-slate-700"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Remarks/feedback text */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-semibold text-slate-400">Remarks / Feedback</label>
+                  <Textarea
+                    placeholder="Provide supervisor feedback remarks..."
+                    defaultValue={task.reviewFeedback || ""}
+                    onBlur={(e) => handleMetaUpdate("reviewFeedback", e.target.value)}
+                    className="text-[11px] min-h-[50px] resize-none bg-background p-1.5"
+                  />
+                </div>
               </div>
 
               <Separator className="bg-slate-200/40 dark:border-slate-800/40 my-2" />

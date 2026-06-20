@@ -136,6 +136,26 @@ export class CreateTaskDto {
   @IsDateString()
   @IsOptional()
   nextRecurrenceDate?: string;
+
+  @IsInt()
+  @IsOptional()
+  progress?: number;
+
+  @IsString()
+  @IsOptional()
+  workStatus?: string;
+
+  @IsString()
+  @IsOptional()
+  approvalStatus?: string;
+
+  @IsInt()
+  @IsOptional()
+  reviewRating?: number;
+
+  @IsString()
+  @IsOptional()
+  reviewFeedback?: string;
 }
 
 export class UpdateTaskDto {
@@ -206,6 +226,26 @@ export class UpdateTaskDto {
   @IsDateString()
   @IsOptional()
   nextRecurrenceDate?: string;
+
+  @IsInt()
+  @IsOptional()
+  progress?: number;
+
+  @IsString()
+  @IsOptional()
+  workStatus?: string;
+
+  @IsString()
+  @IsOptional()
+  approvalStatus?: string;
+
+  @IsInt()
+  @IsOptional()
+  reviewRating?: number;
+
+  @IsString()
+  @IsOptional()
+  reviewFeedback?: string;
 }
 
 export class TaskQueryDto {
@@ -250,6 +290,24 @@ export class CreateCommentDto {
   @IsString()
   @IsNotEmpty()
   content!: string;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+}
+
+export class UpdateCommentDto {
+  @IsString()
+  @IsOptional()
+  content?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isPinned?: boolean;
+
+  @IsString()
+  @IsOptional()
+  reactions?: string;
 }
 
 // ─── New Gaps DTOs ────────────────────────────────────────────────────────────

@@ -126,6 +126,22 @@ export default function TaskBoard({
           </p>
         )}
 
+        {/* Progress Bar */}
+        {task.progress > 0 && (
+          <div className="mt-2.5 space-y-1">
+            <div className="flex justify-between text-[9px] text-slate-500 font-semibold">
+              <span>Work Progress</span>
+              <span>{task.progress}%</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800/80 h-1 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${task.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Tags */}
         {task.tags && (
           <div className="flex flex-wrap gap-1 mt-3">

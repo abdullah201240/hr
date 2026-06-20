@@ -42,6 +42,11 @@ export const tasks = pgTable('tasks', {
   recurrencePattern: varchar('recurrence_pattern', { length: 50 }).default('none').notNull(), // none, daily, weekly, monthly
   recurrenceInterval: integer('recurrence_interval').default(1).notNull(),
   nextRecurrenceDate: date('next_recurrence_date'),
+  progress: integer('progress').default(0).notNull(),
+  workStatus: varchar('work_status', { length: 50 }).default('Idle').notNull(), // Idle, Active Working, Paused, Blocked
+  approvalStatus: varchar('approval_status', { length: 50 }).default('Pending').notNull(), // Pending, Approved, Changes Requested
+  reviewRating: integer('review_rating'),
+  reviewFeedback: text('review_feedback'),
 });
 
 export const taskChecklists = pgTable('task_checklists', {
@@ -56,6 +61,9 @@ export const taskComments = pgTable('task_comments', {
   taskId: uuid('task_id').references((): AnyPgColumn => tasks.id, { onDelete: 'cascade' }).notNull(),
   userId: uuid('user_id').references((): AnyPgColumn => employees.id, { onDelete: 'cascade' }).notNull(),
   content: text('content').notNull(),
+  isPinned: boolean('is_pinned').default(false).notNull(),
+  category: varchar('category', { length: 50 }).default('general').notNull(), // general, status, blocker, feedback
+  reactions: text('reactions').default('').notNull(), // JSON string representing reactions
 });
 
 export const taskActivities = pgTable('task_activities', {

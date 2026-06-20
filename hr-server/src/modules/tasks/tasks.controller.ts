@@ -11,6 +11,7 @@ import {
   CreateChecklistItemDto,
   UpdateChecklistItemDto,
   CreateCommentDto,
+  UpdateCommentDto,
   CreateMilestoneDto,
   UpdateMilestoneDto,
   CreateDependencyDto,
@@ -173,6 +174,16 @@ export class TasksController {
     @Req() req: FastifyRequest & { user: { id: string } },
   ) {
     return this.tasksService.deleteComment(commentId, req.user.id);
+  }
+
+  @Patch('comments/:commentId')
+  @ApiOperation({ summary: 'Update a comment (edit/pin/reaction)' })
+  async updateComment(
+    @Param('commentId') commentId: string,
+    @Body() dto: UpdateCommentDto,
+    @Req() req: FastifyRequest & { user: { id: string } },
+  ) {
+    return this.tasksService.updateComment(commentId, req.user.id, dto);
   }
 
   // ─── Task Dependencies Endpoints ─────────────────────────────────────────────
