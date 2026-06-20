@@ -1,4 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { eq, and, or, like, desc, sql, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
@@ -31,12 +33,14 @@ import {
   CreateAttachmentDto,
 } from './dto/tasks.dto';
 import { RealtimeGateway } from './realtime.gateway';
+import { TASK_RECURRENCE_QUEUE } from '../queue/queue.module';
 
 @Injectable()
 export class TasksService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly realtimeGateway: RealtimeGateway,
+    @InjectQueue(TASK_RECURRENCE_QUEUE) private readonly taskRecurrenceQueue: Queue,
   ) {}
 
   private broadcastMutation(action: string, id?: string) {
@@ -614,58 +618,16 @@ export class TasksService {
         );
       }
 
-      // If status changed to Done and task is a recurring task, clone it for next occurrence
+      // If status changed to Done and task is a recurring task, clone it for next occurrence asynchronously via BullMQ
       if (dto.status === 'Done' && updated.recurrencePattern && updated.recurrencePattern !== 'none') {
         try {
-          const nextDate = new Date(updated.nextRecurrenceDate || new Date());
-          const interval = updated.recurrenceInterval || 1;
-          
-          if (updated.recurrencePattern === 'daily') {
-            nextDate.setDate(nextDate.getDate() + interval);
-          } else if (updated.recurrencePattern === 'weekly') {
-            nextDate.setDate(nextDate.getDate() + interval * 7);
-          } else if (updated.recurrencePattern === 'monthly') {
-            nextDate.setMonth(nextDate.getMonth() + interval);
-          }
-
-          const nextDateStr = nextDate.toISOString().split('T')[0];
-
-          // Auto-create next task clone (with status 'Todo')
-          const [clonedTask] = await this.db.insert(tasks).values({
-            projectId: updated.projectId,
-            title: updated.title,
-            description: updated.description,
-            status: 'Todo',
-            priority: updated.priority,
-            dueDate: updated.nextRecurrenceDate, // Due date is the recurrence date
-            assigneeId: updated.assigneeId,
-            reporterId: updated.reporterId,
-            estimatedHours: updated.estimatedHours,
-            actualHours: 0,
-            tags: updated.tags,
-            watchers: updated.watchers,
-            recurrencePattern: updated.recurrencePattern,
-            recurrenceInterval: updated.recurrenceInterval,
-            nextRecurrenceDate: nextDateStr,
-            progress: 0,
-            workStatus: 'Idle',
-            approvalStatus: 'Pending',
-          }).returning();
-
-          // Log creation activity for the cloned task
-          await this.db.insert(taskActivities).values({
-            taskId: clonedTask.id,
-            userId: null,
-            action: 'created',
-            details: 'Automatically created recurring task instance',
-          });
-
-          // Disable recurrence on the current completed task
-          await this.db.update(tasks).set({
-            recurrencePattern: 'none',
-          }).where(eq(tasks.id, id));
+          await this.taskRecurrenceQueue.add(
+            'process-recurrence',
+            { taskId: id, userId },
+            { removeOnComplete: true, removeOnFail: true }
+          );
         } catch (e) {
-          console.error('Failed to instantiate recurring task:', e);
+          console.error('Failed to queue recurring task clone:', e);
         }
       }
     }
@@ -717,6 +679,71 @@ export class TasksService {
 
     this.broadcastMutation('task_updated', id);
     return updated;
+  }
+
+  async handleRecurrenceClone(taskId: string, userId: string) {
+    const [taskRecord] = await this.db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, taskId))
+      .limit(1);
+
+    if (!taskRecord || taskRecord.recurrencePattern === 'none') {
+      return { status: 'skipped', reason: 'task_not_found_or_not_recurring' };
+    }
+
+    const nextDate = new Date(taskRecord.nextRecurrenceDate || new Date());
+    const interval = taskRecord.recurrenceInterval || 1;
+
+    if (taskRecord.recurrencePattern === 'daily') {
+      nextDate.setDate(nextDate.getDate() + interval);
+    } else if (taskRecord.recurrencePattern === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + interval * 7);
+    } else if (taskRecord.recurrencePattern === 'monthly') {
+      nextDate.setMonth(nextDate.getMonth() + interval);
+    }
+
+    const nextDateStr = nextDate.toISOString().split('T')[0];
+
+    // Auto-create next task clone (with status 'Todo')
+    const [clonedTask] = await this.db.insert(tasks).values({
+      projectId: taskRecord.projectId,
+      title: taskRecord.title,
+      description: taskRecord.description,
+      status: 'Todo',
+      priority: taskRecord.priority,
+      dueDate: taskRecord.nextRecurrenceDate, // Due date is the current recurrence date
+      assigneeId: taskRecord.assigneeId,
+      reporterId: taskRecord.reporterId,
+      estimatedHours: taskRecord.estimatedHours,
+      actualHours: 0,
+      tags: taskRecord.tags,
+      watchers: taskRecord.watchers,
+      recurrencePattern: taskRecord.recurrencePattern,
+      recurrenceInterval: taskRecord.recurrenceInterval,
+      nextRecurrenceDate: nextDateStr,
+      progress: 0,
+      workStatus: 'Idle',
+      approvalStatus: 'Pending',
+    }).returning();
+
+    // Log creation activity for the cloned task
+    await this.db.insert(taskActivities).values({
+      taskId: clonedTask.id,
+      userId: null,
+      action: 'created',
+      details: 'Automatically created recurring task instance via BullMQ',
+    });
+
+    // Disable recurrence on the current completed task
+    await this.db.update(tasks).set({
+      recurrencePattern: 'none',
+    }).where(eq(tasks.id, taskId));
+
+    this.broadcastMutation('task_created', clonedTask.id);
+    this.broadcastMutation('task_updated', taskId);
+
+    return { status: 'success', clonedTaskId: clonedTask.id };
   }
 
   async deleteTask(id: string) {

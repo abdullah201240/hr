@@ -7,6 +7,8 @@ export const EMPLOYEE_UPDATE_QUEUE = 'employee-update';
 export const EMPLOYEE_STATUS_QUEUE = 'employee-status';
 export const ATTENDANCE_QUEUE = 'attendance';
 export const LEAVE_APPLICATION_QUEUE = 'leave-application';
+export const TASK_RECURRENCE_QUEUE = 'task-recurrence';
+export const KPI_CALCULATION_QUEUE = 'kpi-calculation';
 
 @Global()
 @Module({
@@ -34,6 +36,12 @@ export const LEAVE_APPLICATION_QUEUE = 'leave-application';
     }),
     BullModule.registerQueue({
       name: LEAVE_APPLICATION_QUEUE,
+    }),
+    BullModule.registerQueue({
+      name: TASK_RECURRENCE_QUEUE,
+    }),
+    BullModule.registerQueue({
+      name: KPI_CALCULATION_QUEUE,
     }),
   ],
   exports: [BullModule],

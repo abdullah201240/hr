@@ -1,4 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { eq, and, desc } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { employeeKpis, employees, designations, departments, appraisalCycles, employeeAppraisals } from '../../db/schema';
@@ -10,6 +12,7 @@ import {
   SubmitSelfAppraisalDto,
   SubmitManagerAppraisalDto
 } from './dto/performance.dto';
+import { KPI_CALCULATION_QUEUE } from '../queue/queue.module';
 
 const defaultKPITemplates = {
   engineer: [
@@ -33,6 +36,7 @@ const defaultKPITemplates = {
 export class PerformanceService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
+    @InjectQueue(KPI_CALCULATION_QUEUE) private readonly kpiCalculationQueue: Queue,
   ) {}
 
   // --- Cycles Management ---
@@ -81,7 +85,86 @@ export class PerformanceService {
     if (!updated) {
       throw new NotFoundException(`Appraisal cycle with ID "${id}" not found`);
     }
+
+    if (dto.status === 'active') {
+      try {
+        await this.kpiCalculationQueue.add(
+          'initialize-cycle-kpis',
+          { cycleId: id },
+          { removeOnComplete: true, removeOnFail: true }
+        );
+      } catch (err) {
+        console.error('Failed to queue initialize-cycle-kpis job:', err);
+      }
+    } else if (dto.status === 'ended') {
+      try {
+        await this.kpiCalculationQueue.add(
+          'calculate-appraisal-grades',
+          { cycleId: id },
+          { removeOnComplete: true, removeOnFail: true }
+        );
+      } catch (err) {
+        console.error('Failed to queue calculate-appraisal-grades job:', err);
+      }
+    }
+
     return updated;
+  }
+
+  async bulkInitializeCycleKpis(cycleId: string) {
+    const activeEmployees = await this.db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(eq(employees.status, 'active'));
+
+    for (const emp of activeEmployees) {
+      await this.getEmployeeKpis(emp.id, cycleId);
+    }
+
+    return { status: 'success', processed: activeEmployees.length };
+  }
+
+  async bulkCalculateCycleGrades(cycleId: string) {
+    const appraisals = await this.db
+      .select()
+      .from(employeeAppraisals)
+      .where(eq(employeeAppraisals.cycleId, cycleId));
+
+    let updatedCount = 0;
+    for (const appraisal of appraisals) {
+      const kpis = await this.db
+        .select()
+        .from(employeeKpis)
+        .where(
+          and(
+            eq(employeeKpis.employeeId, appraisal.employeeId),
+            eq(employeeKpis.cycleId, cycleId)
+          )
+        );
+
+      if (kpis.length === 0) continue;
+
+      const selfScoreSum = kpis.reduce((sum, k) => sum + ((k.selfScore ?? 80) * (k.weight / 100)), 0);
+      const managerScoreSum = kpis.reduce((sum, k) => sum + ((k.managerScore ?? 80) * (k.weight / 100)), 0);
+
+      const selfScore = Math.round(selfScoreSum);
+      const managerScore = Math.round(managerScoreSum);
+      const finalScore = Math.round(selfScore * 0.3 + managerScore * 0.7);
+
+      await this.db
+        .update(employeeAppraisals)
+        .set({
+          selfScore,
+          managerScore,
+          finalScore,
+          status: appraisal.status === 'pending_self' || appraisal.status === 'pending_manager' ? appraisal.status : 'completed'
+        })
+        .where(eq(employeeAppraisals.id, appraisal.id));
+
+      updatedCount++;
+    }
+
+    return { status: 'success', processed: appraisals.length, updated: updatedCount };
   }
 
   // --- Appraisals & KPIs ---
