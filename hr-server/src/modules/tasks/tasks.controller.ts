@@ -18,6 +18,9 @@ import {
   CreateDependencyDto,
   CreateTimeEntryDto,
   CreateAttachmentDto,
+  UpdateTimeEntryDto,
+  BulkTaskImportDto,
+  BulkTimeLogDto,
 } from './dto/tasks.dto';
 
 @ApiTags('Tasks & Projects')
@@ -242,6 +245,13 @@ export class TasksController {
     return this.tasksService.addTimeEntry(taskId, dto);
   }
 
+  @Patch('time-entries/:id')
+  @Roles('admin', 'hr', 'employee')
+  @ApiOperation({ summary: 'Update a time entry log' })
+  async updateTimeEntry(@Param('id') id: string, @Body() dto: UpdateTimeEntryDto) {
+    return this.tasksService.updateTimeEntry(id, dto);
+  }
+
   @Delete('time-entries/:id')
   @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Delete a time entry log' })
@@ -269,4 +279,17 @@ export class TasksController {
     return this.tasksService.deleteAttachment(id);
   }
 
+  @Post('bulk-import')
+  @Roles('admin', 'hr', 'employee')
+  @ApiOperation({ summary: 'Bulk import tasks' })
+  async bulkImportTasks(@Body() dto: BulkTaskImportDto) {
+    return this.tasksService.bulkCreateTasks(dto.tasks);
+  }
+
+  @Post('bulk-time')
+  @Roles('admin', 'hr', 'employee')
+  @ApiOperation({ summary: 'Bulk log time entries' })
+  async bulkLogTime(@Body() dto: BulkTimeLogDto) {
+    return this.tasksService.bulkLogTime(dto.logs);
+  }
 }

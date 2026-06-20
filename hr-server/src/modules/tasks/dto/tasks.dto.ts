@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, IsBoolean, IsDateString, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, IsBoolean, IsDateString, IsIn, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateProjectDto {
   @IsString()
@@ -408,4 +409,66 @@ export class CreateAttachmentDto {
   @IsInt()
   @IsOptional()
   fileSize?: number;
+}
+
+export class UpdateTimeEntryDto {
+  @IsUUID()
+  @IsOptional()
+  employeeId?: string;
+
+  @IsDateString()
+  @IsOptional()
+  startTime?: string;
+
+  @IsDateString()
+  @IsOptional()
+  endTime?: string;
+
+  @IsInt()
+  @IsOptional()
+  durationSeconds?: number;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+export class BulkTaskImportDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTaskDto)
+  tasks!: CreateTaskDto[];
+}
+
+export class BulkTimeLogEntryDto {
+  @IsUUID()
+  @IsNotEmpty()
+  taskId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  employeeId!: string;
+
+  @IsDateString()
+  @IsNotEmpty()
+  startTime!: string;
+
+  @IsDateString()
+  @IsOptional()
+  endTime?: string;
+
+  @IsInt()
+  @IsOptional()
+  durationSeconds?: number;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+export class BulkTimeLogDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BulkTimeLogEntryDto)
+  logs!: BulkTimeLogEntryDto[];
 }

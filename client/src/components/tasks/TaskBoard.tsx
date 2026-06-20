@@ -47,9 +47,22 @@ export default function TaskBoard({
   const [quickAddCol, setQuickAddCol] = useState<Task["status"] | null>(null);
   const [quickTitle, setQuickTitle] = useState("");
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
+  const [customOrder, setCustomOrder] = useState<Record<string, string[]>>({});
 
   // Sort helper
-  const sortTasks = (taskList: Task[]) => {
+  const sortTasks = (taskList: Task[], status: string) => {
+    const statusOrder = customOrder[status];
+    if (sortBy === "created" && statusOrder && statusOrder.length > 0) {
+      return [...taskList].sort((a, b) => {
+        const idxA = statusOrder.indexOf(a.id);
+        const idxB = statusOrder.indexOf(b.id);
+        if (idxA === -1 && idxB === -1) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (idxA === -1) return 1;
+        if (idxB === -1) return -1;
+        return idxA - idxB;
+      });
+    }
+
     return [...taskList].sort((a, b) => {
       if (sortBy === "title") return a.title.localeCompare(b.title);
       if (sortBy === "priority") {
@@ -76,15 +89,47 @@ export default function TaskBoard({
   };
 
   // Drag Handlers
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+  const handleDragStart = (e: React.DragEvent, taskId: string, taskStatus: string) => {
     e.dataTransfer.setData("text/plain", taskId);
+    e.dataTransfer.setData("sourceStatus", taskStatus);
+  };
+
+  const handleCardDrop = (e: React.DragEvent, targetId: string, targetStatus: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedId = e.dataTransfer.getData("text/plain");
+    const sourceStatus = e.dataTransfer.getData("sourceStatus");
+    if (!draggedId) return;
+
+    if (sourceStatus !== targetStatus) {
+      onStatusChange(draggedId, targetStatus as any);
+      return;
+    }
+
+    const currentTasks = tasks.filter((t) => t.status === targetStatus);
+    const sorted = sortTasks(currentTasks, targetStatus);
+    const sortedIds = sorted.map((t) => t.id);
+
+    const dragIdx = sortedIds.indexOf(draggedId);
+    const targetIdx = sortedIds.indexOf(targetId);
+
+    if (dragIdx !== -1 && targetIdx !== -1 && dragIdx !== targetIdx) {
+      const newOrder = [...sortedIds];
+      newOrder.splice(dragIdx, 1);
+      newOrder.splice(targetIdx, 0, draggedId);
+      setCustomOrder({
+        ...customOrder,
+        [targetStatus]: newOrder,
+      });
+    }
   };
 
   const handleDrop = (e: React.DragEvent, status: Task["status"]) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (taskId) {
-      onStatusChange(taskId, status);
+    const draggedId = e.dataTransfer.getData("text/plain");
+    const sourceStatus = e.dataTransfer.getData("sourceStatus");
+    if (draggedId && sourceStatus !== status) {
+      onStatusChange(draggedId, status);
     }
   };
 
@@ -100,7 +145,9 @@ export default function TaskBoard({
       <div
         key={task.id}
         draggable
-        onDragStart={(e) => handleDragStart(e, task.id)}
+        onDragStart={(e) => handleDragStart(e, task.id, task.status)}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => handleCardDrop(e, task.id, task.status)}
         onClick={() => onTaskClick(task)}
         className={cn(
           "group relative flex flex-col p-4 rounded-xl border bg-white/40 dark:bg-slate-900/40 backdrop-blur-md cursor-grab active:cursor-grabbing",
@@ -216,7 +263,7 @@ export default function TaskBoard({
   const renderColumns = (columnTasks: Task[], swimlaneKey = "") => {
     return STATUS_COLUMNS.map((status) => {
       const isCollapsed = collapsedCols.has(status);
-      const filteredTasks = sortTasks(columnTasks.filter((t) => t.status === status));
+      const filteredTasks = sortTasks(columnTasks.filter((t) => t.status === status), status);
       const isOver = hoveredCol === `${swimlaneKey}-${status}`;
 
       if (isCollapsed) {

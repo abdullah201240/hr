@@ -432,4 +432,56 @@ body:has(.swal2-container) [data-slot="dialog-content"] {
   color: #fff !important;
 }
 
+/* ── Print Layout CSS Styles ── */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  header,
+  footer,
+  aside,
+  nav,
+  button,
+  .print\:hidden,
+  input,
+  select,
+  .sidebar,
+  [role="tablist"] {
+    display: none !important;
+  }
+
+  .flex-col, .lg\:flex-row {
+    display: block !important;
+  }
+  
+  .w-full, .lg\:w-\[260px\], .max-w-md, .sm\:max-w-\[500px\] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .overflow-x-auto, .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  .flex {
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  .rounded-xl, .border, .bg-white\/40 {
+    background: transparent !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid !important;
+    color: black !important;
+    margin-bottom: 8px !important;
+  }
+}
+
 

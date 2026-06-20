@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import {
   useProjectsQuery,
-  useTasksQuery,
+  useInfiniteTasksQuery,
   useProjectActivitiesQuery,
   useCreateProjectMutation,
   useCreateTaskMutation,
@@ -54,6 +55,7 @@ import {
   Loader2,
   Activity,
   Workflow,
+  FileUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
@@ -145,7 +147,17 @@ export default function TasksPage() {
     priority: selectedPriority === "all" ? undefined : selectedPriority,
   }), [search, selectedProjectId, selectedAssigneeId, selectedStatus, selectedPriority, workplaceProjectId]);
 
-  const { data: tasks = [], isLoading: tasksLoading } = useTasksQuery(filters);
+  const {
+    data: tasksData,
+    isLoading: tasksLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteTasksQuery({ ...filters, limit: 50 });
+
+  const tasks = useMemo(() => {
+    return tasksData?.pages.flatMap((p) => p.tasks) || [];
+  }, [tasksData]);
 
   // Aggregated timeline activities query (only active in workplace mode)
   const { data: activities = [] } = useProjectActivitiesQuery(workplaceProjectId || "", !!workplaceProjectId);
@@ -337,6 +349,77 @@ export default function TasksPage() {
     window.print();
   };
 
+  const [isImporting, setIsImporting] = useState(false);
+
+  const parseCSV = (text: string) => {
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length <= 1) return [];
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^["']|["']$/g, ""));
+    
+    return lines.slice(1).map(line => {
+      const values: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim().replace(/^["']|["']$/g, ""));
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim().replace(/^["']|["']$/g, ""));
+      
+      const obj: any = {};
+      headers.forEach((h, index) => {
+        obj[h] = values[index] || "";
+      });
+      return obj;
+    });
+  };
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const text = evt.target?.result as string;
+        const parsed = parseCSV(text);
+        const tasksToImport = parsed.map((item: any) => ({
+          projectId: workplaceProjectId || undefined,
+          title: item.Title || item.title || "Untitled Task",
+          description: item.Description || item.description || "",
+          priority: item.Priority || item.priority || "Medium",
+          status: item.Status || item.status || "Todo",
+          estimatedHours: Number(item["Estimated Hours"] || item.estimatedHours || item.estimated_hours) || 0,
+          tags: item.Tags || item.tags || "",
+          dueDate: item["Due Date"] || item.dueDate ? `${item["Due Date"] || item.dueDate}T00:00:00.000Z` : undefined,
+        }));
+        
+        if (tasksToImport.length === 0) {
+          toast.error("No tasks found in CSV");
+          return;
+        }
+        
+        await apiClient.post("tasks/bulk-import", { tasks: tasksToImport });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        toast.success(`Successfully imported ${tasksToImport.length} tasks!`);
+      } catch (err) {
+        toast.error("Failed to import CSV: check headers 'Title, Description, Priority, Status, Estimated Hours, Tags, Due Date'");
+      } finally {
+        setIsImporting(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Calendar calculations
   const calendarDays = useMemo(() => {
     const start = startOfMonth(calendarDate);
@@ -469,6 +552,24 @@ export default function TasksPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="file"
+                  accept=".csv"
+                  id="csv-import-file"
+                  className="hidden"
+                  onChange={handleCSVImport}
+                  disabled={isImporting}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById("csv-import-file")?.click()}
+                  className="h-8 text-xs font-semibold gap-1.5"
+                  disabled={isImporting}
+                >
+                  {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
+                  <span>{isImporting ? "Importing..." : "Import CSV"}</span>
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-8 text-xs font-semibold gap-1.5">
                   <FileSpreadsheet className="w-3.5 h-3.5" /> Export CSV
                 </Button>
@@ -626,26 +727,52 @@ export default function TasksPage() {
                   groupBy={groupBy}
                   sortBy={sortBy}
                 />
+                {hasNextPage && (
+                  <div className="flex justify-center pt-2 print:hidden">
+                    <Button
+                      variant="outline"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="h-8.5 text-xs font-semibold cursor-pointer border border-slate-200 dark:border-slate-800"
+                    >
+                      {isFetchingNextPage ? "Loading more..." : "Load More Tasks"}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
             {/* TAB CONTENT 2: List View */}
             {tab === "list" && (
-              <TaskListView
-                tasks={tasks}
-                employees={employees}
-                onTaskClick={(t) => setSelectedTaskId(t.id)}
-                onUpdateTask={(id, data) => updateTaskMut.mutate({ id, data })}
-                onDeleteTask={(id) => deleteTaskMut.mutate(id)}
-                onBulkUpdateStatus={(ids, status) => {
-                  ids.forEach(id => updateTaskMut.mutate({ id, data: { status } }));
-                  toast.success(`Updated ${ids.length} tasks`);
-                }}
-                onBulkDelete={(ids) => {
-                  ids.forEach(id => deleteTaskMut.mutate(id));
-                  toast.success(`Deleted ${ids.length} tasks`);
-                }}
-              />
+              <div className="space-y-4">
+                <TaskListView
+                  tasks={tasks}
+                  employees={employees}
+                  onTaskClick={(t) => setSelectedTaskId(t.id)}
+                  onUpdateTask={(id, data) => updateTaskMut.mutate({ id, data })}
+                  onDeleteTask={(id) => deleteTaskMut.mutate(id)}
+                  onBulkUpdateStatus={(ids, status) => {
+                    ids.forEach(id => updateTaskMut.mutate({ id, data: { status } }));
+                    toast.success(`Updated ${ids.length} tasks`);
+                  }}
+                  onBulkDelete={(ids) => {
+                    ids.forEach(id => deleteTaskMut.mutate(id));
+                    toast.success(`Deleted ${ids.length} tasks`);
+                  }}
+                />
+                {hasNextPage && (
+                  <div className="flex justify-center pt-2 print:hidden">
+                    <Button
+                      variant="outline"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="h-8.5 text-xs font-semibold cursor-pointer border border-slate-200 dark:border-slate-800"
+                    >
+                      {isFetchingNextPage ? "Loading more..." : "Load More Tasks"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* TAB CONTENT 3: Workload Analytics */}

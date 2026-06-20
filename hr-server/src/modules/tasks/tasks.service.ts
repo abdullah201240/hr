@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { eq, and, or, like, desc, sql, inArray, isNull, lt } from 'drizzle-orm';
@@ -31,6 +31,10 @@ import {
   CreateDependencyDto,
   CreateTimeEntryDto,
   CreateAttachmentDto,
+  UpdateTimeEntryDto,
+  BulkTaskImportDto,
+  BulkTimeLogEntryDto,
+  BulkTimeLogDto,
 } from './dto/tasks.dto';
 import { RealtimeGateway } from './realtime.gateway';
 import { TASK_RECURRENCE_QUEUE } from '../queue/queue.module';
@@ -905,15 +909,26 @@ export class TasksService {
     }
 
     // Parse @mentions
-    const allEmps = await this.db.select({ id: employees.id, name: employees.fullNameEnglish }).from(employees);
-    for (const emp of allEmps) {
-      const mentionTag = `@${emp.name}`;
-      if (dto.content.includes(mentionTag) && emp.id !== userId) {
-        await this.createNotification(
-          emp.id,
-          'Mentioned in Task Comment',
-          `You were mentioned in a comment on task: "${task?.title || 'Task'}"`,
-        );
+    const mentions = dto.content.match(/@([a-zA-Z0-9\s_]{3,50})/g);
+    if (mentions && mentions.length > 0) {
+      const names = mentions.map(m => m.slice(1).trim()).filter(n => n.length >= 2);
+      if (names.length > 0) {
+        const conditions = names.map(n => like(employees.fullNameEnglish, `%${n}%`));
+        const matchingEmps = await this.db
+          .select({ id: employees.id, name: employees.fullNameEnglish })
+          .from(employees)
+          .where(or(...conditions)!);
+
+        for (const emp of matchingEmps) {
+          const mentionTag = `@${emp.name}`;
+          if (dto.content.includes(mentionTag) && emp.id !== userId) {
+            await this.createNotification(
+              emp.id,
+              'Mentioned in Task Comment',
+              `You were mentioned in a comment on task: "${task?.title || 'Task'}"`,
+            );
+          }
+        }
       }
     }
 
@@ -1033,7 +1048,43 @@ export class TasksService {
 
   // ─── Dependencies CRUD ──────────────────────────────────────────────────────
 
+  async hasDependencyPath(startId: string, targetId: string): Promise<boolean> {
+    const allDeps = await this.db.select().from(taskDependencies);
+    const adjMap = new Map<string, string[]>();
+    for (const d of allDeps) {
+      const list = adjMap.get(d.taskId) || [];
+      list.push(d.dependsOnTaskId);
+      adjMap.set(d.taskId, list);
+    }
+
+    const queue = [startId];
+    const visited = new Set<string>([startId]);
+
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      if (curr === targetId) {
+        return true;
+      }
+      const neighbors = adjMap.get(curr) || [];
+      for (const next of neighbors) {
+        if (!visited.has(next)) {
+          visited.add(next);
+          queue.push(next);
+        }
+      }
+    }
+    return false;
+  }
+
   async addDependency(taskId: string, dto: CreateDependencyDto) {
+    if (taskId === dto.dependsOnTaskId) {
+      throw new BadRequestException('A task cannot depend on itself');
+    }
+    const hasPath = await this.hasDependencyPath(dto.dependsOnTaskId, taskId);
+    if (hasPath) {
+      throw new BadRequestException('Circular dependency detected');
+    }
+
     const [dep] = await this.db
       .insert(taskDependencies)
       .values({
@@ -1083,8 +1134,45 @@ export class TasksService {
   async deleteTimeEntry(id: string) {
     const [deleted] = await this.db.delete(timeEntries).where(eq(timeEntries.id, id)).returning();
     if (!deleted) throw new NotFoundException('Time entry not found');
+
+    const deletedHours = Math.round(((deleted.durationSeconds || 0) / 3600) * 100) / 100;
+    const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, deleted.taskId)).limit(1);
+    await this.db
+      .update(tasks)
+      .set({ actualHours: Math.max(0, Number(task?.actualHours || 0) - deletedHours) })
+      .where(eq(tasks.id, deleted.taskId));
+
     this.broadcastMutation('task_updated', deleted.taskId);
     return { message: 'Time entry deleted' };
+  }
+
+  async updateTimeEntry(id: string, dto: UpdateTimeEntryDto) {
+    const [existing] = await this.db.select().from(timeEntries).where(eq(timeEntries.id, id)).limit(1);
+    if (!existing) throw new NotFoundException('Time entry not found');
+
+    const updateFields: any = {};
+    if (dto.employeeId !== undefined) updateFields.employeeId = dto.employeeId;
+    if (dto.startTime !== undefined) updateFields.startTime = new Date(dto.startTime);
+    if (dto.endTime !== undefined) updateFields.endTime = dto.endTime ? new Date(dto.endTime) : null;
+    if (dto.durationSeconds !== undefined) updateFields.durationSeconds = dto.durationSeconds;
+    if (dto.description !== undefined) updateFields.description = dto.description;
+
+    const [updated] = await this.db.update(timeEntries).set(updateFields).where(eq(timeEntries.id, id)).returning();
+
+    if (dto.durationSeconds !== undefined) {
+      const oldHours = Math.round(((existing.durationSeconds || 0) / 3600) * 100) / 100;
+      const newHours = Math.round(((dto.durationSeconds || 0) / 3600) * 100) / 100;
+      const diffHours = newHours - oldHours;
+
+      const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, existing.taskId)).limit(1);
+      await this.db
+        .update(tasks)
+        .set({ actualHours: Math.max(0, Number(task?.actualHours || 0) + diffHours) })
+        .where(eq(tasks.id, existing.taskId));
+    }
+
+    this.broadcastMutation('task_updated', existing.taskId);
+    return updated;
   }
 
   // ─── Attachments CRUD ───────────────────────────────────────────────────────
@@ -1141,5 +1229,42 @@ export class TasksService {
       .where(eq(taskNotifications.id, id))
       .returning();
     return updated;
+  }
+
+  async bulkCreateTasks(dtos: CreateTaskDto[]) {
+    const createdTasks = [];
+    for (const dto of dtos) {
+      const task = await this.createTask(dto);
+      createdTasks.push(task);
+    }
+    return createdTasks;
+  }
+
+  async bulkLogTime(dtos: BulkTimeLogEntryDto[]) {
+    const logged = [];
+    for (const dto of dtos) {
+      const [entry] = await this.db
+        .insert(timeEntries)
+        .values({
+          taskId: dto.taskId,
+          employeeId: dto.employeeId,
+          startTime: new Date(dto.startTime),
+          endTime: dto.endTime ? new Date(dto.endTime) : null,
+          durationSeconds: dto.durationSeconds || 0,
+          description: dto.description || '',
+        })
+        .returning();
+
+      const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, dto.taskId)).limit(1);
+      const addedHours = Math.round(((dto.durationSeconds || 0) / 3600) * 100) / 100;
+      await this.db
+        .update(tasks)
+        .set({ actualHours: Number(task?.actualHours || 0) + addedHours })
+        .where(eq(tasks.id, dto.taskId));
+
+      this.broadcastMutation('task_updated', dto.taskId);
+      logged.push(entry);
+    }
+    return logged;
   }
 }

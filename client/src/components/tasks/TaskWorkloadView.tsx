@@ -2,6 +2,7 @@ import type { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAttendanceSettingsQuery } from "@/hooks/useAttendanceSettings";
 
 interface TaskWorkloadViewProps {
   tasks: Task[];
@@ -11,21 +12,42 @@ interface TaskWorkloadViewProps {
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewProps) {
+  const { data: settings } = useAttendanceSettingsQuery();
+
+  const parseTimeToMinutes = (t: string): number => {
+    if (!t) return 0;
+    const [h, m] = t.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const calculateCapacity = (settingsData: any): number => {
+    if (!settingsData) return 40;
+    const totalMinutes = parseTimeToMinutes(settingsData.endTime) - parseTimeToMinutes(settingsData.startTime);
+    const breakMinutes = parseTimeToMinutes(settingsData.breakEnd) - parseTimeToMinutes(settingsData.breakStart);
+    const workMinutesPerDay = Math.max(0, totalMinutes - breakMinutes);
+    const workHoursPerDay = workMinutesPerDay / 60;
+    const holidaysCount = settingsData.weeklyHolidays?.length ?? 2;
+    const workDaysPerWeek = Math.max(0, 7 - holidaysCount);
+    const calculated = workHoursPerDay * workDaysPerWeek;
+    return calculated > 0 ? Math.round(calculated) : 40;
+  };
+
+  const capacityLimit = calculateCapacity(settings);
+
   // Aggregate stats per employee
   const employeeStats = employees.map((emp) => {
     const empTasks = tasks.filter((t) => t.assigneeId === emp.id);
     const completedTasks = empTasks.filter((t) => t.status === "Done").length;
     const estHours = empTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
     const actHours = empTasks.reduce((sum, t) => sum + (t.actualHours || 0), 0);
-    const capacityLimit = 40; // Default capacity limit is 40 hours
 
-    // Generate day heatmap counts (based on task due day of week)
+    // Generate day heatmap counts/hours (based on task actual hours due on that day of week)
     const dayCounts = Array(7).fill(0);
     empTasks.forEach((t) => {
       if (t.dueDate) {
         const date = new Date(t.dueDate);
         const dayIdx = (date.getDay() + 6) % 7; // Align so Mon is 0, Sun is 6
-        dayCounts[dayIdx]++;
+        dayCounts[dayIdx] += Math.round((t.actualHours || 0) * 10) / 10;
       }
     });
 
@@ -63,7 +85,7 @@ export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewP
             <span className="text-2xl font-bold text-rose-500">
               {employeeStats.filter((e) => e.estimatedHours > e.capacityLimit).length}
             </span>
-            <span className="text-xs text-slate-400">workers exceeding 40h limit</span>
+            <span className="text-xs text-slate-400">workers exceeding {capacityLimit}h limit</span>
           </div>
         </Card>
         <Card className="p-4 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md">
@@ -162,19 +184,19 @@ export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewP
                   </span>
                 </div>
 
-                {stat.dayCounts.map((count, idx) => (
+                 {stat.dayCounts.map((count, idx) => (
                   <div
                     key={idx}
                     className={cn(
                       "aspect-square rounded-md flex items-center justify-center text-[10px] font-semibold transition-all",
                       count === 0 && "bg-slate-100 dark:bg-slate-800/30 text-transparent",
-                      count === 1 && "bg-primary/20 text-primary dark:text-primary-foreground",
-                      count === 2 && "bg-primary/45 text-primary dark:text-primary-foreground",
-                      count >= 3 && "bg-primary text-primary-foreground font-extrabold shadow-md scale-105"
+                      count > 0 && count < 4 && "bg-primary/20 text-primary dark:text-primary-foreground",
+                      count >= 4 && count < 8 && "bg-primary/45 text-primary dark:text-primary-foreground",
+                      count >= 8 && "bg-primary text-primary-foreground font-extrabold shadow-md scale-105"
                     )}
-                    title={`${count} tasks scheduled on ${WEEKDAYS[idx]}`}
+                    title={`${count}h logged on tasks due on ${WEEKDAYS[idx]}`}
                   >
-                    {count > 0 ? count : ""}
+                    {count > 0 ? `${count}h` : ""}
                   </div>
                 ))}
               </div>
@@ -184,19 +206,19 @@ export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewP
             <span>Legend:</span>
             <div className="flex items-center gap-1">
               <div className="w-3.5 h-3.5 rounded bg-slate-100 dark:bg-slate-800/30" />
-              <span>0 tasks</span>
+              <span>0h logged</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3.5 h-3.5 rounded bg-primary/20" />
-              <span>1 task</span>
+              <span>&lt; 4h logged</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3.5 h-3.5 rounded bg-primary/45" />
-              <span>2 tasks</span>
+              <span>4h - 8h logged</span>
             </div>
             <div className="flex items-center gap-1">
               <div className="w-3.5 h-3.5 rounded bg-primary" />
-              <span>3+ tasks</span>
+              <span>8h+ logged</span>
             </div>
           </div>
         </Card>

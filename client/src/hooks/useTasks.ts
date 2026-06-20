@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 
 // ─── Interfaces ─────────────────────────────────────────────────────────────
@@ -215,6 +215,24 @@ export function useTasksQuery(filters: TaskQueryFilters) {
   });
 }
 
+export interface PaginatedTasksResponse {
+  tasks: Task[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export function useInfiniteTasksQuery(filters: TaskQueryFilters & { limit?: number }) {
+  return useInfiniteQuery<PaginatedTasksResponse>({
+    queryKey: ["tasks", "infinite", filters],
+    queryFn: ({ pageParam }) =>
+      apiClient.get<PaginatedTasksResponse>("tasks", {
+        params: { ...filters, limit: filters.limit || 50, cursor: pageParam },
+      }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+  });
+}
+
 export function useTaskDetailQuery(id: string, enabled = true) {
   return useQuery<TaskDetails>({
     queryKey: ["tasks", "detail", id],
@@ -406,6 +424,17 @@ export function useDeleteTimeEntryMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (id) => apiClient.delete<{ message: string }>(`tasks/time-entries/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+}
+
+export function useUpdateTimeEntryMutation(taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<TimeEntry, Error, { id: string; data: Partial<Omit<TimeEntry, "id" | "employeeName">> }>({
+    mutationFn: ({ id, data }) => apiClient.patch<TimeEntry>(`tasks/time-entries/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });

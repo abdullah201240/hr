@@ -335,7 +335,7 @@ export default function TaskListView({
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-slate-400 italic">
+                <td colSpan={10} className="p-8 text-center text-slate-400 italic">
                   No tasks matched the filters.
                 </td>
               </tr>
