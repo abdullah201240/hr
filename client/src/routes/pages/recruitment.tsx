@@ -68,96 +68,27 @@ import {
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
 import { useSearchParams, useNavigate } from "react-router"
+import {
+  useJobsQuery,
+  useCreateJobMutation,
+  useUpdateJobMutation,
+  useDeleteJobMutation,
+  useCandidatesQuery,
+  useCreateCandidateMutation,
+  useUpdateCandidateMutation,
+  useDeleteCandidateMutation,
+  useUpdateCandidateStageMutation,
+  useScheduleInterviewMutation,
+  useGenerateOfferLetterMutation,
+  useGenerateJoiningLetterMutation,
+  useOnboardingHiresQuery,
+  useToggleOnboardingTaskMutation,
+  useAddOnboardingTaskMutation,
+  useRemoveOnboardingTaskMutation,
+} from "@/hooks/useRecruitment"
+import type { JobOpening, Candidate } from "@/hooks/useRecruitment"
 
-// ─── Interfaces ─────────────────────────────────────────────────────────────
-
-interface JobOpening {
-  id: string
-  title: string
-  department: string
-  type: string
-  location: string
-  experience: string
-  description: string
-  status: "Open" | "Closed"
-  dateOpened: string
-  applicants: number
-}
-
-interface Candidate {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  linkedIn?: string
-  resumeUrl?: string
-  role: string
-  source: string
-  stage: "Applied" | "Screening" | "Interview" | "Technical" | "Offer" | "Hired" | "Rejected"
-  appliedDate: string
-  notes?: string
-  interviewDate?: string
-  interviewTime?: string
-  interviewLocation?: string
-  offerLetterGenerated?: boolean
-  joiningLetterGenerated?: boolean
-  offeredSalary?: string
-  offeredStartDate?: string
-  joiningManager?: string
-  stageHistory?: { stage: string; date: string }[]
-}
-
-interface OnboardingTask {
-  id: string
-  title: string
-  completed: boolean
-}
-
-interface OnboardingHire {
-  id: string
-  candidateId: string
-  name: string
-  role: string
-  department: string
-  startDate: string
-  tasks: OnboardingTask[]
-}
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-
-const INITIAL_JOBS: JobOpening[] = [
-  { id: "job-1", title: "Software Engineer", department: "Engineering", type: "Full-time", location: "Dhaka, BD (Hybrid)", experience: "2-4 years", description: "We are looking for a skilled Software Engineer to join our engineering team. You will design, develop, and maintain scalable backend and frontend systems.", status: "Open", dateOpened: "2026-06-01", applicants: 18 },
-  { id: "job-2", title: "Senior Product Designer", department: "Product", type: "Full-time", location: "Remote", experience: "5+ years", description: "Join as a Senior Product Designer shaping the future of our core HR product. You will own end-to-end design processes, from research to prototyping.", status: "Open", dateOpened: "2026-05-25", applicants: 12 },
-  { id: "job-3", title: "HR Manager", department: "HR", type: "Full-time", location: "Dhaka, BD (Onsite)", experience: "4-6 years", description: "We need an experienced HR Manager to lead talent acquisition, employee relations, compliance, and HR process optimization.", status: "Open", dateOpened: "2026-06-05", applicants: 8 },
-  { id: "job-4", title: "DevOps Engineer", department: "Engineering", type: "Full-time", location: "Remote", experience: "3-5 years", description: "Seeking a DevOps Engineer to manage cloud infrastructure, CI/CD pipelines, and system reliability. Experience with AWS and Kubernetes preferred.", status: "Closed", dateOpened: "2026-05-10", applicants: 15 },
-]
-
-const INITIAL_CANDIDATES: Candidate[] = [
-  { id: "cand-1", name: "Alex Rivera", email: "alex.rivera@gmail.com", phone: "+1-555-0101", role: "Software Engineer", source: "LinkedIn", stage: "Applied", appliedDate: "2026-06-11", notes: "Strong React & Node.js background. GitHub profile reviewed.", stageHistory: [{ stage: "Applied", date: "2026-06-11" }] },
-  { id: "cand-2", name: "Maya Lin", email: "maya.lin@outlook.com", phone: "+1-555-0202", linkedIn: "https://linkedin.com/in/maya-lin", role: "Senior Product Designer", source: "Referral", stage: "Interview", appliedDate: "2026-06-08", interviewDate: "2026-06-20", interviewTime: "10:00", interviewLocation: "Google Meet", stageHistory: [{ stage: "Applied", date: "2026-06-08" }, { stage: "Screening", date: "2026-06-10" }, { stage: "Interview", date: "2026-06-14" }] },
-  { id: "cand-3", name: "Liam Patel", email: "liam.patel@yahoo.com", role: "Software Engineer", source: "Job Board", stage: "Technical", appliedDate: "2026-06-05", resumeUrl: "https://drive.google.com/liam-patel-cv", stageHistory: [{ stage: "Applied", date: "2026-06-05" }, { stage: "Screening", date: "2026-06-07" }, { stage: "Interview", date: "2026-06-10" }, { stage: "Technical", date: "2026-06-13" }] },
-  { id: "cand-4", name: "Emily Watson", email: "emily.watson@gmail.com", role: "HR Manager", source: "LinkedIn", stage: "Offer", appliedDate: "2026-06-07", offeredSalary: "$65,000 / year", offeredStartDate: "2026-07-15", offerLetterGenerated: true, stageHistory: [{ stage: "Applied", date: "2026-06-07" }, { stage: "Screening", date: "2026-06-09" }, { stage: "Interview", date: "2026-06-11" }, { stage: "Technical", date: "2026-06-13" }, { stage: "Offer", date: "2026-06-15" }] },
-  { id: "cand-5", name: "Jane Cooper", email: "jane.cooper@sadoshima.com", role: "Software Engineer", source: "Careers Site", stage: "Hired", appliedDate: "2026-06-02", joiningLetterGenerated: true, joiningManager: "Michael Torres", offeredSalary: "$80,000 / year", offeredStartDate: "2026-07-01", stageHistory: [{ stage: "Applied", date: "2026-06-02" }, { stage: "Screening", date: "2026-06-04" }, { stage: "Interview", date: "2026-06-06" }, { stage: "Technical", date: "2026-06-08" }, { stage: "Offer", date: "2026-06-10" }, { stage: "Hired", date: "2026-06-12" }] },
-  { id: "cand-6", name: "Raj Sharma", email: "raj.sharma@dev.io", phone: "+880-1712-345678", role: "DevOps Engineer", source: "Job Board", stage: "Rejected", appliedDate: "2026-05-15", notes: "Good candidate but overqualified for current budget. Re-engage in Q3.", stageHistory: [{ stage: "Applied", date: "2026-05-15" }, { stage: "Screening", date: "2026-05-17" }, { stage: "Rejected", date: "2026-05-20" }] },
-]
-
-const INITIAL_ONBOARDING: OnboardingHire[] = [
-  {
-    id: "onb-1",
-    candidateId: "cand-5",
-    name: "Jane Cooper",
-    role: "Software Engineer",
-    department: "Engineering",
-    startDate: "2026-07-01",
-    tasks: [
-      { id: "task-1", title: "Sign employment contract & NDA", completed: true },
-      { id: "task-2", title: "Complete payroll & banking documentation", completed: true },
-      { id: "task-3", title: "IT hardware setup & account provisioning", completed: false },
-      { id: "task-4", title: "Welcome & intro meeting with the team", completed: false },
-      { id: "task-5", title: "Review product roadmap and tech docs", completed: false },
-    ]
-  }
-]
+// ─── Constants & Styling ───────────────────────────────────────────────────
 
 const PIPELINE_STAGES = ["Applied", "Screening", "Interview", "Technical", "Offer", "Hired"] as const
 const ALL_STAGES = [...PIPELINE_STAGES, "Rejected"] as const
@@ -207,10 +138,27 @@ export default function RecruitmentPage() {
     setSearchParams({ tab }, { replace: true })
   }
 
-  // ─── Core State ────────────────────────────────────────────────────────────
-  const [jobs, setJobs] = useState<JobOpening[]>([])
-  const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [onboardingHires, setOnboardingHires] = useState<OnboardingHire[]>([])
+  // ─── Core Queries ──────────────────────────────────────────────────────────
+  const { data: jobs = [] } = useJobsQuery()
+  const { data: candidates = [] } = useCandidatesQuery()
+  const { data: onboardingHires = [] } = useOnboardingHiresQuery()
+
+  // ─── Core Mutations ────────────────────────────────────────────────────────
+  const createJobMutation = useCreateJobMutation()
+  const updateJobMutation = useUpdateJobMutation()
+  const deleteJobMutation = useDeleteJobMutation()
+
+  const createCandidateMutation = useCreateCandidateMutation()
+  const updateCandidateMutation = useUpdateCandidateMutation()
+  const deleteCandidateMutation = useDeleteCandidateMutation()
+  const updateStageMutation = useUpdateCandidateStageMutation()
+  const scheduleInterviewMutation = useScheduleInterviewMutation()
+  const generateOfferLetterMutation = useGenerateOfferLetterMutation()
+  const generateJoiningLetterMutation = useGenerateJoiningLetterMutation()
+
+  const toggleOnboardingTaskMutation = useToggleOnboardingTaskMutation()
+  const addOnboardingTaskMutation = useAddOnboardingTaskMutation()
+  const removeOnboardingTaskMutation = useRemoveOnboardingTaskMutation()
 
   // ─── Filter States ─────────────────────────────────────────────────────────
   const [pipelineJobFilter, setPipelineJobFilter] = useState<string>("all")
@@ -274,29 +222,9 @@ export default function RecruitmentPage() {
   const [detailNotes, setDetailNotes] = useState("")
   const [newOnboardingTaskText, setNewOnboardingTaskText] = useState<Record<string, string>>({})
 
-  // ─── Persistence ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    const storedJobs = localStorage.getItem("recruitment_jobs")
-    const storedCandidates = localStorage.getItem("recruitment_candidates")
-    const storedOnboarding = localStorage.getItem("onboarding_hires")
-
-    if (storedJobs) setJobs(JSON.parse(storedJobs))
-    else { setJobs(INITIAL_JOBS); localStorage.setItem("recruitment_jobs", JSON.stringify(INITIAL_JOBS)) }
-
-    if (storedCandidates) setCandidates(JSON.parse(storedCandidates))
-    else { setCandidates(INITIAL_CANDIDATES); localStorage.setItem("recruitment_candidates", JSON.stringify(INITIAL_CANDIDATES)) }
-
-    if (storedOnboarding) setOnboardingHires(JSON.parse(storedOnboarding))
-    else { setOnboardingHires(INITIAL_ONBOARDING); localStorage.setItem("onboarding_hires", JSON.stringify(INITIAL_ONBOARDING)) }
-  }, [])
-
   useEffect(() => { setJobsPage(1) }, [jobsSearch])
   useEffect(() => { setPipelinePage(1) }, [pipelineJobFilter, pipelineStageFilter])
   useEffect(() => { setOnboardingPage(1) }, [onboardingJobFilter])
-
-  const saveJobs = (updated: JobOpening[]) => { setJobs(updated); localStorage.setItem("recruitment_jobs", JSON.stringify(updated)) }
-  const saveCandidates = (updated: Candidate[]) => { setCandidates(updated); localStorage.setItem("recruitment_candidates", JSON.stringify(updated)) }
-  const saveOnboarding = (updated: OnboardingHire[]) => { setOnboardingHires(updated); localStorage.setItem("onboarding_hires", JSON.stringify(updated)) }
 
   // ─── Computed Stats ────────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -331,13 +259,18 @@ export default function RecruitmentPage() {
       }
     }).then(result => {
       if (result.isConfirmed && result.value) {
-        const updated = candidates.map(c => c.id === cand.id ? { ...c, offerLetterGenerated: true, offeredSalary: result.value.salary, offeredStartDate: result.value.startDate } : c)
-        saveCandidates(updated)
-        // Update viewing candidate if in detail
-        if (viewingCandidate?.id === cand.id) {
-          setViewingCandidate(updated.find(c => c.id === cand.id) || null)
-        }
-        Swal.fire({ title: "Offer Letter Generated!", icon: "success", text: "The offer has been recorded. Use the print button to generate the printable document." })
+        generateOfferLetterMutation.mutate({
+          id: cand.id,
+          offeredSalary: result.value.salary,
+          offeredStartDate: result.value.startDate,
+        }, {
+          onSuccess: (updatedCand) => {
+            if (viewingCandidate?.id === cand.id) {
+              setViewingCandidate(updatedCand)
+            }
+            Swal.fire({ title: "Offer Letter Generated!", icon: "success", text: "The offer has been recorded. Use the print button to generate the printable document." })
+          }
+        })
       }
     })
   }
@@ -361,12 +294,17 @@ export default function RecruitmentPage() {
       }
     }).then(result => {
       if (result.isConfirmed && result.value) {
-        const updated = candidates.map(c => c.id === cand.id ? { ...c, joiningLetterGenerated: true, joiningManager: result.value.manager } : c)
-        saveCandidates(updated)
-        if (viewingCandidate?.id === cand.id) {
-          setViewingCandidate(updated.find(c => c.id === cand.id) || null)
-        }
-        Swal.fire({ title: "Joining Letter Issued!", icon: "success", text: "Use the print button to generate the printable joining letter." })
+        generateJoiningLetterMutation.mutate({
+          id: cand.id,
+          joiningManager: result.value.manager,
+        }, {
+          onSuccess: (updatedCand) => {
+            if (viewingCandidate?.id === cand.id) {
+              setViewingCandidate(updatedCand)
+            }
+            Swal.fire({ title: "Joining Letter Issued!", icon: "success", text: "Use the print button to generate the printable joining letter." })
+          }
+        })
       }
     })
   }
@@ -378,38 +316,62 @@ export default function RecruitmentPage() {
       Swal.fire("Error", "Please fill in all mandatory fields.", "error"); return
     }
     if (editingJob) {
-      saveJobs(jobs.map(j => j.id === editingJob.id ? { ...j, ...newJob } : j))
-      Swal.fire("Updated!", "Job requisition updated successfully.", "success")
+      updateJobMutation.mutate({
+        id: editingJob.id,
+        data: {
+          title: newJob.title,
+          department: newJob.department,
+          type: newJob.type,
+          location: newJob.location,
+          experience: newJob.experience,
+          description: newJob.description,
+          status: newJob.status,
+        }
+      }, {
+        onSuccess: () => {
+          Swal.fire("Updated!", "Job requisition updated successfully.", "success")
+          setIsJobModalOpen(false)
+          setEditingJob(null)
+          setNewJob({ title: "", department: "Engineering", type: "Full-time", location: "", experience: "", description: "", status: "Open", applicants: 0 })
+        }
+      })
     } else {
-      const jobToAdd: JobOpening = {
-        id: `job-${Date.now()}`,
+      createJobMutation.mutate({
         title: newJob.title,
         department: newJob.department,
         type: newJob.type,
         location: newJob.location,
         experience: newJob.experience,
         description: newJob.description,
-        status: "Open",
-        dateOpened: new Date().toISOString().split("T")[0],
-        applicants: 0,
-      }
-      saveJobs([jobToAdd, ...jobs])
-      Swal.fire("Created!", "Job requisition opened successfully.", "success")
+        status: newJob.status,
+      }, {
+        onSuccess: () => {
+          Swal.fire("Created!", "Job requisition opened successfully.", "success")
+          setIsJobModalOpen(false)
+          setEditingJob(null)
+          setNewJob({ title: "", department: "Engineering", type: "Full-time", location: "", experience: "", description: "", status: "Open", applicants: 0 })
+        }
+      })
     }
-    setIsJobModalOpen(false)
-    setEditingJob(null)
-    setNewJob({ title: "", department: "Engineering", type: "Full-time", location: "", experience: "", description: "", status: "Open", applicants: 0 })
   }
 
   const handleEditJobClick = (job: JobOpening) => {
     setEditingJob(job)
-    setNewJob({ title: job.title, department: job.department, type: job.type, location: job.location, experience: job.experience, description: job.description || "", status: job.status, applicants: job.applicants })
+    setNewJob({ title: job.title, department: job.department, type: job.type, location: job.location, experience: job.experience, description: job.description || "", status: job.status, applicants: job.applicants || 0 })
     setIsJobModalOpen(true)
   }
 
   const deleteJob = (id: string) => {
     Swal.fire({ title: "Archive this role?", text: "This will remove the job requisition.", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, archive!" })
-      .then(r => { if (r.isConfirmed) { saveJobs(jobs.filter(j => j.id !== id)); Swal.fire("Archived", "Job requisition removed.", "success") } })
+      .then(r => {
+        if (r.isConfirmed) {
+          deleteJobMutation.mutate(id, {
+            onSuccess: () => {
+              Swal.fire("Archived", "Job requisition removed.", "success")
+            }
+          })
+        }
+      })
   }
 
   // ─── Candidate CRUD ────────────────────────────────────────────────────────
@@ -420,24 +382,30 @@ export default function RecruitmentPage() {
     }
 
     if (editingCandidate) {
-      const updated = candidates.map(c => c.id === editingCandidate.id ? {
-        ...c,
-        name: newCandidate.name,
-        email: newCandidate.email,
-        phone: newCandidate.phone,
-        linkedIn: newCandidate.linkedIn,
-        resumeUrl: newCandidate.resumeUrl,
-        role: newCandidate.role,
-        source: newCandidate.source,
-      } : c)
-      saveCandidates(updated)
-      if (viewingCandidate?.id === editingCandidate.id) {
-        setViewingCandidate(updated.find(c => c.id === editingCandidate.id) || null)
-      }
-      Swal.fire("Updated!", "Candidate record updated.", "success")
+      updateCandidateMutation.mutate({
+        id: editingCandidate.id,
+        data: {
+          name: newCandidate.name,
+          email: newCandidate.email,
+          phone: newCandidate.phone,
+          linkedIn: newCandidate.linkedIn,
+          resumeUrl: newCandidate.resumeUrl,
+          role: newCandidate.role,
+          source: newCandidate.source,
+        }
+      }, {
+        onSuccess: (updatedCand) => {
+          if (viewingCandidate?.id === editingCandidate.id) {
+            setViewingCandidate(updatedCand)
+          }
+          Swal.fire("Updated!", "Candidate record updated.", "success")
+          setIsCandidateModalOpen(false)
+          setEditingCandidate(null)
+          setNewCandidate({ name: "", email: "", phone: "", linkedIn: "", resumeUrl: "", role: "", source: "LinkedIn", stage: "Applied" })
+        }
+      })
     } else {
-      const candidateToAdd: Candidate = {
-        id: `cand-${Date.now()}`,
+      createCandidateMutation.mutate({
         name: newCandidate.name,
         email: newCandidate.email,
         phone: newCandidate.phone || undefined,
@@ -446,18 +414,16 @@ export default function RecruitmentPage() {
         role: newCandidate.role,
         source: newCandidate.source,
         stage: newCandidate.stage,
-        appliedDate: new Date().toISOString().split("T")[0],
-        stageHistory: [{ stage: newCandidate.stage, date: new Date().toISOString().split("T")[0] }],
-      }
-      const updatedCandidates = [candidateToAdd, ...candidates]
-      saveCandidates(updatedCandidates)
-      if (newCandidate.stage === "Hired") { createOnboardingForCandidate(candidateToAdd) }
-      Swal.fire("Added!", "Candidate entered into the pipeline.", "success")
+        notes: "",
+      }, {
+        onSuccess: () => {
+          Swal.fire("Added!", "Candidate entered into the pipeline.", "success")
+          setIsCandidateModalOpen(false)
+          setEditingCandidate(null)
+          setNewCandidate({ name: "", email: "", phone: "", linkedIn: "", resumeUrl: "", role: "", source: "LinkedIn", stage: "Applied" })
+        }
+      })
     }
-
-    setIsCandidateModalOpen(false)
-    setEditingCandidate(null)
-    setNewCandidate({ name: "", email: "", phone: "", linkedIn: "", resumeUrl: "", role: "", source: "LinkedIn", stage: "Applied" })
   }
 
   const handleEditCandidateClick = (cand: Candidate) => {
@@ -480,31 +446,25 @@ export default function RecruitmentPage() {
     Swal.fire({ title: "Remove Candidate?", text: "This will remove the candidate record.", icon: "warning", showCancelButton: true, confirmButtonText: "Yes, remove!" })
       .then(r => {
         if (r.isConfirmed) {
-          saveCandidates(candidates.filter(c => c.id !== id))
-          saveOnboarding(onboardingHires.filter(o => o.candidateId !== id))
-          setIsCandidateDetailOpen(false)
-          Swal.fire("Removed", "Candidate removed.", "success")
+          deleteCandidateMutation.mutate(id, {
+            onSuccess: () => {
+              setIsCandidateDetailOpen(false)
+              Swal.fire("Removed", "Candidate removed.", "success")
+            }
+          })
         }
       })
   }
 
   // ─── Stage Promotion ───────────────────────────────────────────────────────
   const promoteCandidate = (candidateId: string, nextStage: Candidate["stage"]) => {
-    const today = new Date().toISOString().split("T")[0]
-    const updated = candidates.map(c => {
-      if (c.id === candidateId) {
-        const newHistory = [...(c.stageHistory || []), { stage: nextStage, date: today }]
-        if (nextStage === "Hired" && c.stage !== "Hired") {
-          createOnboardingForCandidate({ ...c, stage: nextStage })
+    updateStageMutation.mutate({ id: candidateId, stage: nextStage }, {
+      onSuccess: (updatedCand) => {
+        if (viewingCandidate?.id === candidateId) {
+          setViewingCandidate(updatedCand)
         }
-        return { ...c, stage: nextStage, stageHistory: newHistory }
       }
-      return c
     })
-    saveCandidates(updated)
-    if (viewingCandidate?.id === candidateId) {
-      setViewingCandidate(updated.find(c => c.id === candidateId) || null)
-    }
   }
 
   // ─── Interview Scheduling ──────────────────────────────────────────────────
@@ -514,77 +474,55 @@ export default function RecruitmentPage() {
     if (!interviewForm.date || !interviewForm.time) {
       Swal.fire("Error", "Please provide date and time.", "error"); return
     }
-    const updated = candidates.map(c => c.id === interviewCandidate.id ? {
-      ...c,
-      interviewDate: interviewForm.date,
-      interviewTime: interviewForm.time,
-      interviewLocation: interviewForm.location,
-    } : c)
-    saveCandidates(updated)
-    if (viewingCandidate?.id === interviewCandidate.id) {
-      setViewingCandidate(updated.find(c => c.id === interviewCandidate.id) || null)
-    }
-    setIsInterviewModalOpen(false)
-    setInterviewCandidate(null)
-    setInterviewForm({ date: "", time: "", location: "" })
-    Swal.fire("Scheduled!", "Interview has been scheduled and saved.", "success")
+    scheduleInterviewMutation.mutate({
+      id: interviewCandidate.id,
+      date: interviewForm.date,
+      time: interviewForm.time,
+      location: interviewForm.location,
+    }, {
+      onSuccess: (updatedCand) => {
+        if (viewingCandidate?.id === interviewCandidate.id) {
+          setViewingCandidate(updatedCand)
+        }
+        setIsInterviewModalOpen(false)
+        setInterviewCandidate(null)
+        setInterviewForm({ date: "", time: "", location: "" })
+        Swal.fire("Scheduled!", "Interview has been scheduled and saved.", "success")
+      }
+    })
   }
 
   // ─── Notes Save ────────────────────────────────────────────────────────────
   const saveNotes = (candidateId: string, notes: string) => {
-    const updated = candidates.map(c => c.id === candidateId ? { ...c, notes } : c)
-    saveCandidates(updated)
-    if (viewingCandidate?.id === candidateId) {
-      setViewingCandidate(prev => prev ? { ...prev, notes } : null)
-    }
+    updateCandidateMutation.mutate({
+      id: candidateId,
+      data: { notes }
+    }, {
+      onSuccess: (updatedCand) => {
+        if (viewingCandidate?.id === candidateId) {
+          setViewingCandidate(updatedCand)
+        }
+      }
+    })
   }
 
   // ─── Onboarding ────────────────────────────────────────────────────────────
-  const createOnboardingForCandidate = (c: Candidate) => {
-    const match = onboardingHires.find(o => o.candidateId === c.id)
-    if (match) return
-    const matchingJob = jobs.find(j => j.title === c.role)
-    const department = matchingJob ? matchingJob.department : "General"
-    const profile: OnboardingHire = {
-      id: `onb-${Date.now()}`,
-      candidateId: c.id,
-      name: c.name,
-      role: c.role,
-      department,
-      startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      tasks: [
-        { id: `t-1-${Date.now()}`, title: "Sign employment contract & NDA", completed: false },
-        { id: `t-2-${Date.now()}`, title: "Complete payroll & banking documentation", completed: false },
-        { id: `t-3-${Date.now()}`, title: "IT hardware setup & account provisioning", completed: false },
-        { id: `t-4-${Date.now()}`, title: "Welcome & intro meeting with the team", completed: false },
-        { id: `t-5-${Date.now()}`, title: "Company compliance & security training", completed: false },
-      ]
-    }
-    saveOnboarding([profile, ...onboardingHires])
-  }
-
-  const toggleOnboardingTask = (hireId: string, taskId: string) => {
-    saveOnboarding(onboardingHires.map(hire => hire.id === hireId ? {
-      ...hire,
-      tasks: hire.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
-    } : hire))
+  const toggleOnboardingTask = (_hireId: string, taskId: string) => {
+    toggleOnboardingTaskMutation.mutate(taskId)
   }
 
   const addOnboardingTask = (hireId: string) => {
     const text = (newOnboardingTaskText[hireId] || "").trim()
     if (!text) return
-    saveOnboarding(onboardingHires.map(hire => hire.id === hireId ? {
-      ...hire,
-      tasks: [...hire.tasks, { id: `t-custom-${Date.now()}`, title: text, completed: false }]
-    } : hire))
-    setNewOnboardingTaskText(prev => ({ ...prev, [hireId]: "" }))
+    addOnboardingTaskMutation.mutate({ hireId, title: text }, {
+      onSuccess: () => {
+        setNewOnboardingTaskText(prev => ({ ...prev, [hireId]: "" }))
+      }
+    })
   }
 
-  const deleteOnboardingTask = (hireId: string, taskId: string) => {
-    saveOnboarding(onboardingHires.map(hire => hire.id === hireId ? {
-      ...hire,
-      tasks: hire.tasks.filter(t => t.id !== taskId)
-    } : hire))
+  const deleteOnboardingTask = (_hireId: string, taskId: string) => {
+    removeOnboardingTaskMutation.mutate(taskId)
   }
 
   // ─── Dynamic Applicant Counts ──────────────────────────────────────────────

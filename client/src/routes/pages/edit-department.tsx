@@ -7,8 +7,7 @@ import { Building2, ArrowLeft, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { z } from "zod"
 import { useDepartmentQuery, useUpdateDepartmentMutation } from "@/hooks/useDepartments"
-import { useQuery } from "@tanstack/react-query"
-import { apiClient } from "@/lib/api"
+import { useEmployeeOptionsQuery } from "@/hooks/useEmployees"
 
 const departmentSchema = z.object({
   name: z.string().trim().min(1, "Department Name is required"),
@@ -33,11 +32,7 @@ export default function EditDepartmentPage() {
   const { data: department, isLoading } = useDepartmentQuery(id || "")
 
   // Fetch employees list to populate Head of Department dropdown options
-  const { data: employeesData } = useQuery<any>({
-    queryKey: ["employees", "options-list"],
-    queryFn: () => apiClient.get<any>("employees?limit=100"),
-  })
-  const employeesList = employeesData?.data || []
+  const { data: employeesList = [] } = useEmployeeOptionsQuery()
 
   const updateMutation = useUpdateDepartmentMutation(id || "")
 

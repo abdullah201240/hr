@@ -34,6 +34,13 @@ export const CacheKeys = {
     description: 'Paginated employee list',
   },
 
+  /** Simple list of active employees for dropdown select options */
+  employeeOptions: {
+    key: key('employees:options'),
+    ttl: 600, // 10 min
+    description: 'Simplified employee dropdown options list',
+  },
+
   /** Single employee by ID — TTL kept short to limit stale window after direct DB changes */
   employeeById: {
     key: key('employees:id:*'),

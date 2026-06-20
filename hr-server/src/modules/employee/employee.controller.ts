@@ -72,6 +72,13 @@ export class EmployeeController {
     return this.employeeService.findAll(query);
   }
 
+  @Get('options')
+  @ApiOperation({ summary: 'Get a simple list of active employees for dropdown options' })
+  @ApiResponse({ status: 200, description: 'Simplified list of active employees' })
+  async getOptions() {
+    return this.employeeService.getDropdownOptions();
+  }
+
   // ─── Single employee ──────────────────────────────────────────────────
 
   @Get(':id')

@@ -349,6 +349,7 @@ export class EmployeeService {
       await this.cache.delByKey(CacheKeys.employeeById, id);
       await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
+      await this.cache.delByKey(CacheKeys.employeeOptions);
 
       return { message: 'Employee reactivated successfully', scheduled: false };
     }
@@ -369,6 +370,7 @@ export class EmployeeService {
         await this.cache.delByKey(CacheKeys.employeeById, id);
         await this.cache.delByKey(CacheKeys.jwtValidate, id);
         await this.cache.delByPattern(CacheKeys.employeeList);
+        await this.cache.delByKey(CacheKeys.employeeOptions);
 
         return { message: 'Employee marked inactive immediately', scheduled: false };
       }
@@ -401,6 +403,7 @@ export class EmployeeService {
       await this.cache.delByKey(CacheKeys.employeeById, id);
       await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
+      await this.cache.delByKey(CacheKeys.employeeOptions);
 
       return {
         message: `Employee scheduled to become inactive on ${dto.inactiveDate}`,
@@ -418,6 +421,7 @@ export class EmployeeService {
     await this.cache.delByKey(CacheKeys.employeeById, id);
     await this.cache.delByKey(CacheKeys.jwtValidate, id);
     await this.cache.delByPattern(CacheKeys.employeeList);
+    await this.cache.delByKey(CacheKeys.employeeOptions);
 
     return { message: 'Employee marked inactive immediately', scheduled: false };
   }
@@ -447,6 +451,7 @@ export class EmployeeService {
     await this.cache.delByKey(CacheKeys.employeeById, id);
     await this.cache.delByKey(CacheKeys.jwtValidate, id);
     await this.cache.delByPattern(CacheKeys.employeeList);
+    await this.cache.delByKey(CacheKeys.employeeOptions);
 
     return { message: 'Employee terminated successfully' };
   }
@@ -505,8 +510,29 @@ export class EmployeeService {
     await this.cache.delByKey(CacheKeys.employeeById, id);
     await this.cache.delByKey(CacheKeys.jwtValidate, id);
     await this.cache.delByPattern(CacheKeys.employeeList);
+    await this.cache.delByKey(CacheKeys.employeeOptions);
 
     this.logger.log(`Password reset by administrator/HR for employee ID: ${id}`);
     return { message: 'Employee password reset successfully. All active sessions have been invalidated.' };
+  }
+
+  // ─── Dropdown helper (for select inputs) ──────────────────────────────────
+
+  async getDropdownOptions() {
+    const cached = await this.cache.getByKey<any>(CacheKeys.employeeOptions);
+    if (cached) return cached;
+
+    const options = await this.db
+      .select({
+        id: employees.id,
+        fullNameEnglish: employees.fullNameEnglish,
+        employeeId: employees.employeeId,
+      })
+      .from(employees)
+      .where(eq(employees.status, 'active'))
+      .orderBy(asc(employees.fullNameEnglish));
+
+    await this.cache.setByKey(CacheKeys.employeeOptions, options);
+    return options;
   }
 }

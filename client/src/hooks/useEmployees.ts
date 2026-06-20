@@ -86,3 +86,10 @@ export function useChangeEmployeeStatusMutation(id: string) {
     },
   });
 }
+
+export function useEmployeeOptionsQuery() {
+  return useQuery<Array<{ id: string; fullNameEnglish: string; employeeId: string }>>({
+    queryKey: ["employees", "options"],
+    queryFn: () => apiClient.get<Array<{ id: string; fullNameEnglish: string; employeeId: string }>>("employees/options"),
+  });
+}

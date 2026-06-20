@@ -26,6 +26,7 @@ import { FestivalBonusModule } from './modules/festival-bonus/festival-bonus.mod
 import { ProvidentFundModule } from './modules/provident-fund/provident-fund.module';
 import { SalaryModule } from './modules/salary/salary.module';
 import { ClaimsModule } from './modules/claims/claims.module';
+import { RecruitmentModule } from './modules/recruitment/recruitment.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -57,7 +58,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
                   ignore: 'pid,hostname,req,res',
                   messageFormat: '{msg}',
                   levelFirst: false,
-                },
+                  },
               }
             : undefined,
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
@@ -86,6 +87,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     ProvidentFundModule,
     SalaryModule,
     ClaimsModule,
+    RecruitmentModule,
   ],
   providers: [
     {

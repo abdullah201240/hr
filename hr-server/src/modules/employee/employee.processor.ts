@@ -161,6 +161,7 @@ export class EmployeeCreateProcessor extends WorkerHost {
       // 3. Invalidate employee list cache
       await this.cache.delByPattern(CacheKeys.employeeList);
       await this.cache.delByPattern(CacheKeys.employeeById);
+      await this.cache.delByKey(CacheKeys.employeeOptions);
 
       this.logger.log(`Employee created successfully: ${dto.employeeId}`);
       return { employeeId: result.id };
@@ -338,6 +339,7 @@ export class EmployeeUpdateProcessor extends WorkerHost {
       await this.cache.delByKey(CacheKeys.employeeById, id);
       await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
+      await this.cache.delByKey(CacheKeys.employeeOptions);
 
       this.logger.log(`Employee updated successfully: ${id}`);
       return { employeeId: result.id };
@@ -403,6 +405,7 @@ export class EmployeeStatusProcessor extends WorkerHost {
       await this.cache.delByKey(CacheKeys.employeeById, id);
       await this.cache.delByKey(CacheKeys.jwtValidate, id);
       await this.cache.delByPattern(CacheKeys.employeeList);
+      await this.cache.delByKey(CacheKeys.employeeOptions);
 
       this.logger.log(`Employee ${id} status changed to "${status}" successfully`);
       return { employeeId: id, status };
