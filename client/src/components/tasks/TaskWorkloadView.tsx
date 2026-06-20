@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAttendanceSettingsQuery } from "@/hooks/useAttendanceSettings";
+import { useState, useMemo } from "react";
 
 interface TaskWorkloadViewProps {
   tasks: Task[];
@@ -11,8 +12,45 @@ interface TaskWorkloadViewProps {
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+type DatePreset = "all" | "this_week" | "this_month" | "last_month" | "custom";
+
 export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewProps) {
   const { data: settings } = useAttendanceSettingsQuery();
+  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  const filteredTasks = useMemo(() => {
+    if (datePreset === "all") return tasks;
+    const now = new Date();
+    let start: Date;
+    let end: Date;
+
+    if (datePreset === "this_week") {
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      start = new Date(now.setDate(diff));
+      start.setHours(0, 0, 0, 0);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+    } else if (datePreset === "this_month") {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    } else if (datePreset === "last_month") {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    } else {
+      start = customStart ? new Date(customStart) : new Date(0);
+      end = customEnd ? new Date(customEnd + "T23:59:59") : new Date(9999, 11, 31);
+    }
+
+    return tasks.filter((t) => {
+      if (!t.dueDate) return true;
+      const d = new Date(t.dueDate);
+      return d >= start && d <= end;
+    });
+  }, [tasks, datePreset, customStart, customEnd]);
 
   const parseTimeToMinutes = (t: string): number => {
     if (!t) return 0;
@@ -36,7 +74,7 @@ export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewP
 
   // Aggregate stats per employee
   const employeeStats = employees.map((emp) => {
-    const empTasks = tasks.filter((t) => t.assigneeId === emp.id);
+    const empTasks = filteredTasks.filter((t) => t.assigneeId === emp.id);
     const completedTasks = empTasks.filter((t) => t.status === "Done").length;
     const estHours = empTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
     const actHours = empTasks.reduce((sum, t) => sum + (t.actualHours || 0), 0);
@@ -66,16 +104,42 @@ export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewP
 
   return (
     <div className="flex flex-col gap-6 w-full">
+      {/* Date Range Filter */}
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Period:</span>
+        {([["all", "All Time"], ["this_week", "This Week"], ["this_month", "This Month"], ["last_month", "Last Month"], ["custom", "Custom"]] as [DatePreset, string][]).map(([val, label]) => (
+          <button
+            key={val}
+            onClick={() => setDatePreset(val)}
+            className={cn(
+              "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+              datePreset === val
+                ? "bg-primary text-primary-foreground"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+        {datePreset === "custom" && (
+          <div className="flex items-center gap-1.5">
+            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="h-7 px-2 text-xs border border-slate-200 dark:border-slate-700 rounded bg-background" />
+            <span className="text-xs text-slate-400">to</span>
+            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="h-7 px-2 text-xs border border-slate-200 dark:border-slate-700 rounded bg-background" />
+          </div>
+        )}
+      </div>
+
       {/* KPI Overviews */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-4 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md">
           <span className="text-xs text-slate-500 font-medium">Total Tracked Hours</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-              {tasks.reduce((sum, t) => sum + (t.actualHours || 0), 0)}h
+              {filteredTasks.reduce((sum, t) => sum + (t.actualHours || 0), 0)}h
             </span>
             <span className="text-xs text-slate-400">
-              allocated of {tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)}h estimated
+              allocated of {filteredTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)}h estimated
             </span>
           </div>
         </Card>
@@ -92,7 +156,7 @@ export default function TaskWorkloadView({ tasks, employees }: TaskWorkloadViewP
           <span className="text-xs text-slate-500 font-medium">Task Completion Rate</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold text-emerald-500">
-              {tasks.length ? Math.round((tasks.filter((t) => t.status === "Done").length / tasks.length) * 100) : 0}%
+              {filteredTasks.length ? Math.round((filteredTasks.filter((t) => t.status === "Done").length / filteredTasks.length) * 100) : 0}%
             </span>
             <span className="text-xs text-slate-400">overall workspace progress</span>
           </div>

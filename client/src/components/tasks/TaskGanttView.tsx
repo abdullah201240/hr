@@ -34,7 +34,6 @@ interface Task {
 
 interface TaskGanttViewProps {
   tasks: Task[];
-  employees: any[];
   onTaskClick: (task: { id: string }) => void;
 }
 

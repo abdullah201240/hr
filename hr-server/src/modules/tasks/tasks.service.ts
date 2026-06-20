@@ -722,6 +722,37 @@ export class TasksService {
           action: 'priority_change',
           details: `Priority changed from ${existing.priority} to ${dto.priority}`,
         });
+
+      // Notify assignee on priority escalation
+      if (updated.assigneeId && updated.assigneeId !== userId && (dto.priority === 'Urgent' || dto.priority === 'High')) {
+        await this.createNotification(
+          updated.assigneeId,
+          'Task Priority Escalated',
+          `Your task "${updated.title}" priority was changed to "${dto.priority}".`,
+        );
+      }
+    }
+
+    if (dto.dueDate !== undefined && dto.dueDate !== existing.dueDate) {
+      await this.db
+        .insert(taskActivities)
+        .values({
+          taskId: id,
+          userId,
+          action: 'due_date_change',
+          details: dto.dueDate
+            ? `Due date changed to ${dto.dueDate.split('T')[0]}`
+            : 'Due date cleared',
+        });
+
+      // Notify assignee on due date change
+      if (updated.assigneeId && updated.assigneeId !== userId && dto.dueDate) {
+        await this.createNotification(
+          updated.assigneeId,
+          'Task Due Date Updated',
+          `Your task "${updated.title}" is now due on ${dto.dueDate.split('T')[0]}.`,
+        );
+      }
     }
 
     this.broadcastMutation('task_updated', id);

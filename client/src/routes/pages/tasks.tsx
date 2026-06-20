@@ -796,7 +796,6 @@ export default function TasksPage() {
             {tab === "gantt" && (
               <TaskGanttView
                 tasks={tasks}
-                employees={employees}
                 onTaskClick={(t) => setSelectedTaskId(t.id)}
               />
             )}

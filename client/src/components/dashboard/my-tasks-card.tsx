@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/table"
 import { CheckCircle2, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Task } from "./types"
+import type { DashboardTask } from "./types"
 import { PRIORITY_STYLE } from "./types"
 
 interface MyTasksCardProps {
-  tasks: Task[]
+  tasks: DashboardTask[]
   onToggleTask: (id: string) => void
   onDeleteTask: (id: string) => void
   onToggleAll: (checked: boolean) => void

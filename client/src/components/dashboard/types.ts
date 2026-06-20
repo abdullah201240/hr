@@ -62,7 +62,7 @@ export interface LeaveBalance {
   key: string
 }
 
-export interface Task {
+export interface DashboardTask {
   id: string
   text: string
   priority: string
@@ -98,7 +98,7 @@ export const DEFAULT_LEAVE_BALANCES: LeaveBalance[] = [
   { label: "Unpaid Leave", used: 0, total: 10, color: "bg-slate-500", light: "text-slate-500", icon: XCircle, key: "unpaid" },
 ]
 
-export const INITIAL_TASKS: Task[] = []
+export const INITIAL_TASKS: DashboardTask[] = []
 
 export const LEAVE_TYPE_SHORT: Record<string, string> = {
   annual: "AL",
