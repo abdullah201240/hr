@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -39,8 +39,16 @@ import {
   Shield,
   Star,
   Zap,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  useOrgChartQuery,
+  useCreateOrgNodeMutation,
+  useUpdateOrgNodeMutation,
+  useDeleteOrgNodeMutation,
+  useResetOrgChartMutation,
+} from "@/hooks/useOrgChart"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -100,304 +108,6 @@ function gradeInfo(grade: string): { label: string; color: string; icon: React.R
   if (g.startsWith("L3")) return { label: "L3", color: "bg-blue-500/15 text-blue-700 dark:text-blue-400", icon: null }
   if (g.startsWith("L2")) return { label: "L2", color: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400", icon: null }
   return { label: g || "L1", color: "bg-muted text-muted-foreground", icon: null }
-}
-
-// ── Default Enterprise Org Tree ────────────────────────────────────────────────
-
-function buildEnterpriseTree(): OrgNode {
-  return {
-    id: "ceo",
-    personName: "Alexandra Reeves",
-    title: "Chief Executive Officer",
-    department: "Executive",
-    grade: "CEO",
-    headcount: 1,
-    openRoles: 0,
-    avatarColor: DEPT_COLORS["Executive"],
-    children: [
-      // Board Advisors
-      {
-        id: "advisor-strategy",
-        personName: "Richard Okafor",
-        title: "Chief Strategy Advisor",
-        department: "Executive",
-        grade: "C-SUITE",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Executive"],
-        children: [],
-      },
-      {
-        id: "advisor-legal",
-        personName: "Natasha Petrov",
-        title: "General Counsel",
-        department: "Legal",
-        grade: "C-SUITE",
-        headcount: 3,
-        openRoles: 1,
-        avatarColor: DEPT_COLORS["Legal"],
-        children: [
-          { id: "legal-corp", personName: "David Okonkwo", title: "Corporate Counsel", department: "Legal", grade: "Director", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Legal"], children: [] },
-          { id: "legal-compliance", personName: "Aisha Rahman", title: "Compliance Officer", department: "Legal", grade: "Manager", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Legal"], children: [] },
-        ],
-      },
-      // CTO
-      {
-        id: "cto",
-        personName: "Michael Torres",
-        title: "Chief Technology Officer",
-        department: "Engineering",
-        grade: "CTO",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Engineering"],
-        children: [
-          {
-            id: "vp-eng",
-            personName: "James Nakamura",
-            title: "VP of Engineering",
-            department: "Engineering",
-            grade: "VP",
-            headcount: 1,
-            openRoles: 0,
-            avatarColor: DEPT_COLORS["Engineering"],
-            children: [
-              {
-                id: "dir-eng-platform",
-                personName: "Priya Sharma",
-                title: "Director, Platform",
-                department: "Engineering",
-                grade: "Director",
-                headcount: 1,
-                openRoles: 0,
-                avatarColor: DEPT_COLORS["Engineering"],
-                children: [
-                  { id: "mgr-sre", personName: "Carlos Rivera", title: "Engineering Manager, SRE", department: "Engineering", grade: "L4", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [
-                    { id: "lead-sre", personName: "Kim Seo-yeon", title: "Tech Lead, SRE", department: "Engineering", grade: "L3", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "sr-sre", personName: "—", title: "Senior SRE Engineer", department: "Engineering", grade: "L2", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "sre", personName: "—", title: "SRE Engineer", department: "Engineering", grade: "L1", headcount: 6, openRoles: 2, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                  ] },
-                  { id: "mgr-backend", personName: "Olu Adeyemi", title: "Engineering Manager, Backend", department: "Engineering", grade: "L4", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [
-                    { id: "lead-backend", personName: "Sarah Mitchell", title: "Tech Lead, Backend", department: "Engineering", grade: "L3", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "sr-backend", personName: "—", title: "Senior Backend Engineer", department: "Engineering", grade: "L2", headcount: 8, openRoles: 2, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "be-eng", personName: "—", title: "Backend Engineer", department: "Engineering", grade: "L1", headcount: 12, openRoles: 3, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                  ] },
-                ],
-              },
-              {
-                id: "dir-eng-frontend",
-                personName: "Lisa Chen",
-                title: "Director, Frontend",
-                department: "Engineering",
-                grade: "Director",
-                headcount: 1,
-                openRoles: 0,
-                avatarColor: DEPT_COLORS["Engineering"],
-                children: [
-                  { id: "mgr-frontend", personName: "Emily Zhang", title: "Engineering Manager, Frontend", department: "Engineering", grade: "L4", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [
-                    { id: "lead-fe", personName: "Marcus Brown", title: "Tech Lead, Frontend", department: "Engineering", grade: "L3", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "sr-fe", personName: "—", title: "Senior Frontend Engineer", department: "Engineering", grade: "L2", headcount: 5, openRoles: 1, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "fe-eng", personName: "—", title: "Frontend Engineer", department: "Engineering", grade: "L1", headcount: 8, openRoles: 2, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                  ] },
-                  { id: "mgr-qa", personName: "Ravi Patel", title: "QA Manager", department: "Engineering", grade: "L4", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [
-                    { id: "sr-qa", personName: "—", title: "Senior QA Engineer", department: "Engineering", grade: "L2", headcount: 3, openRoles: 1, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                    { id: "qa", personName: "—", title: "QA Engineer", department: "Engineering", grade: "L1", headcount: 5, openRoles: 1, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                  ] },
-                ],
-              },
-              {
-                id: "dir-eng-data",
-                personName: "Yuki Tanaka",
-                title: "Director, Data & AI",
-                department: "Engineering",
-                grade: "Director",
-                headcount: 1,
-                openRoles: 1,
-                avatarColor: DEPT_COLORS["Engineering"],
-                children: [
-                  { id: "lead-data", personName: "Ahmed Hassan", title: "Tech Lead, Data", department: "Engineering", grade: "L3", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                  { id: "sr-data", personName: "—", title: "Senior Data Engineer", department: "Engineering", grade: "L2", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                  { id: "ml-eng", personName: "—", title: "ML Engineer", department: "Engineering", grade: "L2", headcount: 3, openRoles: 2, avatarColor: DEPT_COLORS["Engineering"], children: [] },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      // CPO
-      {
-        id: "cpo",
-        personName: "Sarah Chen",
-        title: "Chief Product Officer",
-        department: "Product",
-        grade: "C-SUITE",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Product"],
-        children: [
-          {
-            id: "vp-product",
-            personName: "Daniel Osei",
-            title: "VP of Product",
-            department: "Product",
-            grade: "VP",
-            headcount: 1,
-            openRoles: 0,
-            avatarColor: DEPT_COLORS["Product"],
-            children: [
-              { id: "pm-growth", personName: "Sophia Laurent", title: "Director, Growth Product", department: "Product", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Product"], children: [
-                { id: "pm-sr1", personName: "—", title: "Senior Product Manager", department: "Product", grade: "L3", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Product"], children: [] },
-                { id: "pm-1", personName: "—", title: "Product Manager", department: "Product", grade: "L2", headcount: 6, openRoles: 2, avatarColor: DEPT_COLORS["Product"], children: [] },
-              ] },
-              { id: "dir-design", personName: "Maya Johansson", title: "Director, Product Design", department: "Product", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Product"], children: [
-                { id: "lead-ux", personName: "Tomás García", title: "Lead UX Designer", department: "Product", grade: "L3", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Product"], children: [] },
-                { id: "sr-designer", personName: "—", title: "Senior Designer", department: "Product", grade: "L2", headcount: 5, openRoles: 1, avatarColor: DEPT_COLORS["Product"], children: [] },
-                { id: "designer", personName: "—", title: "Designer", department: "Product", grade: "L1", headcount: 4, openRoles: 2, avatarColor: DEPT_COLORS["Product"], children: [] },
-              ] },
-            ],
-          },
-        ],
-      },
-      // CFO
-      {
-        id: "cfo",
-        personName: "Thomas Wright",
-        title: "Chief Financial Officer",
-        department: "Finance",
-        grade: "CFO",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Finance"],
-        children: [
-          {
-            id: "vp-finance",
-            personName: "Hannah Müller",
-            title: "VP of Finance",
-            department: "Finance",
-            grade: "VP",
-            headcount: 1,
-            openRoles: 0,
-            avatarColor: DEPT_COLORS["Finance"],
-            children: [
-              { id: "dir-accounting", personName: "Grace Abiodun", title: "Director, Accounting", department: "Finance", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Finance"], children: [
-                { id: "mgr-acct", personName: "—", title: "Accounting Manager", department: "Finance", grade: "Manager", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Finance"], children: [] },
-                { id: "sr-analyst", personName: "—", title: "Senior Finance Analyst", department: "Finance", grade: "L2", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Finance"], children: [] },
-                { id: "analyst", personName: "—", title: "Finance Analyst", department: "Finance", grade: "L1", headcount: 6, openRoles: 2, avatarColor: DEPT_COLORS["Finance"], children: [] },
-              ] },
-              { id: "dir-treasury", personName: "Robert Kim", title: "Director, Treasury", department: "Finance", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Finance"], children: [
-                { id: "treasury-mgr", personName: "—", title: "Treasury Manager", department: "Finance", grade: "Manager", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Finance"], children: [] },
-              ] },
-            ],
-          },
-        ],
-      },
-      // CMO
-      {
-        id: "cmo",
-        personName: "Anna Williams",
-        title: "Chief Marketing Officer",
-        department: "Marketing",
-        grade: "CMO",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Marketing"],
-        children: [
-          {
-            id: "dir-marketing",
-            personName: "Isabelle Moreau",
-            title: "Director, Marketing",
-            department: "Marketing",
-            grade: "Director",
-            headcount: 1,
-            openRoles: 0,
-            avatarColor: DEPT_COLORS["Marketing"],
-            children: [
-              { id: "mgr-content", personName: "Nia Williams", title: "Content Marketing Manager", department: "Marketing", grade: "Manager", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Marketing"], children: [
-                { id: "content-sr", personName: "—", title: "Senior Content Strategist", department: "Marketing", grade: "L2", headcount: 3, openRoles: 0, avatarColor: DEPT_COLORS["Marketing"], children: [] },
-                { id: "content-jr", personName: "—", title: "Content Writer", department: "Marketing", grade: "L1", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Marketing"], children: [] },
-              ] },
-              { id: "mgr-growth-mkt", personName: "Leo Chang", title: "Growth Marketing Manager", department: "Marketing", grade: "Manager", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Marketing"], children: [
-                { id: "growth-sr", personName: "—", title: "Senior Growth Marketer", department: "Marketing", grade: "L2", headcount: 3, openRoles: 1, avatarColor: DEPT_COLORS["Marketing"], children: [] },
-                { id: "seo-spec", personName: "—", title: "SEO Specialist", department: "Marketing", grade: "L1", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Marketing"], children: [] },
-              ] },
-              { id: "mgr-brand", personName: "Zara Ibrahim", title: "Brand Manager", department: "Marketing", grade: "Manager", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Marketing"], children: [
-                { id: "brand-designer", personName: "—", title: "Brand Designer", department: "Marketing", grade: "L2", headcount: 2, openRoles: 1, avatarColor: DEPT_COLORS["Marketing"], children: [] },
-              ] },
-            ],
-          },
-        ],
-      },
-      // CRO / VP Sales
-      {
-        id: "vp-sales",
-        personName: "Robert Davis",
-        title: "VP of Sales",
-        department: "Sales",
-        grade: "VP",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Sales"],
-        children: [
-          { id: "dir-sales-am", personName: "Marcus Johnson", title: "Director, Account Management", department: "Sales", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Sales"], children: [
-            { id: "mgr-am", personName: "—", title: "Account Manager", department: "Sales", grade: "Manager", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Sales"], children: [] },
-            { id: "sr-am", personName: "—", title: "Senior Account Exec", department: "Sales", grade: "L2", headcount: 6, openRoles: 2, avatarColor: DEPT_COLORS["Sales"], children: [] },
-            { id: "am-jr", personName: "—", title: "Account Executive", department: "Sales", grade: "L1", headcount: 10, openRoles: 4, avatarColor: DEPT_COLORS["Sales"], children: [] },
-          ] },
-          { id: "dir-sales-bd", personName: "Chen Wei", title: "Director, Business Development", department: "Sales", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Sales"], children: [
-            { id: "bd-mgr", personName: "—", title: "BD Manager", department: "Sales", grade: "Manager", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Sales"], children: [] },
-            { id: "bd-sr", personName: "—", title: "Senior BD Rep", department: "Sales", grade: "L2", headcount: 5, openRoles: 2, avatarColor: DEPT_COLORS["Sales"], children: [] },
-            { id: "bd-rep", personName: "—", title: "BD Representative", department: "Sales", grade: "L1", headcount: 8, openRoles: 3, avatarColor: DEPT_COLORS["Sales"], children: [] },
-          ] },
-          { id: "dir-cs", personName: "Fatima Al-Sayed", title: "Director, Customer Success", department: "Sales", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Sales"], children: [
-            { id: "csm-sr", personName: "—", title: "Senior CSM", department: "Sales", grade: "L2", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Sales"], children: [] },
-            { id: "csm-jr", personName: "—", title: "Customer Success Mgr", department: "Sales", grade: "L1", headcount: 6, openRoles: 2, avatarColor: DEPT_COLORS["Sales"], children: [] },
-          ] },
-        ],
-      },
-      // CHRO
-      {
-        id: "chro",
-        personName: "Patricia Lee",
-        title: "Chief Human Resources Officer",
-        department: "HR",
-        grade: "CHRO",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["HR"],
-        children: [
-          { id: "dir-talent", personName: "Omar El-Din", title: "Director, Talent Acquisition", department: "HR", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["HR"], children: [
-            { id: "recruiter-sr", personName: "—", title: "Senior Recruiter", department: "HR", grade: "L2", headcount: 3, openRoles: 1, avatarColor: DEPT_COLORS["HR"], children: [] },
-            { id: "recruiter-jr", personName: "—", title: "Recruiter", department: "HR", grade: "L1", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["HR"], children: [] },
-          ] },
-          { id: "dir-people", personName: "Amina Diallo", title: "Director, People Operations", department: "HR", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["HR"], children: [
-            { id: "hrbp-sr", personName: "—", title: "Senior HR Business Partner", department: "HR", grade: "L2", headcount: 3, openRoles: 0, avatarColor: DEPT_COLORS["HR"], children: [] },
-            { id: "hr-coord", personName: "—", title: "HR Coordinator", department: "HR", grade: "L1", headcount: 2, openRoles: 1, avatarColor: DEPT_COLORS["HR"], children: [] },
-          ] },
-        ],
-      },
-      // COO
-      {
-        id: "coo",
-        personName: "Kenji Watanabe",
-        title: "Chief Operating Officer",
-        department: "Operations",
-        grade: "COO",
-        headcount: 1,
-        openRoles: 0,
-        avatarColor: DEPT_COLORS["Operations"],
-        children: [
-          { id: "dir-ops", personName: "Samantha Okafor", title: "Director, Operations", department: "Operations", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Operations"], children: [
-            { id: "ops-mgr", personName: "—", title: "Operations Manager", department: "Operations", grade: "Manager", headcount: 2, openRoles: 0, avatarColor: DEPT_COLORS["Operations"], children: [] },
-            { id: "ops-analyst", personName: "—", title: "Operations Analyst", department: "Operations", grade: "L2", headcount: 3, openRoles: 1, avatarColor: DEPT_COLORS["Operations"], children: [] },
-          ] },
-          { id: "dir-it", personName: "Viktor Novak", title: "Director, IT & Infrastructure", department: "Operations", grade: "Director", headcount: 1, openRoles: 0, avatarColor: DEPT_COLORS["Operations"], children: [
-            { id: "it-sr", personName: "—", title: "Senior IT Engineer", department: "Operations", grade: "L2", headcount: 3, openRoles: 0, avatarColor: DEPT_COLORS["Operations"], children: [] },
-            { id: "it-support", personName: "—", title: "IT Support Specialist", department: "Operations", grade: "L1", headcount: 4, openRoles: 1, avatarColor: DEPT_COLORS["Operations"], children: [] },
-          ] },
-        ],
-      },
-    ],
-  }
 }
 
 // ── Tree Node Card (Compact) ─────────────────────────────────────────────────
@@ -578,32 +288,33 @@ function TreeBranch({
 // ── Main OrgChart Component ────────────────────────────────────────────────────
 
 export default function OrgChart() {
-  const [tree, setTree] = useState<OrgNode>(() => {
-    const stored = localStorage.getItem("org_chart_tree_v2")
-    if (stored) {
-      try { return JSON.parse(stored) } catch { /* fallback */ }
-    }
-    return buildEnterpriseTree()
-  })
+  const { data: tree, isLoading, isError, refetch } = useOrgChartQuery()
+  const createNodeMutation = useCreateOrgNodeMutation()
+  const updateNodeMutation = useUpdateOrgNodeMutation()
+  const deleteNodeMutation = useDeleteOrgNodeMutation()
+  const resetOrgChartMutation = useResetOrgChartMutation()
 
   const [filterDept, setFilterDept] = useState<string>("all")
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    // Default: collapse all nodes so user sees CEO + direct reports only
-    const ids = new Set<string>()
-    const collectAll = (n: OrgNode) => {
-      if (n.children.length > 0) ids.add(n.id)
-      n.children.forEach(collectAll)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [hasInitializedCollapse, setHasInitializedCollapse] = useState(false)
+
+  useEffect(() => {
+    if (tree && !hasInitializedCollapse) {
+      const ids = new Set<string>()
+      const collectAll = (n: OrgNode) => {
+        if (n.children && n.children.length > 0) {
+          if (n.id !== tree.id) {
+            ids.add(n.id)
+          }
+        }
+        n.children?.forEach(collectAll)
+      }
+      collectAll(tree)
+      setCollapsed(ids)
+      setHasInitializedCollapse(true)
     }
-    const stored = localStorage.getItem("org_chart_tree_v2")
-    let initialTree: OrgNode
-    if (stored) {
-      try { initialTree = JSON.parse(stored) } catch { initialTree = buildEnterpriseTree() }
-    } else {
-      initialTree = buildEnterpriseTree()
-    }
-    collectAll(initialTree)
-    return ids
-  })
+  }, [tree, hasInitializedCollapse])
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add")
   const [editingNode, setEditingNode] = useState<OrgNode | null>(null)
@@ -635,11 +346,6 @@ export default function OrgChart() {
     })
   }, [])
 
-  const persistTree = (newTree: OrgNode) => {
-    setTree(newTree)
-    localStorage.setItem("org_chart_tree_v2", JSON.stringify(newTree))
-  }
-
   const openAddDialog = (parentId: string, parentName: string) => {
     setDialogMode("add")
     setParentInfo({ id: parentId, name: parentName })
@@ -664,16 +370,8 @@ export default function OrgChart() {
     setDialogOpen(true)
   }
 
-  const findAndMutate = (parent: OrgNode, targetId: string, fn: (n: OrgNode) => OrgNode): OrgNode => {
-    if (parent.id === targetId) return fn(parent)
-    return { ...parent, children: parent.children.map((c) => findAndMutate(c, targetId, fn)) }
-  }
-
   const handleDelete = (node: OrgNode) => {
-    const remove = (p: OrgNode): OrgNode => ({
-      ...p, children: p.children.filter((c) => c.id !== node.id).map(remove),
-    })
-    persistTree(remove(tree))
+    deleteNodeMutation.mutate(node.id)
   }
 
   const handleSave = () => {
@@ -681,8 +379,9 @@ export default function OrgChart() {
     const deptColor = DEPT_COLORS[formDept] || DEPT_COLORS["Engineering"]
 
     if (dialogMode === "add" && parentInfo) {
-      const newNode: OrgNode = {
+      createNodeMutation.mutate({
         id: `node-${Date.now()}`,
+        parentId: parentInfo.id,
         personName: formName.trim(),
         title: formTitle.trim(),
         department: formDept,
@@ -690,18 +389,12 @@ export default function OrgChart() {
         headcount: parseInt(formCount) || 1,
         openRoles: parseInt(formOpenRoles) || 0,
         avatarColor: deptColor,
-        children: [],
-      }
-      const addChild = (p: OrgNode): OrgNode => {
-        if (p.id === parentInfo.id) return { ...p, children: [...p.children, newNode] }
-        return { ...p, children: p.children.map(addChild) }
-      }
-      persistTree(addChild(tree))
+      })
     }
 
     if (dialogMode === "edit" && editingNode) {
-      persistTree(findAndMutate(tree, editingNode.id, (n) => ({
-        ...n,
+      updateNodeMutation.mutate({
+        id: editingNode.id,
         personName: formName.trim(),
         title: formTitle.trim(),
         department: formDept,
@@ -709,7 +402,7 @@ export default function OrgChart() {
         headcount: parseInt(formCount) || 1,
         openRoles: parseInt(formOpenRoles) || 0,
         avatarColor: deptColor,
-      })))
+      })
     }
 
     setDialogOpen(false)
@@ -718,18 +411,44 @@ export default function OrgChart() {
   }
 
   const handleReset = () => {
-    persistTree(buildEnterpriseTree())
-    setCollapsed(new Set())
+    resetOrgChartMutation.mutate(undefined, {
+      onSuccess: () => {
+        setCollapsed(new Set())
+        setHasInitializedCollapse(false)
+      }
+    })
   }
 
   const handleCollapseAll = () => {
+    if (!tree) return
     const ids = new Set<string>()
-    const collect = (n: OrgNode) => { if (n.children.length) ids.add(n.id); n.children.forEach(collect) }
+    const collect = (n: OrgNode) => {
+      if (n.children && n.children.length) ids.add(n.id)
+      n.children?.forEach(collect)
+    }
     collect(tree)
     setCollapsed(ids)
   }
 
   const handleExpandAll = () => setCollapsed(new Set())
+
+  if (isLoading) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading organization chart...</p>
+      </div>
+    )
+  }
+
+  if (isError || !tree) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <p className="text-sm text-red-500">Failed to load organization chart.</p>
+        <Button onClick={() => refetch()}>Retry</Button>
+      </div>
+    )
+  }
 
   // ── Filtered tree ────────────────────────────────────────────────────────
 
@@ -749,7 +468,7 @@ export default function OrgChart() {
 
   const countAll = (n: OrgNode): { nodes: number; people: number; open: number } => {
     let nodes = 1, people = n.headcount, open = n.openRoles
-    n.children.forEach((c) => {
+    n.children?.forEach((c) => {
       const r = countAll(c)
       nodes += r.nodes
       people += r.people

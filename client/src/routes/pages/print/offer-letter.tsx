@@ -1,43 +1,21 @@
 import { useParams, useNavigate } from "react-router"
-import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Printer } from "lucide-react"
-
-interface Candidate {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  role: string
-  source: string
-  stage: string
-  appliedDate: string
-  offerLetterGenerated?: boolean
-  joiningLetterGenerated?: boolean
-  offeredSalary?: string
-  offeredStartDate?: string
-  joiningManager?: string
-}
+import { ArrowLeft, Printer, Loader2 } from "lucide-react"
+import { useCandidateQuery } from "@/hooks/useRecruitment"
 
 export default function PrintOfferLetterPage() {
   const { candidateId } = useParams()
   const navigate = useNavigate()
-  const [candidate, setCandidate] = useState<Candidate | null>(null)
+  const { data: candidate, isLoading } = useCandidateQuery(candidateId || "")
 
-  useEffect(() => {
-    const storedCandidates = localStorage.getItem("recruitment_candidates")
-    if (storedCandidates) {
-      try {
-        const parsed: Candidate[] = JSON.parse(storedCandidates)
-        const match = parsed.find(c => c.id === candidateId)
-        if (match) {
-          setCandidate(match)
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-  }, [candidateId])
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground mt-2">Loading candidate details...</p>
+      </div>
+    )
+  }
 
   if (!candidate) {
     return (

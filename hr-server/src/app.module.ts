@@ -27,6 +27,12 @@ import { ProvidentFundModule } from './modules/provident-fund/provident-fund.mod
 import { SalaryModule } from './modules/salary/salary.module';
 import { ClaimsModule } from './modules/claims/claims.module';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
+import { LettersModule } from './modules/letters/letters.module';
+import { PerformanceModule } from './modules/performance/performance.module';
+import { DisciplinaryModule } from './modules/disciplinary/disciplinary.module';
+import { SeparationModule } from './modules/separation/separation.module';
+import { OrgChartModule } from './modules/org-chart/org-chart.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 
@@ -88,6 +94,12 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     SalaryModule,
     ClaimsModule,
     RecruitmentModule,
+    PayrollModule,
+    LettersModule,
+    PerformanceModule,
+    DisciplinaryModule,
+    SeparationModule,
+    OrgChartModule,
   ],
   providers: [
     {

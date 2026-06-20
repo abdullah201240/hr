@@ -313,6 +313,18 @@ export const CacheKeys = {
     ttl: 300, // 5 min
     description: 'Claim record by ID',
   },
+
+  payrollDisbursements: {
+    key: key('payroll:disbursements'),
+    ttl: 300, // 5 min
+    description: 'All historical payroll disbursements',
+  },
+
+  lettersList: {
+    key: key('letters:list:*'),
+    ttl: 300, // 5 min
+    description: 'List of issued HR letters',
+  },
 } as const;
 
 

@@ -117,6 +117,14 @@ export function useCandidatesQuery() {
   });
 }
 
+export function useCandidateQuery(id: string) {
+  return useQuery<Candidate>({
+    queryKey: ["recruitment", "candidates", id],
+    queryFn: () => apiClient.get<Candidate>(`recruitment/candidates/${id}`),
+    enabled: !!id,
+  });
+}
+
 export function useCreateCandidateMutation() {
   const queryClient = useQueryClient();
   return useMutation<Candidate, Error, Omit<Candidate, "id" | "appliedDate">>({

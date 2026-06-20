@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSearchParams } from "react-router"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,100 +32,81 @@ import {
   Gift,
   CreditCard,
   History,
+  Loader2,
+  RefreshCw,
+  Info,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
-
-interface EmployeeSalaryDef {
-  email: string
-  name: string
-  role: string
-  dept: string
-  joinDate: string
-  basicSalary: number
-}
-
-interface Payslip {
-  employeeEmail: string
-  name: string
-  role: string
-  dept: string
-  basicSalary: number
-  allowances: {
-    hra: number
-    transport: number
-    medical: number
-  }
-  deductions: {
-    tax: number
-    pf: number
-  }
-  bonus: number
-  bonusDescription: string
-  netPay: number
-  paymentStatus: "Unpaid" | "Paid"
-  paymentMethod?: string
-  paymentDate?: string
-  paymentReference?: string
-}
-
-interface PayrollCycle {
-  monthKey: string // e.g. "2026-06"
-  status: "Draft" | "Processed" | "Distributed"
-  payslips: Payslip[]
-}
-
-interface DisbursementRecord {
-  monthKey: string
-  disbursementDate: string
-  paymentMethod: string
-  referenceId: string
-  totalDisbursed: number
-  employeeCount: number
-}
-
-const getBasicSalary = (role: string): number => {
-  switch (role) {
-    case "Senior Engineer": return 65000
-    case "Product Manager": return 62000
-    case "HR Specialist": return 58000
-    case "Finance Analyst": return 65000
-    case "Marketing Lead": return 58000
-    case "Sales Rep": return 55000
-    default: return 50000
-  }
-}
+import {
+  usePayrollCycleQuery,
+  useUpdatePayslipBonusMutation,
+  useProcessPayrollMutation,
+  useDistributePayrollMutation,
+  useDisburseMutation,
+  useDisbursementsQuery,
+  useSyncPayrollMutation,
+  type Payslip,
+} from "@/hooks/usePayroll"
+import { useProvidentFundSettingsQuery, useUpdateProvidentFundSettingsMutation } from "@/hooks/useProvidentFund"
+import { useEmployeesQuery } from "@/hooks/useEmployees"
+import {
+  useEmployeeSalariesQuery,
+  useSalaryTemplatesQuery,
+  useAssignEmployeeSalaryMutation,
+} from "@/hooks/useSalary"
+import { useFestivalBonusRulesQuery } from "@/hooks/useFestivalBonus"
+import EmployeeSalaryTab from "@/components/payroll/EmployeeSalaryTab"
+import BonusTab from "@/components/payroll/BonusTab"
 
 export default function PayrollPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get("tab") || "processing"
-  
+
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value }, { replace: true })
   }
-  
-  console.log('Current activeTab:', activeTab)
-  
-  const [employees, setEmployees] = useState<EmployeeSalaryDef[]>([])
-  
+
   // Selected payroll cycle month
   const [selectedMonth, setSelectedMonth] = useState("2026-06")
 
+  // API Queries & Mutations
+  const { data: cycle, isLoading: isCycleLoading } = usePayrollCycleQuery(selectedMonth)
+  const { data: pfSettings, isLoading: isPfLoading } = useProvidentFundSettingsQuery()
+  const { data: employeesData, isLoading: employeesLoading } = useEmployeesQuery({ status: "active", limit: 100 })
+  const { data: salariesData, isLoading: salariesLoading } = useEmployeeSalariesQuery()
+  const { data: disbursements = [], isLoading: isDisbursementsLoading } = useDisbursementsQuery()
+  const { data: templates = [] } = useSalaryTemplatesQuery()
+  const { data: festivalBonusRules = [] } = useFestivalBonusRulesQuery()
+
+  const updateBonusMutation = useUpdatePayslipBonusMutation()
+  const processPayrollMutation = useProcessPayrollMutation()
+  const distributePayrollMutation = useDistributePayrollMutation()
+  const disburseMutation = useDisburseMutation()
+  const syncPayrollMutation = useSyncPayrollMutation()
+  const updatePfSettingsMutation = useUpdateProvidentFundSettingsMutation()
+  const assignSalaryMutation = useAssignEmployeeSalaryMutation()
+
+  const employees = employeesData?.data || []
+
+  const getInitials = (name: string) =>
+    name
+      ? name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
+      : "EM"
+
   // PF settings
-  const [empPfRate, setEmpPfRate] = useState(10)
-  const [employerPfRate, setEmployerPfRate] = useState(10)
-  
-  // Payroll database state
-  const [payrolls, setPayrolls] = useState<PayrollCycle[]>([])
-  const [disbursements, setDisbursements] = useState<DisbursementRecord[]>(() => {
-    const stored = localStorage.getItem("hr_disbursements")
-    return stored ? JSON.parse(stored) : []
-  })
-  
+  const empPfRate = pfSettings?.employeeContributionRate ?? 10
+  const employerPfRate = pfSettings?.employerContributionRate ?? 10
+
   // Modal states
   const [viewPayslip, setViewPayslip] = useState<Payslip | null>(null)
   const [isPfConfigOpen, setIsPfConfigOpen] = useState(false)
-  const [editingBonusEmail, setEditingBonusEmail] = useState("")
+  const [editingPayslipId, setEditingPayslipId] = useState("")
   const [isBonusOpen, setIsBonusOpen] = useState(false)
   const [isDisburseOpen, setIsDisburseOpen] = useState(false)
 
@@ -138,147 +119,41 @@ export default function PayrollPage() {
   const [payoutDate, setPayoutDate] = useState("2026-06-30")
   const [payoutRef, setPayoutRef] = useState("")
 
-  // Fetch employees from localStorage or fallback
-  useEffect(() => {
-    const stored = localStorage.getItem("employees_list")
-    const list = stored ? JSON.parse(stored) : [
-      { employeeId: "EMP-001", name: "Sarah Mitchell", email: "sarah.m@sadoshima.com", role: "Senior Engineer", dept: "Engineering", joinDate: "2023-03-15", status: "Active" },
-      { employeeId: "EMP-002", name: "James Cooper", email: "james.c@sadoshima.com", role: "Product Manager", dept: "Product", joinDate: "2022-08-01", status: "Active" },
-      { employeeId: "EMP-003", name: "Emily Zhang", email: "emily.z@sadoshima.com", role: "HR Specialist", dept: "HR", joinDate: "2024-01-10", status: "Active" },
-      { employeeId: "EMP-004", name: "David Kim", email: "david.k@sadoshima.com", role: "Finance Analyst", dept: "Finance", joinDate: "2023-06-20", status: "On Leave" },
-      { employeeId: "EMP-005", name: "Lisa Johnson", email: "lisa.j@sadoshima.com", role: "Marketing Lead", dept: "Marketing", joinDate: "2021-11-05", status: "Active" },
-      { employeeId: "EMP-006", name: "Marcus Brown", email: "marcus.b@sadoshima.com", role: "Sales Rep", dept: "Sales", joinDate: "2025-02-01", status: "Active" },
-    ]
+  // Edit PF rates local states
+  const [localEmpPfRate, setLocalEmpPfRate] = useState(empPfRate)
+  const [localEmployerPfRate, setLocalEmployerPfRate] = useState(employerPfRate)
 
-    setEmployees(list.map((emp: Record<string, string>) => ({
-      email: emp.email,
-      name: emp.name,
-      role: emp.role,
-      dept: emp.dept,
-      joinDate: emp.joinDate || "2023-01-01",
-      basicSalary: getBasicSalary(emp.role),
-    })))
-  }, [])
-
-  // Load / Initialize payroll cycles
-  useEffect(() => {
-    const stored = localStorage.getItem("hr_payrolls")
-    if (stored) {
-      try {
-        setPayrolls(JSON.parse(stored))
-      } catch (e) {
-        console.error("Failed parsing payrolls", e)
-      }
-    }
-  }, [])
-
-  // Load PF rates
-  useEffect(() => {
-    const rates = localStorage.getItem("hr_pf_settings")
-    if (rates) {
-      try {
-        const parsed = JSON.parse(rates)
-        setEmpPfRate(parsed.empPfRate)
-        setEmployerPfRate(parsed.employerPfRate)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-  }, [])
-
-  const savePayrolls = (updatedPayrolls: PayrollCycle[]) => {
-    setPayrolls(updatedPayrolls)
-    localStorage.setItem("hr_payrolls", JSON.stringify(updatedPayrolls))
-  }
-
-  // Get current active cycle details or compile a default draft
-  const currentCycle = payrolls.find(p => p.monthKey === selectedMonth) || (() => {
-    // Generate draft slips
-    const draftPayslips = employees.map(emp => {
-      const basic = emp.basicSalary
-      const hra = Math.round(basic * 0.20)
-      const transport = Math.round(basic * 0.10)
-      const medical = Math.round(basic * 0.05)
-      
-      const tax = Math.round(basic * 0.12)
-      const pf = Math.round(basic * (empPfRate / 100))
-      
-      const netPay = (basic + hra + transport + medical) - (tax + pf)
-
-      return {
-        employeeEmail: emp.email,
-        name: emp.name,
-        role: emp.role,
-        dept: emp.dept,
-        basicSalary: basic,
-        allowances: { hra, transport, medical },
-        deductions: { tax, pf },
-        bonus: 0,
-        bonusDescription: "",
-        netPay,
-        paymentStatus: "Unpaid" as const,
-      }
-    })
-
-    return {
-      monthKey: selectedMonth,
-      status: "Draft" as const,
-      payslips: draftPayslips,
-    }
-  })()
-
-  // Manage Bonus configuration
-  const handleOpenBonus = (email: string) => {
-    const slip = currentCycle.payslips.find(p => p.employeeEmail === email)
-    if (slip) {
-      setBonusVal(slip.bonus || 0)
-      setBonusReason(slip.bonusDescription || "")
-      setEditingBonusEmail(email)
-      setIsBonusOpen(true)
-    }
+  const handleOpenBonus = (payslip: Payslip) => {
+    setBonusVal(payslip.bonusAmount || 0)
+    setBonusReason(payslip.bonusDescription || "")
+    setEditingPayslipId(payslip.id)
+    setIsBonusOpen(true)
   }
 
   const handleSaveBonus = () => {
-    const updatedPayslips = currentCycle.payslips.map(slip => {
-      if (slip.employeeEmail === editingBonusEmail) {
-        const basic = slip.basicSalary
-        const hra = slip.allowances.hra
-        const transport = slip.allowances.transport
-        const medical = slip.allowances.medical
-        const tax = slip.deductions.tax
-        const pf = slip.deductions.pf
-        
-        // Net pay including new bonus
-        const netPay = (basic + hra + transport + medical + bonusVal) - (tax + pf)
-        return {
-          ...slip,
-          bonus: bonusVal,
-          bonusDescription: bonusReason,
-          netPay,
-        }
+    updateBonusMutation.mutate(
+      {
+        monthKey: selectedMonth,
+        payslipId: editingPayslipId,
+        bonusAmount: bonusVal,
+        bonusDescription: bonusReason,
+      },
+      {
+        onSuccess: () => {
+          setIsBonusOpen(false)
+          Swal.fire({
+            title: "Bonus Saved!",
+            text: "Bonus allocations and net payable amounts updated.",
+            icon: "success",
+            confirmButtonText: "Done",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
+            },
+          })
+        },
       }
-      return slip
-    })
-
-    const updatedCycle: PayrollCycle = {
-      ...currentCycle,
-      payslips: updatedPayslips,
-    }
-
-    const nextPayrolls = payrolls.filter(p => p.monthKey !== selectedMonth)
-    savePayrolls([...nextPayrolls, updatedCycle])
-    setIsBonusOpen(false)
-
-    Swal.fire({
-      title: "Bonus Saved!",
-      text: "Bonus allocations and net payable amounts updated.",
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md"
-      }
-    })
+    )
   }
 
   const handleRunPayroll = () => {
@@ -292,121 +167,116 @@ export default function PayrollPage() {
       buttonsStyling: false,
       customClass: {
         confirmButton: "swal2-confirm swal2-styled bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
-        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
-      }
-    }).then(result => {
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+    }).then((result) => {
       if (result.isConfirmed) {
-        // Upsert processed cycle
-        const nextPayrolls = payrolls.filter(p => p.monthKey !== selectedMonth)
-        const lockedCycle: PayrollCycle = {
-          ...currentCycle,
-          status: "Processed"
-        }
-        const updated = [...nextPayrolls, lockedCycle]
-        savePayrolls(updated)
-
-        Swal.fire({
-          title: "Payroll Processed!",
-          text: `The payroll registers for ${selectedMonth} have been successfully calculated. You can now distribute salaries.`,
-          icon: "success",
-          confirmButtonText: "Done",
-          buttonsStyling: false,
-          customClass: {
-            confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2"
-          }
+        processPayrollMutation.mutate(selectedMonth, {
+          onSuccess: () => {
+            Swal.fire({
+              title: "Payroll Processed!",
+              text: `The payroll registers for ${selectedMonth} have been successfully calculated. You can now distribute salaries.`,
+              icon: "success",
+              confirmButtonText: "Done",
+              buttonsStyling: false,
+              customClass: {
+                confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2",
+              },
+            })
+          },
         })
       }
     })
   }
 
-  // Execute Salary Disbursement
   const handleExecuteDisbursement = () => {
     if (!payoutRef.trim()) {
       Swal.fire("Error", "Please provide a transaction reference ID", "error")
       return
     }
 
-    const totalDisbursed = currentCycle.payslips.reduce((sum, p) => sum + p.netPay, 0)
-
-    const updatedPayslips = currentCycle.payslips.map(slip => ({
-      ...slip,
-      paymentStatus: "Paid" as const,
-      paymentMethod: payoutMethod,
-      paymentDate: payoutDate,
-      paymentReference: payoutRef.trim(),
-    }))
-
-    const distributedCycle: PayrollCycle = {
-      ...currentCycle,
-      status: "Distributed",
-      payslips: updatedPayslips,
-    }
-
-    const nextPayrolls = payrolls.filter(p => p.monthKey !== selectedMonth)
-    savePayrolls([...nextPayrolls, distributedCycle])
-
-    // Log the disbursement
-    const newRecord: DisbursementRecord = {
-      monthKey: selectedMonth,
-      disbursementDate: payoutDate,
-      paymentMethod: payoutMethod,
-      referenceId: payoutRef.trim(),
-      totalDisbursed,
-      employeeCount: updatedPayslips.length,
-    }
-
-    const updatedRecords = [newRecord, ...disbursements]
-    setDisbursements(updatedRecords)
-    localStorage.setItem("hr_disbursements", JSON.stringify(updatedRecords))
-
-    setIsDisburseOpen(false)
-    setPayoutRef("")
-
-    Swal.fire({
-      title: "Salaries Disbursed!",
-      text: `Salaries for ${selectedMonth} have been successfully marked as PAID via ${payoutMethod}.`,
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md"
+    disburseMutation.mutate(
+      {
+        monthKey: selectedMonth,
+        paymentMethod: payoutMethod,
+        referenceId: payoutRef.trim(),
+        disbursementDate: payoutDate,
+      },
+      {
+        onSuccess: () => {
+          setIsDisburseOpen(false)
+          setPayoutRef("")
+          Swal.fire({
+            title: "Salaries Disbursed!",
+            text: `Salaries for ${selectedMonth} have been successfully marked as PAID via ${payoutMethod}.`,
+            icon: "success",
+            confirmButtonText: "Done",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
+            },
+          })
+        },
       }
+    )
+  }
+
+  const handleDistributePayslips = () => {
+    distributePayrollMutation.mutate(selectedMonth, {
+      onSuccess: () => {
+        Swal.fire({
+          title: "Payslips Distributed!",
+          text: `Payslips for ${selectedMonth} have been distributed to employee portals.`,
+          icon: "success",
+          confirmButtonText: "Done",
+          buttonsStyling: false,
+          customClass: {
+            confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
+          },
+        })
+      },
     })
   }
 
-  // Calculate PF balances based on historic payrolls & join duration seed
-  const getEmployeePfStats = (emp: EmployeeSalaryDef) => {
-    const joinDateObj = new Date(emp.joinDate)
-    const today = new Date()
-    const diffMonths = (today.getFullYear() - joinDateObj.getFullYear()) * 12 + today.getMonth() - joinDateObj.getMonth()
-    const months = Math.max(1, diffMonths)
-
-    const empContribution = Math.round(emp.basicSalary * (empPfRate / 100))
-    const employerMatch = Math.round(emp.basicSalary * (employerPfRate / 100))
-    const monthlyTotal = empContribution + employerMatch
-    const cumulativeTotal = monthlyTotal * months
-
-    return {
-      monthlyEmp: empContribution,
-      monthlyEmployer: employerMatch,
-      cumulative: cumulativeTotal,
-      monthsActive: months,
-    }
+  const handleSyncLedger = () => {
+    syncPayrollMutation.mutate(selectedMonth, {
+      onSuccess: () => {
+        Swal.fire({
+          title: "Ledger Synchronized!",
+          text: "Recalculated active employee metrics and pulled any new profile records.",
+          icon: "success",
+          confirmButtonText: "Done",
+          buttonsStyling: false,
+          customClass: {
+            confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
+          },
+        })
+      },
+    })
   }
 
   const savePfSettings = () => {
-    localStorage.setItem("hr_pf_settings", JSON.stringify({ empPfRate, employerPfRate }))
-    setIsPfConfigOpen(false)
-    Swal.fire({
-      title: "PF Setup Updated!",
-      text: "Provident Fund matching and deduction percentages updated globally.",
-      icon: "success",
-      confirmButtonText: "Close",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground px-4 py-2 font-semibold rounded-md"
+    updatePfSettingsMutation.mutate(
+      {
+        employeeContributionRate: localEmpPfRate,
+        employerContributionRate: localEmployerPfRate,
+      },
+      {
+        onSuccess: () => {
+          setIsPfConfigOpen(false)
+          Swal.fire({
+            title: "PF Setup Updated!",
+            text: "Provident Fund matching and deduction percentages updated globally.",
+            icon: "success",
+            confirmButtonText: "Close",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground px-4 py-2 font-semibold rounded-md",
+            },
+          })
+        },
       }
-    })
+    )
   }
 
   const formatCurrency = (val: number) => {
@@ -414,9 +284,50 @@ export default function PayrollPage() {
   }
 
   // Calculate total monthly analytics
-  const totalNetPay = currentCycle.payslips.reduce((sum, p) => sum + p.netPay, 0)
-  const totalAllowancesSum = currentCycle.payslips.reduce((sum, p) => sum + p.allowances.hra + p.allowances.transport + p.allowances.medical + p.bonus, 0)
-  const totalDeductionsSum = currentCycle.payslips.reduce((sum, p) => sum + p.deductions.tax + p.deductions.pf, 0)
+  const payslipsList = cycle?.payslips || []
+  const totalNetPay = payslipsList.reduce((sum, p) => sum + p.netPay, 0)
+  const totalAllowancesSum = payslipsList.reduce(
+    (sum, p) =>
+      sum + p.allowanceHra + p.allowanceTransport + p.allowanceMedical + p.bonusAmount + p.festivalBonusAmount,
+    0
+  )
+  const totalDeductionsSum = payslipsList.reduce((sum, p) => sum + p.deductionTax + p.deductionPf, 0)
+
+  // Calculate PF balances based on historic payrolls & join duration seed
+  const activeEmployees = employeesData?.data || []
+  const getEmployeePfStats = (empId: string, joinDate?: string) => {
+    const salRecord = salariesData?.find((s) => s.employeeId === empId)
+    const basic = salRecord?.basicSalary ?? 50000
+
+    const joinDateObj = joinDate ? new Date(joinDate) : new Date("2023-01-01")
+    const today = new Date()
+    const diffMonths = (today.getFullYear() - joinDateObj.getFullYear()) * 12 + today.getMonth() - joinDateObj.getMonth()
+    const months = Math.max(1, diffMonths)
+
+    const empContribution = Math.round(basic * (empPfRate / 100))
+    const employerMatch = Math.round(basic * (employerPfRate / 100))
+    const monthlyTotal = empContribution + employerMatch
+    const cumulativeTotal = monthlyTotal * months
+
+    return {
+      basic,
+      monthlyEmp: empContribution,
+      monthlyEmployer: employerMatch,
+      cumulative: cumulativeTotal,
+      monthsActive: months,
+    }
+  }
+
+  if (isCycleLoading || isPfLoading || isDisbursementsLoading) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading enterprise payroll ledger...</p>
+      </div>
+    )
+  }
+
+  const cycleStatus = cycle?.status || "Draft"
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -430,26 +341,79 @@ export default function PayrollPage() {
           <p className="text-muted-foreground">Process monthly employee compensation, allocate bonuses, and disburse payments</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={() => setIsPfConfigOpen(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 text-xs"
+            onClick={() => {
+              setLocalEmpPfRate(empPfRate)
+              setLocalEmployerPfRate(employerPfRate)
+              setIsPfConfigOpen(true)
+            }}
+          >
             <Settings className="h-4 w-4" />
             PF Configuration
           </Button>
-          {currentCycle.status === "Draft" ? (
-            <Button size="sm" className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleRunPayroll}>
-              <CheckCircle className="h-4 w-4" />
-              Finalize Payroll
-            </Button>
-          ) : currentCycle.status === "Processed" ? (
-            <Button size="sm" className="gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setIsDisburseOpen(true)}>
-              <CreditCard className="h-4 w-4" />
-              Disburse Salaries
-            </Button>
+          {cycleStatus === "Draft" ? (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={handleSyncLedger} disabled={syncPayrollMutation.isPending}>
+                <RefreshCw className={cn("h-3.5 w-3.5", syncPayrollMutation.isPending && "animate-spin")} />
+                Sync Ledger
+              </Button>
+              <Button size="sm" className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleRunPayroll}>
+                <CheckCircle className="h-4 w-4" />
+                Finalize Payroll
+              </Button>
+            </div>
+          ) : cycleStatus === "Processed" ? (
+            <div className="flex gap-2">
+              <Button size="sm" className="gap-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleDistributePayslips}>
+                Distribute Payslips
+              </Button>
+              <Button size="sm" className="gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setIsDisburseOpen(true)}>
+                <CreditCard className="h-4 w-4" />
+                Disburse Salaries
+              </Button>
+            </div>
           ) : (
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-3 py-1 font-semibold flex items-center gap-1 text-xs">
               <CheckCircle className="h-3.5 w-3.5" />
               Salaries Disbursed
             </Badge>
           )}
+        </div>
+      </div>
+
+      {/* Stepper Pipeline Flow */}
+      <div className="border border-border/40 bg-muted/10 p-4 rounded-xl flex items-center justify-around text-xs">
+        <div className="flex items-center gap-2">
+          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", cycleStatus === "Draft" ? "bg-primary text-primary-foreground" : "bg-emerald-500 text-white")}>
+            {cycleStatus !== "Draft" ? "✓" : "1"}
+          </Badge>
+          <div>
+            <p className="font-semibold">Draft Register</p>
+            <p className="text-[10px] text-muted-foreground">Adjust bonuses & sync</p>
+          </div>
+        </div>
+        <div className="h-[1px] w-12 bg-border" />
+        <div className="flex items-center gap-2">
+          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", cycleStatus === "Processed" ? "bg-primary text-primary-foreground" : cycleStatus === "Distributed" ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
+            {cycleStatus === "Distributed" ? "✓" : "2"}
+          </Badge>
+          <div>
+            <p className="font-semibold">Locked & Processed</p>
+            <p className="text-[10px] text-muted-foreground">Verify exact math</p>
+          </div>
+        </div>
+        <div className="h-[1px] w-12 bg-border" />
+        <div className="flex items-center gap-2">
+          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", cycleStatus === "Distributed" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+            3
+          </Badge>
+          <div>
+            <p className="font-semibold">Disbursed Payout</p>
+            <p className="text-[10px] text-muted-foreground">Released to bank/wallet</p>
+          </div>
         </div>
       </div>
 
@@ -460,7 +424,7 @@ export default function PayrollPage() {
             <div>
               <p className="text-xs text-muted-foreground">Month Net Payable</p>
               <p className="text-2xl font-bold mt-1">{formatCurrency(totalNetPay)}</p>
-              <span className="text-[10px] text-muted-foreground font-semibold">{currentCycle.payslips.length} employees compensated</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">{payslipsList.length} employees compensated</span>
             </div>
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Coins className="h-5 w-5 text-primary" />
@@ -472,7 +436,7 @@ export default function PayrollPage() {
             <div>
               <p className="text-xs text-muted-foreground">Cumulative PF Reserve</p>
               <p className="text-2xl font-bold mt-1">
-                {formatCurrency(employees.reduce((acc, curr) => acc + getEmployeePfStats(curr).cumulative, 0))}
+                {formatCurrency(activeEmployees.reduce((acc, curr) => acc + getEmployeePfStats(curr.id, curr.joinDate).cumulative, 0))}
               </p>
               <span className="text-[10px] text-emerald-500 font-semibold">{empPfRate}% Employee + {employerPfRate}% Match</span>
             </div>
@@ -501,8 +465,10 @@ export default function PayrollPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full max-w-[500px] grid-cols-3 shadow-none border border-border/40 bg-muted/20">
+        <TabsList className="grid w-full max-w-[800px] grid-cols-5 shadow-none border border-border/40 bg-muted/20">
+          <TabsTrigger value="overview" className="text-xs">Employee Salary</TabsTrigger>
           <TabsTrigger value="processing" className="text-xs">Payroll Processing</TabsTrigger>
+          <TabsTrigger value="bonus" className="text-xs">Bonus Setup</TabsTrigger>
           <TabsTrigger value="pf" className="text-xs">Provident Fund (PF)</TabsTrigger>
           <TabsTrigger value="logs" className="text-xs">Disbursement Logs</TabsTrigger>
         </TabsList>
@@ -518,20 +484,23 @@ export default function PayrollPage() {
               <div className="flex items-center gap-2">
                 <select
                   value={selectedMonth}
-                  onChange={e => setSelectedMonth(e.target.value)}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
                   className="bg-transparent border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2"
                 >
                   <option value="2026-06">June 2026</option>
                   <option value="2026-05">May 2026</option>
                   <option value="2026-04">April 2026</option>
                 </select>
-                <Badge variant="outline" className={cn(
-                  "text-[10px] font-bold py-1 px-2.5",
-                  currentCycle.status === "Distributed" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                  currentCycle.status === "Processed" && "bg-blue-500/10 text-blue-600 border-blue-500/20",
-                  currentCycle.status === "Draft" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                )}>
-                  {currentCycle.status}
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px] font-bold py-1 px-2.5",
+                    cycleStatus === "Distributed" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                    cycleStatus === "Processed" && "bg-blue-500/10 text-blue-600 border-blue-500/20",
+                    cycleStatus === "Draft" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                  )}
+                >
+                  {cycleStatus}
                 </Badge>
               </div>
             </CardHeader>
@@ -541,6 +510,7 @@ export default function PayrollPage() {
                   <TableRow className="border-b-0 hover:bg-transparent">
                     <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Employee</TableHead>
                     <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Basic Salary</TableHead>
+                    <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Tenure Bonus</TableHead>
                     <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Bonus</TableHead>
                     <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Allowances</TableHead>
                     <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Deductions</TableHead>
@@ -550,21 +520,24 @@ export default function PayrollPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentCycle.payslips.map(payslip => (
-                    <TableRow key={payslip.employeeEmail} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                  {payslipsList.map((payslip) => (
+                    <TableRow key={payslip.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                       <TableCell className="py-3">
                         <div>
                           <p className="text-xs font-semibold text-foreground">{payslip.name}</p>
-                          <p className="text-[10px] text-muted-foreground">{payslip.role} · {payslip.dept}</p>
+                          <p className="text-[10px] text-muted-foreground">{payslip.role}</p>
                         </div>
                       </TableCell>
                       <TableCell className="py-3 text-xs font-semibold text-muted-foreground">
                         {formatCurrency(payslip.basicSalary)}
                       </TableCell>
+                      <TableCell className="py-3 text-xs text-emerald-600 font-semibold">
+                        {payslip.festivalBonusAmount > 0 ? `+${formatCurrency(payslip.festivalBonusAmount)}` : "—"}
+                      </TableCell>
                       <TableCell className="py-3 text-xs">
-                        {payslip.bonus > 0 ? (
+                        {payslip.bonusAmount > 0 ? (
                           <div className="space-y-0.5">
-                            <span className="text-emerald-600 font-bold">+{formatCurrency(payslip.bonus)}</span>
+                            <span className="text-emerald-600 font-bold">+{formatCurrency(payslip.bonusAmount)}</span>
                             <p className="text-[9px] text-muted-foreground truncate max-w-[120px]">{payslip.bonusDescription}</p>
                           </div>
                         ) : (
@@ -572,10 +545,10 @@ export default function PayrollPage() {
                         )}
                       </TableCell>
                       <TableCell className="py-3 text-xs text-emerald-600 font-semibold">
-                        +{formatCurrency(payslip.allowances.hra + payslip.allowances.transport + payslip.allowances.medical)}
+                        +{formatCurrency(payslip.allowanceHra + payslip.allowanceTransport + payslip.allowanceMedical)}
                       </TableCell>
                       <TableCell className="py-3 text-xs text-rose-500 font-semibold">
-                        -{formatCurrency(payslip.deductions.tax + payslip.deductions.pf)}
+                        -{formatCurrency(payslip.deductionTax + payslip.deductionPf)}
                       </TableCell>
                       <TableCell className="py-3 text-xs font-bold text-foreground">
                         {formatCurrency(payslip.netPay)}
@@ -590,12 +563,12 @@ export default function PayrollPage() {
                       </TableCell>
                       <TableCell className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {currentCycle.status === "Draft" && (
+                          {cycleStatus === "Draft" && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-7 text-[10px] gap-1"
-                              onClick={() => handleOpenBonus(payslip.employeeEmail)}
+                              onClick={() => handleOpenBonus(payslip)}
                             >
                               <Gift className="h-3 w-3" />
                               Configure Bonus
@@ -642,18 +615,18 @@ export default function PayrollPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {employees.map(emp => {
-                    const stats = getEmployeePfStats(emp)
+                  {activeEmployees.map((emp) => {
+                    const stats = getEmployeePfStats(emp.id, emp.joinDate)
                     return (
-                      <TableRow key={emp.email} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      <TableRow key={emp.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
                           <div>
-                            <p className="text-xs font-semibold text-foreground">{emp.name}</p>
-                            <p className="text-[10px] text-muted-foreground">{emp.dept} · Joined {emp.joinDate}</p>
+                            <p className="text-xs font-semibold text-foreground">{emp.fullNameEnglish}</p>
+                            <p className="text-[10px] text-muted-foreground">Joined {emp.joinDate || "—"}</p>
                           </div>
                         </TableCell>
                         <TableCell className="py-3 text-xs text-muted-foreground font-semibold">
-                          {formatCurrency(emp.basicSalary)}
+                          {formatCurrency(stats.basic)}
                         </TableCell>
                         <TableCell className="py-3 text-xs text-foreground font-medium">
                           {formatCurrency(stats.monthlyEmp)}/mo
@@ -703,7 +676,7 @@ export default function PayrollPage() {
                   </TableHeader>
                   <TableBody>
                     {disbursements.map((rec) => (
-                      <TableRow key={`${rec.monthKey}-${rec.referenceId}`} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      <TableRow key={rec.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3 text-xs font-semibold">{rec.monthKey}</TableCell>
                         <TableCell className="py-3 text-xs text-muted-foreground">{rec.disbursementDate}</TableCell>
                         <TableCell className="py-3">
@@ -726,6 +699,31 @@ export default function PayrollPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* TAB 4: EMPLOYEE SALARY OVERVIEW */}
+        <TabsContent value="overview" className="outline-none">
+          <EmployeeSalaryTab
+            templates={templates}
+            employeeSalaries={salariesData || []}
+            employees={employees}
+            salariesLoading={salariesLoading}
+            employeesDataLoading={employeesLoading}
+            assignSalaryMutation={assignSalaryMutation}
+            pfSettings={pfSettings}
+            formatCurrency={formatCurrency}
+            getInitials={getInitials}
+          />
+        </TabsContent>
+
+        {/* TAB 5: BONUS SETUP */}
+        <TabsContent value="bonus" className="outline-none">
+          <BonusTab
+            festivalBonusRules={festivalBonusRules}
+            employees={employees}
+            employeeSalaries={salariesData || []}
+            formatCurrency={formatCurrency}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Configure Employee Bonus Dialog */}
@@ -741,7 +739,7 @@ export default function PayrollPage() {
               <Input
                 type="number"
                 value={bonusVal}
-                onChange={e => setBonusVal(Number(e.target.value))}
+                onChange={(e) => setBonusVal(Number(e.target.value))}
                 className="text-xs"
               />
             </div>
@@ -750,14 +748,16 @@ export default function PayrollPage() {
               <Input
                 placeholder="e.g. Q2 Performance Bonus, Festival Incentive"
                 value={bonusReason}
-                onChange={e => setBonusReason(e.target.value)}
+                onChange={(e) => setBonusReason(e.target.value)}
                 className="text-xs"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setIsBonusOpen(false)} className="text-xs">Cancel</Button>
-            <Button size="sm" onClick={handleSaveBonus} className="text-xs">Save Allocation</Button>
+            <Button size="sm" onClick={handleSaveBonus} className="text-xs" disabled={updateBonusMutation.isPending}>
+              {updateBonusMutation.isPending ? "Saving..." : "Save Allocation"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -774,7 +774,7 @@ export default function PayrollPage() {
               <Label className="text-xs font-semibold">Distribution Method</Label>
               <select
                 value={payoutMethod}
-                onChange={e => setPayoutMethod(e.target.value)}
+                onChange={(e) => setPayoutMethod(e.target.value)}
                 className="w-full bg-background border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2"
               >
                 <option value="Bank Transfer">Bank Transfer (EFT/Wire)</option>
@@ -788,7 +788,7 @@ export default function PayrollPage() {
               <Input
                 type="date"
                 value={payoutDate}
-                onChange={e => setPayoutDate(e.target.value)}
+                onChange={(e) => setPayoutDate(e.target.value)}
                 className="text-xs h-9"
               />
             </div>
@@ -797,14 +797,16 @@ export default function PayrollPage() {
               <Input
                 placeholder="e.g. TXN98724128"
                 value={payoutRef}
-                onChange={e => setPayoutRef(e.target.value)}
+                onChange={(e) => setPayoutRef(e.target.value)}
                 className="text-xs"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setIsDisburseOpen(false)} className="text-xs">Cancel</Button>
-            <Button size="sm" onClick={handleExecuteDisbursement} className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none">Execute Payout</Button>
+            <Button size="sm" onClick={handleExecuteDisbursement} className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white border-none" disabled={disburseMutation.isPending}>
+              {disburseMutation.isPending ? "Executing..." : "Execute Payout"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -821,8 +823,8 @@ export default function PayrollPage() {
               <Label className="text-xs font-semibold">Employee Contribution (%)</Label>
               <Input
                 type="number"
-                value={empPfRate}
-                onChange={e => setEmpPfRate(Number(e.target.value))}
+                value={localEmpPfRate}
+                onChange={(e) => setLocalEmpPfRate(Number(e.target.value))}
                 className="text-xs"
               />
             </div>
@@ -830,15 +832,17 @@ export default function PayrollPage() {
               <Label className="text-xs font-semibold">Employer Match Rate (%)</Label>
               <Input
                 type="number"
-                value={employerPfRate}
-                onChange={e => setEmployerPfRate(Number(e.target.value))}
+                value={localEmployerPfRate}
+                onChange={(e) => setLocalEmployerPfRate(Number(e.target.value))}
                 className="text-xs"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setIsPfConfigOpen(false)} className="text-xs">Cancel</Button>
-            <Button size="sm" onClick={savePfSettings} className="text-xs">Save Settings</Button>
+            <Button size="sm" onClick={savePfSettings} className="text-xs" disabled={updatePfSettingsMutation.isPending}>
+              {updatePfSettingsMutation.isPending ? "Saving..." : "Save Settings"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -848,40 +852,53 @@ export default function PayrollPage() {
         <DialogContent className="sm:max-w-[500px]">
           {viewPayslip && (
             <>
-              <DialogHeader>
+              <DialogHeader className="print:hidden">
                 <DialogTitle className="text-base font-bold flex items-center justify-between">
                   <span>Pay Slip Ledger</span>
                   <span className="text-[10px] text-muted-foreground mr-4">Period: {selectedMonth}</span>
                 </DialogTitle>
                 <DialogDescription className="text-[10px] uppercase font-bold tracking-wider text-primary">Sadoshima Global Corp</DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 border-t border-b border-border/40 py-4 text-xs">
+              <div className="space-y-4 border-t border-b border-border/40 py-4 text-xs print:border-none print:py-0">
+                {/* Print layout branding */}
+                <div className="hidden print:block text-center space-y-1 pb-4 border-b border-border">
+                  <h1 className="text-lg font-extrabold uppercase tracking-widest text-foreground">Sadoshima Global Corp</h1>
+                  <p className="text-[10px] text-muted-foreground">CONFIDENTIAL OFFICER SALARY PAYSLIP STATEMENT</p>
+                  <p className="text-[11px] font-bold">Salary Period: {selectedMonth}</p>
+                </div>
+
                 {/* Meta details */}
-                <div className="grid grid-cols-2 gap-4 bg-muted/20 p-3 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 bg-muted/20 print:bg-transparent print:border print:border-border p-3 rounded-lg print:rounded-none">
                   <div>
-                    <p className="text-[10px] text-muted-foreground">Employee Name</p>
+                    <p className="text-[10px] text-muted-foreground print:text-foreground">Employee Name</p>
                     <p className="font-semibold mt-0.5">{viewPayslip.name}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground">Designation & Department</p>
-                    <p className="font-semibold mt-0.5">{viewPayslip.role} ({viewPayslip.dept})</p>
+                    <p className="text-[10px] text-muted-foreground print:text-foreground">Designation</p>
+                    <p className="font-semibold mt-0.5">{viewPayslip.role}</p>
                   </div>
                 </div>
 
                 {/* Earnings and deductions lists */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6 pt-2">
                   {/* Earnings */}
                   <div className="space-y-2">
                     <p className="font-bold text-[10px] uppercase text-emerald-600 tracking-wider">Earnings</p>
                     <div className="space-y-1">
                       <div className="flex justify-between"><span>Basic Salary:</span><span className="font-semibold">{formatCurrency(viewPayslip.basicSalary)}</span></div>
-                      <div className="flex justify-between"><span>HRA Allowance (20%):</span><span className="font-semibold">{formatCurrency(viewPayslip.allowances.hra)}</span></div>
-                      <div className="flex justify-between"><span>Transport Allowance (10%):</span><span className="font-semibold">{formatCurrency(viewPayslip.allowances.transport)}</span></div>
-                      <div className="flex justify-between"><span>Medical Allowance (5%):</span><span className="font-semibold">{formatCurrency(viewPayslip.allowances.medical)}</span></div>
-                      {viewPayslip.bonus > 0 && (
+                      <div className="flex justify-between"><span>HRA Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceHra)}</span></div>
+                      <div className="flex justify-between"><span>Transport Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceTransport)}</span></div>
+                      <div className="flex justify-between"><span>Medical Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceMedical)}</span></div>
+                      {viewPayslip.festivalBonusAmount > 0 && (
+                        <div className="flex justify-between text-emerald-600 font-semibold">
+                          <span>Tenure Bonus:</span>
+                          <span>{formatCurrency(viewPayslip.festivalBonusAmount)}</span>
+                        </div>
+                      )}
+                      {viewPayslip.bonusAmount > 0 && (
                         <div className="flex justify-between text-emerald-600 font-bold">
                           <span>Bonus ({viewPayslip.bonusDescription}):</span>
-                          <span>{formatCurrency(viewPayslip.bonus)}</span>
+                          <span>{formatCurrency(viewPayslip.bonusAmount)}</span>
                         </div>
                       )}
                     </div>
@@ -891,15 +908,28 @@ export default function PayrollPage() {
                   <div className="space-y-2">
                     <p className="font-bold text-[10px] uppercase text-rose-500 tracking-wider">Deductions</p>
                     <div className="space-y-1">
-                      <div className="flex justify-between"><span>Income Tax (12%):</span><span className="font-semibold">{formatCurrency(viewPayslip.deductions.tax)}</span></div>
-                      <div className="flex justify-between"><span>PF Contribution ({empPfRate}%):</span><span className="font-semibold">{formatCurrency(viewPayslip.deductions.pf)}</span></div>
+                      <div className="flex justify-between"><span>Income Tax:</span><span className="font-semibold">{formatCurrency(viewPayslip.deductionTax)}</span></div>
+                      <div className="flex justify-between"><span>PF Contribution ({empPfRate}%):</span><span className="font-semibold">{formatCurrency(viewPayslip.deductionPf)}</span></div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Calculation Proof Details Section */}
+                <div className="p-3 bg-muted/10 border border-border/40 rounded-lg space-y-1.5 print:hidden">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                    <Info className="h-3.5 w-3.5 text-primary" />
+                    <span>CALCULATION PROOF (AUDIT TRAIL)</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground space-y-1">
+                    <p>• Basic Salary calculated dynamically from assigned employee profile template component policies.</p>
+                    <p>• Festival Bonus computed against Tenure rules based on Join Date ({viewPayslip.joinDate || "N/A"}).</p>
+                    <p>• PF matching rate calculated at standard matching ({empPfRate}% employee share).</p>
                   </div>
                 </div>
 
                 {/* Disbursement info if paid */}
                 {viewPayslip.paymentStatus === "Paid" && (
-                  <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-1">
+                  <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-1 print:border-none print:bg-transparent">
                     <p className="font-bold text-[10px] uppercase text-emerald-600 tracking-wide">Payout Disbursement Info</p>
                     <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
                       <div><span className="font-medium text-foreground">Date:</span> {viewPayslip.paymentDate}</div>
@@ -913,8 +943,18 @@ export default function PayrollPage() {
                   <span className="font-bold text-foreground">Net Pay Distribution:</span>
                   <span className="text-xl font-extrabold text-primary">{formatCurrency(viewPayslip.netPay)}</span>
                 </div>
+
+                {/* Print layout signature footer */}
+                <div className="hidden print:flex justify-between pt-16 text-[10px]">
+                  <div className="text-center w-36 border-t border-border pt-1">
+                    <p className="font-semibold">Officer Signature</p>
+                  </div>
+                  <div className="text-center w-36 border-t border-border pt-1">
+                    <p className="font-semibold">HR Director / Auditor</p>
+                  </div>
+                </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="print:hidden">
                 <Button variant="outline" size="sm" onClick={() => setViewPayslip(null)} className="text-xs">Close</Button>
                 <Button size="sm" className="gap-2 text-xs" onClick={() => window.print()}>
                   <Printer className="h-4 w-4" />

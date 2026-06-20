@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router"
 import { z } from "zod"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,6 +32,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   FileText,
   Plus,
   Search,
@@ -52,15 +58,19 @@ import {
   Eye,
   Printer,
   MoreHorizontal,
-  Download,
+  Loader2,
 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import type { LucideIcon } from "lucide-react"
+import { useEmployeeOptionsQuery } from "@/hooks/useEmployees"
+import {
+  useLettersQuery,
+  useCreateLetterMutation,
+  useUpdateLetterStatusMutation,
+  useDeleteLetterMutation,
+  type HRLetter,
+} from "@/hooks/useLetters"
+import Swal from "sweetalert2"
+import { cn } from "@/lib/utils"
 
 // ─── Letter Type Configuration ─────────────────────────────────────────────────
 interface LetterTypeConfig {
@@ -197,166 +207,6 @@ const letterTypes: LetterTypeConfig[] = [
   },
 ]
 
-// ─── Letter Interface ───────────────────────────────────────────────────────────
-interface HRLetter {
-  id: string
-  type: string
-  employeeName: string
-  employeeDepartment: string
-  subject: string
-  issueDate: string
-  effectiveDate: string
-  status: "Draft" | "Sent" | "Signed" | "Archived"
-  body: string
-  fields: Record<string, string>
-  createdBy: string
-  createdAt: string
-}
-
-// ─── Seed Data ──────────────────────────────────────────────────────────────────
-const initialLetters: HRLetter[] = [
-  {
-    id: "HR-L001",
-    type: "offer",
-    employeeName: "James Anderson",
-    employeeDepartment: "Engineering",
-    subject: "Employment Offer - Senior Software Engineer",
-    issueDate: "2026-06-10",
-    effectiveDate: "2026-07-01",
-    status: "Sent",
-    body: "We are pleased to offer you the position of Senior Software Engineer at Sadoshima HR Management. Your annual compensation will be $95,000 with a 6-month probation period. We look forward to welcoming you to our team.",
-    fields: { designation: "Senior Software Engineer", department: "Engineering", salary: "$95,000", startDate: "2026-07-01", probationPeriod: "6 months", benefits: "Health insurance, 401k, 20 days PTO" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-10T09:00:00Z",
-  },
-  {
-    id: "HR-L002",
-    type: "offer",
-    employeeName: "Maria Garcia",
-    employeeDepartment: "Marketing",
-    subject: "Employment Offer - Marketing Manager",
-    issueDate: "2026-06-12",
-    effectiveDate: "2026-07-15",
-    status: "Draft",
-    body: "We are pleased to offer you the position of Marketing Manager at Sadoshima HR Management. Your annual compensation will be $85,000 with a 3-month probation period.",
-    fields: { designation: "Marketing Manager", department: "Marketing", salary: "$85,000", startDate: "2026-07-15", probationPeriod: "3 months", benefits: "Health insurance, 401k" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-12T10:30:00Z",
-  },
-  {
-    id: "HR-L003",
-    type: "confirmation",
-    employeeName: "David Kim",
-    employeeDepartment: "Engineering",
-    subject: "Employment Confirmation",
-    issueDate: "2026-06-01",
-    effectiveDate: "2026-06-01",
-    status: "Signed",
-    body: "We are pleased to confirm your employment as Software Engineer following the successful completion of your probation period. Your dedication and performance have been commendable.",
-    fields: { probationStart: "2025-12-01", probationEnd: "2026-06-01", confirmedDesignation: "Software Engineer" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-01T08:00:00Z",
-  },
-  {
-    id: "HR-L004",
-    type: "promotion",
-    employeeName: "Sarah Mitchell",
-    employeeDepartment: "Product",
-    subject: "Promotion to Senior Product Manager",
-    issueDate: "2026-06-05",
-    effectiveDate: "2026-06-15",
-    status: "Sent",
-    body: "In recognition of your outstanding contributions, we are pleased to promote you to Senior Product Manager effective June 15, 2026. Your new annual salary will be $120,000.",
-    fields: { oldDesignation: "Product Manager", newDesignation: "Senior Product Manager", salaryChange: "+15%", effectiveDate: "2026-06-15" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-05T11:00:00Z",
-  },
-  {
-    id: "HR-L005",
-    type: "warning",
-    employeeName: "Marcus Brown",
-    employeeDepartment: "Sales",
-    subject: "First Written Warning - Attendance Policy Violation",
-    issueDate: "2026-06-08",
-    effectiveDate: "2026-06-08",
-    status: "Sent",
-    body: "This letter serves as a formal written warning regarding repeated violations of the company attendance policy. You are required to maintain regular attendance and punctuality. Further violations may result in additional disciplinary action.",
-    fields: { violationType: "Attendance Policy", description: "Multiple unexcused absences in May 2026", actionRequired: "Maintain 95% attendance", deadline: "2026-07-08" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-08T14:00:00Z",
-  },
-  {
-    id: "HR-L006",
-    type: "transfer",
-    employeeName: "Emily Zhang",
-    employeeDepartment: "Engineering",
-    subject: "Transfer to Chicago Office",
-    issueDate: "2026-06-11",
-    effectiveDate: "2026-07-01",
-    status: "Draft",
-    body: "We are pleased to inform you of your transfer to our Chicago office effective July 1, 2026. Your role and responsibilities will remain the same. Relocation assistance will be provided.",
-    fields: { fromLocation: "New York", toLocation: "Chicago", fromRole: "Software Engineer", toRole: "Software Engineer", effectiveDate: "2026-07-01" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-11T09:30:00Z",
-  },
-  {
-    id: "HR-L007",
-    type: "salary_increment",
-    employeeName: "Lisa Johnson",
-    employeeDepartment: "HR",
-    subject: "Annual Salary Revision",
-    issueDate: "2026-06-01",
-    effectiveDate: "2026-06-01",
-    status: "Sent",
-    body: "In recognition of your valuable contributions, your annual salary has been revised from $65,000 to $72,000 effective June 1, 2026. This represents a 10.8% increment.",
-    fields: { currentSalary: "$65,000", newSalary: "$72,000", effectiveDate: "2026-06-01", incrementPercentage: "10.8%" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-01T10:00:00Z",
-  },
-  {
-    id: "HR-L008",
-    type: "experience",
-    employeeName: "Robert Chen",
-    employeeDepartment: "Finance",
-    subject: "Experience Certificate",
-    issueDate: "2026-06-05",
-    effectiveDate: "2026-06-05",
-    status: "Signed",
-    body: "This is to certify that Mr. Robert Chen was employed with Sadoshima HR Management as Finance Manager from January 15, 2020 to June 5, 2026. During his tenure, he handled financial planning, budgeting, and reporting functions.",
-    fields: { joiningDate: "2020-01-15", relievingDate: "2026-06-05", designation: "Finance Manager", responsibilities: "Financial planning, budgeting, and reporting" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-05T15:00:00Z",
-  },
-  {
-    id: "HR-L009",
-    type: "relieving",
-    employeeName: "Robert Chen",
-    employeeDepartment: "Finance",
-    subject: "Relieving Letter",
-    issueDate: "2026-06-05",
-    effectiveDate: "2026-06-05",
-    status: "Signed",
-    body: "This is to confirm that your resignation has been accepted and you are relieved from your duties as Finance Manager effective June 5, 2026. We thank you for your contributions.",
-    fields: { resignationDate: "2026-05-05", lastWorkingDay: "2026-06-05", noticePeriod: "30 days" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-05T16:00:00Z",
-  },
-  {
-    id: "HR-L010",
-    type: "proof_of_employment",
-    employeeName: "Jennifer Lee",
-    employeeDepartment: "Engineering",
-    subject: "Employment Verification Letter",
-    issueDate: "2026-06-10",
-    effectiveDate: "2026-06-10",
-    status: "Sent",
-    body: "This letter confirms that Ms. Jennifer Lee is currently employed with Sadoshima HR Management as Senior Developer since March 1, 2021. Her current annual salary is $88,000.",
-    fields: { designation: "Senior Developer", salary: "$88,000", joiningDate: "2021-03-01", employmentType: "Full-time Permanent" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-10T11:30:00Z",
-  },
-]
-
 // ─── Helper Functions ───────────────────────────────────────────────────────────
 const getLetterTypeConfig = (typeId: string): LetterTypeConfig | undefined =>
   letterTypes.find((lt) => lt.id === typeId)
@@ -387,35 +237,35 @@ const getCategoryLabel = (category: string) => {
 
 const letterFormSchema = z.object({
   selectedType: z.string().min(1, "Letter Type is required"),
-  formEmployee: z.string().trim().min(1, "Employee Name is required"),
+  formEmployeeId: z.string().min(1, "Employee is required"),
   formSubject: z.string().trim().min(1, "Subject is required"),
   formIssueDate: z.string().min(1, "Issue Date is required"),
   formEffectiveDate: z.string().min(1, "Effective Date is required"),
   formBody: z.string().trim().min(1, "Letter Body is required"),
 })
 
-// ─── Main Component ─────────────────────────────────────────────────────────────
-const LETTERS_STORAGE_KEY = "hr_letters"
-
 export default function LettersPage() {
   const navigate = useNavigate()
-  const [letters, setLetters] = useState<HRLetter[]>(() => {
-    try {
-      const stored = localStorage.getItem(LETTERS_STORAGE_KEY)
-      if (stored) return JSON.parse(stored)
-    } catch { /* ignore */ }
-    return initialLetters
-  })
-
-  // Persist letters to localStorage
-  useEffect(() => {
-    localStorage.setItem(LETTERS_STORAGE_KEY, JSON.stringify(letters))
-  }, [letters])
-
-  const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [page] = useState(1)
+
+  // API Queries & Mutations
+  const { data: lettersData, isLoading: isLettersLoading } = useLettersQuery({
+    search: searchTerm,
+    type: filterType,
+    status: filterStatus,
+    page,
+    limit: 15,
+  })
+  const { data: employeeOptions = [] } = useEmployeeOptionsQuery()
+
+  const createMutation = useCreateLetterMutation()
+  const updateStatusMutation = useUpdateLetterStatusMutation()
+  const deleteMutation = useDeleteLetterMutation()
+
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   // Preview state
   const [previewLetter, setPreviewLetter] = useState<HRLetter | null>(null)
@@ -423,7 +273,7 @@ export default function LettersPage() {
 
   // Form state
   const [selectedType, setSelectedType] = useState("")
-  const [formEmployee, setFormEmployee] = useState("")
+  const [formEmployeeId, setFormEmployeeId] = useState("")
   const [formSubject, setFormSubject] = useState("")
   const [formIssueDate, setFormIssueDate] = useState("")
   const [formEffectiveDate, setFormEffectiveDate] = useState("")
@@ -432,27 +282,17 @@ export default function LettersPage() {
   const [formStatus, setFormStatus] = useState<HRLetter["status"]>("Draft")
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
-  // Filter letters
-  const filteredLetters = letters.filter((letter) => {
-    const matchesSearch =
-      letter.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      letter.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      letter.subject.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = filterType === "all" || letter.type === filterType
-    const matchesStatus = filterStatus === "all" || letter.status === filterStatus
-    return matchesSearch && matchesType && matchesStatus
-  })
-
   // Stats
-  const totalLetters = letters.length
-  const pendingLetters = letters.filter((l) => l.status === "Draft").length
-  const sentLetters = letters.filter((l) => l.status === "Sent").length
-  const signedLetters = letters.filter((l) => l.status === "Signed").length
+  const lettersList = lettersData?.data || []
+  const totalLetters = lettersData?.meta?.total || 0
+  const pendingLetters = lettersList.filter((l) => l.status === "Draft").length
+  const sentLetters = lettersList.filter((l) => l.status === "Sent").length
+  const signedLetters = lettersList.filter((l) => l.status === "Signed").length
 
   // Reset form
   const resetForm = () => {
     setSelectedType("")
-    setFormEmployee("")
+    setFormEmployeeId("")
     setFormSubject("")
     setFormIssueDate("")
     setFormEffectiveDate("")
@@ -485,7 +325,7 @@ export default function LettersPage() {
 
     const result = letterFormSchema.safeParse({
       selectedType,
-      formEmployee,
+      formEmployeeId,
       formSubject,
       formIssueDate,
       formEffectiveDate,
@@ -503,33 +343,50 @@ export default function LettersPage() {
       return
     }
 
-    const data = result.data
-    const config = getLetterTypeConfig(data.selectedType)
-    if (!config) return
-
-    const newLetter: HRLetter = {
-      id: `HR-L${String(letters.length + 1).padStart(3, "0")}`,
-      type: data.selectedType,
-      employeeName: data.formEmployee,
-      employeeDepartment: "Department",
-      subject: data.formSubject,
-      issueDate: data.formIssueDate,
-      effectiveDate: data.formEffectiveDate,
-      status: formStatus,
-      body: data.formBody,
-      fields: formFields,
-      createdBy: "HR Admin",
-      createdAt: new Date().toISOString(),
-    }
-
-    setLetters([newLetter, ...letters])
-    resetForm()
-    setDialogOpen(false)
+    createMutation.mutate(
+      {
+        type: selectedType,
+        employeeId: formEmployeeId,
+        subject: formSubject,
+        issueDate: formIssueDate,
+        effectiveDate: formEffectiveDate,
+        body: formBody,
+        fields: formFields,
+        status: formStatus,
+      },
+      {
+        onSuccess: () => {
+          Swal.fire("Success", "HR Letter has been successfully created.", "success")
+          resetForm()
+          setDialogOpen(false)
+        },
+      }
+    )
   }
 
   // Handle status change
   const handleStatusChange = (id: string, status: HRLetter["status"]) => {
-    setLetters(letters.map((l) => (l.id === id ? { ...l, status } : l)))
+    updateStatusMutation.mutate({ id, status })
+  }
+
+  // Handle delete
+  const handleDeleteLetter = (id: string) => {
+    Swal.fire({
+      title: "Delete Letter?",
+      text: "Are you sure you want to permanently revoke this issued letter?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(id, {
+          onSuccess: () => {
+            Swal.fire("Deleted", "HR Letter has been deleted.", "success")
+          },
+        })
+      }
+    })
   }
 
   // Open preview
@@ -541,6 +398,15 @@ export default function LettersPage() {
   // Print letter - navigate to dedicated print page
   const handlePrintLetter = (letterId: string) => {
     navigate(`/letters/print/${letterId}`)
+  }
+
+  if (isLettersLoading) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+        <p className="text-sm text-muted-foreground">Loading issued HR documents...</p>
+      </div>
+    )
   }
 
   return (
@@ -556,7 +422,7 @@ export default function LettersPage() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm() }}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none">
               <Plus className="h-4 w-4" />
               Create Letter
             </Button>
@@ -608,18 +474,24 @@ export default function LettersPage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold">Employee Name *</Label>
-                      <Input
-                        placeholder="Enter employee name"
-                        value={formEmployee}
+                      <select
+                        value={formEmployeeId}
                         onChange={(e) => {
-                          setFormEmployee(e.target.value)
-                          if (errors.formEmployee) setErrors(prev => ({ ...prev, formEmployee: "" }))
+                          setFormEmployeeId(e.target.value)
+                          if (errors.formEmployeeId) setErrors(prev => ({ ...prev, formEmployeeId: "" }))
                         }}
                         required
-                        className="text-xs"
-                      />
-                      {errors.formEmployee && (
-                        <p className="text-[10px] text-destructive mt-0.5">{errors.formEmployee}</p>
+                        className="w-full bg-background border border-border hover:border-primary transition-colors text-xs h-9 rounded-md px-2"
+                      >
+                        <option value="">Select Employee</option>
+                        {employeeOptions.map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.fullNameEnglish} ({emp.employeeId})
+                          </option>
+                        ))}
+                      </select>
+                      {errors.formEmployeeId && (
+                        <p className="text-[10px] text-destructive mt-0.5">{errors.formEmployeeId}</p>
                       )}
                     </div>
                     <div className="space-y-1.5">
@@ -735,8 +607,8 @@ export default function LettersPage() {
                 <Button type="button" variant="outline" onClick={() => { setDialogOpen(false); resetForm() }}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={!selectedType}>
-                  Create Letter
+                <Button type="submit" disabled={!selectedType || createMutation.isPending}>
+                  {createMutation.isPending ? "Creating..." : "Create Letter"}
                 </Button>
               </DialogFooter>
             </form>
@@ -804,283 +676,198 @@ export default function LettersPage() {
         </Card>
       </div>
 
-      {/* Letters Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>HR Letters</CardTitle>
-          <CardDescription>Manage all HR correspondence and documentation</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by employee, ID, or subject..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Letter Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {letterTypes.map((lt) => (
-                  <SelectItem key={lt.id} value={lt.id}>
-                    {lt.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Draft">Draft</SelectItem>
-                <SelectItem value="Sent">Sent</SelectItem>
-                <SelectItem value="Signed">Signed</SelectItem>
-                <SelectItem value="Archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search letters by employee, ID, or subject..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 text-xs"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="bg-transparent border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2 min-w-[120px]"
+          >
+            <option value="all">All Types</option>
+            {letterTypes.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
 
-          {/* Table */}
-          <div className="w-full overflow-x-auto bg-transparent">
-            {filteredLetters.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-border/60 rounded-2xl bg-muted/5">
-                <FileText className="mx-auto h-12 w-12 mb-4 opacity-20 text-muted-foreground" />
-                <p className="text-sm font-semibold text-muted-foreground">No letters found</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Try modifying your search or filter</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader className="bg-muted/10 border-b border-border/30">
-                  <TableRow className="border-b-0 hover:bg-transparent">
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Letter Info</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Type</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground hidden lg:table-cell">Subject</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Date</TableHead>
-                    <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
-                    <TableHead className="w-20 font-semibold text-xs text-muted-foreground text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLetters.map((letter) => {
-                    const typeConfig = getLetterTypeConfig(letter.type)
-                    const Icon = typeConfig?.icon || FileText
-                    return (
-                      <TableRow key={letter.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
-                        <TableCell className="py-3">
-                          <div>
-                            <p className="font-mono text-xs text-muted-foreground">{letter.id}</p>
-                            <p className="text-[10px] text-muted-foreground/60 mt-0.5">by {letter.createdBy}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <div className="flex items-center gap-2">
-                            <div className={`h-7 w-7 rounded-lg ${typeConfig?.bgColor || "bg-muted"} flex items-center justify-center`}>
-                              <Icon className={`h-3.5 w-3.5 ${typeConfig?.color || "text-muted-foreground"}`} />
-                            </div>
-                            <span className="text-xs font-semibold">{typeConfig?.name || letter.type}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <div>
-                            <p className="text-sm font-medium">{letter.employeeName}</p>
-                            <p className="text-[10px] text-muted-foreground">{letter.employeeDepartment}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3 hidden lg:table-cell">
-                          <p className="text-xs text-muted-foreground max-w-[200px] truncate">{letter.subject}</p>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <div className="text-xs text-muted-foreground">
-                            <p>{new Date(letter.issueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
-                            <p className="text-[10px] text-muted-foreground/60">Issued</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Badge className={`text-[10px] ${getStatusStyle(letter.status)}`}>
-                            {letter.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem className="text-xs gap-2" onClick={() => openPreview(letter)}>
-                                <Eye className="h-3.5 w-3.5" /> View Letter
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-xs gap-2" onClick={() => handlePrintLetter(letter.id)}>
-                                <Printer className="h-3.5 w-3.5" /> Print
-                              </DropdownMenuItem>
-                              {letter.status === "Draft" && (
-                                <DropdownMenuItem
-                                  className="text-xs gap-2"
-                                  onClick={() => handleStatusChange(letter.id, "Sent")}
-                                >
-                                  <Send className="h-3.5 w-3.5" /> Mark Sent
-                                </DropdownMenuItem>
-                              )}
-                              {letter.status === "Sent" && (
-                                <DropdownMenuItem
-                                  className="text-xs gap-2"
-                                  onClick={() => handleStatusChange(letter.id, "Signed")}
-                                >
-                                  <CheckCircle2 className="h-3.5 w-3.5" /> Mark Signed
-                                </DropdownMenuItem>
-                              )}
-                              {letter.status !== "Archived" && (
-                                <DropdownMenuItem
-                                  className="text-xs gap-2"
-                                  onClick={() => handleStatusChange(letter.id, "Archived")}
-                                >
-                                  <Archive className="h-3.5 w-3.5" /> Archive
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-transparent border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2 min-w-[120px]"
+          >
+            <option value="all">All Statuses</option>
+            <option value="Draft">Draft</option>
+            <option value="Sent">Sent</option>
+            <option value="Signed">Signed</option>
+            <option value="Archived">Archived</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Main Table */}
+      <Card className="shadow-none border-border/40">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-muted/10 border-b border-border/30">
+              <TableRow className="border-b-0">
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">Letter ID</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">Employee</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">Category</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">Subject</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">Issue Date</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">Status</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 text-right w-24">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lettersList.length > 0 ? (
+                lettersList.map((letter) => {
+                  const typeConfig = getLetterTypeConfig(letter.type)
+                  return (
+                    <TableRow key={letter.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      <TableCell className="py-3 font-semibold text-xs">{letter.id}</TableCell>
+                      <TableCell className="py-3">
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">{letter.employeeName}</p>
+                          <p className="text-[10px] text-muted-foreground">{letter.employeeDepartment || "HR Dept"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge variant="outline" className="text-[10px] capitalize font-medium py-0.5 px-2">
+                          {typeConfig ? getCategoryLabel(typeConfig.category) : "General"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 text-xs font-medium max-w-[200px] truncate">{letter.subject}</TableCell>
+                      <TableCell className="py-3 text-xs text-muted-foreground">{letter.issueDate}</TableCell>
+                      <TableCell className="py-3">
+                        <Badge variant="outline" className={cn("text-[9px] font-bold py-0.5 px-2", getStatusStyle(letter.status))}>
+                          {letter.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => openPreview(letter)}>
+                              <Eye className="h-3.5 w-3.5" />
+                              Preview Document
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handlePrintLetter(letter.id)}>
+                              <Printer className="h-3.5 w-3.5" />
+                              Print Statement
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleStatusChange(letter.id, "Sent")}>
+                              <Send className="h-3.5 w-3.5" />
+                              Mark as Sent
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleStatusChange(letter.id, "Signed")}>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Mark as Signed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleStatusChange(letter.id, "Archived")}>
+                              <Archive className="h-3.5 w-3.5" />
+                              Archive
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleDeleteLetter(letter.id)}>
+                              <Ban className="h-3.5 w-3.5" />
+                              Revoke Letter
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                    <p className="text-sm font-semibold">No letters found matching the filters</p>
+                    <p className="text-xs">Try clearing search terms or changing status filter options.</p>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
-      {/* Preview Dialog */}
+
+      {/* Detailed Document Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           {previewLetter && (
             <>
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <DialogTitle className="flex items-center gap-2">
-                      {(() => {
-                        const tc = getLetterTypeConfig(previewLetter.type)
-                        const PIcon = tc?.icon || FileText
-                        return <><PIcon className={`h-5 w-5 ${tc?.color || ""}`} />{tc?.name || "HR Letter"}</>
-                      })()}
-                    </DialogTitle>
-                    <DialogDescription className="mt-1">{previewLetter.subject}</DialogDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => handlePrintLetter(previewLetter.id)}>
-                      <Printer className="h-4 w-4" />
-                      Print
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2" onClick={() => handlePrintLetter(previewLetter.id)}>
-                      <Download className="h-4 w-4" />
-                      PDF
-                    </Button>
-                  </div>
-                </div>
+              <DialogHeader className="print:hidden">
+                <DialogTitle className="text-base font-bold flex items-center justify-between">
+                  <span>Document Preview Statement</span>
+                  <span className="text-[10px] text-muted-foreground mr-4">Reference: {previewLetter.id}</span>
+                </DialogTitle>
+                <DialogDescription className="text-[10px] uppercase font-bold tracking-wider text-primary">Sadoshima Global Corp</DialogDescription>
               </DialogHeader>
 
-              <div className="mt-2">
-                {/* Status + Meta Bar */}
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <Badge className={`text-[10px] ${getStatusStyle(previewLetter.status)}`}>{previewLetter.status}</Badge>
-                  <span className="text-[10px] text-muted-foreground font-mono">{previewLetter.id}</span>
-                  <span className="text-[10px] text-muted-foreground">|</span>
-                  <span className="text-[10px] text-muted-foreground">Issued: {new Date(previewLetter.issueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
-                  <span className="text-[10px] text-muted-foreground">|</span>
-                  <span className="text-[10px] text-muted-foreground">Effective: {new Date(previewLetter.effectiveDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+              <div className="space-y-4 border-t border-b border-border/40 py-4 text-xs">
+                {/* Visual template details in dialog */}
+                <div className="space-y-1 pb-4 border-b border-border">
+                  <h1 className="text-base font-extrabold uppercase tracking-widest text-center text-foreground">Sadoshima Global Corp</h1>
+                  <p className="text-[9px] text-center text-muted-foreground">OFFICIAL CORRESPONDENCE AND RECORD</p>
                 </div>
 
-                {/* Letter Preview (printable area) */}
-                <div className="rounded-lg border border-border bg-background p-8">
-                  {/* Company Letterhead */}
-                  <div className="letterhead flex items-start justify-between border-b-[3px] border-indigo-500 pb-4 mb-6">
-                    <div>
-                      <h1 className="text-xl font-bold text-indigo-600">Sadoshima HR</h1>
-                      <p className="text-[10px] text-muted-foreground">Management System</p>
+                <div className="grid grid-cols-2 gap-4 bg-muted/20 p-3 rounded-lg">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Recipient Name</p>
+                    <p className="font-semibold mt-0.5">{previewLetter.employeeName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Effective Date</p>
+                    <p className="font-semibold mt-0.5">{previewLetter.effectiveDate}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-bold text-[10px] uppercase tracking-wider text-indigo-600">Letter Subject</p>
+                  <p className="font-bold text-sm text-foreground">{previewLetter.subject}</p>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-border/20">
+                  <p className="font-bold text-[10px] uppercase tracking-wider text-indigo-600">Content</p>
+                  <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">{previewLetter.body}</p>
+                </div>
+
+                {Object.keys(previewLetter.fields || {}).length > 0 && (
+                  <div className="p-3 bg-muted/20 rounded-lg space-y-1.5 mt-2">
+                    <p className="font-bold text-[10px] uppercase text-indigo-600 tracking-wide">Placeholder Mapping</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                      {Object.entries(previewLetter.fields).map(([key, val]) => (
+                        <div key={key}>
+                          <span className="font-medium text-foreground capitalize">{key.replace(/([A-Z])/g, " $1").trim()}:</span>{" "}
+                          <span className="text-muted-foreground">{val || "—"}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="address text-right text-[10px] text-muted-foreground space-y-0.5">
-                      <p>123 Business Avenue</p>
-                      <p>New York, NY 10001</p>
-                      <p>contact@sadoshimahr.com</p>
-                    </div>
                   </div>
-
-                  {/* Date + Ref */}
-                  <div className="meta mb-5 space-y-0.5 text-xs">
-                    <p><span className="text-muted-foreground">Date:</span> {new Date(previewLetter.issueDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-                    <p><span className="text-muted-foreground">Ref:</span> <span className="font-mono">{previewLetter.id}</span></p>
-                  </div>
-
-                  {/* Subject */}
-                  <p className="subject font-bold text-sm mb-5">Subject: {previewLetter.subject}</p>
-
-                  {/* Recipient */}
-                  <div className="recipient mb-5">
-                    <p className="text-sm font-medium">To: {previewLetter.employeeName}</p>
-                    <p className="dept text-[11px] text-muted-foreground">{previewLetter.employeeDepartment} Department</p>
-                  </div>
-
-                  {/* Letter Body */}
-                  <div className="body mb-6">
-                    {previewLetter.body.split("\n").filter(Boolean).map((paragraph, idx) => (
-                      <p key={idx} className="text-xs leading-relaxed mb-3">{paragraph}</p>
-                    ))}
-                  </div>
-
-                  {/* Dynamic Fields Table */}
-                  {Object.keys(previewLetter.fields).length > 0 && (
-                    <table className="fields-table w-full border-collapse mb-6 text-xs">
-                      <tbody>
-                        {Object.entries(previewLetter.fields).map(([key, value]) => (
-                          <tr key={key}>
-                            <td className="py-1.5 px-3 border border-border/50 bg-muted/30 text-muted-foreground capitalize w-[40%]">
-                              {key.replace(/([A-Z])/g, " $1").trim()}
-                            </td>
-                            <td className="py-1.5 px-3 border border-border/50 font-semibold">
-                              {value || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {/* Signature */}
-                  <div className="signature mt-10 pt-4 border-t border-border">
-                    <p className="name text-sm font-semibold">{previewLetter.createdBy}</p>
-                    <p className="dept text-[11px] text-muted-foreground">Human Resources Department</p>
-                    <p className="dept text-[11px] text-muted-foreground">Sadoshima HR Management</p>
-                  </div>
-                </div>
-
-                {/* Letter Details Sidebar Info (below preview on small screens) */}
-                <div className="grid gap-3 sm:grid-cols-3 mt-4">
-                  <Card className="p-3">
-                    <p className="text-[10px] text-muted-foreground">Letter Type</p>
-                    <p className="text-xs font-semibold mt-0.5">{getLetterTypeConfig(previewLetter.type)?.name}</p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-[10px] text-muted-foreground">Employee</p>
-                    <p className="text-xs font-semibold mt-0.5">{previewLetter.employeeName}</p>
-                    <p className="text-[10px] text-muted-foreground">{previewLetter.employeeDepartment}</p>
-                  </Card>
-                  <Card className="p-3">
-                    <p className="text-[10px] text-muted-foreground">Created</p>
-                    <p className="text-xs font-semibold mt-0.5">{new Date(previewLetter.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
-                  </Card>
-                </div>
+                )}
               </div>
+
+              <DialogFooter className="print:hidden">
+                <Button variant="outline" size="sm" onClick={() => setPreviewOpen(false)} className="text-xs">Close</Button>
+                <Button size="sm" className="gap-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white border-none" onClick={() => handlePrintLetter(previewLetter.id)}>
+                  <Printer className="h-4 w-4" />
+                  Print Letter
+                </Button>
+              </DialogFooter>
             </>
           )}
         </DialogContent>

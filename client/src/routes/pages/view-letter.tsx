@@ -23,8 +23,11 @@ import {
   Award,
   LogOut,
   ShieldCheck,
+  Loader2,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { useLetterQuery, useUpdateLetterStatusMutation } from "@/hooks/useLetters"
+import Swal from "sweetalert2"
 
 // ─── Letter Type Config (same as main page) ─────────────────────────────────────
 interface LetterTypeConfig {
@@ -51,67 +54,6 @@ const letterTypes: LetterTypeConfig[] = [
   { id: "proof_of_employment", name: "Proof of Employment", category: "General", icon: ShieldCheck, color: "text-teal-600", bgColor: "bg-teal-500/10" },
 ]
 
-// ─── Sample Letter Data (in real app, fetch from API/localStorage) ───────────────
-interface HRLetter {
-  id: string
-  type: string
-  employeeName: string
-  employeeDepartment: string
-  subject: string
-  issueDate: string
-  effectiveDate: string
-  status: "Draft" | "Sent" | "Signed" | "Archived"
-  body: string
-  fields: Record<string, string>
-  createdBy: string
-  createdAt: string
-}
-
-const sampleLetters: Record<string, HRLetter> = {
-  "HR-L001": {
-    id: "HR-L001",
-    type: "offer",
-    employeeName: "James Anderson",
-    employeeDepartment: "Engineering",
-    subject: "Employment Offer - Senior Software Engineer",
-    issueDate: "2026-06-10",
-    effectiveDate: "2026-07-01",
-    status: "Sent",
-    body: "Dear Mr. Anderson,\n\nWe are pleased to offer you the position of Senior Software Engineer at Sadoshima HR Management. Your annual compensation will be $95,000 with a 6-month probation period.\n\nYour employment will commence on July 1, 2026, and you will be reporting to the Engineering department. As part of your employment package, you will receive health insurance, 401k retirement plan, and 20 days of paid time off annually.\n\nPlease review the terms and conditions outlined in this offer letter carefully. We look forward to welcoming you to our team.\n\nBest regards,\nHR Department\nSadoshima HR Management",
-    fields: { designation: "Senior Software Engineer", department: "Engineering", salary: "$95,000", startDate: "2026-07-01", probationPeriod: "6 months", benefits: "Health insurance, 401k, 20 days PTO" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-10T09:00:00Z",
-  },
-  "HR-L003": {
-    id: "HR-L003",
-    type: "confirmation",
-    employeeName: "David Kim",
-    employeeDepartment: "Engineering",
-    subject: "Employment Confirmation",
-    issueDate: "2026-06-01",
-    effectiveDate: "2026-06-01",
-    status: "Signed",
-    body: "Dear Mr. Kim,\n\nWe are pleased to confirm your employment as Software Engineer following the successful completion of your probation period from December 1, 2025 to June 1, 2026.\n\nYour dedication and performance during the probation period have been commendable. You are now a permanent employee of Sadoshima HR Management with all associated benefits and privileges.\n\nCongratulations on your confirmation!\n\nBest regards,\nHR Department\nSadoshima HR Management",
-    fields: { probationStart: "2025-12-01", probationEnd: "2026-06-01", confirmedDesignation: "Software Engineer" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-01T08:00:00Z",
-  },
-  "HR-L005": {
-    id: "HR-L005",
-    type: "warning",
-    employeeName: "Marcus Brown",
-    employeeDepartment: "Sales",
-    subject: "First Written Warning - Attendance Policy Violation",
-    issueDate: "2026-06-08",
-    effectiveDate: "2026-06-08",
-    status: "Sent",
-    body: "Dear Mr. Brown,\n\nThis letter serves as a formal written warning regarding repeated violations of the company attendance policy. Our records indicate multiple unexcused absences during May 2026.\n\nYou are required to maintain a minimum of 95% attendance and punctuality going forward. Any further violations within the next 30 days (until July 8, 2026) may result in additional disciplinary action, up to and including termination of employment.\n\nWe encourage you to discuss any concerns with your manager or HR department.\n\nRegards,\nHR Department\nSadoshima HR Management",
-    fields: { violationType: "Attendance Policy", description: "Multiple unexcused absences in May 2026", actionRequired: "Maintain 95% attendance", deadline: "2026-07-08" },
-    createdBy: "HR Admin",
-    createdAt: "2026-06-08T14:00:00Z",
-  },
-}
-
 // ─── Helper Functions ───────────────────────────────────────────────────────────
 const getLetterTypeConfig = (typeId: string): LetterTypeConfig | undefined =>
   letterTypes.find((lt) => lt.id === typeId)
@@ -131,17 +73,27 @@ export default function ViewLetterPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  // Get letter from sample data (in real app, fetch from API)
-  const letter = sampleLetters[id || ""] || Object.values(sampleLetters)[0]
+  const { data: letter, isLoading, isError } = useLetterQuery(id || "")
+  const updateStatusMutation = useUpdateLetterStatusMutation()
+
   const typeConfig = getLetterTypeConfig(letter?.type || "")
   const Icon = typeConfig?.icon || FileText
 
-  if (!letter) {
+  if (isLoading) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+        <p className="text-sm text-muted-foreground">Loading HR document details...</p>
+      </div>
+    )
+  }
+
+  if (isError || !letter) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <FileX className="h-16 w-16 text-muted-foreground/30 mb-4" />
         <h2 className="text-xl font-semibold">Letter Not Found</h2>
-        <p className="text-muted-foreground mt-2">The requested letter could not be found.</p>
+        <p className="text-muted-foreground mt-2">The requested letter could not be found or loaded.</p>
         <Button variant="outline" className="mt-4 gap-2" onClick={() => navigate("/letters")}>
           <ArrowLeft className="h-4 w-4" /> Back to Letters
         </Button>
@@ -151,6 +103,17 @@ export default function ViewLetterPage() {
 
   const handlePrint = () => {
     navigate(`/letters/print/${letter.id}`)
+  }
+
+  const handleSendLetter = () => {
+    updateStatusMutation.mutate(
+      { id: letter.id, status: "Sent" },
+      {
+        onSuccess: () => {
+          Swal.fire("Success", "HR Letter marked as Sent and delivered to employee.", "success")
+        },
+      }
+    )
   }
 
   return (
@@ -176,8 +139,17 @@ export default function ViewLetterPage() {
             Print
           </Button>
           {letter.status === "Draft" && (
-            <Button size="sm" className="gap-2">
-              <Send className="h-4 w-4" />
+            <Button
+              size="sm"
+              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white border-none"
+              onClick={handleSendLetter}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
               Send Letter
             </Button>
           )}
