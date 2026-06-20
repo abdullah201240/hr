@@ -1,8 +1,15 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
-import { employeeKpis, employees, designations } from '../../db/schema';
-import { CreateKpiDto, UpdateKpiScoresDto } from './dto/performance.dto';
+import { employeeKpis, employees, designations, departments, appraisalCycles, employeeAppraisals } from '../../db/schema';
+import {
+  CreateKpiDto,
+  UpdateKpiScoresDto,
+  CreateCycleDto,
+  UpdateCycleStatusDto,
+  SubmitSelfAppraisalDto,
+  SubmitManagerAppraisalDto
+} from './dto/performance.dto';
 
 const defaultKPITemplates = {
   engineer: [
@@ -28,26 +35,135 @@ export class PerformanceService {
     @Inject(DB_CONNECTION) private readonly db: Database,
   ) {}
 
+  // --- Cycles Management ---
+
+  async createCycle(dto: CreateCycleDto) {
+    const [cycle] = await this.db
+      .insert(appraisalCycles)
+      .values({
+        name: dto.name,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        description: dto.description || '',
+        status: 'draft',
+      })
+      .returning();
+    return cycle;
+  }
+
+  async findAllCycles() {
+    return this.db
+      .select()
+      .from(appraisalCycles)
+      .orderBy(desc(appraisalCycles.startDate));
+  }
+
+  async findCycleById(id: string) {
+    const [cycle] = await this.db
+      .select()
+      .from(appraisalCycles)
+      .where(eq(appraisalCycles.id, id))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Appraisal cycle with ID "${id}" not found`);
+    }
+    return cycle;
+  }
+
+  async updateCycleStatus(id: string, dto: UpdateCycleStatusDto) {
+    const [updated] = await this.db
+      .update(appraisalCycles)
+      .set({ status: dto.status })
+      .where(eq(appraisalCycles.id, id))
+      .returning();
+
+    if (!updated) {
+      throw new NotFoundException(`Appraisal cycle with ID "${id}" not found`);
+    }
+    return updated;
+  }
+
+  // --- Appraisals & KPIs ---
+
   async findAll() {
+    const [cycle] = await this.db
+      .select()
+      .from(appraisalCycles)
+      .where(eq(appraisalCycles.status, 'active'))
+      .limit(1);
+
+    const activeCycleId = cycle?.id;
+    if (!activeCycleId) {
+      return {};
+    }
+
     const allEmployees = await this.db
       .select({ id: employees.id })
-      .from(employees);
+      .from(employees)
+      .where(eq(employees.status, 'active'));
 
     const result: Record<string, any[]> = {};
     for (const emp of allEmployees) {
-      result[emp.id] = await this.getEmployeeKpis(emp.id);
+      result[emp.id] = await this.db
+        .select()
+        .from(employeeKpis)
+        .where(
+          and(
+            eq(employeeKpis.employeeId, emp.id),
+            eq(employeeKpis.cycleId, activeCycleId)
+          )
+        );
     }
     return result;
   }
 
-  async getEmployeeKpis(employeeId: string) {
-    // 1. Fetch existing KPIs
+  async getEmployeeKpis(employeeId: string, cycleId?: string) {
+    let activeCycleId = cycleId;
+
+    if (!activeCycleId) {
+      const [cycle] = await this.db
+        .select()
+        .from(appraisalCycles)
+        .where(eq(appraisalCycles.status, 'active'))
+        .limit(1);
+
+      if (cycle) {
+        activeCycleId = cycle.id;
+      } else {
+        const [anyCycle] = await this.db
+          .select()
+          .from(appraisalCycles)
+          .limit(1);
+
+        if (anyCycle) {
+          activeCycleId = anyCycle.id;
+        } else {
+          const [newCycle] = await this.db
+            .insert(appraisalCycles)
+            .values({
+              name: 'Initial Appraisal Cycle',
+              startDate: new Date().toISOString().split('T')[0],
+              endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              status: 'active',
+              description: 'System generated default appraisal cycle',
+            })
+            .returning();
+          activeCycleId = newCycle.id;
+        }
+      }
+    }
+
     let kpis = await this.db
       .select()
       .from(employeeKpis)
-      .where(eq(employeeKpis.employeeId, employeeId));
+      .where(
+        and(
+          eq(employeeKpis.employeeId, employeeId),
+          eq(employeeKpis.cycleId, activeCycleId)
+        )
+      );
 
-    // 2. Seed default templates if none exist
     if (kpis.length === 0) {
       const [emp] = await this.db
         .select({
@@ -71,14 +187,16 @@ export class PerformanceService {
         templates = defaultKPITemplates.manager;
       }
 
-      // Seed them
       const valuesToInsert = templates.map(t => ({
         employeeId,
+        cycleId: activeCycleId,
         title: t.title,
         description: t.description,
         targetMetric: t.targetMetric,
         weight: t.weight,
-        score: 80, // Default initial benchmark score
+        score: 80,
+        selfScore: 80,
+        managerScore: 80,
       }));
 
       kpis = await this.db
@@ -101,15 +219,28 @@ export class PerformanceService {
       throw new NotFoundException(`Employee with ID "${dto.employeeId}" not found`);
     }
 
+    let activeCycleId = dto.cycleId;
+    if (!activeCycleId) {
+      const [cycle] = await this.db
+        .select()
+        .from(appraisalCycles)
+        .where(eq(appraisalCycles.status, 'active'))
+        .limit(1);
+      activeCycleId = cycle?.id;
+    }
+
     const [created] = await this.db
       .insert(employeeKpis)
       .values({
         employeeId: dto.employeeId,
+        cycleId: activeCycleId,
         title: dto.title,
         description: dto.description,
         targetMetric: dto.targetMetric,
         weight: dto.weight,
         score: 80,
+        selfScore: 80,
+        managerScore: 80,
       })
       .returning();
 
@@ -133,9 +264,207 @@ export class PerformanceService {
     for (const item of dto.scores) {
       await this.db
         .update(employeeKpis)
-        .set({ score: item.score })
+        .set({ score: item.score, managerScore: item.score })
         .where(eq(employeeKpis.id, item.kpiId));
     }
     return this.getEmployeeKpis(employeeId);
+  }
+
+  // --- Multi-Source Appraisals ---
+
+  async getEmployeeAppraisalContext(employeeId: string, cycleId: string) {
+    let [appraisal] = await this.db
+      .select()
+      .from(employeeAppraisals)
+      .where(
+        and(
+          eq(employeeAppraisals.employeeId, employeeId),
+          eq(employeeAppraisals.cycleId, cycleId)
+        )
+      )
+      .limit(1);
+
+    if (!appraisal) {
+      [appraisal] = await this.db
+        .insert(employeeAppraisals)
+        .values({
+          employeeId,
+          cycleId,
+          status: 'pending_self',
+          selfScore: 0,
+          managerScore: 0,
+          finalScore: 0,
+        })
+        .returning();
+    }
+
+    const kpis = await this.getEmployeeKpis(employeeId, cycleId);
+
+    return {
+      appraisal,
+      kpis,
+    };
+  }
+
+  async submitSelfAppraisal(appraisalId: string, dto: SubmitSelfAppraisalDto) {
+    const [appraisal] = await this.db
+      .select()
+      .from(employeeAppraisals)
+      .where(eq(employeeAppraisals.id, appraisalId))
+      .limit(1);
+
+    if (!appraisal) {
+      throw new NotFoundException(`Appraisal with ID "${appraisalId}" not found`);
+    }
+
+    for (const item of dto.scores) {
+      await this.db
+        .update(employeeKpis)
+        .set({
+          selfScore: item.selfScore,
+          comments: item.comments,
+        })
+        .where(eq(employeeKpis.id, item.kpiId));
+    }
+
+    const kpis = await this.db
+      .select()
+      .from(employeeKpis)
+      .where(
+        and(
+          eq(employeeKpis.employeeId, appraisal.employeeId),
+          eq(employeeKpis.cycleId, appraisal.cycleId)
+        )
+      );
+
+    const totalWeightedSelf = kpis.reduce((sum, k) => {
+      const selfVal = k.selfScore !== null ? k.selfScore : 0;
+      return sum + (selfVal * (k.weight / 100));
+    }, 0);
+
+    const roundedSelfScore = Math.round(totalWeightedSelf);
+
+    const [updated] = await this.db
+      .update(employeeAppraisals)
+      .set({
+        selfScore: roundedSelfScore,
+        selfFeedback: dto.selfFeedback,
+        status: 'pending_manager',
+      })
+      .where(eq(employeeAppraisals.id, appraisalId))
+      .returning();
+
+    return {
+      appraisal: updated,
+      kpis,
+    };
+  }
+
+  async submitManagerAppraisal(appraisalId: string, dto: SubmitManagerAppraisalDto) {
+    const [appraisal] = await this.db
+      .select()
+      .from(employeeAppraisals)
+      .where(eq(employeeAppraisals.id, appraisalId))
+      .limit(1);
+
+    if (!appraisal) {
+      throw new NotFoundException(`Appraisal with ID "${appraisalId}" not found`);
+    }
+
+    for (const item of dto.scores) {
+      await this.db
+        .update(employeeKpis)
+        .set({
+          managerScore: item.managerScore,
+          score: item.managerScore,
+          comments: item.comments,
+        })
+        .where(eq(employeeKpis.id, item.kpiId));
+    }
+
+    const kpis = await this.db
+      .select()
+      .from(employeeKpis)
+      .where(
+        and(
+          eq(employeeKpis.employeeId, appraisal.employeeId),
+          eq(employeeKpis.cycleId, appraisal.cycleId)
+        )
+      );
+
+    const totalWeightedManager = kpis.reduce((sum, k) => {
+      const managerVal = k.managerScore !== null ? k.managerScore : 0;
+      return sum + (managerVal * (k.weight / 100));
+    }, 0);
+
+    const roundedManagerScore = Math.round(totalWeightedManager);
+
+    const [updated] = await this.db
+      .update(employeeAppraisals)
+      .set({
+        managerScore: roundedManagerScore,
+        finalScore: roundedManagerScore,
+        managerFeedback: dto.managerFeedback,
+        status: 'completed',
+        promotionRecommended: dto.promotionRecommended ?? false,
+        promotionReadiness: dto.promotionReadiness ?? 'not_eligible',
+        recommendedDesignationId: dto.recommendedDesignationId || null,
+        managerNotes: dto.managerNotes || null,
+        completedAt: new Date(),
+      })
+      .where(eq(employeeAppraisals.id, appraisalId))
+      .returning();
+
+    return {
+      appraisal: updated,
+      kpis,
+    };
+  }
+
+  async getCycleAppraisals(cycleId: string) {
+    const activeEmployees = await this.db
+      .select({
+        id: employees.id,
+        fullNameEnglish: employees.fullNameEnglish,
+        email: employees.email,
+        joinDate: employees.joinDate,
+        designationId: employees.designationId,
+        employeeId: employees.employeeId,
+      })
+      .from(employees)
+      .where(eq(employees.status, 'active'));
+
+    const allDesignations = await this.db
+      .select()
+      .from(designations);
+
+    const designationsMap = new Map(allDesignations.map(d => [d.id, d]));
+
+    const appraisals = await this.db
+      .select()
+      .from(employeeAppraisals)
+      .where(eq(employeeAppraisals.cycleId, cycleId));
+
+    const appraisalsMap = new Map(appraisals.map(a => [a.employeeId, a]));
+
+    return activeEmployees.map(emp => {
+      const appraisal = appraisalsMap.get(emp.id) || null;
+      const currentDesig = designationsMap.get(emp.designationId);
+      const recommendedDesig = appraisal?.recommendedDesignationId
+        ? designationsMap.get(appraisal.recommendedDesignationId)
+        : null;
+
+      return {
+        employee: {
+          ...emp,
+          designationName: currentDesig?.name || 'Staff',
+          grade: currentDesig?.grade || '',
+        },
+        appraisal,
+        recommendedDesignation: recommendedDesig
+          ? { id: recommendedDesig.id, name: recommendedDesig.name }
+          : null,
+      };
+    });
   }
 }
