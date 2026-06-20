@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -36,6 +36,7 @@ import {
   useCreateAttachmentMutation,
   useDeleteAttachmentMutation,
   useTasksQuery,
+  useMilestonesQuery,
 } from "@/hooks/useTasks";
 import { useEmployeeOptionsQuery } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -66,6 +67,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   AlertCircle,
+  Target,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -106,6 +109,7 @@ export function TaskDetailsSheet({
   const { data: task, isLoading } = useTaskDetailQuery(taskId || "", isOpen);
   const { data: employees = [] } = useEmployeeOptionsQuery();
   const { data: allTasks = [] } = useTasksQuery({});
+  const { data: milestones = [] } = useMilestonesQuery(task?.projectId || "");
 
   const updateTaskMut = useUpdateTaskMutation();
   const addChecklistMut = useAddChecklistItemMutation();
@@ -130,6 +134,51 @@ export function TaskDetailsSheet({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
   const [titleText, setTitleText] = useState("");
+
+  // Mentions local states
+  const [mentionSearch, setMentionSearch] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+
+  const filteredMentionEmployees = useMemo(() => {
+    if (mentionSearch === null) return [];
+    const query = mentionSearch.toLowerCase();
+    return employees.filter(emp =>
+      emp.fullNameEnglish.toLowerCase().includes(query)
+    );
+  }, [mentionSearch, employees]);
+
+  const selectMention = (name: string) => {
+    if (mentionSearch === null) return;
+    const textarea = document.getElementById("comment-textarea") as HTMLTextAreaElement;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const textBefore = commentText.slice(0, start);
+    const textAfter = commentText.slice(start);
+    const lastIdx = textBefore.lastIndexOf("@");
+    if (lastIdx !== -1) {
+      const nextText = textBefore.slice(0, lastIdx) + "@" + name + " " + textAfter;
+      setCommentText(nextText);
+      setMentionSearch(null);
+      setTimeout(() => {
+        textarea.focus();
+        const newPos = lastIdx + name.length + 2; // @ + name + space
+        textarea.setSelectionRange(newPos, newPos);
+      }, 0);
+    }
+  };
+
+  const handleCommentChange = (val: string, selectionStart: number) => {
+    setCommentText(val);
+    const textBeforeCaret = val.slice(0, selectionStart);
+    const words = textBeforeCaret.split(/\s/);
+    const lastWord = words[words.length - 1];
+    if (lastWord.startsWith("@")) {
+      setMentionSearch(lastWord.slice(1));
+      setMentionIndex(0);
+    } else {
+      setMentionSearch(null);
+    }
+  };
   const [descText, setDescText] = useState("");
 
   const [activeTab, setActiveTab] = useState<"checklist" | "comments" | "activity" | "files" | "dependencies" | "time">("checklist");
@@ -607,18 +656,64 @@ export function TaskDetailsSheet({
                             </div>
                           </div>
                           
-                          <Textarea
-                            placeholder="Write collaborative updates/feedback... Use Shift+Enter for new line."
-                            value={commentText}
-                            onChange={(e) => setCommentText(e.target.value)}
-                            className="text-xs min-h-[70px] resize-none bg-transparent"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handlePostComment(e);
-                              }
-                            }}
-                          />
+                           <div className="relative">
+                            <Textarea
+                              id="comment-textarea"
+                              placeholder="Write collaborative updates/feedback... Use @Name to mention a colleague. Use Shift+Enter for new line."
+                              value={commentText}
+                              onChange={(e) => handleCommentChange(e.target.value, e.target.selectionStart)}
+                              className="text-xs min-h-[70px] resize-none bg-transparent"
+                              onKeyDown={(e) => {
+                                if (mentionSearch !== null && filteredMentionEmployees.length > 0) {
+                                  if (e.key === "ArrowDown") {
+                                    e.preventDefault();
+                                    setMentionIndex((prev) => (prev + 1) % filteredMentionEmployees.length);
+                                    return;
+                                  }
+                                  if (e.key === "ArrowUp") {
+                                    e.preventDefault();
+                                    setMentionIndex((prev) => (prev - 1 + filteredMentionEmployees.length) % filteredMentionEmployees.length);
+                                    return;
+                                  }
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    selectMention(filteredMentionEmployees[mentionIndex].fullNameEnglish);
+                                    return;
+                                  }
+                                  if (e.key === "Escape") {
+                                    e.preventDefault();
+                                    setMentionSearch(null);
+                                    return;
+                                  }
+                                }
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handlePostComment(e);
+                                }
+                              }}
+                            />
+                            {mentionSearch !== null && filteredMentionEmployees.length > 0 && (
+                              <div className="absolute left-0 bottom-full mb-1 z-50 w-60 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg p-1.5 space-y-0.5">
+                                {filteredMentionEmployees.map((emp: any, idx: number) => (
+                                  <button
+                                    key={emp.id}
+                                    type="button"
+                                    onClick={() => selectMention(emp.fullNameEnglish)}
+                                    className={cn(
+                                      "w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer",
+                                      idx === mentionIndex
+                                        ? "bg-primary/10 text-primary animate-pulse-subtle"
+                                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                    )}
+                                    onMouseEnter={() => setMentionIndex(idx)}
+                                  >
+                                    <span>{emp.fullNameEnglish}</span>
+                                    <span className="text-[10px] text-slate-400 font-normal">@{emp.employeeId}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <div className="flex justify-end">
                             <Button type="submit" size="sm" className="h-8 gap-1.5 text-xs bg-primary">
                               <Send className="h-3.5 w-3.5" /> Post Comment
@@ -1010,6 +1105,31 @@ export function TaskDetailsSheet({
                 />
               </div>
 
+              {/* Milestone Selector */}
+              {task.projectId && (
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                    <Target className="h-3 w-3" /> Milestone
+                  </Label>
+                  <Select
+                    value={task.milestoneId || "none"}
+                    onValueChange={(val) => handleMetaUpdate("milestoneId", val === "none" ? null : val)}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                      <SelectValue placeholder="No Milestone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs">No Milestone</SelectItem>
+                      {milestones.map((m) => (
+                        <SelectItem key={m.id} value={m.id} className="text-xs">
+                          {m.name} {m.dueDate ? `(Due: ${m.dueDate})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* ─── Work Monitoring Options ─── */}
               <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
@@ -1079,6 +1199,74 @@ export function TaskDetailsSheet({
                       {timeVariance >= 0 ? `+${timeVariance}h under` : `${timeVariance}h over`}
                     </span>
                   </div>
+                )}
+              </div>
+
+              {/* ─── Task Recurrence Card ─── */}
+              <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3" /> Recurrence Settings
+                </span>
+                
+                {/* Recurrence Pattern */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-semibold text-slate-400">Pattern</label>
+                  <Select
+                    value={task.recurrencePattern || "none"}
+                    onValueChange={(val) => {
+                      handleMetaUpdate("recurrencePattern", val);
+                      if (val !== "none" && !task.nextRecurrenceDate) {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        handleMetaUpdate("nextRecurrenceDate", tomorrow.toISOString().split("T")[0]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-7 text-xs bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs">No Recurrence</SelectItem>
+                      <SelectItem value="daily" className="text-xs">Daily</SelectItem>
+                      <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
+                      <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {task.recurrencePattern && task.recurrencePattern !== "none" && (
+                  <>
+                    {/* Recurrence Interval */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-semibold text-slate-400">Repeat Every</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={100}
+                          value={task.recurrenceInterval || 1}
+                          onChange={(e) => handleMetaUpdate("recurrenceInterval", parseInt(e.target.value) || 1)}
+                          className="h-7 text-xs w-20 bg-background"
+                        />
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {task.recurrencePattern === "daily" ? "day(s)" :
+                           task.recurrencePattern === "weekly" ? "week(s)" :
+                           "month(s)"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Next Recurrence Date */}
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-semibold text-slate-400">Next Occurrence</label>
+                      <Input
+                        type="date"
+                        value={task.nextRecurrenceDate ? task.nextRecurrenceDate.split("T")[0] : ""}
+                        onChange={(e) => handleMetaUpdate("nextRecurrenceDate", e.target.value || null)}
+                        className="h-7 text-xs bg-background"
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 

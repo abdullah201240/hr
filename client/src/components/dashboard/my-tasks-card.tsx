@@ -21,9 +21,10 @@ interface MyTasksCardProps {
   onDeleteTask: (id: string) => void
   onToggleAll: (checked: boolean) => void
   onAddTask?: () => void
+  onTaskClick?: (id: string) => void
 }
 
-export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll, onAddTask }: MyTasksCardProps) {
+export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll, onAddTask, onTaskClick }: MyTasksCardProps) {
   const doneTasks = tasks.filter(t => t.done).length
   const totalTasks = tasks.length
   const taskPct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0
@@ -81,11 +82,28 @@ export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll, on
                     onCheckedChange={() => onToggleTask(task.id)}
                   />
                 </TableCell>
-                <TableCell className="py-3">
-                  <span className={cn(
-                    "text-xs font-medium",
-                    task.done && "line-through text-muted-foreground"
-                  )}>{task.text}</span>
+                <TableCell
+                  className="py-3 cursor-pointer"
+                  onClick={() => onTaskClick?.(task.id)}
+                >
+                  <div className="flex flex-col">
+                    <span className={cn(
+                      "text-xs font-semibold text-slate-800 dark:text-slate-200 hover:text-primary transition-colors",
+                      task.done && "line-through text-muted-foreground font-normal"
+                    )}>{task.text}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {task.projectName && (
+                        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          {task.projectName}
+                        </span>
+                      )}
+                      {task.subtasksTotal !== undefined && task.subtasksTotal > 0 && (
+                        <span className="text-[9px] text-muted-foreground font-semibold bg-muted/60 border border-border/40 px-1.5 py-0.5 rounded">
+                          Checklist: {task.subtasksCompleted}/{task.subtasksTotal}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell className="py-3">
                   <Badge className={cn("text-[9px] border-none font-semibold", PRIORITY_STYLE[task.priority])}>
@@ -93,7 +111,19 @@ export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll, on
                   </Badge>
                 </TableCell>
                 <TableCell className="py-3">
-                  <span className="text-xs text-muted-foreground">{task.due}</span>
+                  <div className="flex flex-col">
+                    <span className={cn(
+                      "text-xs font-semibold",
+                      task.overdue ? "text-rose-500 font-extrabold" : "text-muted-foreground"
+                    )}>
+                      {task.due}
+                    </span>
+                    {task.overdue && (
+                      <span className="text-[8px] bg-rose-500/10 text-rose-600 border border-rose-500/20 px-1 py-0.5 rounded font-black uppercase tracking-wider w-fit mt-0.5">
+                        Overdue
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="py-3">
                   <Badge className={cn("text-[9px] font-bold border-none",
@@ -106,7 +136,10 @@ export function MyTasksCard({ tasks, onToggleTask, onDeleteTask, onToggleAll, on
                 </TableCell>
                 <TableCell className="py-3">
                   <button
-                    onClick={() => onDeleteTask(task.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteTask(task.id);
+                    }}
                     className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                   >
                     <Trash2 className="h-3 w-3" />

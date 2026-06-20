@@ -68,6 +68,10 @@ export interface Task {
   priority: string
   due: string
   done: boolean
+  projectName?: string | null
+  subtasksTotal?: number
+  subtasksCompleted?: number
+  overdue?: boolean
 }
 
 export interface Announcement {

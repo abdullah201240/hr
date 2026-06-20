@@ -30,12 +30,18 @@ import {
   CreateTimeEntryDto,
   CreateAttachmentDto,
 } from './dto/tasks.dto';
+import { RealtimeGateway } from './realtime.gateway';
 
 @Injectable()
 export class TasksService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
+
+  private broadcastMutation(action: string, id?: string) {
+    this.realtimeGateway.broadcast('tasks_mutated', { action, id });
+  }
 
   // ─── Project Endpoints ───────────────────────────────────────────────────────
 
@@ -77,6 +83,7 @@ export class TasksService {
         slackWebhookUrl: dto.slackWebhookUrl || null,
       })
       .returning();
+    this.broadcastMutation('project_created', project.id);
     return project;
   }
 
@@ -176,6 +183,7 @@ export class TasksService {
     if (!project) {
       throw new NotFoundException(`Project with ID "${id}" not found`);
     }
+    this.broadcastMutation('project_updated', project.id);
     return project;
   }
 
@@ -205,6 +213,7 @@ export class TasksService {
     if (!deleted) {
       throw new NotFoundException(`Project with ID "${id}" not found`);
     }
+    this.broadcastMutation('project_deleted', id);
     return { message: 'Project deleted successfully' };
   }
 
@@ -248,6 +257,7 @@ export class TasksService {
     // Webhook Trigger
     await this.triggerWebhook(task.projectId, `New task created: "${task.title}" (Priority: ${task.priority})`);
 
+    this.broadcastMutation('task_created', task.id);
     return task;
   }
 
@@ -340,7 +350,21 @@ export class TasksService {
       .from(taskComments)
       .where(inArray(taskComments.taskId, taskIds));
 
-    // 3. Group them in memory
+    // 3. Fetch dependencies for all task IDs in a single query
+    const allDeps = await this.db
+      .select({
+        id: taskDependencies.id,
+        taskId: taskDependencies.taskId,
+        dependsOnTaskId: taskDependencies.dependsOnTaskId,
+        dependencyType: taskDependencies.dependencyType,
+        dependsOnTaskTitle: tasks.title,
+        dependsOnTaskStatus: tasks.status,
+      })
+      .from(taskDependencies)
+      .innerJoin(tasks, eq(taskDependencies.dependsOnTaskId, tasks.id))
+      .where(inArray(taskDependencies.taskId, taskIds));
+
+    // 4. Group them in memory
     const checklistMap = new Map<string, { total: number; completed: number }>();
     for (const item of allChecklists) {
       const entry = checklistMap.get(item.taskId) || { total: 0, completed: 0 };
@@ -356,15 +380,30 @@ export class TasksService {
       commentsMap.set(comment.taskId, (commentsMap.get(comment.taskId) || 0) + 1);
     }
 
-    // 4. Map them back to tasks
+    const depsMap = new Map<string, any[]>();
+    for (const dep of allDeps) {
+      const entry = depsMap.get(dep.taskId) || [];
+      entry.push({
+        id: dep.id,
+        dependsOnTaskId: dep.dependsOnTaskId,
+        dependencyType: dep.dependencyType,
+        dependsOnTaskTitle: dep.dependsOnTaskTitle,
+        dependsOnTaskStatus: dep.dependsOnTaskStatus,
+      });
+      depsMap.set(dep.taskId, entry);
+    }
+
+    // 5. Map them back to tasks
     const results = rawTasks.map(t => {
       const cl = checklistMap.get(t.id) || { total: 0, completed: 0 };
       const commentCount = commentsMap.get(t.id) || 0;
+      const taskDeps = depsMap.get(t.id) || [];
       return {
         ...t,
         subtasksTotal: cl.total,
         subtasksCompleted: cl.completed,
         commentsCount: commentCount,
+        dependencies: taskDeps,
       };
     });
 
@@ -574,6 +613,61 @@ export class TasksService {
           `Your assigned task "${updated.title}" is now "${dto.status}".`,
         );
       }
+
+      // If status changed to Done and task is a recurring task, clone it for next occurrence
+      if (dto.status === 'Done' && updated.recurrencePattern && updated.recurrencePattern !== 'none') {
+        try {
+          const nextDate = new Date(updated.nextRecurrenceDate || new Date());
+          const interval = updated.recurrenceInterval || 1;
+          
+          if (updated.recurrencePattern === 'daily') {
+            nextDate.setDate(nextDate.getDate() + interval);
+          } else if (updated.recurrencePattern === 'weekly') {
+            nextDate.setDate(nextDate.getDate() + interval * 7);
+          } else if (updated.recurrencePattern === 'monthly') {
+            nextDate.setMonth(nextDate.getMonth() + interval);
+          }
+
+          const nextDateStr = nextDate.toISOString().split('T')[0];
+
+          // Auto-create next task clone (with status 'Todo')
+          const [clonedTask] = await this.db.insert(tasks).values({
+            projectId: updated.projectId,
+            title: updated.title,
+            description: updated.description,
+            status: 'Todo',
+            priority: updated.priority,
+            dueDate: updated.nextRecurrenceDate, // Due date is the recurrence date
+            assigneeId: updated.assigneeId,
+            reporterId: updated.reporterId,
+            estimatedHours: updated.estimatedHours,
+            actualHours: 0,
+            tags: updated.tags,
+            watchers: updated.watchers,
+            recurrencePattern: updated.recurrencePattern,
+            recurrenceInterval: updated.recurrenceInterval,
+            nextRecurrenceDate: nextDateStr,
+            progress: 0,
+            workStatus: 'Idle',
+            approvalStatus: 'Pending',
+          }).returning();
+
+          // Log creation activity for the cloned task
+          await this.db.insert(taskActivities).values({
+            taskId: clonedTask.id,
+            userId: null,
+            action: 'created',
+            details: 'Automatically created recurring task instance',
+          });
+
+          // Disable recurrence on the current completed task
+          await this.db.update(tasks).set({
+            recurrencePattern: 'none',
+          }).where(eq(tasks.id, id));
+        } catch (e) {
+          console.error('Failed to instantiate recurring task:', e);
+        }
+      }
     }
 
     if (dto.assigneeId !== undefined && dto.assigneeId !== existing.assigneeId) {
@@ -621,6 +715,7 @@ export class TasksService {
         });
     }
 
+    this.broadcastMutation('task_updated', id);
     return updated;
   }
 
@@ -651,6 +746,7 @@ export class TasksService {
     if (!deleted) {
       throw new NotFoundException(`Task with ID "${id}" not found`);
     }
+    this.broadcastMutation('task_deleted', id);
     return { message: 'Task deleted successfully' };
   }
 
@@ -665,6 +761,7 @@ export class TasksService {
         isCompleted: false,
       })
       .returning();
+    this.broadcastMutation('task_updated', taskId);
     return item;
   }
 
@@ -681,6 +778,7 @@ export class TasksService {
     if (!item) {
       throw new NotFoundException(`Checklist item with ID "${itemId}" not found`);
     }
+    this.broadcastMutation('task_updated', item.taskId);
     return item;
   }
 
@@ -693,6 +791,7 @@ export class TasksService {
     if (!deleted) {
       throw new NotFoundException(`Checklist item with ID "${itemId}" not found`);
     }
+    this.broadcastMutation('task_updated', deleted.taskId);
     return { message: 'Checklist item removed successfully' };
   }
 
@@ -748,6 +847,7 @@ export class TasksService {
       }
     }
 
+    this.broadcastMutation('task_updated', taskId);
     return comment;
   }
 
@@ -760,6 +860,7 @@ export class TasksService {
     if (!deleted) {
       throw new NotFoundException(`Comment with ID "${commentId}" not found or unauthorized to delete`);
     }
+    this.broadcastMutation('task_updated', deleted.taskId);
     return { message: 'Comment deleted successfully' };
   }
 
@@ -790,6 +891,7 @@ export class TasksService {
       .where(eq(taskComments.id, commentId))
       .returning();
 
+    this.broadcastMutation('task_updated', updated.taskId);
     return updated;
   }
 
@@ -825,6 +927,7 @@ export class TasksService {
         status: dto.status || 'Open',
       })
       .returning();
+    this.broadcastMutation('project_updated', milestone.projectId);
     return milestone;
   }
 
@@ -847,12 +950,14 @@ export class TasksService {
       .where(eq(taskMilestones.id, id))
       .returning();
     if (!updated) throw new NotFoundException('Milestone not found');
+    this.broadcastMutation('project_updated', updated.projectId);
     return updated;
   }
 
   async deleteMilestone(id: string) {
     const [deleted] = await this.db.delete(taskMilestones).where(eq(taskMilestones.id, id)).returning();
     if (!deleted) throw new NotFoundException('Milestone not found');
+    this.broadcastMutation('project_updated', deleted.projectId);
     return { message: 'Milestone deleted successfully' };
   }
 
@@ -867,12 +972,14 @@ export class TasksService {
         dependencyType: dto.dependencyType || 'blocked_by',
       })
       .returning();
+    this.broadcastMutation('task_updated', taskId);
     return dep;
   }
 
   async deleteDependency(id: string) {
     const [deleted] = await this.db.delete(taskDependencies).where(eq(taskDependencies.id, id)).returning();
     if (!deleted) throw new NotFoundException('Dependency not found');
+    this.broadcastMutation('task_updated', deleted.taskId);
     return { message: 'Dependency removed' };
   }
 
@@ -899,12 +1006,14 @@ export class TasksService {
       .set({ actualHours: (task?.actualHours || 0) + addedHours })
       .where(eq(tasks.id, taskId));
 
+    this.broadcastMutation('task_updated', taskId);
     return entry;
   }
 
   async deleteTimeEntry(id: string) {
     const [deleted] = await this.db.delete(timeEntries).where(eq(timeEntries.id, id)).returning();
     if (!deleted) throw new NotFoundException('Time entry not found');
+    this.broadcastMutation('task_updated', deleted.taskId);
     return { message: 'Time entry deleted' };
   }
 
@@ -921,12 +1030,14 @@ export class TasksService {
         uploadedById,
       })
       .returning();
+    this.broadcastMutation('task_updated', taskId);
     return file;
   }
 
   async deleteAttachment(id: string) {
     const [deleted] = await this.db.delete(taskAttachments).where(eq(taskAttachments.id, id)).returning();
     if (!deleted) throw new NotFoundException('Attachment not found');
+    this.broadcastMutation('task_updated', deleted.taskId);
     return { message: 'Attachment deleted' };
   }
 

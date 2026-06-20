@@ -4,6 +4,9 @@ import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
 import { MyTasksCard } from "@/components/dashboard/my-tasks-card"
 import { AnnouncementsCard } from "@/components/dashboard/announcements-card"
+import { TaskDetailsSheet } from "@/components/tasks/TaskDetailsSheet"
+import { TaskCreateDialog } from "@/components/tasks/TaskCreateDialog"
+import { isAfter, parseISO } from "date-fns"
 import type {
   AttendanceRecord,
 } from "@/components/dashboard/types"
@@ -22,17 +25,19 @@ import {
   useUpdateLeaveMutation,
 } from "@/hooks/useLeaveApplications"
 import { useAuthStore } from "@/store/useAuthStore"
-import { useNavigate } from "react-router"
 import {
   useTasksQuery,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
+  useCreateTaskMutation,
 } from "@/hooks/useTasks"
 import { toast } from "sonner"
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user } = useAuthStore()
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
 
   // ── Announcements (fetch only published, limit to 10 for dashboard) ──────────────────────────────────
   const { data: announcementsPage } = useAnnouncementsPaginated({
@@ -41,21 +46,37 @@ export default function DashboardPage() {
   })
   const announcements = announcementsPage?.data || []
 
-  const navigate = useNavigate()
 
   // ── Tasks (Fetch user's live assigned tasks from DB) ──────────────────────
   const { data: dbTasks = [] } = useTasksQuery({ assigneeId: user?.id })
   const updateTaskMut = useUpdateTaskMutation()
   const deleteTaskMut = useDeleteTaskMutation()
+  const createTaskMut = useCreateTaskMutation()
+
+  const handleCreateTask = (data: any) => {
+    createTaskMut.mutate(data, {
+      onSuccess: () => {
+        setIsAddTaskOpen(false)
+        toast.success("Task created successfully")
+      }
+    })
+  }
 
   const mappedTasks = useMemo(() => {
-    return dbTasks.map(t => ({
-      id: t.id,
-      text: t.title,
-      priority: t.priority,
-      due: t.dueDate ? new Date(t.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date",
-      done: t.status === "Done",
-    }))
+    return dbTasks.map(t => {
+      const overdue = t.dueDate ? isAfter(new Date(), parseISO(t.dueDate)) && t.status !== "Done" : false;
+      return {
+        id: t.id,
+        text: t.title,
+        priority: t.priority,
+        due: t.dueDate ? new Date(t.dueDate).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "No date",
+        done: t.status === "Done",
+        projectName: t.projectName,
+        subtasksTotal: t.subtasksTotal,
+        subtasksCompleted: t.subtasksCompleted,
+        overdue,
+      };
+    })
   }, [dbTasks])
 
   const toggleTask = (id: string) => {
@@ -410,11 +431,25 @@ export default function DashboardPage() {
             onToggleTask={toggleTask}
             onDeleteTask={deleteTask}
             onToggleAll={toggleAllTasks}
-            onAddTask={() => navigate("/tasks")}
+            onAddTask={() => setIsAddTaskOpen(true)}
+            onTaskClick={(id) => setSelectedTaskId(id)}
           />
           <AnnouncementsCard announcements={announcements} />
         </div>
       </div>
+
+      <TaskDetailsSheet
+        taskId={selectedTaskId || ""}
+        isOpen={!!selectedTaskId}
+        onClose={() => setSelectedTaskId(null)}
+      />
+
+      <TaskCreateDialog
+        isOpen={isAddTaskOpen}
+        onClose={() => setIsAddTaskOpen(false)}
+        onSubmit={handleCreateTask}
+        isPending={createTaskMut.isPending}
+      />
     </div>
   )
 }

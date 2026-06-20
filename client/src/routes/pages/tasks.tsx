@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -23,6 +24,10 @@ import {
   useDeleteTaskMutation,
   useUpdateProjectMutation,
   useDeleteProjectMutation,
+  useMilestonesQuery,
+  useCreateMilestoneMutation,
+  useUpdateMilestoneMutation,
+  useDeleteMilestoneMutation,
   type Task,
 } from "@/hooks/useTasks";
 import { useEmployeesQuery } from "@/hooks/useEmployees";
@@ -31,6 +36,7 @@ import { TaskCreateDialog } from "@/components/tasks/TaskCreateDialog";
 import { TaskDetailsSheet } from "@/components/tasks/TaskDetailsSheet";
 import TaskBoard from "@/components/tasks/TaskBoard";
 import TaskListView from "@/components/tasks/TaskListView";
+import TaskGanttView from "@/components/tasks/TaskGanttView";
 import TaskWorkloadView from "@/components/tasks/TaskWorkloadView";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
@@ -46,18 +52,43 @@ import {
   FileSpreadsheet,
   Printer,
   Loader2,
+  Activity,
+  Workflow,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 
 export default function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+
+  // Real-time collaborative sync via WebSocket
+  useEffect(() => {
+    const socket = new WebSocket("ws://localhost:3001/ws");
+
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.event === "tasks_mutated") {
+          queryClient.invalidateQueries({ queryKey: ["tasks"] });
+          queryClient.invalidateQueries({ queryKey: ["task-projects"] });
+        }
+      } catch (err) {
+        console.error("Failed to parse WebSocket message:", err);
+      }
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, [queryClient]);
 
   // Search & Filter state synced with URL search params
   const tab = searchParams.get("tab") || "board";
   const search = searchParams.get("search") || "";
   const selectedProjectId = searchParams.get("project") || "all";
   const selectedAssigneeId = searchParams.get("assignee") || "all";
+  const selectedStatus = searchParams.get("status") || "all";
   const selectedPriority = searchParams.get("priority") || "all";
 
   // Workplace Mode States
@@ -74,6 +105,13 @@ export default function TasksPage() {
   const [isProjectOpen, setIsProjectOpen] = useState(false);
   const [isTaskOpen, setIsTaskOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  // Milestone management state
+  const [newMilestoneName, setNewMilestoneName] = useState("");
+  const [newMilestoneDate, setNewMilestoneDate] = useState("");
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [editMilestoneName, setEditMilestoneName] = useState("");
+  const [editMilestoneDate, setEditMilestoneDate] = useState("");
 
   // Edit Project Settings state
   const [projName, setProjName] = useState("");
@@ -102,13 +140,14 @@ export default function TasksPage() {
     search: search.trim() || undefined,
     projectId: workplaceProjectId || (selectedProjectId === "all" ? undefined : selectedProjectId),
     assigneeId: selectedAssigneeId === "all" ? undefined : selectedAssigneeId,
+    status: selectedStatus === "all" ? undefined : selectedStatus,
     priority: selectedPriority === "all" ? undefined : selectedPriority,
-  }), [search, selectedProjectId, selectedAssigneeId, selectedPriority, workplaceProjectId]);
+  }), [search, selectedProjectId, selectedAssigneeId, selectedStatus, selectedPriority, workplaceProjectId]);
 
   const { data: tasks = [], isLoading: tasksLoading } = useTasksQuery(filters);
 
-  // Aggregated timeline activities query (only active in workplace mode — result used for cache)
-  useProjectActivitiesQuery(workplaceProjectId || "", !!workplaceProjectId);
+  // Aggregated timeline activities query (only active in workplace mode)
+  const { data: activities = [] } = useProjectActivitiesQuery(workplaceProjectId || "", !!workplaceProjectId);
 
   const createProjectMut = useCreateProjectMutation();
   const updateProjectMut = useUpdateProjectMutation();
@@ -116,6 +155,12 @@ export default function TasksPage() {
   const createTaskMut = useCreateTaskMutation();
   const updateTaskMut = useUpdateTaskMutation();
   const deleteTaskMut = useDeleteTaskMutation();
+
+  // Milestone hooks
+  const { data: milestones = [] } = useMilestonesQuery(workplaceProjectId || "");
+  const createMilestoneMut = useCreateMilestoneMutation(workplaceProjectId || "");
+  const updateMilestoneMut = useUpdateMilestoneMutation(workplaceProjectId || "");
+  const deleteMilestoneMut = useDeleteMilestoneMutation(workplaceProjectId || "");
 
   const activeProject = useMemo(() => projects.find((p) => p.id === workplaceProjectId), [projects, workplaceProjectId]);
 
@@ -470,6 +515,20 @@ export default function TasksPage() {
                     <SelectItem value="Low">Low</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={selectedStatus} onValueChange={(val) => setParam("status", val)}>
+                  <SelectTrigger className="w-full sm:w-[130px] text-xs h-9">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="Backlog">Backlog</SelectItem>
+                    <SelectItem value="Todo">Todo</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="In Review">In Review</SelectItem>
+                    <SelectItem value="Done">Done</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* View Modes Tabs */}
@@ -497,6 +556,20 @@ export default function TasksPage() {
                 </button>
                 {workplaceProjectId && (
                   <>
+                    <button
+                      onClick={() => setParam("tab", "gantt")}
+                      className={cn("p-1.5 rounded-lg text-xs font-semibold transition-all", tab === "gantt" ? "bg-white dark:bg-slate-900 shadow-sm text-primary" : "text-slate-500")}
+                      title="Gantt Timeline Chart"
+                    >
+                      <Workflow className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setParam("tab", "activities")}
+                      className={cn("p-1.5 rounded-lg text-xs font-semibold transition-all", tab === "activities" ? "bg-white dark:bg-slate-900 shadow-sm text-primary" : "text-slate-500")}
+                      title="Project Activities Timeline"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => setParam("tab", "calendar")}
                       className={cn("p-1.5 rounded-lg text-xs font-semibold transition-all", tab === "calendar" ? "bg-white dark:bg-slate-900 shadow-sm text-primary" : "text-slate-500")}
@@ -582,6 +655,15 @@ export default function TasksPage() {
               />
             )}
 
+            {/* TAB CONTENT 3.5: Gantt Timeline View */}
+            {tab === "gantt" && (
+              <TaskGanttView
+                tasks={tasks}
+                employees={employees}
+                onTaskClick={(t) => setSelectedTaskId(t.id)}
+              />
+            )}
+
             {/* TAB CONTENT 4: Workplace Project Calendar */}
             {tab === "calendar" && workplaceProjectId && (
               <Card className="p-4 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md">
@@ -616,86 +698,332 @@ export default function TasksPage() {
               </Card>
             )}
 
+            {/* TAB CONTENT 4.5: Project Activities Timeline */}
+            {tab === "activities" && workplaceProjectId && (
+              <Card className="p-5 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 pb-3">
+                  <div>
+                    <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Workplace Activity Log</h3>
+                    <p className="text-slate-400 text-[11px]">Real-time chronological feed of actions performed inside this workspace.</p>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-bold bg-background text-primary">
+                    {activities.length} total events
+                  </Badge>
+                </div>
+                
+                {activities.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 italic text-xs">No project activities recorded yet.</div>
+                ) : (
+                  <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200 dark:before:bg-slate-800/80">
+                    {activities.map((act) => (
+                      <div key={act.id} className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        {/* Timeline node dot icon */}
+                        <div className={cn(
+                          "absolute -left-[22px] top-0 h-4.5 w-4.5 rounded-full border bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm",
+                          act.action === "created" ? "border-emerald-500 text-emerald-500" :
+                          act.action === "status_change" ? "border-blue-500 text-blue-500" :
+                          act.action === "comment" ? "border-purple-500 text-purple-500" :
+                          "border-slate-300 text-slate-500"
+                        )}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-bold text-slate-700 dark:text-slate-300">{act.userName || "System"}</span>
+                            <span className="text-slate-400 font-medium">{act.details}</span>
+                            {act.taskTitle && (
+                              <button
+                                onClick={() => setSelectedTaskId(act.taskId)}
+                                className="font-semibold text-primary hover:underline bg-primary/5 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                              >
+                                {act.taskTitle}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-[10px] text-slate-400 font-medium shrink-0 self-start sm:self-center">
+                          {format(parseISO(act.createdAt), "PPpp")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
+
             {/* TAB CONTENT 5: Workspace Project Settings (Milestones, Members, Webhooks) */}
             {tab === "settings" && workplaceProjectId && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 p-5 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md space-y-4">
-                  <h3 className="font-semibold text-sm">Project Details Configuration</h3>
-                  <div className="grid gap-3 text-xs">
-                    <div className="grid gap-1">
-                      <label className="font-semibold text-slate-500">Project Name</label>
-                      <Input value={projName} onChange={(e) => setProjName(e.target.value)} className="h-9 bg-transparent" />
-                    </div>
-                    <div className="grid gap-1">
-                      <label className="font-semibold text-slate-500">Description</label>
-                      <Input value={projDesc} onChange={(e) => setProjDesc(e.target.value)} className="h-9 bg-transparent" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                <div className="lg:col-span-2 space-y-6">
+                  <Card className="p-5 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md space-y-4">
+                    <h3 className="font-semibold text-sm">Project Details Configuration</h3>
+                    <div className="grid gap-3 text-xs">
                       <div className="grid gap-1">
-                        <label className="font-semibold text-slate-500">Project Lead</label>
-                        <Select value={projLead} onValueChange={setProjLead}>
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {employees.map(e => (
-                              <SelectItem key={e.id} value={e.id}>{e.fullNameEnglish}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <label className="font-semibold text-slate-500">Project Name</label>
+                        <Input value={projName} onChange={(e) => setProjName(e.target.value)} className="h-9 bg-transparent" />
                       </div>
                       <div className="grid gap-1">
-                        <label className="font-semibold text-slate-500">Slack/Teams Incoming Webhook</label>
-                        <Input value={projWebhook} onChange={(e) => setProjWebhook(e.target.value)} placeholder="https://hooks.slack.com/services/..." className="h-9 bg-transparent" />
+                        <label className="font-semibold text-slate-500">Description</label>
+                        <Input value={projDesc} onChange={(e) => setProjDesc(e.target.value)} className="h-9 bg-transparent" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-1">
+                          <label className="font-semibold text-slate-500">Project Lead</label>
+                          <Select value={projLead} onValueChange={setProjLead}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {employees.map(e => (
+                                <SelectItem key={e.id} value={e.id}>{e.fullNameEnglish}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-1">
+                          <label className="font-semibold text-slate-500">Slack/Teams Incoming Webhook</label>
+                          <Input value={projWebhook} onChange={(e) => setProjWebhook(e.target.value)} placeholder="https://hooks.slack.com/services/..." className="h-9 bg-transparent" />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex gap-2 justify-between pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={handleArchiveProjectToggle} className={cn("text-xs", activeProject?.archived ? "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/25" : "text-amber-500 bg-amber-500/10 hover:bg-amber-500/25")}>
-                        {activeProject?.archived ? "Restore Project" : "Archive Project Workspace"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs text-rose-500 bg-rose-500/10 hover:bg-rose-500/25"
-                        onClick={() => {
-                          if (!workplaceProjectId) return;
-                          Swal.fire({
-                            title: "Delete Project Workspace?",
-                            text: "Permanently delete this project workspace and all its tasks? This cannot be undone.",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonText: "Yes, Delete",
-                            cancelButtonText: "Cancel",
-                            buttonsStyling: false,
-                            customClass: {
-                              confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
-                              cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
-                            }
-                          }).then((res) => {
-                            if (res.isConfirmed) {
-                              deleteProjectMut.mutate(workplaceProjectId, {
-                                onSuccess: () => {
-                                  toast.success("Project deleted");
-                                  setWorkplaceProjectId(null);
-                                  setParam("project", "all");
-                                },
-                                onError: (err) => toast.error(err.message || "Failed to delete project"),
-                              });
-                            }
-                          });
-                        }}
-                      >
-                        Delete Project
+                    <div className="flex gap-2 justify-between pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleArchiveProjectToggle} className={cn("text-xs", activeProject?.archived ? "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/25" : "text-amber-500 bg-amber-500/10 hover:bg-amber-500/25")}>
+                          {activeProject?.archived ? "Restore Project" : "Archive Project Workspace"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs text-rose-500 bg-rose-500/10 hover:bg-rose-500/25"
+                          onClick={() => {
+                            if (!workplaceProjectId) return;
+                            Swal.fire({
+                              title: "Delete Project Workspace?",
+                              text: "Permanently delete this project workspace and all its tasks? This cannot be undone.",
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonText: "Yes, Delete",
+                              cancelButtonText: "Cancel",
+                              buttonsStyling: false,
+                              customClass: {
+                                confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
+                                cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
+                              }
+                            }).then((res) => {
+                              if (res.isConfirmed) {
+                                deleteProjectMut.mutate(workplaceProjectId, {
+                                  onSuccess: () => {
+                                    toast.success("Project deleted");
+                                    setWorkplaceProjectId(null);
+                                    setParam("project", "all");
+                                  },
+                                  onError: (err) => toast.error(err.message || "Failed to delete project"),
+                                });
+                              }
+                            });
+                          }}
+                        >
+                          Delete Project
+                        </Button>
+                      </div>
+                      <Button size="sm" onClick={handleUpdateProjectSettings} className="text-xs bg-primary">
+                        Save Workplace Settings
                       </Button>
                     </div>
-                    <Button size="sm" onClick={handleUpdateProjectSettings} className="text-xs bg-primary">
-                      Save Workplace Settings
-                    </Button>
-                  </div>
-                </Card>
+                  </Card>
+
+                  {/* Workplace Milestones Card */}
+                  <Card className="p-5 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 pb-3">
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">Workplace Milestones</h3>
+                        <p className="text-slate-400 text-[11px]">Define key milestones and deliverables for this project workspace.</p>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] font-bold">
+                        {milestones.length} Milestones
+                      </Badge>
+                    </div>
+
+                    {/* Milestones Listing */}
+                    <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
+                      {milestones.length === 0 ? (
+                        <div className="py-6 text-center text-slate-400 italic text-xs">No milestones defined yet.</div>
+                      ) : (
+                        milestones.map((m) => (
+                          <div key={m.id} className="flex items-center justify-between gap-3 text-xs py-2 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                            {editingMilestoneId === m.id ? (
+                              <div className="flex flex-1 flex-col sm:flex-row gap-2">
+                                <Input
+                                  value={editMilestoneName}
+                                  onChange={(e) => setEditMilestoneName(e.target.value)}
+                                  className="h-8 text-xs bg-background flex-1"
+                                  placeholder="Milestone name"
+                                />
+                                <Input
+                                  type="date"
+                                  value={editMilestoneDate}
+                                  onChange={(e) => setEditMilestoneDate(e.target.value)}
+                                  className="h-8 text-xs bg-background w-full sm:w-36"
+                                />
+                                <div className="flex gap-1.5 self-end">
+                                  <Button
+                                    size="sm"
+                                    className="h-8 text-xs bg-primary"
+                                    onClick={() => {
+                                      if (!editMilestoneName.trim()) return;
+                                      updateMilestoneMut.mutate({
+                                        id: m.id,
+                                        data: {
+                                          name: editMilestoneName,
+                                          dueDate: editMilestoneDate || null,
+                                        }
+                                      }, {
+                                        onSuccess: () => {
+                                          setEditingMilestoneId(null);
+                                          toast.success("Milestone updated");
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-xs"
+                                    onClick={() => setEditingMilestoneId(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2.5">
+                                  <Checkbox
+                                    checked={m.status === "Achieved"}
+                                    onCheckedChange={(checked) => {
+                                      updateMilestoneMut.mutate({
+                                        id: m.id,
+                                        data: {
+                                          status: checked ? "Achieved" : "Open"
+                                        }
+                                      }, {
+                                        onSuccess: () => toast.success(`Milestone status updated`)
+                                      });
+                                    }}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className={cn(
+                                      "font-semibold text-slate-800 dark:text-slate-200",
+                                      m.status === "Achieved" && "line-through text-slate-400 dark:text-slate-500 font-normal"
+                                    )}>
+                                      {m.name}
+                                    </span>
+                                    {m.dueDate && (
+                                      <span className="text-[10px] text-muted-foreground mt-0.5">
+                                        Due: {m.dueDate}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-[10px] px-2 font-semibold"
+                                    onClick={() => {
+                                      setEditingMilestoneId(m.id);
+                                      setEditMilestoneName(m.name);
+                                      setEditMilestoneDate(m.dueDate || "");
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-[10px] px-2 font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                                    onClick={() => {
+                                      Swal.fire({
+                                        title: "Delete Milestone?",
+                                        text: "Are you sure you want to delete this milestone? Tasks linked to it will be unassigned from it.",
+                                        icon: "warning",
+                                        showCancelButton: true,
+                                        confirmButtonText: "Delete",
+                                        cancelButtonText: "Cancel",
+                                        buttonsStyling: false,
+                                        customClass: {
+                                          confirmButton: "swal2-confirm swal2-styled bg-destructive text-white rounded-md px-3.5 py-1.5 mr-2 text-xs font-semibold",
+                                          cancelButton: "swal2-cancel swal2-styled bg-muted text-foreground rounded-md px-3.5 py-1.5 text-xs font-semibold"
+                                        }
+                                      }).then((res) => {
+                                        if (res.isConfirmed) {
+                                          deleteMilestoneMut.mutate(m.id, {
+                                            onSuccess: () => toast.success("Milestone deleted")
+                                          });
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Add Milestone Form */}
+                    <div className="pt-4 border-t border-slate-200/60 dark:border-slate-800/60 space-y-2.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Create New Milestone
+                      </span>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          placeholder="Milestone title (e.g. Beta Release v1)"
+                          value={newMilestoneName}
+                          onChange={(e) => setNewMilestoneName(e.target.value)}
+                          className="h-8 text-xs bg-background flex-1"
+                        />
+                        <Input
+                          type="date"
+                          value={newMilestoneDate}
+                          onChange={(e) => setNewMilestoneDate(e.target.value)}
+                          className="h-8 text-xs bg-background w-full sm:w-36"
+                        />
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs bg-primary gap-1.5"
+                          onClick={() => {
+                            if (!newMilestoneName.trim()) {
+                              toast.error("Milestone name is required");
+                              return;
+                            }
+                            createMilestoneMut.mutate({
+                              name: newMilestoneName,
+                              dueDate: newMilestoneDate || null,
+                              status: "Open"
+                            }, {
+                              onSuccess: () => {
+                                setNewMilestoneName("");
+                                setNewMilestoneDate("");
+                                toast.success("Milestone created successfully");
+                              }
+                            });
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Create
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
 
                 {/* Workspace Contributors Checklist */}
                 <Card className="p-5 bg-white/40 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 backdrop-blur-md space-y-4">

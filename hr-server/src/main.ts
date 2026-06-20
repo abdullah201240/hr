@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -28,6 +29,8 @@ async function bootstrap() {
     }),
     { bufferLogs: true },
   );
+
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port', 3000);

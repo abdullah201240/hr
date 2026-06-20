@@ -50,6 +50,7 @@ export interface Task {
   reviewRating: number | null;
   reviewFeedback: string | null;
   watchers?: string;
+  dependencies?: TaskDependency[];
   createdAt: string;
   updatedAt: string;
 }
