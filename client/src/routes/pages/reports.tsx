@@ -28,6 +28,7 @@ import {
   FileCheck,
   ShieldCheck,
 } from "lucide-react"
+import { useEmployeesQuery } from "@/hooks/useEmployees"
 
 interface ReportItem {
   id: string
@@ -53,12 +54,15 @@ export default function ReportsPage() {
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
 
+  const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 1 })
+  const totalHeadcount = employeesData?.meta?.total ?? 248
+
   // Handle Download Mock
   const handleDownload = (reportTitle: string) => {
     // Generate CSV mock
     const headers = "Metric,Value,Period,Status\n"
     const rows = [
-      `"Total headcount",248,"June 2026","Active"`,
+      `"Total headcount",${totalHeadcount},"June 2026","Active"`,
       `"Turnover rate","1.2%","Q2 2026","Stable"`,
       `"Compliance audit status","100%","Q2 2026","Passed"`,
     ].join("\n")
@@ -116,7 +120,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Total Workforce Headcount</p>
-                <p className="text-2xl font-bold mt-1">248</p>
+                <p className="text-2xl font-bold mt-1">{totalHeadcount}</p>
                 <div className="flex items-center gap-1 mt-0.5 text-sky-500">
                   <Users className="h-3.5 w-3.5" />
                   <span className="text-[10px] font-medium">+4.8% Year-over-Year</span>
