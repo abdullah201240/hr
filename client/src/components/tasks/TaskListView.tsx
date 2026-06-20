@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import Swal from "sweetalert2";
 
 interface TaskListViewProps {
   tasks: Task[];
@@ -91,10 +92,24 @@ export default function TaskListView({
 
   const triggerBulkDelete = () => {
     if (onBulkDelete && selectedIds.length > 0) {
-      if (confirm(`Are you sure you want to delete ${selectedIds.length} tasks?`)) {
-        onBulkDelete(selectedIds);
-        setSelectedIds([]);
-      }
+      Swal.fire({
+        title: "Delete Selected Tasks?",
+        text: `Are you sure you want to delete ${selectedIds.length} tasks?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, Delete",
+        cancelButtonText: "Cancel",
+        buttonsStyling: false,
+        customClass: {
+          confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
+          cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
+        }
+      }).then((res) => {
+        if (res.isConfirmed) {
+          onBulkDelete(selectedIds);
+          setSelectedIds([]);
+        }
+      });
     }
   };
 
@@ -292,9 +307,23 @@ export default function TaskListView({
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm("Delete this task?")) {
-                            onDeleteTask(task.id);
-                          }
+                          Swal.fire({
+                            title: "Delete Task?",
+                            text: "Are you sure you want to delete this task?",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonText: "Yes, Delete",
+                            cancelButtonText: "Cancel",
+                            buttonsStyling: false,
+                            customClass: {
+                              confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
+                              cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
+                            }
+                          }).then((res) => {
+                            if (res.isConfirmed) {
+                              onDeleteTask(task.id);
+                            }
+                          });
                         }}
                         className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-400 hover:text-rose-500 transition-colors"
                       >

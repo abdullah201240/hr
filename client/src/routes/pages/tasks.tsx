@@ -33,6 +33,7 @@ import TaskBoard from "@/components/tasks/TaskBoard";
 import TaskListView from "@/components/tasks/TaskListView";
 import TaskWorkloadView from "@/components/tasks/TaskWorkloadView";
 import { cn } from "@/lib/utils";
+import Swal from "sweetalert2";
 import {
   CheckSquare,
   Plus,
@@ -587,9 +588,9 @@ export default function TasksPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-sm">Month Schedule Calendar</h3>
                   <div className="flex items-center gap-1">
-                    <Button variant="outline" size="sm" onClick={() => setCalendarDate(new Date(calendarDate.setMonth(calendarDate.getMonth() - 1)))}>Prev</Button>
+                    <Button variant="outline" size="sm" onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))}>Prev</Button>
                     <span className="text-xs font-semibold px-4">{format(calendarDate, "MMMM yyyy")}</span>
-                    <Button variant="outline" size="sm" onClick={() => setCalendarDate(new Date(calendarDate.setMonth(calendarDate.getMonth() + 1)))}>Next</Button>
+                    <Button variant="outline" size="sm" onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}>Next</Button>
                   </div>
                 </div>
                 <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
@@ -661,14 +662,29 @@ export default function TasksPage() {
                         className="text-xs text-rose-500 bg-rose-500/10 hover:bg-rose-500/25"
                         onClick={() => {
                           if (!workplaceProjectId) return;
-                          if (!confirm("Permanently delete this project workspace and all its tasks? This cannot be undone.")) return;
-                          deleteProjectMut.mutate(workplaceProjectId, {
-                            onSuccess: () => {
-                              toast.success("Project deleted");
-                              setWorkplaceProjectId(null);
-                              setParam("project", "all");
-                            },
-                            onError: (err) => toast.error(err.message || "Failed to delete project"),
+                          Swal.fire({
+                            title: "Delete Project Workspace?",
+                            text: "Permanently delete this project workspace and all its tasks? This cannot be undone.",
+                            icon: "warning",
+                            showCancelButton: true,
+                            confirmButtonText: "Yes, Delete",
+                            cancelButtonText: "Cancel",
+                            buttonsStyling: false,
+                            customClass: {
+                              confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
+                              cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
+                            }
+                          }).then((res) => {
+                            if (res.isConfirmed) {
+                              deleteProjectMut.mutate(workplaceProjectId, {
+                                onSuccess: () => {
+                                  toast.success("Project deleted");
+                                  setWorkplaceProjectId(null);
+                                  setParam("project", "all");
+                                },
+                                onError: (err) => toast.error(err.message || "Failed to delete project"),
+                              });
+                            }
                           });
                         }}
                       >

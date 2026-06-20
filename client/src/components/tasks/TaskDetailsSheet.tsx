@@ -39,6 +39,7 @@ import {
 } from "@/hooks/useTasks";
 import { useEmployeeOptionsQuery } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/store/useAuthStore";
+import { apiClient } from "@/lib/api";
 import { format, parseISO, isAfter } from "date-fns";
 import {
   Calendar,
@@ -142,6 +143,12 @@ export function TaskDetailsSheet({
   const [manualTimeDesc, setManualTimeDesc] = useState("");
   const [watchersList, setWatchersList] = useState<string[]>([]);
   const [isAddingWatcher, setIsAddingWatcher] = useState(false);
+
+  useEffect(() => {
+    if (task) {
+      setWatchersList(task.watchers ? task.watchers.split(',').filter(Boolean) : []);
+    }
+  }, [task]);
 
   // Close sheet on Escape keyboard shortcut
   useEffect(() => {
@@ -333,33 +340,53 @@ export function TaskDetailsSheet({
     });
   };
 
-  const handleSimulateFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSimulateFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !taskId) return;
 
-    createAttachmentMut.mutate({
-      taskId,
-      fileName: file.name,
-      fileUrl: "https://via.placeholder.com/150", // Simulated path
-      fileSize: file.size,
-      uploadedById: currentUser?.id || null,
-    }, {
-      onSuccess: () => {
-        toast.success(`Simulated upload for ${file.name} complete`);
-      },
-    });
+    const loadingToastId = toast.loading(`Uploading ${file.name} to Cloudinary...`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const res = await apiClient.post<any>(`upload?folder=tasks/${taskId}`, formData);
+      const fileUrl = res.secureUrl || res.url;
+
+      createAttachmentMut.mutate({
+        taskId,
+        fileName: file.name,
+        fileUrl: fileUrl,
+        fileSize: file.size,
+        uploadedById: currentUser?.id || null,
+      }, {
+        onSuccess: () => {
+          toast.dismiss(loadingToastId);
+          toast.success(`Upload for ${file.name} complete`);
+        },
+        onError: () => {
+          toast.dismiss(loadingToastId);
+          toast.error("Failed to register attachment");
+        }
+      });
+    } catch (err: any) {
+      toast.dismiss(loadingToastId);
+      toast.error(`Upload failed: ${err.message || "Unknown error"}`);
+    }
   };
 
   const handleAddWatcher = (empId: string) => {
     if (watchersList.includes(empId)) return;
     const updated = [...watchersList, empId];
     setWatchersList(updated);
+    handleMetaUpdate("watchers", updated.join(','));
     toast.success("Watcher added");
     setIsAddingWatcher(false);
   };
 
   const handleRemoveWatcher = (empId: string) => {
-    setWatchersList(watchersList.filter(id => id !== empId));
+    const updated = watchersList.filter(id => id !== empId);
+    setWatchersList(updated);
+    handleMetaUpdate("watchers", updated.join(','));
     toast.success("Watcher removed");
   };
 

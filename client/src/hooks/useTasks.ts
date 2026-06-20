@@ -49,6 +49,7 @@ export interface Task {
   approvalStatus: "Pending" | "Approved" | "Changes Requested";
   reviewRating: number | null;
   reviewFeedback: string | null;
+  watchers?: string;
   createdAt: string;
   updatedAt: string;
 }

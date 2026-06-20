@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, and, or, like, desc, sql } from 'drizzle-orm';
+import { eq, and, or, like, desc, sql, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   taskProjects,
@@ -105,24 +105,41 @@ export class TasksService {
       .where(whereClause)
       .orderBy(desc(taskProjects.createdAt));
 
-    const results = [];
-    for (const proj of projectsList) {
-      const allTasks = await this.db
-        .select({
-          status: tasks.status,
-        })
-        .from(tasks)
-        .where(eq(tasks.projectId, proj.id));
-
-      const totalTasks = allTasks.length;
-      const completedTasks = allTasks.filter(t => t.status === 'Done').length;
-
-      results.push({
-        ...proj,
-        totalTasks,
-        completedTasks,
-      });
+    const projectIds = projectsList.map(p => p.id);
+    if (projectIds.length === 0) {
+      return [];
     }
+
+    // 1. Fetch task statuses for all projects in a single query
+    const allProjectTasks = await this.db
+      .select({
+        projectId: tasks.projectId,
+        status: tasks.status,
+      })
+      .from(tasks)
+      .where(inArray(tasks.projectId, projectIds));
+
+    // 2. Group them in memory
+    const projectTasksMap = new Map<string, { total: number; completed: number }>();
+    for (const task of allProjectTasks) {
+      if (!task.projectId) continue;
+      const entry = projectTasksMap.get(task.projectId) || { total: 0, completed: 0 };
+      entry.total++;
+      if (task.status === 'Done') {
+        entry.completed++;
+      }
+      projectTasksMap.set(task.projectId, entry);
+    }
+
+    // 3. Map back to projects
+    const results = projectsList.map(proj => {
+      const stats = projectTasksMap.get(proj.id) || { total: 0, completed: 0 };
+      return {
+        ...proj,
+        totalTasks: stats.total,
+        completedTasks: stats.completed,
+      };
+    });
 
     return results;
   }
@@ -163,6 +180,23 @@ export class TasksService {
   }
 
   async deleteProject(id: string) {
+    // 1. Find all tasks for this project
+    const projectTasks = await this.db
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(eq(tasks.projectId, id));
+
+    // 2. Cascade delete each task
+    for (const t of projectTasks) {
+      await this.deleteTask(t.id);
+    }
+
+    // 3. Delete milestones
+    await this.db
+      .delete(taskMilestones)
+      .where(eq(taskMilestones.projectId, id));
+
+    // 4. Delete project
     const [deleted] = await this.db
       .delete(taskProjects)
       .where(eq(taskProjects.id, id))
@@ -197,6 +231,7 @@ export class TasksService {
         recurrencePattern: dto.recurrencePattern || 'none',
         recurrenceInterval: dto.recurrenceInterval || 1,
         nextRecurrenceDate: dto.nextRecurrenceDate ? dto.nextRecurrenceDate.split('T')[0] : null,
+        watchers: dto.watchers || '',
       })
       .returning();
 
@@ -270,6 +305,7 @@ export class TasksService {
         approvalStatus: tasks.approvalStatus,
         reviewRating: tasks.reviewRating,
         reviewFeedback: tasks.reviewFeedback,
+        watchers: tasks.watchers,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
         assigneeName: employees.fullNameEnglish,
@@ -282,34 +318,55 @@ export class TasksService {
       .where(whereClause)
       .orderBy(desc(tasks.createdAt));
 
-    // Map subtask checklists status to each task card
-    const results = [];
-    for (const t of rawTasks) {
-      const checklist = await this.db
-        .select({
-          isCompleted: taskChecklists.isCompleted,
-        })
-        .from(taskChecklists)
-        .where(eq(taskChecklists.taskId, t.id));
-
-      const totalItems = checklist.length;
-      const completedItems = checklist.filter(c => c.isCompleted).length;
-
-      // Also get comments count
-      const comments = await this.db
-        .select({
-          id: taskComments.id,
-        })
-        .from(taskComments)
-        .where(eq(taskComments.taskId, t.id));
-
-      results.push({
-        ...t,
-        subtasksTotal: totalItems,
-        subtasksCompleted: completedItems,
-        commentsCount: comments.length,
-      });
+    const taskIds = rawTasks.map(t => t.id);
+    if (taskIds.length === 0) {
+      return [];
     }
+
+    // 1. Fetch checklists for all task IDs in a single query
+    const allChecklists = await this.db
+      .select({
+        taskId: taskChecklists.taskId,
+        isCompleted: taskChecklists.isCompleted,
+      })
+      .from(taskChecklists)
+      .where(inArray(taskChecklists.taskId, taskIds));
+
+    // 2. Fetch comments count for all task IDs in a single query
+    const allComments = await this.db
+      .select({
+        taskId: taskComments.taskId,
+      })
+      .from(taskComments)
+      .where(inArray(taskComments.taskId, taskIds));
+
+    // 3. Group them in memory
+    const checklistMap = new Map<string, { total: number; completed: number }>();
+    for (const item of allChecklists) {
+      const entry = checklistMap.get(item.taskId) || { total: 0, completed: 0 };
+      entry.total++;
+      if (item.isCompleted) {
+        entry.completed++;
+      }
+      checklistMap.set(item.taskId, entry);
+    }
+
+    const commentsMap = new Map<string, number>();
+    for (const comment of allComments) {
+      commentsMap.set(comment.taskId, (commentsMap.get(comment.taskId) || 0) + 1);
+    }
+
+    // 4. Map them back to tasks
+    const results = rawTasks.map(t => {
+      const cl = checklistMap.get(t.id) || { total: 0, completed: 0 };
+      const commentCount = commentsMap.get(t.id) || 0;
+      return {
+        ...t,
+        subtasksTotal: cl.total,
+        subtasksCompleted: cl.completed,
+        commentsCount: commentCount,
+      };
+    });
 
     return results;
   }
@@ -340,6 +397,7 @@ export class TasksService {
         approvalStatus: tasks.approvalStatus,
         reviewRating: tasks.reviewRating,
         reviewFeedback: tasks.reviewFeedback,
+        watchers: tasks.watchers,
         createdAt: tasks.createdAt,
         updatedAt: tasks.updatedAt,
         assigneeName: employees.fullNameEnglish,
@@ -486,6 +544,7 @@ export class TasksService {
         ...(dto.approvalStatus !== undefined && { approvalStatus: dto.approvalStatus }),
         ...(dto.reviewRating !== undefined && { reviewRating: dto.reviewRating }),
         ...(dto.reviewFeedback !== undefined && { reviewFeedback: dto.reviewFeedback }),
+        ...(dto.watchers !== undefined && { watchers: dto.watchers }),
       })
       .where(eq(tasks.id, id))
       .returning();
@@ -566,6 +625,24 @@ export class TasksService {
   }
 
   async deleteTask(id: string) {
+    // 1. Delete checklists
+    await this.db.delete(taskChecklists).where(eq(taskChecklists.taskId, id));
+    // 2. Delete comments
+    await this.db.delete(taskComments).where(eq(taskComments.taskId, id));
+    // 3. Delete activities
+    await this.db.delete(taskActivities).where(eq(taskActivities.taskId, id));
+    // 4. Delete dependencies
+    await this.db.delete(taskDependencies).where(
+      or(
+        eq(taskDependencies.taskId, id),
+        eq(taskDependencies.dependsOnTaskId, id)
+      )
+    );
+    // 5. Delete attachments
+    await this.db.delete(taskAttachments).where(eq(taskAttachments.taskId, id));
+    // 6. Delete time entries
+    await this.db.delete(timeEntries).where(eq(timeEntries.taskId, id));
+    // 7. Delete task
     const [deleted] = await this.db
       .delete(tasks)
       .where(eq(tasks.id, id))

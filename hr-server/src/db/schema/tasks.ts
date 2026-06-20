@@ -47,6 +47,7 @@ export const tasks = pgTable('tasks', {
   approvalStatus: varchar('approval_status', { length: 50 }).default('Pending').notNull(), // Pending, Approved, Changes Requested
   reviewRating: integer('review_rating'),
   reviewFeedback: text('review_feedback'),
+  watchers: text('watchers').default(''), // Comma-separated employee UUIDs
 });
 
 export const taskChecklists = pgTable('task_checklists', {

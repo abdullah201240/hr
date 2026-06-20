@@ -156,6 +156,10 @@ export class CreateTaskDto {
   @IsString()
   @IsOptional()
   reviewFeedback?: string;
+
+  @IsString()
+  @IsOptional()
+  watchers?: string;
 }
 
 export class UpdateTaskDto {
@@ -246,6 +250,10 @@ export class UpdateTaskDto {
   @IsString()
   @IsOptional()
   reviewFeedback?: string;
+
+  @IsString()
+  @IsOptional()
+  watchers?: string;
 }
 
 export class TaskQueryDto {
