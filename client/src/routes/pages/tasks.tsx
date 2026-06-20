@@ -303,9 +303,9 @@ export default function TasksPage() {
   }, [projects, showArchivedProjects]);
 
   return (
-    <div className="flex flex-col xl:flex-row gap-6 items-start pb-10 w-full">
+    <div className="flex flex-col lg:flex-row gap-6 items-start pb-10 w-full min-w-0">
       {/* ─── Left Workspace Sidebar ─── */}
-      <div className="w-full xl:w-[260px] shrink-0 space-y-4 print:hidden">
+      <div className="w-full lg:w-[260px] shrink-0 space-y-4 print:hidden">
         <Card className="p-3 shadow-none border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Workspaces</span>
@@ -396,7 +396,7 @@ export default function TasksPage() {
       </div>
 
       {/* ─── Right Content Panel ─── */}
-      <div className="flex-1 w-full space-y-6">
+      <div className="flex-1 min-w-0 w-full space-y-6">
         {/* Skeletons Loader */}
         {projectsLoading || tasksLoading ? (
           <div className="space-y-6 animate-pulse">
@@ -435,9 +435,9 @@ export default function TasksPage() {
             </div>
 
             {/* Filter Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-4 border border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl print:hidden">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative w-[180px]">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl print:hidden w-full min-w-0">
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="relative w-full sm:w-[180px]">
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
                   <Input
                     placeholder="Search tasks..."
@@ -447,7 +447,7 @@ export default function TasksPage() {
                   />
                 </div>
                 <Select value={selectedAssigneeId} onValueChange={(val) => setParam("assignee", val)}>
-                  <SelectTrigger className="w-[140px] text-xs h-9">
+                  <SelectTrigger className="w-full sm:w-[140px] text-xs h-9">
                     <SelectValue placeholder="All Assignees" />
                   </SelectTrigger>
                   <SelectContent>
@@ -458,7 +458,7 @@ export default function TasksPage() {
                   </SelectContent>
                 </Select>
                 <Select value={selectedPriority} onValueChange={(val) => setParam("priority", val)}>
-                  <SelectTrigger className="w-[120px] text-xs h-9">
+                  <SelectTrigger className="w-full sm:w-[120px] text-xs h-9">
                     <SelectValue placeholder="All Priorities" />
                   </SelectTrigger>
                   <SelectContent>
@@ -472,7 +472,7 @@ export default function TasksPage() {
               </div>
 
               {/* View Modes Tabs */}
-              <div className="flex items-center bg-slate-100 dark:bg-slate-800/85 p-1 rounded-xl">
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800/85 p-1 rounded-xl self-end md:self-auto shrink-0">
                 <button
                   onClick={() => setParam("tab", "board")}
                   className={cn("p-1.5 rounded-lg text-xs font-semibold transition-all", tab === "board" ? "bg-white dark:bg-slate-900 shadow-sm text-primary" : "text-slate-500")}
