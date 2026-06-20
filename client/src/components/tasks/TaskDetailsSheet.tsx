@@ -378,7 +378,7 @@ export function TaskDetailsSheet({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent
         side="right"
-        className="w-[100vw] sm:max-w-[760px] p-0 flex flex-row border-l border-slate-200/60 dark:border-slate-800/60 text-xs bg-background"
+        className="data-[side=right]:w-[100vw] data-[side=right]:sm:max-w-[960px] gap-0 p-0 flex flex-col sm:flex-row overflow-hidden border-l border-slate-200/60 dark:border-slate-800/60 text-xs bg-background"
         showCloseButton={true}
       >
         {isLoading || !task ? (
@@ -388,7 +388,7 @@ export function TaskDetailsSheet({
         ) : (
           <>
             {/* Left Main Content */}
-            <div className="flex-1 flex flex-col h-full border-r border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
+            <div className="flex-1 min-h-0 sm:min-h-full flex flex-col border-b sm:border-b-0 sm:border-r border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
               <SheetHeader className="p-5 border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col gap-1.5 shrink-0">
                 <SheetTitle className="sr-only">Task details side sheet</SheetTitle>
                 <div className="flex items-center flex-wrap gap-2">
@@ -435,8 +435,8 @@ export function TaskDetailsSheet({
                 )}
               </SheetHeader>
 
-              <ScrollArea className="flex-1 p-5">
-                <div className="space-y-6">
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="space-y-6 p-5 pb-8">
                   {/* Task Description & Markdown Preview */}
                   <div className="space-y-2">
                     <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Description (Basic Markdown Supported)</Label>
@@ -911,7 +911,7 @@ export function TaskDetailsSheet({
             </div>
 
             {/* Right Parameter Sidebar (Properties, Live Timer, Followers) */}
-            <div className="w-[230px] shrink-0 h-full bg-slate-50/30 dark:bg-slate-900/10 flex flex-col overflow-y-auto p-4 space-y-4">
+            <div className="w-full sm:w-[280px] shrink-0 min-h-0 flex-1 sm:flex-none flex flex-col overflow-y-auto bg-slate-50/30 dark:bg-slate-900/10 p-4 pb-8 space-y-4">
               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Properties</h3>
 
               {/* Status Selector */}
