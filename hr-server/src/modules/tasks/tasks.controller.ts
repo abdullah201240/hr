@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { TasksService } from './tasks.service';
+import { Roles } from '../auth/guards/roles.decorator';
 import {
   CreateProjectDto,
   UpdateProjectDto,
@@ -34,6 +35,7 @@ export class TasksController {
   }
 
   @Post('projects')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Create a new task project' })
   async createProject(@Body() dto: CreateProjectDto) {
     return this.tasksService.createProject(dto);
@@ -52,12 +54,14 @@ export class TasksController {
   }
 
   @Patch('projects/:id')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a task project' })
   async updateProject(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
     return this.tasksService.updateProject(id, dto);
   }
 
   @Delete('projects/:id')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Delete a task project' })
   async deleteProject(@Param('id') id: string) {
     return this.tasksService.deleteProject(id);
@@ -66,6 +70,7 @@ export class TasksController {
   // ─── Milestones Endpoints ───────────────────────────────────────────────────
 
   @Post('projects/:id/milestones')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Create a new milestone in a project' })
   async createMilestone(@Param('id') projectId: string, @Body() dto: CreateMilestoneDto) {
     dto.projectId = projectId;
@@ -79,12 +84,14 @@ export class TasksController {
   }
 
   @Patch('milestones/:id')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a milestone' })
   async updateMilestone(@Param('id') id: string, @Body() dto: UpdateMilestoneDto) {
     return this.tasksService.updateMilestone(id, dto);
   }
 
   @Delete('milestones/:id')
+  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Delete a milestone' })
   async deleteMilestone(@Param('id') id: string) {
     return this.tasksService.deleteMilestone(id);
@@ -99,6 +106,7 @@ export class TasksController {
   }
 
   @Post()
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Create a new task' })
   async createTask(
     @Body() dto: CreateTaskDto,
@@ -116,6 +124,7 @@ export class TasksController {
   }
 
   @Patch('notifications/:id/read')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Mark a notification as read' })
   async markNotificationRead(@Param('id') id: string) {
     return this.tasksService.markNotificationRead(id);
@@ -128,6 +137,7 @@ export class TasksController {
   }
 
   @Patch(':id')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Update task properties' })
   async updateTask(
     @Param('id') id: string,
@@ -138,6 +148,7 @@ export class TasksController {
   }
 
   @Delete(':id')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Delete a task' })
   async deleteTask(@Param('id') id: string) {
     return this.tasksService.deleteTask(id);
@@ -146,6 +157,7 @@ export class TasksController {
   // ─── Checklist Endpoints ─────────────────────────────────────────────────────
 
   @Post(':id/checklist')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Add a checklist subtask' })
   async addChecklistItem(
     @Param('id') taskId: string,
@@ -155,6 +167,7 @@ export class TasksController {
   }
 
   @Patch('checklist/:itemId')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Update/toggle checklist item status' })
   async updateChecklistItem(
     @Param('itemId') itemId: string,
@@ -164,6 +177,7 @@ export class TasksController {
   }
 
   @Delete('checklist/:itemId')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Delete a checklist item' })
   async deleteChecklistItem(@Param('itemId') itemId: string) {
     return this.tasksService.deleteChecklistItem(itemId);
@@ -172,6 +186,7 @@ export class TasksController {
   // ─── Comment Endpoints ───────────────────────────────────────────────────────
 
   @Post(':id/comments')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Add a comment to a task' })
   async addComment(
     @Param('id') taskId: string,
@@ -182,6 +197,7 @@ export class TasksController {
   }
 
   @Delete('comments/:commentId')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Delete a comment' })
   async deleteComment(
     @Param('commentId') commentId: string,
@@ -191,6 +207,7 @@ export class TasksController {
   }
 
   @Patch('comments/:commentId')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Update a comment (edit/pin/reaction)' })
   async updateComment(
     @Param('commentId') commentId: string,
@@ -203,12 +220,14 @@ export class TasksController {
   // ─── Task Dependencies Endpoints ─────────────────────────────────────────────
 
   @Post(':id/dependencies')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Add a task dependency' })
   async addDependency(@Param('id') taskId: string, @Body() dto: CreateDependencyDto) {
     return this.tasksService.addDependency(taskId, dto);
   }
 
   @Delete('dependencies/:id')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Remove a task dependency' })
   async deleteDependency(@Param('id') id: string) {
     return this.tasksService.deleteDependency(id);
@@ -217,12 +236,14 @@ export class TasksController {
   // ─── Time Entries Endpoints ──────────────────────────────────────────────────
 
   @Post(':id/time-entries')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Add a time entry log for a task' })
   async addTimeEntry(@Param('id') taskId: string, @Body() dto: CreateTimeEntryDto) {
     return this.tasksService.addTimeEntry(taskId, dto);
   }
 
   @Delete('time-entries/:id')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Delete a time entry log' })
   async deleteTimeEntry(@Param('id') id: string) {
     return this.tasksService.deleteTimeEntry(id);
@@ -231,6 +252,7 @@ export class TasksController {
   // ─── Attachments Endpoints ───────────────────────────────────────────────────
 
   @Post(':id/attachments')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Add a file attachment metadata to a task' })
   async addAttachment(
     @Param('id') taskId: string,
@@ -241,10 +263,10 @@ export class TasksController {
   }
 
   @Delete('attachments/:id')
+  @Roles('admin', 'hr', 'employee')
   @ApiOperation({ summary: 'Delete a task file attachment' })
   async deleteAttachment(@Param('id') id: string) {
     return this.tasksService.deleteAttachment(id);
   }
-
 
 }

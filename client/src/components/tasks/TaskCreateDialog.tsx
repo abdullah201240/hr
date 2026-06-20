@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useProjectsQuery } from "@/hooks/useTasks"
+import { useProjectsQuery, useMilestonesQuery } from "@/hooks/useTasks"
 import { useEmployeeOptionsQuery } from "@/hooks/useEmployees"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
@@ -35,6 +35,11 @@ interface TaskCreateDialogProps {
     assigneeId?: string
     estimatedHours: number
     status?: string
+    tags?: string
+    milestoneId?: string
+    recurrencePattern?: string
+    recurrenceInterval?: number
+    watchers?: string
   }) => void
   isPending: boolean
   editingTask?: any
@@ -58,8 +63,16 @@ export function TaskCreateDialog({
   const [estimatedHours, setEstimatedHours] = useState<number>(0)
   const [status, setStatus] = useState("Todo")
 
+  // Additional fields states
+  const [tags, setTags] = useState("")
+  const [milestoneId, setMilestoneId] = useState("none")
+  const [recurrencePattern, setRecurrencePattern] = useState("none")
+  const [recurrenceInterval, setRecurrenceInterval] = useState<number>(1)
+  const [selectedWatchers, setSelectedWatchers] = useState<string[]>([])
+
   const { data: projects = [] } = useProjectsQuery()
   const { data: emps = [] } = useEmployeeOptionsQuery()
+  const { data: milestones = [] } = useMilestonesQuery(projectId !== "none" ? projectId : "")
 
   useEffect(() => {
     if (editingTask) {
@@ -71,6 +84,11 @@ export function TaskCreateDialog({
       setAssigneeId(editingTask.assigneeId || "all")
       setEstimatedHours(editingTask.estimatedHours || 0)
       setStatus(editingTask.status || "Todo")
+      setTags(editingTask.tags || "")
+      setMilestoneId(editingTask.milestoneId || "none")
+      setRecurrencePattern(editingTask.recurrencePattern || "none")
+      setRecurrenceInterval(editingTask.recurrenceInterval || 1)
+      setSelectedWatchers(editingTask.watchers ? editingTask.watchers.split(",").filter(Boolean) : [])
     } else {
       setProjectId(defaultProjectId || "none")
       setTitle("")
@@ -80,6 +98,11 @@ export function TaskCreateDialog({
       setAssigneeId("all")
       setEstimatedHours(0)
       setStatus("Todo")
+      setTags("")
+      setMilestoneId("none")
+      setRecurrencePattern("none")
+      setRecurrenceInterval(1)
+      setSelectedWatchers([])
     }
   }, [editingTask, defaultProjectId, isOpen])
 
@@ -99,12 +122,17 @@ export function TaskCreateDialog({
       assigneeId: assigneeId === "all" ? undefined : assigneeId,
       estimatedHours: Number(estimatedHours) || 0,
       status: editingTask ? status : undefined,
+      tags: tags.trim() || undefined,
+      milestoneId: milestoneId === "none" ? undefined : milestoneId,
+      recurrencePattern: recurrencePattern !== "none" ? recurrencePattern : undefined,
+      recurrenceInterval: recurrencePattern !== "none" ? Number(recurrenceInterval) : undefined,
+      watchers: selectedWatchers.length > 0 ? selectedWatchers.join(",") : undefined,
     })
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] border-border/50 shadow-lg">
+      <DialogContent className="sm:max-w-[500px] border-border/50 shadow-lg max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleFormSubmit}>
           <DialogHeader>
             <DialogTitle className="text-base font-bold">
@@ -118,7 +146,10 @@ export function TaskCreateDialog({
           <div className="grid gap-4 py-4 text-xs">
             <div className="grid gap-1.5">
               <Label className="text-xs font-semibold">Project / Board Group</Label>
-              <Select value={projectId} onValueChange={setProjectId}>
+              <Select value={projectId} onValueChange={(val) => {
+                setProjectId(val);
+                setMilestoneId("none");
+              }}>
                 <SelectTrigger className="h-9 text-xs">
                   <SelectValue placeholder="Unassigned / Independent Task" />
                 </SelectTrigger>
@@ -236,6 +267,105 @@ export function TaskCreateDialog({
                   placeholder="e.g. 8"
                   className="h-9 text-xs"
                 />
+              </div>
+            </div>
+
+            {/* Milestone & Tags Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-semibold">Milestone</Label>
+                <Select 
+                  value={milestoneId} 
+                  onValueChange={setMilestoneId}
+                  disabled={projectId === "none"}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="No Milestone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-xs">
+                      No Milestone
+                    </SelectItem>
+                    {milestones.map((m: any) => (
+                      <SelectItem key={m.id} value={m.id} className="text-xs">
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="task-tags" className="text-xs font-semibold">
+                  Tags (Comma separated)
+                </Label>
+                <Input
+                  id="task-tags"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="e.g. api, bug, design"
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Recurrence Settings Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label className="text-xs font-semibold">Recurrence Pattern</Label>
+                <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-xs">None</SelectItem>
+                    <SelectItem value="daily" className="text-xs">Daily</SelectItem>
+                    <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
+                    <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="recurrence-interval" className="text-xs font-semibold">
+                  Recurrence Interval
+                </Label>
+                <Input
+                  id="recurrence-interval"
+                  type="number"
+                  min="1"
+                  disabled={recurrencePattern === "none"}
+                  value={recurrenceInterval}
+                  onChange={(e) => setRecurrenceInterval(Number(e.target.value))}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Watchers Multi-select Grid */}
+            <div className="grid gap-1.5">
+              <Label className="text-xs font-semibold">Watchers</Label>
+              <div className="grid grid-cols-2 gap-2 max-h-28 overflow-y-auto border border-border/50 rounded-md p-2.5 bg-accent/10">
+                {emps.map((e) => {
+                  const isChecked = selectedWatchers.includes(e.id);
+                  return (
+                    <label key={e.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent/20 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(evt) => {
+                          if (evt.target.checked) {
+                            setSelectedWatchers([...selectedWatchers, e.id]);
+                          } else {
+                            setSelectedWatchers(selectedWatchers.filter((id) => id !== e.id));
+                          }
+                        }}
+                        className="rounded border-border/50 accent-primary"
+                      />
+                      <span className="text-[11px] truncate">{e.fullNameEnglish}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { pgTable, varchar, text, date, integer, uuid, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, text, date, integer, real, uuid, boolean, timestamp } from 'drizzle-orm/pg-core';
 import { baseTable } from './_base';
 import { employees, departments } from './employee';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
@@ -13,6 +13,7 @@ export const taskProjects = pgTable('task_projects', {
   archived: boolean('archived').default(false).notNull(),
   members: text('members').default(''), // Comma-separated employee UUIDs
   slackWebhookUrl: text('slack_webhook_url'),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
 export const taskMilestones = pgTable('task_milestones', {
@@ -33,8 +34,8 @@ export const tasks = pgTable('tasks', {
   dueDate: date('due_date'),
   assigneeId: uuid('assignee_id').references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
   reporterId: uuid('reporter_id').references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
-  estimatedHours: integer('estimated_hours').default(0),
-  actualHours: integer('actual_hours').default(0),
+  estimatedHours: real('estimated_hours').default(0),
+  actualHours: real('actual_hours').default(0),
   tags: text('tags').default(''),
   timerStartedAt: varchar('timer_started_at', { length: 100 }),
   timerElapsedSeconds: integer('timer_elapsed_seconds').default(0),
@@ -48,6 +49,7 @@ export const tasks = pgTable('tasks', {
   reviewRating: integer('review_rating'),
   reviewFeedback: text('review_feedback'),
   watchers: text('watchers').default(''), // Comma-separated employee UUIDs
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
 export const taskChecklists = pgTable('task_checklists', {

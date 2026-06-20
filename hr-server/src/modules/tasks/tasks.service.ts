@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { eq, and, or, like, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, or, like, desc, sql, inArray, isNull, lt } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   taskProjects,
@@ -92,7 +92,7 @@ export class TasksService {
   }
 
   async findAllProjects(departmentId?: string) {
-    let conditions = [];
+    let conditions = [isNull(taskProjects.deletedAt)];
     if (departmentId) {
       conditions.push(eq(taskProjects.departmentId, departmentId));
     }
@@ -121,14 +121,19 @@ export class TasksService {
       return [];
     }
 
-    // 1. Fetch task statuses for all projects in a single query
+    // 1. Fetch task statuses for all projects in a single query (excluding soft-deleted ones)
     const allProjectTasks = await this.db
       .select({
         projectId: tasks.projectId,
         status: tasks.status,
       })
       .from(tasks)
-      .where(inArray(tasks.projectId, projectIds));
+      .where(
+        and(
+          inArray(tasks.projectId, projectIds),
+          isNull(tasks.deletedAt)
+        )
+      );
 
     // 2. Group them in memory
     const projectTasksMap = new Map<string, { total: number; completed: number }>();
@@ -192,25 +197,18 @@ export class TasksService {
   }
 
   async deleteProject(id: string) {
-    // 1. Find all tasks for this project
-    const projectTasks = await this.db
-      .select({ id: tasks.id })
-      .from(tasks)
+    const now = new Date();
+
+    // 1. Soft-delete all tasks for this project
+    await this.db
+      .update(tasks)
+      .set({ deletedAt: now })
       .where(eq(tasks.projectId, id));
 
-    // 2. Cascade delete each task
-    for (const t of projectTasks) {
-      await this.deleteTask(t.id);
-    }
-
-    // 3. Delete milestones
-    await this.db
-      .delete(taskMilestones)
-      .where(eq(taskMilestones.projectId, id));
-
-    // 4. Delete project
+    // 2. Soft-delete the project itself
     const [deleted] = await this.db
-      .delete(taskProjects)
+      .update(taskProjects)
+      .set({ deletedAt: now })
       .where(eq(taskProjects.id, id))
       .returning();
 
@@ -218,7 +216,7 @@ export class TasksService {
       throw new NotFoundException(`Project with ID "${id}" not found`);
     }
     this.broadcastMutation('project_deleted', id);
-    return { message: 'Project deleted successfully' };
+    return { message: 'Project soft-deleted successfully' };
   }
 
   // ─── Tasks Service Methods ───────────────────────────────────────────────────
@@ -266,8 +264,8 @@ export class TasksService {
   }
 
   async findAllTasks(query: TaskQueryDto) {
-    const { search, projectId, assigneeId, status, priority } = query;
-    const conditions = [];
+    const { search, projectId, assigneeId, status, priority, limit, cursor } = query;
+    const conditions = [isNull(tasks.deletedAt)];
 
     if (projectId) {
       conditions.push(eq(tasks.projectId, projectId));
@@ -287,14 +285,34 @@ export class TasksService {
         or(
           like(tasks.title, `%${search}%`),
           like(tasks.description, `%${search}%`),
-        ),
+        )!,
       );
+    }
+
+    if (cursor) {
+      const [cursorTask] = await this.db
+        .select({ id: tasks.id, createdAt: tasks.createdAt })
+        .from(tasks)
+        .where(eq(tasks.id, cursor))
+        .limit(1);
+
+      if (cursorTask) {
+        conditions.push(
+          or(
+            lt(tasks.createdAt, cursorTask.createdAt),
+            and(
+              eq(tasks.createdAt, cursorTask.createdAt),
+              lt(tasks.id, cursorTask.id)
+            )
+          )!
+        );
+      }
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // Fetch tasks joined with assignee name and details
-    const rawTasks = await this.db
+    let queryBuilder = this.db
       .select({
         id: tasks.id,
         projectId: tasks.projectId,
@@ -330,10 +348,26 @@ export class TasksService {
       .leftJoin(employees, eq(tasks.assigneeId, employees.id))
       .leftJoin(taskProjects, eq(tasks.projectId, taskProjects.id))
       .where(whereClause)
-      .orderBy(desc(tasks.createdAt));
+      .orderBy(desc(tasks.createdAt), desc(tasks.id));
 
-    const taskIds = rawTasks.map(t => t.id);
+    if (limit !== undefined) {
+      queryBuilder = queryBuilder.limit(limit + 1) as any;
+    }
+
+    const rawTasks = await queryBuilder;
+
+    const hasMore = limit !== undefined && rawTasks.length > limit;
+    const slicedTasks = hasMore ? rawTasks.slice(0, limit) : rawTasks;
+
+    const taskIds = slicedTasks.map(t => t.id);
     if (taskIds.length === 0) {
+      if (limit !== undefined) {
+        return {
+          tasks: [],
+          nextCursor: null,
+          hasMore: false,
+        };
+      }
       return [];
     }
 
@@ -398,7 +432,7 @@ export class TasksService {
     }
 
     // 5. Map them back to tasks
-    const results = rawTasks.map(t => {
+    const results = slicedTasks.map(t => {
       const cl = checklistMap.get(t.id) || { total: 0, completed: 0 };
       const commentCount = commentsMap.get(t.id) || 0;
       const taskDeps = depsMap.get(t.id) || [];
@@ -410,6 +444,15 @@ export class TasksService {
         dependencies: taskDeps,
       };
     });
+
+    if (limit !== undefined) {
+      const nextCursor = hasMore ? slicedTasks[slicedTasks.length - 1].id : null;
+      return {
+        tasks: results,
+        nextCursor,
+        hasMore,
+      };
+    }
 
     return results;
   }
@@ -727,6 +770,22 @@ export class TasksService {
       approvalStatus: 'Pending',
     }).returning();
 
+    // Clone checklist items if they exist
+    const originalChecklists = await this.db
+      .select()
+      .from(taskChecklists)
+      .where(eq(taskChecklists.taskId, taskId));
+
+    if (originalChecklists.length > 0) {
+      await this.db.insert(taskChecklists).values(
+        originalChecklists.map(c => ({
+          taskId: clonedTask.id,
+          title: c.title,
+          isCompleted: false,
+        }))
+      );
+    }
+
     // Log creation activity for the cloned task
     await this.db.insert(taskActivities).values({
       taskId: clonedTask.id,
@@ -747,26 +806,10 @@ export class TasksService {
   }
 
   async deleteTask(id: string) {
-    // 1. Delete checklists
-    await this.db.delete(taskChecklists).where(eq(taskChecklists.taskId, id));
-    // 2. Delete comments
-    await this.db.delete(taskComments).where(eq(taskComments.taskId, id));
-    // 3. Delete activities
-    await this.db.delete(taskActivities).where(eq(taskActivities.taskId, id));
-    // 4. Delete dependencies
-    await this.db.delete(taskDependencies).where(
-      or(
-        eq(taskDependencies.taskId, id),
-        eq(taskDependencies.dependsOnTaskId, id)
-      )
-    );
-    // 5. Delete attachments
-    await this.db.delete(taskAttachments).where(eq(taskAttachments.taskId, id));
-    // 6. Delete time entries
-    await this.db.delete(timeEntries).where(eq(timeEntries.taskId, id));
-    // 7. Delete task
+    // Soft-delete the task by setting deletedAt timestamp
     const [deleted] = await this.db
-      .delete(tasks)
+      .update(tasks)
+      .set({ deletedAt: new Date() })
       .where(eq(tasks.id, id))
       .returning();
 
@@ -774,7 +817,7 @@ export class TasksService {
       throw new NotFoundException(`Task with ID "${id}" not found`);
     }
     this.broadcastMutation('task_deleted', id);
-    return { message: 'Task deleted successfully' };
+    return { message: 'Task soft-deleted successfully' };
   }
 
   // ─── Checklist Items Methods ─────────────────────────────────────────────────
@@ -1025,12 +1068,12 @@ export class TasksService {
       })
       .returning();
 
-    // Aggregates durationSeconds to tasks actualHours
+    // Aggregates durationSeconds to tasks actualHours (using floats)
     const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, taskId)).limit(1);
-    const addedHours = Math.round((dto.durationSeconds || 0) / 3600);
+    const addedHours = Math.round(((dto.durationSeconds || 0) / 3600) * 100) / 100;
     await this.db
       .update(tasks)
-      .set({ actualHours: (task?.actualHours || 0) + addedHours })
+      .set({ actualHours: Number(task?.actualHours || 0) + addedHours })
       .where(eq(tasks.id, taskId));
 
     this.broadcastMutation('task_updated', taskId);

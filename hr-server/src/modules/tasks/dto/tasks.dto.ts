@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, IsBoolean, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUUID, IsInt, IsBoolean, IsDateString, IsIn } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
@@ -83,10 +83,12 @@ export class CreateTaskDto {
 
   @IsString()
   @IsOptional()
+  @IsIn(['Backlog', 'Todo', 'In Progress', 'In Review', 'Done', 'Cancelled'])
   status?: string;
 
   @IsString()
   @IsOptional()
+  @IsIn(['Low', 'Medium', 'High', 'Urgent'])
   priority?: string;
 
   @IsDateString()
@@ -177,10 +179,12 @@ export class UpdateTaskDto {
 
   @IsString()
   @IsOptional()
+  @IsIn(['Backlog', 'Todo', 'In Progress', 'In Review', 'Done', 'Cancelled'])
   status?: string;
 
   @IsString()
   @IsOptional()
+  @IsIn(['Low', 'Medium', 'High', 'Urgent'])
   priority?: string;
 
   @IsDateString()
@@ -276,6 +280,14 @@ export class TaskQueryDto {
   @IsString()
   @IsOptional()
   priority?: string;
+
+  @IsInt()
+  @IsOptional()
+  limit?: number;
+
+  @IsString()
+  @IsOptional()
+  cursor?: string;
 }
 
 export class CreateChecklistItemDto {
