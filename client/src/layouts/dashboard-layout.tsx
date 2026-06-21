@@ -8,9 +8,11 @@ import { useTheme } from "@/hooks/use-theme"
 import { cn } from "@/lib/utils"
 import { PageSkeleton } from "@/components/common/page-skeleton"
 import { useWebSocket } from "@/hooks/useWebSocket"
+import { useNotificationSocket } from "@/hooks/useNotificationSocket"
 
 export function DashboardLayout() {
   useWebSocket()
+  useNotificationSocket()
   const { sidebarSize, setSidebarSize } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 

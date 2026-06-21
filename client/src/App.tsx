@@ -46,6 +46,7 @@ const PrintHRLetterPage = lazy(() => import("@/routes/pages/print/hr-letter"))
 const ProfilePage = lazy(() => import("@/routes/pages/profile"))
 const TasksPage = lazy(() => import("@/routes/pages/tasks"))
 const ChatPage = lazy(() => import("@/routes/pages/chat"))
+const NotificationsPage = lazy(() => import("@/routes/pages/notifications"))
 
 
 function NotFoundPage() {
@@ -124,6 +125,7 @@ function App() {
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="chat" element={<ChatPage />} />
+                  <Route path="notifications" element={<NotificationsPage />} />
                   <Route path="*" element={<NotFoundPage />} />
 
                 </Route>
