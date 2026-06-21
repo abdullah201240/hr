@@ -5,9 +5,11 @@ interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   isWsConnected: boolean;
+  isOnline: boolean;
   isLoading: boolean;
-
+ 
   setWsConnected: (connected: boolean) => void;
+  setOnline: (online: boolean) => void;
   setLoading: (loading: boolean) => void;
   setUnreadCount: (count: number) => void;
   setNotifications: (list: Notification[]) => void;
@@ -26,9 +28,11 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   notifications: [],
   unreadCount: 0,
   isWsConnected: false,
+  isOnline: typeof window !== 'undefined' ? window.navigator.onLine : true,
   isLoading: false,
-
+ 
   setWsConnected: (connected) => set({ isWsConnected: connected }),
+  setOnline: (online) => set({ isOnline: online }),
   setLoading: (loading) => set({ isLoading: loading }),
   setUnreadCount: (count) => set({ unreadCount: count }),
   

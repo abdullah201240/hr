@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Bell, Check } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { cn } from '@/lib/utils';
 import { useUnreadCountQuery, useMarkAllAsReadMutation, useNotificationsInfiniteQuery } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,8 @@ export function NotificationBell() {
   // 1. Unread count query (polls on fallback)
   useUnreadCountQuery();
   const unreadCount = useNotificationStore((state) => state.unreadCount);
+  const isWsConnected = useNotificationStore((state) => state.isWsConnected);
+  const isOnline = useNotificationStore((state) => state.isOnline);
   const markAllAsReadMutation = useMarkAllAsReadMutation();
 
   // 2. Fetch the latest active unread notifications for preview (first page, limit 5)
@@ -66,7 +69,18 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 sm:w-96 shadow-lg border-border/50 text-xs p-0 overflow-hidden">
         <DropdownMenuLabel className="flex items-center justify-between p-3.5 bg-muted/30">
-          <span className="font-semibold text-foreground text-sm">Notifications</span>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground text-sm">Notifications</span>
+            <div className="flex items-center gap-1" title={isOnline ? (isWsConnected ? 'Connected (Live Updates Active)' : 'Connecting...') : 'Offline (No internet connection)'}>
+              <span className={cn(
+                "h-1.5 w-1.5 rounded-full transition-colors duration-300",
+                isOnline ? (isWsConnected ? "bg-emerald-500" : "bg-amber-500 animate-pulse") : "bg-destructive"
+              )} />
+              <span className="text-[10px] text-muted-foreground font-normal tracking-wide">
+                {isOnline ? (isWsConnected ? 'live' : 'reconnecting...') : 'offline'}
+              </span>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-none font-bold">

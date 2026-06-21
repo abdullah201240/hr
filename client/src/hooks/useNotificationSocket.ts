@@ -15,6 +15,7 @@ export function useNotificationSocket() {
   const navigate = useNavigate();
   const {
     setWsConnected,
+    setOnline,
     addNotification,
     markAsRead,
     markAllAsRead,
@@ -24,20 +25,58 @@ export function useNotificationSocket() {
   } = useNotificationStore();
 
   const disconnectRef = useRef(false);
+  const lastMessageTime = useRef<number>(Date.now());
+  const healthCheckIntervalId = useRef<ReturnType<typeof setInterval> | null>(null);
+  const processedMessageIds = useRef<Set<string>>(new Set());
+  const debounceTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerBatchedInvalidation = () => {
+    if (debounceTimeoutId.current) {
+      clearTimeout(debounceTimeoutId.current);
+    }
+    debounceTimeoutId.current = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      debounceTimeoutId.current = null;
+    }, 300);
+  };
 
   useEffect(() => {
     disconnectRef.current = false;
 
-    if (!isAuthenticated || !accessToken) {
-      cleanupSocket();
-      return;
-    }
+    const handleOnline = () => {
+      setOnline(true);
+      if (isAuthenticated && accessToken) {
+        console.log('Network restored. Reconnecting notifications WebSocket immediately...');
+        connect();
+      }
+    };
 
-    connect();
+    const handleOffline = () => {
+      setOnline(false);
+      setWsConnected(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial state setup
+    setOnline(navigator.onLine);
+
+    if (isAuthenticated && accessToken) {
+      connect();
+    } else {
+      cleanupSocket();
+    }
 
     return () => {
       disconnectRef.current = true;
       cleanupSocket();
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      if (debounceTimeoutId.current) {
+        clearTimeout(debounceTimeoutId.current);
+      }
     };
   }, [accessToken, isAuthenticated]);
 
@@ -60,10 +99,24 @@ export function useNotificationSocket() {
       socket.onopen = () => {
         reconnectAttempts = 0;
         setWsConnected(true);
+        lastMessageTime.current = Date.now();
         console.log('Notifications WebSocket successfully connected');
+
+        // Setup health check ping-pong checker (every 10s)
+        if (healthCheckIntervalId.current) clearInterval(healthCheckIntervalId.current);
+        healthCheckIntervalId.current = setInterval(() => {
+          // If no message from server for 40s (30s ping interval + 10s buffer), close & reconnect
+          if (Date.now() - lastMessageTime.current > 40000) {
+            console.warn('Notifications WebSocket health check failed (no messages for 40s). Reconnecting...');
+            if (socketInstance) {
+              socketInstance.close();
+            }
+          }
+        }, 10000);
       };
 
       socket.onmessage = (event) => {
+        lastMessageTime.current = Date.now();
         try {
           const payload = JSON.parse(event.data);
           handleIncomingEvent(payload);
@@ -75,6 +128,10 @@ export function useNotificationSocket() {
       socket.onclose = (event) => {
         setWsConnected(false);
         socketInstance = null;
+        if (healthCheckIntervalId.current) {
+          clearInterval(healthCheckIntervalId.current);
+          healthCheckIntervalId.current = null;
+        }
 
         if (!disconnectRef.current && event.code !== 4001) {
           scheduleReconnection();
@@ -94,7 +151,13 @@ export function useNotificationSocket() {
     if (reconnectTimeoutId) clearTimeout(reconnectTimeoutId);
 
     reconnectAttempts++;
-    const delay = Math.min(Math.pow(1.5, reconnectAttempts) * 1000, 30000);
+    // Exponential backoff capped at 30 seconds
+    const baseDelay = Math.min(Math.pow(2, reconnectAttempts) * 1000, 30000);
+    // Jitter to prevent thundering herd
+    const jitter = Math.random() * 1000;
+    const delay = baseDelay + jitter;
+
+    console.log(`Notifications WebSocket disconnected. Retrying connection in ${Math.round(delay / 1000)}s (attempt ${reconnectAttempts})...`);
 
     reconnectTimeoutId = setTimeout(() => {
       connect();
@@ -105,6 +168,11 @@ export function useNotificationSocket() {
     if (reconnectTimeoutId) {
       clearTimeout(reconnectTimeoutId);
       reconnectTimeoutId = null;
+    }
+
+    if (healthCheckIntervalId.current) {
+      clearInterval(healthCheckIntervalId.current);
+      healthCheckIntervalId.current = null;
     }
 
     if (socketInstance) {
@@ -125,7 +193,21 @@ export function useNotificationSocket() {
         break;
 
       case 'notification_new':
+        // Message Deduplication
+        if (processedMessageIds.current.has(data.id)) {
+          console.log(`Duplicate notification ignored: ${data.id}`);
+          break;
+        }
+        processedMessageIds.current.add(data.id);
+        if (processedMessageIds.current.size > 500) {
+          const firstAdded = processedMessageIds.current.keys().next().value;
+          if (firstAdded !== undefined) {
+            processedMessageIds.current.delete(firstAdded);
+          }
+        }
+
         addNotification(data);
+        
         // Show real-time feedback toast
         toast(data.title, {
           description: data.message,
@@ -138,9 +220,9 @@ export function useNotificationSocket() {
               }
             : undefined,
         });
-        // Invalidate queries to update lists
-        queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
-        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+
+        // Debounced batch query invalidation
+        triggerBatchedInvalidation();
         break;
 
       case 'notification_read':
@@ -165,22 +247,32 @@ export function useNotificationSocket() {
         } else {
           toast.error(`Action failed: ${data.error || 'Unknown error'}`);
         }
-        // Invalidate targeted business module caches instead of everything
+        
+        // Invalidate targeted business module caches
         queryClient.invalidateQueries({ queryKey: ['leave-applications'] });
         queryClient.invalidateQueries({ queryKey: ['attendance'] });
         queryClient.invalidateQueries({ queryKey: ['claims'] });
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
-        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+
+        // Debounced batch query invalidation
+        triggerBatchedInvalidation();
         break;
 
       case 'reconnect_sync':
         if (data.notifications && data.notifications.length > 0) {
-          mergeNotifications(data.notifications);
-          toast.info(`You have ${data.notifications.length} new unread notifications`);
+          // Deduplicate reconnect sync notifications
+          const newNotifs = data.notifications.filter((n: any) => {
+            if (processedMessageIds.current.has(n.id)) return false;
+            processedMessageIds.current.add(n.id);
+            return true;
+          });
+
+          if (newNotifs.length > 0) {
+            mergeNotifications(newNotifs);
+            toast.info(`You have ${newNotifs.length} new unread notifications`);
+          }
         }
-        queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
-        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+        triggerBatchedInvalidation();
         break;
 
       default:
