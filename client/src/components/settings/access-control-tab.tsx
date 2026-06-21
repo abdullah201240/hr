@@ -32,7 +32,7 @@ export function AccessControlTab() {
   // Employees list for assignment
   const [employeeSearch, setEmployeeSearch] = useState("")
   const [assigningEmployeeId, setAssigningEmployeeId] = useState<string | null>(null)
-  const [assignedRole, setAssignedRole] = useState({ role: "employee", customRoleId: "" })
+  const [assignedRole, setAssignedRole] = useState({ role: "employee", customRoleId: "none" })
   
   const { data: employeesData, isLoading: loadingEmployees } = useEmployeesQuery({
     page: 1,
@@ -205,7 +205,7 @@ export function AccessControlTab() {
     setAssigningEmployeeId(emp.id)
     setAssignedRole({
       role: emp.role,
-      customRoleId: emp.customRoleId || ""
+      customRoleId: emp.customRoleId || "none"
     })
   }
 
@@ -214,7 +214,7 @@ export function AccessControlTab() {
 
     updateEmployeeMutation.mutate({
       role: assignedRole.role as any,
-      customRoleId: assignedRole.customRoleId ? assignedRole.customRoleId : null,
+      customRoleId: assignedRole.customRoleId === "none" ? null : assignedRole.customRoleId,
     }, {
       onSuccess: () => {
         toast.success("Employee role updated successfully")
@@ -632,7 +632,7 @@ export function AccessControlTab() {
                   <SelectValue placeholder="Select custom role (or none)" />
                 </SelectTrigger>
                 <SelectContent className="text-xs">
-                  <SelectItem value="">None (Use base system role permissions)</SelectItem>
+                  <SelectItem value="none">None (Use base system role permissions)</SelectItem>
                   {roles.filter(r => !r.isSystem).map((role) => (
                     <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                   ))}
