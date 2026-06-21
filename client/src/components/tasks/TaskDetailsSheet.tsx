@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -69,6 +68,7 @@ import {
   AlertCircle,
   Target,
   RefreshCw,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -182,6 +182,7 @@ export function TaskDetailsSheet({
   const [descText, setDescText] = useState("");
 
   const [activeTab, setActiveTab] = useState<"checklist" | "comments" | "activity" | "files" | "dependencies" | "time">("checklist");
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "properties">("details");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [timerVal, setTimerVal] = useState("00:00:00");
@@ -457,7 +458,7 @@ export function TaskDetailsSheet({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent
         side="right"
-        className="data-[side=right]:w-[100vw] data-[side=right]:sm:max-w-[960px] gap-0 p-0 flex flex-col sm:flex-row overflow-hidden border-l border-slate-200/60 dark:border-slate-800/60 text-xs bg-background"
+        className="data-[side=right]:w-[100vw] data-[side=right]:sm:max-w-[960px] gap-0 p-0 flex flex-col overflow-hidden border-l border-slate-200/60 dark:border-slate-800/60 text-xs bg-background"
         showCloseButton={true}
       >
         {isLoading || !task ? (
@@ -466,54 +467,83 @@ export function TaskDetailsSheet({
           </div>
         ) : (
           <>
-            {/* Left Main Content */}
-            <div className="flex-1 min-h-0 sm:min-h-full flex flex-col border-b sm:border-b-0 sm:border-r border-slate-200/60 dark:border-slate-800/60 overflow-hidden">
-              <SheetHeader className="p-5 border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col gap-1.5 shrink-0">
-                <SheetTitle className="sr-only">Task details side sheet</SheetTitle>
-                <div className="flex items-center flex-wrap gap-2">
-                  <Badge variant="secondary" className="bg-primary/5 text-primary border-none py-0.5 px-2 font-bold uppercase tracking-wider text-[9px]">
-                    {task.projectName || "Independent Task"}
+            {/* Unified Top Header & Switcher */}
+            <SheetHeader className="p-5 border-b border-slate-200/40 dark:border-slate-800/40 flex flex-col gap-1.5 shrink-0">
+              <SheetTitle className="sr-only">Task details side sheet</SheetTitle>
+              <div className="flex items-center flex-wrap gap-2 pr-6">
+                <Badge variant="secondary" className="bg-primary/5 text-primary border-none py-0.5 px-2 font-bold uppercase tracking-wider text-[9px]">
+                  {task.projectName || "Independent Task"}
+                </Badge>
+                <Badge className={cn(
+                  "border-none py-0.5 px-2 text-[9px] font-bold uppercase",
+                  task.priority === "Urgent" ? "bg-rose-500/10 text-rose-500"
+                    : task.priority === "High" ? "bg-amber-500/10 text-amber-600"
+                    : task.priority === "Medium" ? "bg-slate-50/10 text-slate-600"
+                    : "bg-blue-50/10 text-blue-500"
+                )}>
+                  {task.priority} Priority
+                </Badge>
+                {task.approvalStatus === "Approved" && (
+                  <Badge className="bg-emerald-500/15 hover:bg-emerald-500/20 text-emerald-600 border-none py-0.5 px-2 text-[9px] font-bold uppercase flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Approved
                   </Badge>
-                  <Badge className={cn(
-                    "border-none py-0.5 px-2 text-[9px] font-bold uppercase",
-                    task.priority === "Urgent" ? "bg-rose-500/10 text-rose-500"
-                      : task.priority === "High" ? "bg-amber-500/10 text-amber-600"
-                      : task.priority === "Medium" ? "bg-slate-500/10 text-slate-600"
-                      : "bg-blue-500/10 text-blue-500"
-                  )}>
-                    {task.priority} Priority
-                  </Badge>
-                  {task.approvalStatus === "Approved" && (
-                    <Badge className="bg-emerald-500/15 hover:bg-emerald-500/20 text-emerald-600 border-none py-0.5 px-2 text-[9px] font-bold uppercase flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Approved
-                    </Badge>
-                  )}
-                  {task.approvalStatus === "Changes Requested" && (
-                    <Badge className="bg-rose-500/15 hover:bg-rose-500/20 text-rose-600 border-none py-0.5 px-2 text-[9px] font-bold uppercase flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" /> Changes Requested
-                    </Badge>
-                  )}
-                </div>
-
-                {isEditingTitle ? (
-                  <Input
-                    value={titleText}
-                    onChange={(e) => setTitleText(e.target.value)}
-                    onBlur={handleTitleSave}
-                    onKeyDown={(e) => e.key === "Enter" && handleTitleSave()}
-                    className="text-lg font-bold h-9 mt-1 px-2 focus:ring-0 focus:border-primary text-foreground font-heading"
-                    autoFocus
-                  />
-                ) : (
-                  <h2
-                    onClick={() => { setTitleText(task.title); setIsEditingTitle(true); }}
-                    className="text-lg font-bold mt-1 text-foreground cursor-pointer hover:bg-slate-100/30 dark:hover:bg-slate-800/10 p-1 rounded transition-colors font-heading"
-                  >
-                    {task.title}
-                  </h2>
                 )}
-              </SheetHeader>
+                {task.approvalStatus === "Changes Requested" && (
+                  <Badge className="bg-rose-500/15 hover:bg-rose-500/20 text-rose-600 border-none py-0.5 px-2 text-[9px] font-bold uppercase flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Changes Requested
+                  </Badge>
+                )}
+              </div>
 
+              {isEditingTitle ? (
+                <Input
+                  value={titleText}
+                  onChange={(e) => setTitleText(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={(e) => e.key === "Enter" && handleTitleSave()}
+                  className="text-lg font-bold h-9 mt-1 px-2 focus:ring-0 focus:border-primary text-foreground font-heading"
+                  autoFocus
+                />
+              ) : (
+                <h2
+                  onClick={() => { setTitleText(task.title); setIsEditingTitle(true); }}
+                  className="text-lg font-bold mt-1 text-foreground cursor-pointer hover:bg-slate-100/30 dark:hover:bg-slate-800/10 p-1 rounded transition-colors font-heading pr-8"
+                >
+                  {task.title}
+                </h2>
+              )}
+
+              {/* Segmented Control for Both Desktop and Mobile */}
+              <div className="flex mt-3 p-0.5 bg-slate-100 dark:bg-slate-800/70 rounded-xl border border-slate-200/40 dark:border-slate-800/40 max-w-md">
+                <button
+                  onClick={() => setActiveMainTab("details")}
+                  className={cn(
+                    "flex-1 py-1.5 text-center rounded-lg font-semibold transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer",
+                    activeMainTab === "details"
+                      ? "bg-white dark:bg-slate-900 text-foreground shadow-sm font-bold border border-slate-200/40 dark:border-slate-800/40"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
+                  )}
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Task Details & Work
+                </button>
+                <button
+                  onClick={() => setActiveMainTab("properties")}
+                  className={cn(
+                    "flex-1 py-1.5 text-center rounded-lg font-semibold transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer",
+                    activeMainTab === "properties"
+                      ? "bg-white dark:bg-slate-900 text-foreground shadow-sm font-bold border border-slate-200/40 dark:border-slate-800/40"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
+                  )}
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  Properties & Settings
+                </button>
+              </div>
+            </SheetHeader>
+
+            {/* TAB CONTENT: Details & Work */}
+            {activeMainTab === "details" && (
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-6 p-5 pb-8">
                   {/* Task Description & Markdown Preview */}
@@ -1033,396 +1063,416 @@ export function TaskDetailsSheet({
                   </div>
                 </div>
               </ScrollArea>
-            </div>
+            )}
 
-            {/* Right Parameter Sidebar (Properties, Live Timer, Followers) */}
-            <div className="w-full sm:w-[280px] shrink-0 min-h-0 flex-1 sm:flex-none flex flex-col overflow-y-auto bg-slate-50/30 dark:bg-slate-900/10 p-4 pb-8 space-y-4">
-              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Properties</h3>
+            {/* TAB CONTENT: Properties & Settings */}
+            {activeMainTab === "properties" && (
+              <ScrollArea className="flex-1 min-h-0 bg-slate-50/20 dark:bg-slate-900/5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 p-5 pb-8">
+                  {/* Card 1: Core Settings */}
+                  <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200/60 dark:border-slate-800/60 p-4 space-y-4 shadow-sm">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-105 dark:border-slate-800/50">
+                      <Settings className="h-4 w-4 text-primary" />
+                      <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs">Core Settings</h3>
+                    </div>
 
-              {/* Status Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Status
-                </Label>
-                <Select value={task.status} onValueChange={(val) => handleMetaUpdate("status", val)}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Backlog" className="text-xs">Backlog</SelectItem>
-                    <SelectItem value="Todo" className="text-xs">Todo</SelectItem>
-                    <SelectItem value="In Progress" className="text-xs">In Progress</SelectItem>
-                    <SelectItem value="In Review" className="text-xs">In Review</SelectItem>
-                    <SelectItem value="Done" className="text-xs">Done</SelectItem>
-                    <SelectItem value="Cancelled" className="text-xs">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    {/* Status Selector */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Status
+                      </Label>
+                      <Select value={task.status} onValueChange={(val) => handleMetaUpdate("status", val)}>
+                        <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Backlog" className="text-xs">Backlog</SelectItem>
+                          <SelectItem value="Todo" className="text-xs">Todo</SelectItem>
+                          <SelectItem value="In Progress" className="text-xs">In Progress</SelectItem>
+                          <SelectItem value="In Review" className="text-xs">In Review</SelectItem>
+                          <SelectItem value="Done" className="text-xs">Done</SelectItem>
+                          <SelectItem value="Cancelled" className="text-xs">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* Assignee Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                  <User className="h-3 w-3" /> Assignee
-                </Label>
-                <Select value={task.assigneeId || "unassigned"} onValueChange={(val) => handleMetaUpdate("assigneeId", val === "unassigned" ? null : val)}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
-                    <SelectValue placeholder="Unassigned" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                    {employees.map((e) => (
-                      <SelectItem key={e.id} value={e.id} className="text-xs">{e.fullNameEnglish}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                    {/* Assignee Selector */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <User className="h-3 w-3" /> Assignee
+                      </Label>
+                      <Select value={task.assigneeId || "unassigned"} onValueChange={(val) => handleMetaUpdate("assigneeId", val === "unassigned" ? null : val)}>
+                        <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                          <SelectValue placeholder="Unassigned" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                          {employees.map((e) => (
+                            <SelectItem key={e.id} value={e.id} className="text-xs">{e.fullNameEnglish}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* Priority Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                  <Tag className="h-3 w-3" /> Priority
-                </Label>
-                <Select value={task.priority} onValueChange={(val) => handleMetaUpdate("priority", val)}>
-                  <SelectTrigger className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low" className="text-xs">Low</SelectItem>
-                    <SelectItem value="Medium" className="text-xs">Medium</SelectItem>
-                    <SelectItem value="High" className="text-xs">High</SelectItem>
-                    <SelectItem value="Urgent" className="text-xs">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    {/* Priority Selector */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Tag className="h-3 w-3" /> Priority
+                      </Label>
+                      <Select value={task.priority} onValueChange={(val) => handleMetaUpdate("priority", val)}>
+                        <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low" className="text-xs">Low</SelectItem>
+                          <SelectItem value="Medium" className="text-xs">Medium</SelectItem>
+                          <SelectItem value="High" className="text-xs">High</SelectItem>
+                          <SelectItem value="Urgent" className="text-xs">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* Due Date */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                  <Calendar className="h-3 w-3" /> Due Date
-                </Label>
-                <Input
-                  type="date"
-                  value={task.dueDate ? task.dueDate.split("T")[0] : ""}
-                  onChange={(e) => handleMetaUpdate("dueDate", e.target.value ? `${e.target.value}T00:00:00.000Z` : null)}
-                  className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
-                />
-              </div>
+                    {/* Due Date */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> Due Date
+                      </Label>
+                      <Input
+                        type="date"
+                        value={task.dueDate ? task.dueDate.split("T")[0] : ""}
+                        onChange={(e) => handleMetaUpdate("dueDate", e.target.value ? `${e.target.value}T00:00:00.000Z` : null)}
+                        className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
+                      />
+                    </div>
 
-              {/* Milestone Selector */}
-              {task.projectId && (
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                    <Target className="h-3 w-3" /> Milestone
-                  </Label>
-                  <Select
-                    value={task.milestoneId || "none"}
-                    onValueChange={(val) => handleMetaUpdate("milestoneId", val === "none" ? null : val)}
-                  >
-                    <SelectTrigger className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
-                      <SelectValue placeholder="No Milestone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs">No Milestone</SelectItem>
-                      {milestones.map((m) => (
-                        <SelectItem key={m.id} value={m.id} className="text-xs">
-                          {m.name} {m.dueDate ? `(Due: ${m.dueDate})` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+                    {/* Milestone Selector */}
+                    {task.projectId && (
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                          <Target className="h-3 w-3" /> Milestone
+                        </Label>
+                        <Select
+                          value={task.milestoneId || "none"}
+                          onValueChange={(val) => handleMetaUpdate("milestoneId", val === "none" ? null : val)}
+                        >
+                          <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                            <SelectValue placeholder="No Milestone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none" className="text-xs">No Milestone</SelectItem>
+                            {milestones.map((m) => (
+                              <SelectItem key={m.id} value={m.id} className="text-xs">
+                                {m.name} {m.dueDate ? `(Due: ${m.dueDate})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
-              {/* ─── Work Monitoring Options ─── */}
-              <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  Monitoring Metrics
-                </span>
-                
-                {/* Work Status */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-semibold text-slate-400">Work Status</label>
-                  <Select value={task.workStatus || "Idle"} onValueChange={(val) => handleMetaUpdate("workStatus", val)}>
-                    <SelectTrigger className="h-7 text-xs bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Idle" className="text-xs">Idle</SelectItem>
-                      <SelectItem value="Active Working" className="text-xs">Active Working</SelectItem>
-                      <SelectItem value="Paused" className="text-xs">Paused</SelectItem>
-                      <SelectItem value="Blocked" className="text-xs">Blocked</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Progress */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400">
-                    <span>Progress</span>
-                    <span className="font-bold text-primary">{task.progress || 0}%</span>
+                    {/* Tags Input */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Tag className="h-3 w-3" /> Tags (comma-separated)
+                      </Label>
+                      <Input
+                        defaultValue={task.tags || ""}
+                        onBlur={(e) => handleMetaUpdate("tags", e.target.value)}
+                        placeholder="Design, Bug, Critical"
+                        className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
+                      />
+                    </div>
                   </div>
-                  <Select value={String(task.progress || 0)} onValueChange={(val) => handleMetaUpdate("progress", Number(val))}>
-                    <SelectTrigger className="h-7 text-xs bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(p => (
-                        <SelectItem key={p} value={String(p)} className="text-xs">{p}%</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                {/* Health Index Card */}
-                <div className="space-y-1 pt-1 border-t border-slate-200/40 dark:border-slate-800/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-slate-400 font-semibold">Health Index:</span>
-                    <span className={cn(
-                      "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5",
-                      health === "Healthy" ? "bg-emerald-500/10 text-emerald-500" :
-                      health === "At Risk" ? "bg-amber-500/10 text-amber-500" :
-                      "bg-rose-500/10 text-rose-500"
-                    )}>
-                      {health === "Healthy" && <CheckCircle2 className="h-2.5 w-2.5" />}
-                      {health === "At Risk" && <AlertTriangle className="h-2.5 w-2.5" />}
-                      {health === "Critical" && <AlertCircle className="h-2.5 w-2.5" />}
-                      {health}
-                    </span>
-                  </div>
-                </div>
+                  {/* Card 2: Execution & Time */}
+                  <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200/60 dark:border-slate-800/60 p-4 space-y-4 shadow-sm">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-105 dark:border-slate-800/50">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs">Execution & Time</h3>
+                    </div>
 
-                {/* Time Variance Card */}
-                {task.estimatedHours > 0 && (
-                  <div className="flex items-center justify-between pt-1 text-[9px]">
-                    <span className="text-slate-400 font-semibold">Time Variance:</span>
-                    <span className={cn(
-                      "font-bold",
-                      timeVariance >= 0 ? "text-emerald-500" : "text-rose-500"
-                    )}>
-                      {timeVariance >= 0 ? `+${timeVariance}h under` : `${timeVariance}h over`}
-                    </span>
-                  </div>
-                )}
-              </div>
+                    {/* Work Status */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Work Status
+                      </Label>
+                      <Select value={task.workStatus || "Idle"} onValueChange={(val) => handleMetaUpdate("workStatus", val)}>
+                        <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Idle" className="text-xs">Idle</SelectItem>
+                          <SelectItem value="Active Working" className="text-xs">Active Working</SelectItem>
+                          <SelectItem value="Paused" className="text-xs">Paused</SelectItem>
+                          <SelectItem value="Blocked" className="text-xs">Blocked</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* ─── Task Recurrence Card ─── */}
-              <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  <RefreshCw className="h-3 w-3" /> Recurrence Settings
-                </span>
-                
-                {/* Recurrence Pattern */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-semibold text-slate-400">Pattern</label>
-                  <Select
-                    value={task.recurrencePattern || "none"}
-                    onValueChange={(val) => {
-                      handleMetaUpdate("recurrencePattern", val);
-                      if (val !== "none" && !task.nextRecurrenceDate) {
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        handleMetaUpdate("nextRecurrenceDate", tomorrow.toISOString().split("T")[0]);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-7 text-xs bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs">No Recurrence</SelectItem>
-                      <SelectItem value="daily" className="text-xs">Daily</SelectItem>
-                      <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
-                      <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    {/* Progress */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+                        <span>Progress</span>
+                        <span className="font-bold text-primary">{task.progress || 0}%</span>
+                      </div>
+                      <Select value={String(task.progress || 0)} onValueChange={(val) => handleMetaUpdate("progress", Number(val))}>
+                        <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(p => (
+                            <SelectItem key={p} value={String(p)} className="text-xs">{p}%</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {task.recurrencePattern && task.recurrencePattern !== "none" && (
-                  <>
-                    {/* Recurrence Interval */}
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-semibold text-slate-400">Repeat Every</label>
-                      <div className="flex items-center gap-2">
+                    {/* Live Time Tracker (Timer) */}
+                    <div className="space-y-2 bg-slate-50/20 dark:bg-slate-900/10 p-3 rounded-lg border border-slate-200/50 dark:border-slate-800/50">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> Live Timer
+                        </Label>
+                        <span className="font-mono text-xs font-bold text-foreground">{timerVal}</span>
+                      </div>
+                      {task.timerStartedAt ? (
+                        <Button size="xs" onClick={handleStopTimer} className="w-full h-7 text-[10px] bg-rose-600 hover:bg-rose-700 text-white font-semibold gap-1">
+                          <Square className="h-3 w-3 fill-white" /> Stop Timer
+                        </Button>
+                      ) : (
+                        <Button size="xs" onClick={handleStartTimer} className="w-full h-7 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-1">
+                          <Play className="h-3 w-3 fill-white" /> Start Timer
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Estimated vs Actual Hours */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-1">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Est. Hours</Label>
                         <Input
                           type="number"
-                          min={1}
-                          max={100}
-                          value={task.recurrenceInterval || 1}
-                          onChange={(e) => handleMetaUpdate("recurrenceInterval", parseInt(e.target.value) || 1)}
-                          className="h-7 text-xs w-20 bg-background"
+                          min="0"
+                          defaultValue={task.estimatedHours}
+                          onBlur={(e) => handleMetaUpdate("estimatedHours", Number(e.target.value) || 0)}
+                          className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
                         />
-                        <span className="text-[10px] text-muted-foreground font-semibold">
-                          {task.recurrencePattern === "daily" ? "day(s)" :
-                           task.recurrencePattern === "weekly" ? "week(s)" :
-                           "month(s)"}
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Act. Hours</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          defaultValue={task.actualHours}
+                          onBlur={(e) => handleMetaUpdate("actualHours", Number(e.target.value) || 0)}
+                          className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Health Index Card */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/40 dark:border-slate-800/30">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Health Index:</span>
+                        <span className={cn(
+                          "text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5",
+                          health === "Healthy" ? "bg-emerald-500/10 text-emerald-500" :
+                          health === "At Risk" ? "bg-amber-500/10 text-amber-500" :
+                          "bg-rose-500/10 text-rose-500"
+                        )}>
+                          {health === "Healthy" && <CheckCircle2 className="h-2.5 w-2.5" />}
+                          {health === "At Risk" && <AlertTriangle className="h-2.5 w-2.5" />}
+                          {health === "Critical" && <AlertCircle className="h-2.5 w-2.5" />}
+                          {health}
                         </span>
                       </div>
                     </div>
 
-                    {/* Next Recurrence Date */}
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-semibold text-slate-400">Next Occurrence</label>
-                      <Input
-                        type="date"
-                        value={task.nextRecurrenceDate ? task.nextRecurrenceDate.split("T")[0] : ""}
-                        onChange={(e) => handleMetaUpdate("nextRecurrenceDate", e.target.value || null)}
-                        className="h-7 text-xs bg-background"
-                      />
+                    {/* Time Variance Card */}
+                    {task.estimatedHours > 0 && (
+                      <div className="flex items-center justify-between pt-1.5 text-[10px]">
+                        <span className="text-slate-400 font-semibold">Time Variance:</span>
+                        <span className={cn(
+                          "font-bold",
+                          timeVariance >= 0 ? "text-emerald-500" : "text-rose-500"
+                        )}>
+                          {timeVariance >= 0 ? `+${timeVariance}h under` : `${timeVariance}h over`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card 3: Review & Recurrence */}
+                  <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200/60 dark:border-slate-800/60 p-4 space-y-4 shadow-sm">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-105 dark:border-slate-800/50">
+                      <RefreshCw className="h-4 w-4 text-primary" />
+                      <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs">Review & Recurrence</h3>
                     </div>
-                  </>
-                )}
-              </div>
 
-              {/* ─── Supervisor Feedback Options ─── */}
-              <div className="space-y-3 bg-slate-50/20 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Supervisor Reviews
-                </span>
+                    {/* Recurrence Settings */}
+                    <div className="space-y-3 bg-slate-50/10 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <RefreshCw className="h-3 w-3" /> Recurrence Settings
+                      </span>
+                      
+                      {/* Recurrence Pattern */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-400">Pattern</label>
+                        <Select
+                          value={task.recurrencePattern || "none"}
+                          onValueChange={(val) => {
+                            handleMetaUpdate("recurrencePattern", val);
+                            if (val !== "none" && !task.nextRecurrenceDate) {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              handleMetaUpdate("nextRecurrenceDate", tomorrow.toISOString().split("T")[0]);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none" className="text-xs">No Recurrence</SelectItem>
+                            <SelectItem value="daily" className="text-xs">Daily</SelectItem>
+                            <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
+                            <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                {/* Approval Status */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-semibold text-slate-400">Review Result</label>
-                  <Select value={task.approvalStatus || "Pending"} onValueChange={(val) => handleMetaUpdate("approvalStatus", val)}>
-                    <SelectTrigger className="h-7 text-xs bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pending" className="text-xs">Pending Review</SelectItem>
-                      <SelectItem value="Approved" className="text-xs">Approved</SelectItem>
-                      <SelectItem value="Changes Requested" className="text-xs">Changes Requested</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                      {task.recurrencePattern && task.recurrencePattern !== "none" && (
+                        <>
+                          {/* Recurrence Interval */}
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-semibold text-slate-400">Repeat Every</label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={task.recurrenceInterval || 1}
+                                onChange={(e) => handleMetaUpdate("recurrenceInterval", parseInt(e.target.value) || 1)}
+                                className="h-7 text-xs w-20 bg-background"
+                              />
+                              <span className="text-[10px] text-muted-foreground font-semibold">
+                                {task.recurrencePattern === "daily" ? "day(s)" :
+                                 task.recurrencePattern === "weekly" ? "week(s)" :
+                                 "month(s)"}
+                              </span>
+                            </div>
+                          </div>
 
-                {/* Rating (1-5 clickable stars) */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-semibold text-slate-400 block">Rating Score</label>
-                  <div className="flex gap-1 items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        onClick={() => handleMetaUpdate("reviewRating", star)}
-                        className={cn(
-                          "w-4 h-4 cursor-pointer transition-colors",
-                          star <= (task.reviewRating || 0)
-                            ? "text-amber-500 fill-amber-500"
-                            : "text-slate-300 dark:text-slate-700"
-                        )}
-                      />
-                    ))}
+                          {/* Next Recurrence Date */}
+                          <div className="space-y-1">
+                            <label className="text-[9px] font-semibold text-slate-400">Next Occurrence</label>
+                            <Input
+                              type="date"
+                              value={task.nextRecurrenceDate ? task.nextRecurrenceDate.split("T")[0] : ""}
+                              onChange={(e) => handleMetaUpdate("nextRecurrenceDate", e.target.value || null)}
+                              className="h-7 text-xs bg-background"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Supervisor Feedback / Reviews */}
+                    <div className="space-y-3 bg-slate-50/10 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Supervisor Reviews
+                      </span>
+
+                      {/* Approval Status */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-400">Review Result</label>
+                        <Select value={task.approvalStatus || "Pending"} onValueChange={(val) => handleMetaUpdate("approvalStatus", val)}>
+                          <SelectTrigger className="w-full h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pending" className="text-xs">Pending Review</SelectItem>
+                            <SelectItem value="Approved" className="text-xs">Approved</SelectItem>
+                            <SelectItem value="Changes Requested" className="text-xs">Changes Requested</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Rating (1-5 clickable stars) */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-400 block">Rating Score</label>
+                        <div className="flex gap-1 items-center">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              onClick={() => handleMetaUpdate("reviewRating", star)}
+                              className={cn(
+                                "w-4 h-4 cursor-pointer transition-colors",
+                                star <= (task.reviewRating || 0)
+                                  ? "text-amber-500 fill-amber-500"
+                                  : "text-slate-300 dark:text-slate-700"
+                              )}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Remarks/feedback text */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-semibold text-slate-400">Remarks / Feedback</label>
+                        <Textarea
+                          placeholder="Provide supervisor feedback remarks..."
+                          defaultValue={task.reviewFeedback || ""}
+                          onBlur={(e) => handleMetaUpdate("reviewFeedback", e.target.value)}
+                          className="text-[11px] min-h-[50px] resize-none bg-background p-1.5"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Watchers / Followers Pane */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                          <Eye className="h-3 w-3" /> Watchers ({watchersList.length})
+                        </Label>
+                        <button onClick={() => setIsAddingWatcher(!isAddingWatcher)} className="text-primary hover:underline text-[10px]">Add</button>
+                      </div>
+
+                      {isAddingWatcher && (
+                        <select
+                          onChange={(e) => { if (e.target.value) handleAddWatcher(e.target.value); }}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-1 py-0.5 text-xs"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>Select User...</option>
+                          {employees.map(e => (
+                            <option key={e.id} value={e.id}>{e.fullNameEnglish}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {watchersList.map((watcherId) => {
+                          const empName = employees.find(e => e.id === watcherId)?.fullNameEnglish || "User";
+                          return (
+                            <Badge key={watcherId} variant="outline" className="text-[10px] gap-1 px-1.5 py-0.5">
+                              {empName.split(" ")[0]}
+                              <button onClick={() => handleRemoveWatcher(watcherId)} className="text-slate-400 hover:text-rose-500 font-bold">×</button>
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Audit Timestamps */}
+                    <div className="pt-2 text-[10px] text-slate-400 space-y-1 bg-slate-50/10 dark:bg-slate-900/10 p-2 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
+                      <p>Created: <span className="font-semibold text-slate-700 dark:text-slate-350">{format(parseISO(task.createdAt), "MMM d, yyyy")}</span></p>
+                      <p>Modified: <span className="font-semibold text-slate-700 dark:text-slate-350">{format(parseISO(task.updatedAt), "MMM d, yyyy")}</span></p>
+                    </div>
                   </div>
                 </div>
-
-                {/* Remarks/feedback text */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-semibold text-slate-400">Remarks / Feedback</label>
-                  <Textarea
-                    placeholder="Provide supervisor feedback remarks..."
-                    defaultValue={task.reviewFeedback || ""}
-                    onBlur={(e) => handleMetaUpdate("reviewFeedback", e.target.value)}
-                    className="text-[11px] min-h-[50px] resize-none bg-background p-1.5"
-                  />
-                </div>
-              </div>
-
-              <Separator className="bg-slate-200/40 dark:border-slate-800/40 my-2" />
-
-              {/* Watchers / Followers Pane */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> Watchers ({watchersList.length})
-                  </Label>
-                  <button onClick={() => setIsAddingWatcher(!isAddingWatcher)} className="text-primary hover:underline text-[10px]">Add</button>
-                </div>
-
-                {isAddingWatcher && (
-                  <select
-                    onChange={(e) => { if (e.target.value) handleAddWatcher(e.target.value); }}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded px-1 py-0.5 text-xs"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Select User...</option>
-                    {employees.map(e => (
-                      <option key={e.id} value={e.id}>{e.fullNameEnglish}</option>
-                    ))}
-                  </select>
-                )}
-
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {watchersList.map((watcherId) => {
-                    const empName = employees.find(e => e.id === watcherId)?.fullNameEnglish || "User";
-                    return (
-                      <Badge key={watcherId} variant="outline" className="text-[10px] gap-1 px-1.5 py-0.5">
-                        {empName.split(" ")[0]}
-                        <button onClick={() => handleRemoveWatcher(watcherId)} className="text-slate-400 hover:text-rose-500 font-bold">×</button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Tags Input */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                  <Tag className="h-3 w-3" /> Tags (comma-separated)
-                </Label>
-                <Input
-                  defaultValue={task.tags || ""}
-                  onBlur={(e) => handleMetaUpdate("tags", e.target.value)}
-                  placeholder="Design, Bug, Critical"
-                  className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
-                />
-              </div>
-
-              {/* Live Time Tracker (Timer) */}
-              <div className="space-y-2 bg-slate-50/10 dark:bg-slate-900/10 p-2.5 rounded-lg border border-slate-200/50 dark:border-slate-800/50">
-                <div className="flex items-center justify-between">
-                  <Label className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Live Timer
-                  </Label>
-                  <span className="font-mono text-xs font-bold text-foreground">{timerVal}</span>
-                </div>
-                {task.timerStartedAt ? (
-                  <Button size="xs" onClick={handleStopTimer} className="w-full h-7 text-[10px] bg-rose-600 hover:bg-rose-700 text-white font-semibold gap-1">
-                    <Square className="h-3 w-3 fill-white" /> Stop Timer
-                  </Button>
-                ) : (
-                  <Button size="xs" onClick={handleStartTimer} className="w-full h-7 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-1">
-                    <Play className="h-3 w-3 fill-white" /> Start Timer
-                  </Button>
-                )}
-              </div>
-
-              {/* Estimated vs Actual Hours */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="grid gap-1">
-                  <Label className="text-[9px] font-bold text-slate-400 uppercase">Est. Hours</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    defaultValue={task.estimatedHours}
-                    onBlur={(e) => handleMetaUpdate("estimatedHours", Number(e.target.value) || 0)}
-                    className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label className="text-[9px] font-bold text-slate-400 uppercase">Act. Hours</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    defaultValue={task.actualHours}
-                    onBlur={(e) => handleMetaUpdate("actualHours", Number(e.target.value) || 0)}
-                    className="h-8 text-xs bg-background border-slate-200/60 dark:border-slate-800/60"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2 text-[10px] text-slate-400 space-y-1 bg-slate-50/10 dark:bg-slate-900/10 p-2 rounded-lg border border-slate-200/40 dark:border-slate-800/40">
-                <p>Created: <span className="font-semibold text-slate-700 dark:text-slate-300">{format(parseISO(task.createdAt), "MMM d, yyyy")}</span></p>
-                <p>Modified: <span className="font-semibold text-slate-700 dark:text-slate-300">{format(parseISO(task.updatedAt), "MMM d, yyyy")}</span></p>
-              </div>
-            </div>
+              </ScrollArea>
+            )}
           </>
         )}
       </SheetContent>

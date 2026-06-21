@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -52,12 +51,9 @@ import {
   BarChart3,
   Calendar,
   Settings,
-  FileSpreadsheet,
-  Printer,
   Loader2,
   Activity,
   Workflow,
-  FileUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
@@ -318,118 +314,6 @@ export default function TasksPage() {
       status,
       priority: "Medium",
     });
-  };
-
-  const handleExportCSV = () => {
-    if (tasks.length === 0) {
-      toast.error("No tasks to export");
-      return;
-    }
-    const headers = ["Title", "Project", "Status", "Priority", "Due Date", "Assignee", "Est Hours", "Act Hours", "Tags"];
-    const rows = tasks.map(t => [
-      `"${t.title.replace(/"/g, '""')}"`,
-      `"${(t.projectName || "").replace(/"/g, '""')}"`,
-      t.status,
-      t.priority,
-      t.dueDate || "",
-      `"${(t.assigneeName || "").replace(/"/g, '""')}"`,
-      t.estimatedHours,
-      t.actualHours,
-      `"${(t.tags || "").replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `tasks_report_${format(new Date(), "yyyy_MM_dd")}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("CSV report downloaded successfully");
-  };
-
-  const handlePrintPDF = () => {
-    window.print();
-  };
-
-  const [isImporting, setIsImporting] = useState(false);
-
-  const parseCSV = (text: string) => {
-    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-    if (lines.length <= 1) return [];
-    const headers = lines[0].split(",").map(h => h.trim().replace(/^["']|["']$/g, ""));
-    
-    return lines.slice(1).map(line => {
-      const values: string[] = [];
-      let current = "";
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim().replace(/^["']|["']$/g, ""));
-          current = "";
-        } else {
-          current += char;
-        }
-      }
-      values.push(current.trim().replace(/^["']|["']$/g, ""));
-      
-      const obj: any = {};
-      headers.forEach((h, index) => {
-        obj[h] = values[index] || "";
-      });
-      return obj;
-    });
-  };
-
-  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const text = evt.target?.result as string;
-        const parsed = parseCSV(text);
-        const tasksToImport = parsed.map((item: any) => {
-          const assigneeName = item.Assignee || item.assignee || item["Assignee Name"] || "";
-          const matchedEmployee = assigneeName
-            ? employees.find(e => e.fullNameEnglish?.toLowerCase() === assigneeName.toLowerCase())
-            : undefined;
-          return {
-            projectId: workplaceProjectId || undefined,
-            title: item.Title || item.title || "Untitled Task",
-            description: item.Description || item.description || "",
-            priority: item.Priority || item.priority || "Medium",
-            status: item.Status || item.status || "Todo",
-            estimatedHours: Number(item["Estimated Hours"] || item.estimatedHours || item.estimated_hours) || 0,
-            tags: item.Tags || item.tags || "",
-            dueDate: item["Due Date"] || item.dueDate ? `${item["Due Date"] || item.dueDate}T00:00:00.000Z` : undefined,
-            ...(matchedEmployee ? { assigneeId: matchedEmployee.id } : {}),
-          };
-        });
-        
-        if (tasksToImport.length === 0) {
-          toast.error("No tasks found in CSV");
-          return;
-        }
-        
-        await apiClient.post("tasks/bulk-import", { tasks: tasksToImport });
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
-        toast.success(`Successfully imported ${tasksToImport.length} tasks!`);
-      } catch (err) {
-        toast.error("Failed to import CSV: check headers 'Title, Description, Priority, Status, Estimated Hours, Assignee, Tags, Due Date'");
-      } finally {
-        setIsImporting(false);
-        e.target.value = "";
-      }
-    };
-    reader.readAsText(file);
   };
 
   // Calendar calculations

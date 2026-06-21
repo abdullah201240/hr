@@ -733,7 +733,7 @@ export function AccessControlTab() {
  
       {/* Create / Edit Role Dialog */}
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[85vh] flex flex-col p-6">
           <DialogHeader className="pb-2">
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
