@@ -28,6 +28,7 @@ const formatResourceName = (resource: string) => {
     salary: "Salary Structure",
     claims: "Expense Claims",
     leaves: "Leave Management",
+    leave: "Leave Management",
     departments: "Departments",
     announcements: "Announcements",
     notifications: "Notifications",
@@ -45,7 +46,26 @@ const formatResourceName = (resource: string) => {
     .join(" ");
 };
 
-const formatActionName = (action: string) => {
+const formatActionName = (action: string, resource?: string) => {
+  const resKey = resource?.toLowerCase() || "";
+  const actKey = action.toLowerCase();
+
+  // Custom formatting for leave resource actions to make them clear
+  if (resKey === "leave") {
+    const leaveMap: Record<string, string> = {
+      apply: "Apply for Leaves",
+      cancel: "Cancel Leaves",
+      create: "Configure Leave Types (Create)",
+      update: "Edit Leave Configurations (Update)",
+      delete: "Delete Leave Configurations",
+      view_own: "View Own Leaves (Employee View)",
+      view_team: "Line Manager Approval (View & Approve Team Leaves - 1st Step)",
+      approve: "2nd Step Approval (Final Approval / Reject)",
+      view_all: "View All Leaves (Admin / HR View)",
+    };
+    if (leaveMap[actKey]) return leaveMap[actKey];
+  }
+
   const customMap: Record<string, string> = {
     read: "View / Read",
     create: "Create / Add",
@@ -55,8 +75,7 @@ const formatActionName = (action: string) => {
     manage: "Full Control (Manage)",
     "read:me": "View Self Details",
   };
-  const key = action.toLowerCase();
-  if (customMap[key]) return customMap[key];
+  if (customMap[actKey]) return customMap[actKey];
   return action
     .split(/[-_]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -64,8 +83,11 @@ const formatActionName = (action: string) => {
 };
 
 export function AccessControlTab() {
-  const { data: permissions = [], isLoading: loadingPerms } = usePermissionsQuery()
+  const { data: rawPermissions = [], isLoading: loadingPerms } = usePermissionsQuery()
   const { data: roles = [], isLoading: loadingRoles } = useRolesQuery()
+
+  // Filter out redundant leave:reject permission from Settings screen since leave:approve handles both actions
+  const permissions = rawPermissions.filter(p => !(p.resource === "leave" && p.action === "reject"))
   
   const systemRoles = roles.filter(r => r.isSystem)
   const customRoles = roles.filter(r => !r.isSystem)
@@ -162,7 +184,7 @@ export function AccessControlTab() {
   // Group permissions by resource category for cleaner presentation
   const getCategory = (resource: string) => {
     const resLower = resource.toLowerCase();
-    if (['employees', 'recruitment', 'letters', 'performance', 'disciplinary', 'separation', 'attendance', 'tasks'].includes(resLower)) {
+    if (['employees', 'recruitment', 'letters', 'performance', 'disciplinary', 'separation', 'attendance', 'tasks', 'leave'].includes(resLower)) {
       return 'Workforce & Operations';
     }
     if (['payroll', 'salary', 'claims', 'provident-fund-settings'].includes(resLower)) {
@@ -177,7 +199,7 @@ export function AccessControlTab() {
       if (!query) return true;
       const q = query.toLowerCase();
       const formattedRes = formatResourceName(p.resource).toLowerCase();
-      const formattedAct = formatActionName(p.action).toLowerCase();
+      const formattedAct = formatActionName(p.action, p.resource).toLowerCase();
       const rawRes = p.resource.toLowerCase();
       const rawAct = p.action.toLowerCase();
       const desc = p.description.toLowerCase();
@@ -219,7 +241,7 @@ export function AccessControlTab() {
 
       result[cat] = sortedResources.map(res => {
         const sortedPerms = [...resourceGroups[res]].sort((a, b) =>
-          formatActionName(a.action).localeCompare(formatActionName(b.action))
+          formatActionName(a.action, a.resource).localeCompare(formatActionName(b.action, b.resource))
         );
         return {
           resource: res,
@@ -551,7 +573,7 @@ export function AccessControlTab() {
                                         </div>
                                         <div className="space-y-0.5">
                                           <p className="font-semibold text-foreground">
-                                            {formatActionName(perm.action)}
+                                            {formatActionName(perm.action, perm.resource)}
                                           </p>
                                           <p className="text-[10px] text-muted-foreground leading-relaxed">
                                             {perm.description}
@@ -786,7 +808,7 @@ export function AccessControlTab() {
                                       </div>
                                       <div>
                                         <p className="font-semibold text-foreground">
-                                          {formatActionName(perm.action)}
+                                          {formatActionName(perm.action, perm.resource)}
                                         </p>
                                         <p className="text-[9.5px] text-muted-foreground mt-0.5 leading-normal">
                                           {perm.description}

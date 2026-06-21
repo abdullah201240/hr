@@ -84,7 +84,7 @@ export const navGroups: NavGroup[] = [
         title: "Leave Management",
         href: "/leave",
         icon: CalendarOff,
-        // No roles — visible to all
+        permissions: ["leave:view_all", "leave:view_team", "leave:approve"],
       },
       {
         title: "HR Letters",
