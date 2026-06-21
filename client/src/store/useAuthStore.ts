@@ -9,7 +9,7 @@ interface UserProfile {
   fullNameEnglish: string;
   phone?: string;
   gender?: string;
-  role: string; // admin | hr | employee
+  role: 'admin' | 'hr' | 'manager' | 'employee'; // Typed role union — admin | hr | manager | employee
   departmentId?: string;
   designationId?: string;
   employeeType?: string;

@@ -31,16 +31,19 @@ export const navGroups: NavGroup[] = [
         title: "Dashboard",
         href: "/",
         icon: LayoutDashboard,
+        // No roles — visible to all
       },
       {
         title: "Chats & Channels",
         href: "/chat",
         icon: MessageSquare,
+        // No roles — visible to all
       },
       {
         title: "Notifications",
         href: "/notifications",
         icon: Bell,
+        // No roles — visible to all
       },
     ],
   },
@@ -51,54 +54,61 @@ export const navGroups: NavGroup[] = [
         title: "Employees",
         href: "/employees",
         icon: Users,
-        badge: "248",
+        roles: ["admin", "hr", "manager"], // Employees cannot browse the directory
       },
       {
         title: "Recruitment",
         href: "/recruitment",
         icon: UserPlus,
+        roles: ["admin", "hr"], // Recruitment is HR-only
       },
       {
         title: "Task Management",
         href: "/tasks",
         icon: CheckSquare,
+        // No roles — visible to all
       },
       {
         title: "Attendance",
         href: "/attendance",
         icon: CalendarClock,
+        // No roles — visible to all
       },
       {
         title: "Company Attendance",
         href: "/attendance/company",
         icon: CalendarClock,
+        roles: ["admin", "hr", "manager"], // Team-level view
       },
       {
         title: "Leave Management",
         href: "/leave",
         icon: CalendarOff,
-        badge: "3",
+        // No roles — visible to all
       },
       {
         title: "HR Letters",
         href: "/letters",
         icon: FileText,
-        badge: "10",
+        roles: ["admin", "hr"], // Letters are HR-only
       },
       {
         title: "Separation",
         href: "/separation",
         icon: UserMinus,
+        roles: ["admin", "hr"], // Separation is HR-only
       },
       {
         title: "Disciplinary",
         href: "/disciplinary",
         icon: Scale,
+        roles: ["admin", "hr"], // Disciplinary is HR-only
       },
       {
         title: "KPI & Performance",
         href: "/performance",
         icon: Target,
+        roles: ["admin", "hr", "manager"], // Managers review team performance
       },
     ],
   },
@@ -109,12 +119,13 @@ export const navGroups: NavGroup[] = [
         title: "Salary & Payroll",
         href: "/payroll",
         icon: Coins,
+        roles: ["admin", "hr"], // Payroll is HR-only
       },
       {
         title: "Claims & Reimbursement",
         href: "/claims",
         icon: HeartPulse,
-        badge: "3",
+        // No roles — visible to all (employees can file claims)
         items: [
           {
             title: "Medical Reimbursement",
@@ -142,21 +153,25 @@ export const navGroups: NavGroup[] = [
         title: "Org Structure",
         href: "/departments",
         icon: Building2,
+        // No roles — visible to all
       },
       {
         title: "Announcements",
         href: "/announcements",
         icon: Megaphone,
+        // No roles — visible to all
       },
       {
         title: "Reports",
         href: "/reports",
         icon: BarChart3,
+        roles: ["admin", "hr", "manager"], // Reports for managers+
       },
       {
         title: "Settings",
         href: "/settings",
         icon: Settings,
+        roles: ["admin"], // Settings for super admin only
       },
     ],
   },

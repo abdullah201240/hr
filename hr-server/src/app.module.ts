@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import appConfig from './config/app.config';
@@ -38,6 +38,9 @@ import { ChatModule } from './modules/chat/chat.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { OwnershipGuard } from './modules/auth/guards/ownership.guard';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+
 
 
 
@@ -117,6 +120,16 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      // Defense-in-depth Layer 3: resource ownership enforcement
+      provide: APP_GUARD,
+      useClass: OwnershipGuard,
+    },
+    {
+      // Audit trail: log all state-changing operations (POST, PATCH, DELETE, PUT)
+      provide: APP_INTERCEPTOR,
+      useClass: AuditLogInterceptor,
     },
   ],
 })

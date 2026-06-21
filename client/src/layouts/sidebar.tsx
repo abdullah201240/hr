@@ -32,7 +32,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     name: user?.fullNameEnglish || "Employee",
     email: user?.email || "",
     avatar: user?.employeePhotoUrl || "",
-    role: user?.role || "",
+    role: (user?.role || "employee") as 'admin' | 'hr' | 'manager' | 'employee',
   }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role])
 
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {

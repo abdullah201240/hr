@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Bell, Check } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useNotificationStore } from '@/store/useNotificationStore';
@@ -33,9 +33,16 @@ export function NotificationBell() {
     return infiniteData.pages.flatMap((page) => page.data).slice(0, 5);
   }, [infiniteData]);
 
-  // Refetch preview when unread count changes from WebSocket
+  // Debounced refetch: avoid rapid network calls when multiple WS events arrive
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    refetch();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      refetch();
+    }, 500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [unreadCount, refetch]);
 
   const handleMarkAllAsRead = (e: React.MouseEvent) => {

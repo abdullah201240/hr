@@ -18,7 +18,7 @@ export interface User {
   name: string
   email: string
   avatar: string
-  role: string
+  role: 'admin' | 'hr' | 'manager' | 'employee'
 }
 
 export * from "./org"

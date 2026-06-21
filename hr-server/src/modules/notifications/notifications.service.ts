@@ -17,7 +17,6 @@ import { NotificationGateway } from './notifications.gateway';
 import { DeduplicationGuard } from './guards/deduplication.guard';
 import { NotificationRateLimiter } from './guards/rate-limiter.guard';
 import { PreferencesService } from './services/preferences.service';
-import { NotificationModule, NotificationCategory } from './types/notification.types';
 
 export const NOTIFICATION_QUEUE = 'notifications';
 
@@ -95,7 +94,7 @@ export class NotificationService implements OnModuleInit {
     // 4. Mark deduplication key
     await this.dedup.markEmitted(dto);
 
-    // 5. Persist with unique key violation handling
+    // 5. Persist with unique key violation handling and XSS sanitization
     let notification: any;
     try {
       const [inserted] = await this.db
@@ -106,8 +105,8 @@ export class NotificationService implements OnModuleInit {
           module: dto.module,
           category: dto.category,
           priority: dto.priority || 'normal',
-          title: dto.title,
-          message: dto.message,
+          title: this.sanitizeHtml(dto.title),
+          message: this.sanitizeHtml(dto.message),
           entityType: dto.entityType || null,
           entityId: dto.entityId || null,
           actionUrl: dto.actionUrl || null,
@@ -522,5 +521,12 @@ export class NotificationService implements OnModuleInit {
       )
       .orderBy(desc(notifications.createdAt))
       .limit(limit);
+  }
+
+  /**
+   * Strip HTML tags to prevent stored XSS in notification title/message
+   */
+  private sanitizeHtml(input: string): string {
+    return input.replace(/<[^>]*>/g, '').trim();
   }
 }

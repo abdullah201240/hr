@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { AuthLayout } from "@/layouts/auth-layout"
 import { DashboardLayout } from "@/layouts/dashboard-layout"
 import { ProtectedRoute } from "@/components/auth/protected-route"
+import { RoleGuard } from "@/components/auth/role-guard"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 
@@ -91,47 +92,65 @@ function App() {
               {/* Protected dashboard routes */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<DashboardLayout />}>
+                  {/* ── All authenticated users ────────────────────────────── */}
                   <Route index element={<DashboardPage />} />
-                  <Route path="employees" element={<EmployeesPage />} />
-                  <Route path="employees/create" element={<CreateEmployeePage />} />
-                  <Route path="employees/edit/:id" element={<EditEmployeePage />} />
-                  <Route path="employees/view/:id" element={<ViewEmployeePage />} />
                   <Route path="attendance" element={<AttendancePage />} />
-                  <Route path="attendance/company" element={<CompanyAttendancePage />} />
                   <Route path="attendance/setup" element={<Navigate to="/settings?tab=attendance" replace />} />
                   <Route path="leave" element={<LeavePage />} />
-                  <Route path="payroll" element={<PayrollPage />} />
                   <Route path="claims" element={<Navigate to="/claims/medical" replace />} />
                   <Route path="claims/medical" element={<MedicalReimbursementPage />} />
                   <Route path="claims/tada" element={<TADAClaimPage />} />
                   <Route path="claims/advance" element={<BusinessTravelAdvancePage />} />
-                  <Route path="letters" element={<LettersPage />} />
-                  <Route path="letters/view/:id" element={<ViewLetterPage />} />
-                  <Route path="departments" element={<DepartmentsPage />} />
-                  <Route path="departments/create" element={<CreateDepartmentPage />} />
-                  <Route path="departments/edit/:id" element={<EditDepartmentPage />} />
-                  <Route path="departments/view/:id" element={<ViewDepartmentPage />} />
-                  <Route path="designations/create" element={<CreateDesignationPage />} />
-                  <Route path="designations/edit/:id" element={<EditDesignationPage />} />
-                  <Route path="designations/view/:id" element={<ViewDesignationPage />} />
-                  <Route path="documents" element={<DocumentsPage />} />
-                  <Route path="recruitment" element={<RecruitmentPage />} />
                   <Route path="tasks" element={<TasksPage />} />
                   <Route path="announcements" element={<AnnouncementsPage />} />
-                  <Route path="separation" element={<SeparationPage />} />
-                  <Route path="disciplinary" element={<DisciplinaryPage />} />
-                  <Route path="performance" element={<PerformancePage />} />
-                  <Route path="reports" element={<ReportsPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="chat" element={<ChatPage />} />
                   <Route path="notifications" element={<NotificationsPage />} />
+
+                  {/* Departments & designations: read-only view for all */}
+                  <Route path="departments" element={<DepartmentsPage />} />
+                  <Route path="departments/view/:id" element={<ViewDepartmentPage />} />
+                  <Route path="designations/view/:id" element={<ViewDesignationPage />} />
+                  <Route path="documents" element={<DocumentsPage />} />
+
+                  {/* Employee profile view: employees can view own profile (OwnerOnly guard on backend) */}
+                  <Route path="employees/view/:id" element={<ViewEmployeePage />} />
+
+                  {/* ── Manager+ routes ────────────────────────────────────── */}
+                  <Route element={<RoleGuard allowedRoles={["admin", "hr", "manager"]} />}>
+                    <Route path="employees" element={<EmployeesPage />} />
+                    <Route path="attendance/company" element={<CompanyAttendancePage />} />
+                    <Route path="performance" element={<PerformancePage />} />
+                    <Route path="reports" element={<ReportsPage />} />
+                  </Route>
+
+                  {/* ── Admin/HR-only routes ───────────────────────────────── */}
+                  <Route element={<RoleGuard allowedRoles={["admin", "hr"]} />}>
+                    <Route path="employees/create" element={<CreateEmployeePage />} />
+                    <Route path="employees/edit/:id" element={<EditEmployeePage />} />
+                    <Route path="payroll" element={<PayrollPage />} />
+                    <Route path="recruitment" element={<RecruitmentPage />} />
+                    <Route path="separation" element={<SeparationPage />} />
+                    <Route path="disciplinary" element={<DisciplinaryPage />} />
+                    <Route path="letters" element={<LettersPage />} />
+                    <Route path="letters/view/:id" element={<ViewLetterPage />} />
+                    <Route path="departments/create" element={<CreateDepartmentPage />} />
+                    <Route path="departments/edit/:id" element={<EditDepartmentPage />} />
+                    <Route path="designations/create" element={<CreateDesignationPage />} />
+                    <Route path="designations/edit/:id" element={<EditDesignationPage />} />
+                  </Route>
+
+                  {/* ── Admin-only routes ──────────────────────────────────── */}
+                  <Route element={<RoleGuard allowedRoles={["admin"]} />}>
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
+
                   <Route path="*" element={<NotFoundPage />} />
 
                 </Route>
               </Route>
 
-              {/* Printable templates */}
+              {/* Printable templates (protected but no role restriction) */}
               <Route path="/recruitment/print/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintJoiningLetterPage /></Suspense>} />
               <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
               <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />

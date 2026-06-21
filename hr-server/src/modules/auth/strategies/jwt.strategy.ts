@@ -13,6 +13,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  departmentId: string | null;
   ver: number;
   jti: string;
   iat: number;
@@ -23,6 +24,7 @@ export interface JwtUser {
   id: string;
   email: string;
   role: string;
+  departmentId: string | null;
   fullNameEnglish: string;
   employeePhotoUrl: string | null;
 }
@@ -71,6 +73,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         id: cached.id,
         email: cached.email,
         role: cached.role,
+        departmentId: cached.departmentId ?? payload.departmentId ?? null,
         fullNameEnglish: cached.fullNameEnglish,
         employeePhotoUrl: cached.employeePhotoUrl,
       };
@@ -88,6 +91,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             id: employees.id,
             email: employees.email,
             role: employees.role,
+            departmentId: employees.departmentId,
             status: employees.status,
             refreshTokenVersion: employees.refreshTokenVersion,
             fullNameEnglish: employees.fullNameEnglish,
@@ -132,6 +136,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user.id,
       email: user.email,
       role: user.role,
+      departmentId: user.departmentId ?? null,
       fullNameEnglish: user.fullNameEnglish,
       employeePhotoUrl: user.employeePhotoUrl,
       ver: user.refreshTokenVersion,
@@ -144,6 +149,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user.id,
       email: user.email,
       role: user.role,
+      departmentId: user.departmentId ?? null,
       fullNameEnglish: user.fullNameEnglish,
       employeePhotoUrl: user.employeePhotoUrl,
     };

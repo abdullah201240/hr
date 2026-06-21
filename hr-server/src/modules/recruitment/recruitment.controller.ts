@@ -21,12 +21,15 @@ import {
   GenerateOfferLetterDto,
   GenerateJoiningLetterDto,
 } from './dto/recruitment.dto';
+import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Recruitment')
 @ApiBearerAuth()
 @Controller('recruitment')
+@Roles('admin', 'hr')  // ← All recruitment endpoints are admin/hr only (Gap G1 fix)
 export class RecruitmentController {
   constructor(private readonly service: RecruitmentService) {}
+
 
   // ─── Job Openings ───────────────────────────────────────────────────────────
 

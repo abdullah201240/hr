@@ -31,6 +31,7 @@ export interface LoginResponse {
     role: string;
     fullNameEnglish: string;
     employeePhotoUrl: string | null;
+    departmentId: string | null;
   };
 }
 
@@ -66,6 +67,7 @@ export class AuthService {
         role: employees.role,
         fullNameEnglish: employees.fullNameEnglish,
         employeePhotoUrl: employees.employeePhotoUrl,
+        departmentId: employees.departmentId,
         status: employees.status,
         passwordHash: employees.passwordHash,
         refreshTokenVersion: employees.refreshTokenVersion,
@@ -99,6 +101,7 @@ export class AuthService {
       user.email,
       user.role,
       user.refreshTokenVersion,
+      user.departmentId ?? undefined,
     );
 
     // Update last login
@@ -117,6 +120,7 @@ export class AuthService {
         role: user.role,
         fullNameEnglish: user.fullNameEnglish,
         employeePhotoUrl: user.employeePhotoUrl,
+        departmentId: user.departmentId ?? null,
       },
     };
   }
@@ -306,6 +310,7 @@ export class AuthService {
     email: string,
     role: string,
     version: number,
+    departmentId?: string,
   ): Promise<TokenPair> {
     const accessExpiry = this.configService.get<string>(
       'jwt.accessTokenExpiry',
@@ -322,6 +327,7 @@ export class AuthService {
           sub: userId,
           email,
           role,
+          departmentId: departmentId ?? null,
           ver: version,
           jti: randomUUID(),
         },

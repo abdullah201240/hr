@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
@@ -25,6 +26,7 @@ import { EmployeeQueryDto } from './dto/employee-query.dto';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { ResetEmployeePasswordDto } from './dto/reset-password.dto';
 import { Roles } from '../auth/guards/roles.decorator';
+import { OwnerOnly } from '../auth/guards/owner.decorator';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -66,10 +68,11 @@ export class EmployeeController {
   // ─── List with filters ────────────────────────────────────────────────
 
   @Get()
+  @Roles('admin', 'hr', 'manager')  // ← Gap G9 fix: employees cannot browse the directory
   @ApiOperation({ summary: 'List employees with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Paginated employee list' })
-  async findAll(@Query() query: EmployeeQueryDto) {
-    return this.employeeService.findAll(query);
+  async findAll(@Query() query: EmployeeQueryDto, @Req() req: any) {
+    return this.employeeService.findAll(query, req.user);
   }
 
   @Get('options')
@@ -82,6 +85,7 @@ export class EmployeeController {
   // ─── Single employee ──────────────────────────────────────────────────
 
   @Get(':id')
+  @OwnerOnly()  // ← Gap G6 fix: employees can only view their own profile
   @ApiOperation({ summary: 'Get employee by ID with all nested data' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Employee details' })

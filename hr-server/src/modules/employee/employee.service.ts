@@ -212,7 +212,10 @@ export class EmployeeService {
 
   // ─── Find all with filters & pagination ─────────────────────────────────
 
-  async findAll(query: EmployeeQueryDto) {
+  async findAll(
+    query: EmployeeQueryDto,
+    requestingUser?: { id: string; role: string; departmentId?: string },
+  ) {
     const {
       page = 1,
       limit = 20,
@@ -225,8 +228,14 @@ export class EmployeeService {
       sortOrder = 'desc',
     } = query;
 
+    // Role-based scoping: managers can only see employees in their own department
+    let scopedDepartmentId = departmentId;
+    if (requestingUser?.role === 'manager' && !scopedDepartmentId) {
+      scopedDepartmentId = requestingUser.departmentId;
+    }
+
     // Build a deterministic cache key from query params
-    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${departmentId ?? ''}:${designationId ?? ''}:${status}:${employeeType ?? ''}:${sortBy}:${sortOrder}`;
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${scopedDepartmentId ?? ''}:${designationId ?? ''}:${status}:${employeeType ?? ''}:${sortBy}:${sortOrder}`;
     const cached = await this.cache.getByKey<any>(
       CacheKeys.employeeList,
       cacheKeyParts,
@@ -236,7 +245,7 @@ export class EmployeeService {
     const conditions = [];
 
     if (status) conditions.push(eq(employees.status, status));
-    if (departmentId) conditions.push(eq(employees.departmentId, departmentId));
+    if (scopedDepartmentId) conditions.push(eq(employees.departmentId, scopedDepartmentId));
     if (designationId)
       conditions.push(eq(employees.designationId, designationId));
     if (employeeType) conditions.push(eq(employees.employeeType, employeeType));

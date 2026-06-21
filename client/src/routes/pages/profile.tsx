@@ -112,7 +112,7 @@ export default function ProfilePage() {
     name: user.fullNameEnglish,
     email: user.email,
     avatar: user.employeePhotoUrl || "",
-    role: designation?.name || user.role,
+    role: user.role, // Already typed as 'admin' | 'hr' | 'manager' | 'employee'
   }
 
   const formattedBirthday = user.dateOfBirth 

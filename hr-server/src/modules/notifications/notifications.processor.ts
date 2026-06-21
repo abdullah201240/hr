@@ -99,10 +99,19 @@ export class NotificationProcessor extends WorkerHost {
   }
 
   /**
-   * Consolidate and emit daily digests for users who had rate-limited notifications
+   * Consolidate and emit daily digests for users who had rate-limited notifications.
+   * Uses SCAN instead of KEYS to avoid blocking Redis in production.
    */
   private async sendDigests(): Promise<any> {
-    const keys = await this.redis.keys('notif:digest:*');
+    const keys: string[] = [];
+    const stream = this.redis.scanStream({ match: 'notif:digest:*', count: 100 });
+
+    await new Promise<void>((resolve, reject) => {
+      stream.on('data', (batch: string[]) => keys.push(...batch));
+      stream.on('end', resolve);
+      stream.on('error', reject);
+    });
+
     let processedUsersCount = 0;
 
     for (const key of keys) {

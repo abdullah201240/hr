@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsInt, Max } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Max, Min } from 'class-validator';
 import { NotificationModule, NotificationCategory } from '../types/notification.types';
 
 export class NotificationQueryDto {
@@ -28,6 +28,7 @@ export class NotificationQueryDto {
 
   @IsOptional()
   @IsInt()
+  @Min(1)
   @Max(50)
   limit?: number; // Defaults to 20, max 50
 }

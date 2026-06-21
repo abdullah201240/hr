@@ -1,6 +1,12 @@
 import { IsOptional, IsArray, IsEnum, IsBoolean, IsString, Matches } from 'class-validator';
 import { NotificationModule, NotificationCategory } from '../types/notification.types';
 
+export enum DigestFrequency {
+  REALTIME = 'realtime',
+  HOURLY = 'hourly',
+  DAILY = 'daily',
+}
+
 export class UpdatePreferencesDto {
   @IsOptional()
   @IsArray()
@@ -32,6 +38,6 @@ export class UpdatePreferencesDto {
 
   @IsOptional()
   @IsString()
-  @IsEnum(['realtime', 'hourly', 'daily'])
-  digestFrequency?: 'realtime' | 'hourly' | 'daily';
+  @IsEnum(DigestFrequency)
+  digestFrequency?: DigestFrequency;
 }

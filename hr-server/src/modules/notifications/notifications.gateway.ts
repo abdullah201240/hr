@@ -13,10 +13,6 @@ import { IncomingMessage } from 'http';
 import * as url from 'url';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../common/cache/cache.service';
-import { DB_CONNECTION } from '../../db';
-import type { Database } from '../../db';
-import { notifications } from '../../db/schema/notifications';
-import { eq, and, gt, desc } from 'drizzle-orm';
 import { ModuleRef } from '@nestjs/core';
 import { NotificationService } from './notifications.service';
 
@@ -45,7 +41,6 @@ export class NotificationGateway
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly moduleRef: ModuleRef,
-    @Inject(DB_CONNECTION) private readonly db: Database,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
@@ -89,6 +84,9 @@ export class NotificationGateway
     }
     if (this.subClient) {
       this.subClient.quit();
+    }
+    if (this.pubClient) {
+      this.pubClient.quit();
     }
   }
 

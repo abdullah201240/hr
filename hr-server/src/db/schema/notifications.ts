@@ -59,6 +59,6 @@ export const notificationPreferences = pgTable(
     digestFrequency: varchar('digest_frequency', { length: 20 }).default('realtime').notNull(),
   },
   (table) => [
-    uniqueIndex('idx_notification_prefs_employee').on(table.employeeId),
+    index('idx_notification_prefs_employee').on(table.employeeId),
   ]
 );

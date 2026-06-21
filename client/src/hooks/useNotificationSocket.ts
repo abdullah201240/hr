@@ -165,7 +165,13 @@ export function useNotificationSocket() {
         } else {
           toast.error(`Action failed: ${data.error || 'Unknown error'}`);
         }
-        queryClient.invalidateQueries();
+        // Invalidate targeted business module caches instead of everything
+        queryClient.invalidateQueries({ queryKey: ['leave-applications'] });
+        queryClient.invalidateQueries({ queryKey: ['attendance'] });
+        queryClient.invalidateQueries({ queryKey: ['claims'] });
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
         break;
 
       case 'reconnect_sync':
