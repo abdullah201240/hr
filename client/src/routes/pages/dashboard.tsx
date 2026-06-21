@@ -11,7 +11,6 @@ import type {
   AttendanceRecord,
 } from "@/components/dashboard/types"
 import {
-  DEFAULT_LEAVE_BALANCES,
   resolveLeaveIcon,
 } from "@/components/dashboard/types"
 import { useMyAttendanceQuery } from "@/hooks/useAttendance"
@@ -138,27 +137,18 @@ export default function DashboardPage() {
   const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear)
 
   const balances = useMemo(() => {
-    const normalized = dbBalances && dbBalances.length > 0
-      ? dbBalances.map(b => ({
-          id: b.id,
-          key: b.key,
-          label: b.label,
-          total: b.total,
-          used: b.used,
-          color: b.color || "bg-sky-500",
-          icon: b.icon || "coffee",
-          requiresDocument: b.requiresDocument
-        }))
-      : DEFAULT_LEAVE_BALANCES.map(db => ({
-          id: db.key,
-          key: db.key,
-          label: db.label,
-          total: db.total,
-          used: db.used,
-          color: db.color,
-          icon: db.key,
-          requiresDocument: false
-        }))
+    if (!dbBalances || dbBalances.length === 0) return []
+
+    const normalized = dbBalances.map(b => ({
+      id: b.id,
+      key: b.key,
+      label: b.label,
+      total: b.total,
+      used: b.used,
+      color: b.color || "bg-sky-500",
+      icon: b.icon || "coffee",
+      requiresDocument: b.requiresDocument
+    }))
 
     return normalized.map(item => {
       const resolvedIcon = resolveLeaveIcon(item.icon)

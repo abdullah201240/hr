@@ -1,9 +1,6 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -12,16 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   BarChart3,
-  Download,
   Search,
   Users,
   CalendarClock,
@@ -30,59 +18,12 @@ import {
 } from "lucide-react"
 import { useEmployeesQuery } from "@/hooks/useEmployees"
 
-interface ReportItem {
-  id: string
-  title: string
-  desc: string
-  date: string
-  category: "Workforce" | "Compliance" | "Finance" | "Performance"
-  status: "Ready" | "Generating" | "Outdated"
-}
-
-const initialReports: ReportItem[] = [
-  { id: "REP-01", title: "Headcount Report & Attrition", desc: "Monthly workforce growth and turnover analysis", date: "Jun 2026", category: "Workforce", status: "Ready" },
-  { id: "REP-02", title: "EEO / Diversity & Inclusion Compliance", desc: "Equal Employment Opportunity statistics and demographic trends", date: "Q2 2026", category: "Compliance", status: "Ready" },
-  { id: "REP-03", title: "FLSA / Overtime Compliance Audit", desc: "Fair Labor Standards Act payroll overtime checking report", date: "May 2026", category: "Compliance", status: "Ready" },
-  { id: "REP-04", title: "Monthly Attendance & Absences Summary", desc: "Absence patterns, leave audits, and shift metrics", date: "Jun 2026", category: "Workforce", status: "Ready" },
-  { id: "REP-05", title: "Departmental Labor Costs & Payroll", desc: "Detailed breakdown of wage expenses, bonuses, and tax allocations", date: "May 2026", category: "Finance", status: "Ready" },
-  { id: "REP-06", title: "Annual Performance Appraisal Audit", desc: "Compliance reporting on reviews completed and pending ratings", date: "Q1 2026", category: "Performance", status: "Outdated" },
-  { id: "REP-07", title: "OSHA Safety & Incident Summary", desc: "Occupational Safety and Health compliance incident tracking log", date: "Q2 2026", category: "Compliance", status: "Generating" },
-]
-
 export default function ReportsPage() {
-  const [reports] = useState<ReportItem[]>(initialReports)
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
 
   const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 1 })
-  const totalHeadcount = employeesData?.meta?.total ?? 248
-
-  // Handle Download Mock
-  const handleDownload = (reportTitle: string) => {
-    // Generate CSV mock
-    const headers = "Metric,Value,Period,Status\n"
-    const rows = [
-      `"Total headcount",${totalHeadcount},"June 2026","Active"`,
-      `"Turnover rate","1.2%","Q2 2026","Stable"`,
-      `"Compliance audit status","100%","Q2 2026","Passed"`,
-    ].join("\n")
-    const csvContent = "data:text/csv;charset=utf-8," + headers + rows
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", `${reportTitle.toLowerCase().replace(/[^a-z0-9]/g, "_")}_report.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const filtered = reports.filter(r => {
-    const matchesSearch =
-      r.title.toLowerCase().includes(search.toLowerCase()) ||
-      r.desc.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || r.category === categoryFilter
-    return matchesSearch && matchesCategory
-  })
+  const totalHeadcount = employeesData?.meta?.total ?? 0
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -103,14 +44,14 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Compliance Rating</p>
-                <p className="text-2xl font-bold mt-1">98.5%</p>
-                <div className="flex items-center gap-1 mt-0.5 text-emerald-500">
+                <p className="text-2xl font-bold mt-1">—</p>
+                <div className="flex items-center gap-1 mt-0.5 text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">All Audits Passed</span>
+                  <span className="text-[10px] font-medium">Data not available</span>
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <FileCheck className="h-5 w-5 text-emerald-500" />
+              <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                <FileCheck className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -120,14 +61,14 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Total Workforce Headcount</p>
-                <p className="text-2xl font-bold mt-1">{totalHeadcount}</p>
-                <div className="flex items-center gap-1 mt-0.5 text-sky-500">
+                <p className="text-2xl font-bold mt-1">{totalHeadcount || "—"}</p>
+                <div className="flex items-center gap-1 mt-0.5 text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">+4.8% Year-over-Year</span>
+                  <span className="text-[10px] font-medium">Active employees</span>
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-sky-500" />
+              <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                <Users className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -137,14 +78,14 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Avg. Attendance Audit</p>
-                <p className="text-2xl font-bold mt-1">94.2%</p>
-                <div className="flex items-center gap-1 mt-0.5 text-amber-500">
+                <p className="text-2xl font-bold mt-1">—</p>
+                <div className="flex items-center gap-1 mt-0.5 text-muted-foreground">
                   <CalendarClock className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">12 Overtime Alerts</span>
+                  <span className="text-[10px] font-medium">Data not available</span>
                 </div>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <CalendarClock className="h-5 w-5 text-amber-500" />
+              <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center">
+                <CalendarClock className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -178,73 +119,17 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Available Reports Table */}
+      {/* Reports Table Placeholder */}
       <Card className="shadow-none border-border/40">
         <CardHeader className="pb-3 border-b border-border/30">
           <CardTitle className="text-sm font-bold">HR Analytics & Compliance Ledger</CardTitle>
-          <CardDescription className="text-xs">Pre-configured reports compiled in accordance with standard employment regulations.</CardDescription>
+          <CardDescription className="text-xs">Reports module — awaiting backend implementation</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/10 border-b border-border/30">
-                <TableRow className="border-b-0 hover:bg-transparent">
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Report Title</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Category</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Date Scope</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length > 0 ? (
-                  filtered.map(report => (
-                    <TableRow key={report.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
-                      <TableCell className="py-3.5">
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-semibold text-foreground">{report.title}</p>
-                          <p className="text-[10px] text-muted-foreground">{report.desc}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 text-xs text-muted-foreground font-medium">
-                        {report.category}
-                      </TableCell>
-                      <TableCell className="py-3 text-xs text-muted-foreground font-medium">
-                        {report.date}
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <Badge variant="outline" className={cn(
-                          "text-[9px] font-bold py-0.5 px-2 flex items-center gap-1 w-fit",
-                          report.status === "Ready" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                          report.status === "Generating" && "bg-sky-500/10 text-sky-600 border-sky-500/20",
-                          report.status === "Outdated" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                        )}>
-                          {report.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={report.status !== "Ready"}
-                          className="h-8 w-8 text-muted-foreground hover:text-primary rounded-md"
-                          onClick={() => handleDownload(report.title)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
-                      <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-                      <p className="text-sm font-semibold">No reports matching filters</p>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <BarChart3 className="h-16 w-16 text-muted-foreground/20 mb-4" />
+            <p className="text-sm font-semibold text-muted-foreground">No reports available</p>
+            <p className="text-xs text-muted-foreground mt-1">Report generation will be implemented in a future update</p>
           </div>
         </CardContent>
       </Card>

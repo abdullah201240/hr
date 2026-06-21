@@ -1,8 +1,9 @@
 import type { AttendanceRecord as DashAttendanceRecord } from "@/components/dashboard/types"
 
-export function mapBalances(dbBalances: any[], DEFAULT_LEAVE_BALANCES: any[], resolveLeaveIcon: any) {
-  const normalized = dbBalances && dbBalances.length > 0
-    ? dbBalances.map(b => ({
+export function mapBalances(dbBalances: any[], resolveLeaveIcon: any) {
+  if (!dbBalances || dbBalances.length === 0) return []
+
+  const normalized = dbBalances.map(b => ({
         id: b.id,
         key: b.key,
         label: b.label,
@@ -11,16 +12,6 @@ export function mapBalances(dbBalances: any[], DEFAULT_LEAVE_BALANCES: any[], re
         color: b.color || "bg-sky-500",
         icon: b.icon || "coffee",
         requiresDocument: b.requiresDocument
-      }))
-    : DEFAULT_LEAVE_BALANCES.map(db => ({
-        id: db.key,
-        key: db.key,
-        label: db.label,
-        total: db.total,
-        used: db.used,
-        color: db.color,
-        icon: db.key,
-        requiresDocument: false
       }))
 
   return normalized.map(item => {

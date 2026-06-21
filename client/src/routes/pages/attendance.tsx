@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { Spinner } from "@/components/ui/spinner"
 import { ApplyLeaveDialog } from "@/components/dashboard/apply-leave-dialog"
 import { DayDetailDialog } from "@/components/dashboard/day-detail-dialog"
-import { DEFAULT_LEAVE_BALANCES, resolveLeaveIcon } from "@/components/dashboard/types"
+import { resolveLeaveIcon } from "@/components/dashboard/types"
 import { useAttendanceSettingsQuery, useHolidaysQuery } from "@/hooks/useAttendanceSettings"
 import {
   useLeaveApplicationsQuery,
@@ -77,7 +77,7 @@ export default function AttendancePage() {
   const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear)
 
   const balances = useMemo(() => {
-    return mapBalances(dbBalances, DEFAULT_LEAVE_BALANCES, resolveLeaveIcon)
+    return mapBalances(dbBalances, resolveLeaveIcon)
   }, [dbBalances])
 
   // ── Holiday Settings (Dynamic from API) ────────────────────────────────────

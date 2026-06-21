@@ -87,17 +87,6 @@ export interface Announcement {
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-export const DEFAULT_LEAVE_BALANCES: LeaveBalance[] = [
-  { label: "Annual Leave", used: 8, total: 18, color: "bg-sky-500", light: "text-sky-500", icon: Coffee, key: "annual" },
-  { label: "Sick Leave", used: 2, total: 10, color: "bg-rose-500", light: "text-rose-500", icon: Heart, key: "sick" },
-  { label: "Casual Leave", used: 1, total: 5, color: "bg-amber-500", light: "text-amber-500", icon: Star, key: "casual" },
-  { label: "Late", used: 1, total: 3, color: "bg-orange-500", light: "text-orange-500", icon: Clock, key: "late" },
-  { label: "Travel", used: 0, total: 5, color: "bg-teal-500", light: "text-teal-500", icon: MapPin, key: "travel" },
-  { label: "Movement", used: 0, total: 3, color: "bg-indigo-500", light: "text-indigo-500", icon: Briefcase, key: "movement" },
-  { label: "Emergency Leave", used: 0, total: 5, color: "bg-red-600", light: "text-red-600", icon: AlertTriangle, key: "emergency" },
-  { label: "Unpaid Leave", used: 0, total: 10, color: "bg-slate-500", light: "text-slate-500", icon: XCircle, key: "unpaid" },
-]
-
 export const INITIAL_TASKS: DashboardTask[] = []
 
 export const LEAVE_TYPE_SHORT: Record<string, string> = {
