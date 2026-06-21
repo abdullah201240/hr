@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { eq, and, desc, or } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
-import { employeeKpis, employees, designations, departments, appraisalCycles, employeeAppraisals } from '../../db/schema';
+import { employeeKpis, employees, designations, departments, appraisalCycles, employeeAppraisals, rolePermissions, permissions } from '../../db/schema';
 import {
   CreateKpiDto,
   UpdateKpiScoresDto,
@@ -537,7 +537,9 @@ export class PerformanceService {
             await this.db
               .select({ id: employees.id })
               .from(employees)
-              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+              .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+              .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+              .where(eq(permissions.resource, 'performance'))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

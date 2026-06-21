@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Roles & Permissions')
 @ApiBearerAuth()
@@ -10,7 +10,7 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Get('permissions')
-  @Roles('admin')
+  @Permissions('settings:read')
   @ApiOperation({ summary: 'List all system permissions' })
   @ApiResponse({ status: 200, description: 'Predefined system permissions list' })
   async getPermissions() {
@@ -18,7 +18,7 @@ export class RolesController {
   }
 
   @Get()
-  @Roles('admin')
+  @Permissions('settings:read')
   @ApiOperation({ summary: 'List all system and custom roles' })
   @ApiResponse({ status: 200, description: 'All roles with their permissions mapping' })
   async getRoles() {
@@ -26,7 +26,7 @@ export class RolesController {
   }
 
   @Post()
-  @Roles('admin')
+  @Permissions('settings:update')
   @ApiOperation({ summary: 'Create a custom role' })
   @ApiResponse({ status: 201, description: 'Custom role created successfully' })
   async createCustomRole(
@@ -36,7 +36,7 @@ export class RolesController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Permissions('settings:update')
   @ApiOperation({ summary: 'Update a custom role' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Custom role updated successfully' })
@@ -48,7 +48,7 @@ export class RolesController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Permissions('settings:update')
   @ApiOperation({ summary: 'Delete a custom role' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Custom role deleted' })

@@ -11,7 +11,7 @@ import { eq, and, between, asc, desc, or, gt, lt, like, lte, gte } from 'drizzle
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { DB_CONNECTION, type Database } from '../../db';
-import { attendanceLogs, holidays, employees } from '../../db/schema';
+import { attendanceLogs, holidays, employees, rolePermissions, permissions } from '../../db/schema';
 import { ATTENDANCE_QUEUE } from '../queue/queue.module';
 import { AttendanceSettingsService } from '../attendance-settings/attendance-settings.service';
 import { CheckInDto, CheckOutDto, SubmitCorrectionDto, AdminLogOverrideDto } from './dto/attendance.dto';
@@ -853,7 +853,9 @@ export class AttendanceService implements OnModuleInit {
             await this.db
               .select({ id: employees.id })
               .from(employees)
-              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+              .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+              .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+              .where(eq(permissions.resource, 'attendance'))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

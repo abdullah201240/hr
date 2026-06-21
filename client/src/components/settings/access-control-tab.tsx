@@ -39,7 +39,7 @@ export function AccessControlTab() {
   // Employees list for assignment
   const [employeeSearch, setEmployeeSearch] = useState("")
   const [assigningEmployeeId, setAssigningEmployeeId] = useState<string | null>(null)
-  const [assignedRole, setAssignedRole] = useState({ role: "employee", customRoleId: "none" })
+  const [assignedRole, setAssignedRole] = useState<{ customRoleId: string }>({ customRoleId: "none" })
   
   const { data: employeesData, isLoading: loadingEmployees } = useEmployeesQuery({
     page: 1,
@@ -211,7 +211,6 @@ export function AccessControlTab() {
   const handleOpenAssignRole = (emp: any) => {
     setAssigningEmployeeId(emp.id)
     setAssignedRole({
-      role: emp.role,
       customRoleId: emp.customRoleId || "none"
     })
   }
@@ -612,7 +611,7 @@ export function AccessControlTab() {
               <label className="text-xs font-semibold text-muted-foreground">Select Role</label>
               <Select
                 value={assignedRole.customRoleId || "none"}
-                onValueChange={(val) => setAssignedRole({ role: "employee", customRoleId: val })}
+                onValueChange={(val) => setAssignedRole({ customRoleId: val })}
               >
                 <SelectTrigger className="text-xs h-9">
                   <SelectValue placeholder="Select role" />

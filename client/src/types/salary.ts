@@ -119,7 +119,7 @@ export interface Payslip {
   paymentReference?: string;
   name: string;
   email: string;
-  role: string;
+  designationName?: string;
   department?: string;
   departmentName?: string;
   employeeDisplayId?: string;

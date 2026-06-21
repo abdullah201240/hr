@@ -11,6 +11,8 @@ import {
   leaveApplications,
   employeePayslips,
   payrollCycles,
+  rolePermissions,
+  permissions,
 } from '../../db/schema';
 import { CreateSeparationDto, UpdateSeparationDto, SeparationQueryDto } from './dto/separation.dto';
 import { CalculateSettlementDto } from './dto/settlement.dto';
@@ -142,7 +144,9 @@ export class SeparationService {
             await this.db
               .select({ id: employees.id })
               .from(employees)
-              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+              .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+              .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+              .where(eq(permissions.resource, 'separation'))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

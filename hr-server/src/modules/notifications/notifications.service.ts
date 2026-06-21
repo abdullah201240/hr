@@ -421,7 +421,7 @@ export class NotificationService implements OnModuleInit {
 
     // 2. Generate local JWT payload
     const token = this.jwtService.sign(
-      { sub: employee.id, email: employee.email, role: employee.role },
+      { sub: employee.id, email: employee.email },
       { secret: this.configService.get<string>('jwt.accessTokenSecret') }
     );
 

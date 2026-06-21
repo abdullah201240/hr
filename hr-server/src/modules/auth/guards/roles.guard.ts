@@ -3,11 +3,9 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from './roles.decorator';
+import { PERMISSIONS_KEY } from './roles.decorator';
 import { RolesService } from '../../roles/roles.service';
 
 @Injectable()
@@ -18,56 +16,57 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-      ROLES_KEY,
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+      PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
-
-    // No roles decorator — allow access
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
 
     const req = context.switchToHttp().getRequest();
     const user = req.user;
 
-    if (!user?.role) {
+    if (!user) {
+      throw new ForbiddenException('Access denied: authentication required');
+    }
+
+    // Users must have a custom role assigned
+    if (!user.customRoleId) {
       throw new ForbiddenException('Access denied: no role assigned');
     }
 
-    // ─── Custom Role Permissions check ───────────────────────────────────────
-    if (user.customRoleId) {
-      const { resource, action } = this.mapRequestToPermission(req.method, req.url);
-      const userPermissions = await this.rolesService.getUserPermissions(user.role, user.customRoleId);
+    // Fetch user's full permission set from their custom role
+    const userPermissions = await this.rolesService.getUserPermissions(user.customRoleId);
 
-      // Check if user has explicit permission for the action on this resource
-      const hasDirectPermission = userPermissions.has(`${resource}:${action}`);
-      
-      // For read requests, also allow if they have view_all, view_team or view_own
-      const hasReadPermission = action === 'read' && (
+    // ─── Explicit @Permissions() decorator ──────────────────────────────────
+    if (requiredPermissions && requiredPermissions.length > 0) {
+      // User must hold at least ONE of the required permissions
+      const hasAny = requiredPermissions.some(p => userPermissions.has(p));
+      if (hasAny) return true;
+
+      throw new ForbiddenException(
+        `Access denied: lacks required permission [${requiredPermissions.join(', ')}]`,
+      );
+    }
+
+    // ─── Auto-mapped permission check (no decorator) ─────────────────────────
+    const { resource, action } = this.mapRequestToPermission(req.method, req.url);
+
+    // Check direct permission
+    if (userPermissions.has(`${resource}:${action}`)) {
+      return true;
+    }
+
+    // For read requests, also allow view_all, view_team or view_own
+    if (action === 'read') {
+      const hasReadPermission =
         userPermissions.has(`${resource}:view_all`) ||
         userPermissions.has(`${resource}:view_team`) ||
-        userPermissions.has(`${resource}:view_own`)
-      );
-
-      if (hasDirectPermission || hasReadPermission) {
-        return true;
-      }
-      
-      throw new ForbiddenException(
-        `Access denied: custom role lacks permission for ${resource}:${action}`,
-      );
+        userPermissions.has(`${resource}:view_own`);
+      if (hasReadPermission) return true;
     }
 
-    // ─── Default System Roles check ──────────────────────────────────────────
-    const hasRole = requiredRoles.includes(user.role);
-    if (!hasRole) {
-      throw new ForbiddenException(
-        `Access denied: requires one of [${requiredRoles.join(', ')}]`,
-      );
-    }
-
-    return true;
+    throw new ForbiddenException(
+      `Access denied: custom role lacks permission for ${resource}:${action}`,
+    );
   }
 
   private mapRequestToPermission(method: string, path: string): { resource: string; action: string } {
@@ -76,15 +75,34 @@ export class RolesGuard implements CanActivate {
     let rawResource = segments[0] || 'unknown';
     let lastSegment = segments[segments.length - 1] || '';
 
+    // Also check second-to-last segment for UUID-ending paths like /correction/approve/:id
+    const secondToLast = segments.length >= 3 ? segments[segments.length - 2] : '';
+
     let resource = rawResource.replace(/-/g, '_');
     if (resource === 'leave_applications') resource = 'leave';
     if (resource === 'employee') resource = 'employees';
+    if (resource === 'leave_types') resource = 'leave';
+    if (resource === 'salary_templates' || resource === 'employee_salaries') resource = 'salary';
+    if (resource === 'festival_bonus_rules') resource = 'payroll';
+    if (resource === 'attendance_settings') resource = 'attendance';
 
     let action = 'read';
     if (method === 'POST') {
       action = 'create';
       if (resource === 'leave') action = 'apply';
       if (resource === 'claims') action = 'create';
+      // Check for special action names in URL
+      if (lastSegment === 'process') action = 'process';
+      if (lastSegment === 'disburse') action = 'disburse';
+      if (lastSegment === 'sync') action = 'update';
+      if (lastSegment === 'approve' || lastSegment === 'status') action = 'approve';
+      if (lastSegment === 'reject') action = 'reject';
+      if (lastSegment === 'settle') action = 'settle';
+      if (lastSegment === 'cancel') action = 'cancel';
+      // Check second-to-last for UUID-ending paths
+      if (secondToLast === 'approve') action = 'approve';
+      if (secondToLast === 'reject') action = 'reject';
+      if (secondToLast === 'status') action = 'approve';
     } else if (method === 'DELETE') {
       action = 'delete';
     } else if (method === 'PATCH' || method === 'PUT') {

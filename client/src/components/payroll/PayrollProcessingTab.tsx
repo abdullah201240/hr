@@ -46,7 +46,7 @@ export function PayrollProcessingTab({
     ]
     const rows = payslipsList.map((p) => [
       p.name,
-      p.role,
+      p.designationName,
       p.basicSalary,
       p.festivalBonusAmount,
       p.bonusAmount,
@@ -157,7 +157,7 @@ export function PayrollProcessingTab({
                     <TableCell className="py-3">
                       <div>
                         <p className="text-xs font-semibold text-foreground">{payslip.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{payslip.role}</p>
+                        <p className="text-[10px] text-muted-foreground">{payslip.designationName}</p>
                       </div>
                     </TableCell>
                     <TableCell className="py-3 text-xs font-semibold text-muted-foreground">

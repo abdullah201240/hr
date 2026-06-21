@@ -76,7 +76,7 @@ const tadaClaimSchema = z.object({
 
 export default function TADAClaimPage() {
   const user = useAuthStore((s) => s.user)
-  const isAdmin = user?.role === "admin" || user?.role === "hr"
+  const isAdmin = user?.permissions?.includes("claims:approve") || user?.permissions?.includes("claims:read")
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")

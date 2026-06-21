@@ -11,6 +11,7 @@ import {
   providentFundSettings,
   salaryTemplateComponents,
   departments,
+  designations,
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
@@ -300,15 +301,16 @@ export class PayrollService implements OnModuleInit {
         deductions: employeePayslips.deductions,
         name: employees.fullNameEnglish,
         email: employees.email,
-        role: employees.role,
         department: employees.departmentId,
         departmentName: departments.name,
         employeeDisplayId: employees.employeeId,
         joinDate: employees.joinDate,
+        designationName: designations.name,
       })
       .from(employeePayslips)
       .innerJoin(employees, eq(employeePayslips.employeeId, employees.id))
       .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(employeePayslips.payrollCycleId, cycleId));
   }
 

@@ -25,8 +25,7 @@ import {
   UpdateClaimStatusDto,
   ClaimQueryDto,
 } from './dto/claims.dto';
-import { Roles } from '../auth/guards/roles.decorator';
-import { PEOPLE_MANAGERS } from '../../common/enums/role.enum';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Claims')
 @ApiBearerAuth()
@@ -49,11 +48,10 @@ export class ClaimsController {
   @ApiOperation({ summary: 'List claims (Employees see own, Admins see all)' })
   @ApiResponse({ status: 200, description: 'Paginated claims list' })
   async findAll(@Req() req: any, @Query() query: ClaimQueryDto) {
-    const role = req.user.role;
     const employeeId = req.user.id;
 
     // Standard employees should only see their own claims
-    if (role !== 'admin' && role !== 'hr') {
+    if (!req.user.customRoleId) {
       query.employeeId = employeeId;
     }
 
@@ -72,7 +70,7 @@ export class ClaimsController {
 
   // ─── Update Claim Status (Admin/HR only) ───────────────────────────────────
   @Patch(':id/status')
-  @Roles(...PEOPLE_MANAGERS)  // admin | hr
+  @Permissions('claims:approve')  // admin | hr
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve, reject, or settle a claim' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

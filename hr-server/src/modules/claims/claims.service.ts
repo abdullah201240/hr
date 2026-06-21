@@ -8,7 +8,7 @@ import {
 import { eq, and, desc, asc, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
-import { claims, claimAttachments, employees } from '../../db/schema';
+import { claims, claimAttachments, employees, rolePermissions, permissions } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
 import type {
@@ -213,14 +213,11 @@ export class ClaimsService {
     }
 
     if (requestingUser) {
-      const { role, id: userId, departmentId: userDeptId } = requestingUser;
-      if (role === 'employee' && claimResult.employeeId !== userId) {
+      const { id: userId } = requestingUser;
+      // Ownership guard handles broader access control via permissions
+      // Service-level check: users without view_all can only see own claims
+      if (claimResult.employeeId !== userId && !requestingUser.customRoleId) {
         throw new ForbiddenException('You can only access your own claims');
-      }
-      if (role === 'manager') {
-        if (claimResult.employeeDepartmentId !== userDeptId) {
-          throw new ForbiddenException('You can only access claims of employees in your department');
-        }
       }
     }
 
@@ -354,7 +351,9 @@ export class ClaimsService {
             await this.db
               .select({ id: employees.id })
               .from(employees)
-              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+              .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+              .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+              .where(eq(permissions.resource, 'claims'))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {
@@ -414,14 +413,10 @@ export class ClaimsService {
     }
 
     if (requestingUser) {
-      const { role, id: userId, departmentId: userDeptId } = requestingUser;
-      if (role === 'employee' && claim.employeeId !== userId) {
+      const { id: userId } = requestingUser;
+      // Ownership guard handles broader access control via permissions
+      if (claim.employeeId !== userId && !requestingUser.customRoleId) {
         throw new ForbiddenException('You can only delete your own claims');
-      }
-      if (role === 'manager') {
-        if (claim.employeeDepartmentId !== userDeptId) {
-          throw new ForbiddenException('You can only delete claims of employees in your department');
-        }
       }
     }
 

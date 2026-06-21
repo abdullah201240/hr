@@ -11,8 +11,6 @@ import {
   employeeNominees,
   employeeBankDetails,
   employeeDocuments,
-  rolePermissions,
-  permissions,
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
@@ -49,29 +47,6 @@ export class EmployeeCreateProcessor extends WorkerHost {
 
       // 2. Insert all data in a single transaction
       const result = await this.db.transaction(async (tx) => {
-        // Resolve base role from custom role permissions to maintain proper client layouts
-        let resolvedRole: 'admin' | 'hr' | 'manager' | 'employee' = 'employee';
-        if (dto.customRoleId) {
-          const list = await tx
-            .select({
-              resource: permissions.resource,
-              action: permissions.action,
-            })
-            .from(rolePermissions)
-            .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-            .where(eq(rolePermissions.roleKey, dto.customRoleId));
-
-          const perms = new Set(list.map(p => `${p.resource}:${p.action}`));
-
-          if (perms.has('settings:update') || perms.has('settings:read') || perms.has('audit_logs:read')) {
-            resolvedRole = 'admin';
-          } else if (perms.has('employees:create') || perms.has('payroll:process') || perms.has('payroll:create')) {
-            resolvedRole = 'hr';
-          } else if (perms.has('leave:approve') || perms.has('claims:approve') || Array.from(perms).some(p => p.endsWith(':view_team'))) {
-            resolvedRole = 'manager';
-          }
-        }
-
         // Insert employee
         const [employee] = await tx
           .insert(employees)
@@ -108,7 +83,6 @@ export class EmployeeCreateProcessor extends WorkerHost {
             joinDate: dto.joinDate,
             lineManagerId: dto.lineManagerId || null,
             customRoleId: dto.customRoleId || null,
-            role: resolvedRole,
             status: 'active',
           })
           .returning({ id: employees.id });
@@ -263,34 +237,6 @@ export class EmployeeUpdateProcessor extends WorkerHost {
         for (const field of directFields) {
           if (dto[field] !== undefined) {
             updateData[field] = dto[field];
-          }
-        }
-
-        // Dynamically resolve base role based on custom role's permissions
-        if (dto.customRoleId !== undefined) {
-          if (dto.customRoleId) {
-            const list = await tx
-              .select({
-                resource: permissions.resource,
-                action: permissions.action,
-              })
-              .from(rolePermissions)
-              .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-              .where(eq(rolePermissions.roleKey, dto.customRoleId));
-
-            const perms = new Set(list.map(p => `${p.resource}:${p.action}`));
-
-            let resolvedRole: 'admin' | 'hr' | 'manager' | 'employee' = 'employee';
-            if (perms.has('settings:update') || perms.has('settings:read') || perms.has('audit_logs:read')) {
-              resolvedRole = 'admin';
-            } else if (perms.has('employees:create') || perms.has('payroll:process') || perms.has('payroll:create')) {
-              resolvedRole = 'hr';
-            } else if (perms.has('leave:approve') || perms.has('claims:approve') || Array.from(perms).some(p => p.endsWith(':view_team'))) {
-              resolvedRole = 'manager';
-            }
-            updateData.role = resolvedRole;
-          } else {
-            updateData.role = 'employee';
           }
         }
 

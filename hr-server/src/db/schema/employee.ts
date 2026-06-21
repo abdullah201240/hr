@@ -138,7 +138,6 @@ export const employees = pgTable(
     inactiveDate: date('inactive_date'), // Scheduled date to become inactive
 
     // Auth
-    role: varchar('role', { length: 20, enum: ['admin', 'hr', 'manager', 'employee'] }).default('employee').notNull(), // admin | hr | manager | employee
     customRoleId: uuid('custom_role_id').references((): AnyPgColumn => customRoles.id, { onDelete: 'set null' }),
     refreshTokenVersion: integer('refresh_token_version').default(1).notNull(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),

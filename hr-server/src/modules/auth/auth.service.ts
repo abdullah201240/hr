@@ -29,7 +29,6 @@ export interface LoginResponse {
   user: {
     id: string;
     email: string;
-    role: string;
     fullNameEnglish: string;
     employeePhotoUrl: string | null;
     departmentId: string | null;
@@ -68,7 +67,6 @@ export class AuthService {
       .select({
         id: employees.id,
         email: employees.email,
-        role: employees.role,
         fullNameEnglish: employees.fullNameEnglish,
         employeePhotoUrl: employees.employeePhotoUrl,
         departmentId: employees.departmentId,
@@ -111,7 +109,6 @@ export class AuthService {
     const tokens = await this.generateTokens(
       user.id,
       user.email,
-      user.role,
       user.refreshTokenVersion,
       user.departmentId ?? undefined,
       user.customRoleId ?? undefined,
@@ -125,14 +122,13 @@ export class AuthService {
 
     this.logger.log(`User logged in: ${user.email} (${user.id})`);
 
-    const userPermissions = await this.rolesService.getUserPermissions(user.role, user.customRoleId ?? undefined);
+    const userPermissions = await this.rolesService.getUserPermissions(user.customRoleId!);
 
     return {
       tokens,
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
         fullNameEnglish: user.fullNameEnglish,
         employeePhotoUrl: user.employeePhotoUrl,
         departmentId: user.departmentId ?? null,
@@ -164,7 +160,6 @@ export class AuthService {
       .select({
         id: employees.id,
         email: employees.email,
-        role: employees.role,
         refreshTokenVersion: employees.refreshTokenVersion,
         status: employees.status,
       })
@@ -192,7 +187,6 @@ export class AuthService {
     const tokens = await this.generateTokens(
       user.id,
       user.email,
-      user.role,
       user.refreshTokenVersion,
     );
 
@@ -253,7 +247,6 @@ export class AuthService {
         fullNameBangla: employees.fullNameBangla,
         phone: employees.phone,
         gender: employees.gender,
-        role: employees.role,
         departmentId: employees.departmentId,
         customRoleId: employees.customRoleId,
         designationId: employees.designationId,
@@ -273,7 +266,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const userPermissions = await this.rolesService.getUserPermissions(user.role, user.customRoleId ?? undefined);
+    const userPermissions = await this.rolesService.getUserPermissions(user.customRoleId!);
 
     return {
       ...user,
@@ -331,7 +324,6 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
-    role: string,
     version: number,
     departmentId?: string,
     customRoleId?: string,
@@ -350,7 +342,6 @@ export class AuthService {
         {
           sub: userId,
           email,
-          role,
           departmentId: departmentId ?? null,
           customRoleId: customRoleId ?? null,
           ver: version,
@@ -365,7 +356,6 @@ export class AuthService {
         {
           sub: userId,
           email,
-          role,
           ver: version,
           jti: randomUUID(),
         },

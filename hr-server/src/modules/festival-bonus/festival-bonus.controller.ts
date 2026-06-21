@@ -12,7 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { FestivalBonusService } from './festival-bonus.service';
 import { CreateFestivalBonusRuleDto, UpdateFestivalBonusRuleDto } from './dto/festival-bonus.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Festival Bonus Rules')
 @ApiBearerAuth()
@@ -28,7 +28,7 @@ export class FestivalBonusController {
   }
 
   @Post()
-  @Roles('admin', 'hr')  // ← Gap G3 fix: only admin/hr can create bonus rules
+  @Permissions('payroll:create')  // ← Gap G3 fix
   @ApiOperation({ summary: 'Create a new festival bonus rule' })
   @ApiResponse({ status: 201, description: 'Rule created' })
   async create(@Body() dto: CreateFestivalBonusRuleDto) {
@@ -36,7 +36,7 @@ export class FestivalBonusController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'hr')  // ← Gap G3 fix: only admin/hr can update bonus rules
+  @Permissions('payroll:update')  // ← Gap G3 fix
   @ApiOperation({ summary: 'Update a festival bonus rule' })
   @ApiResponse({ status: 200, description: 'Rule updated' })
   async update(
@@ -48,7 +48,7 @@ export class FestivalBonusController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles('admin', 'hr')  // ← Gap G3 fix: only admin/hr can delete bonus rules
+  @Permissions('payroll:delete')  // ← Gap G3 fix
   @ApiOperation({ summary: 'Delete a festival bonus rule' })
   @ApiResponse({ status: 200, description: 'Rule deleted' })
   async delete(@Param('id') id: string) {

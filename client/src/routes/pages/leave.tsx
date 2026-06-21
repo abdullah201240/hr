@@ -446,7 +446,7 @@ export default function LeavePage() {
                         </Button>
 
                         {req.status === "Pending" ? (
-                          (user?.role === "admin" || user?.role === "hr") ? (
+                          (user?.permissions?.includes("leave:approve")) ? (
                             <>
                               <Button
                                 variant="default"

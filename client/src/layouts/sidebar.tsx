@@ -34,9 +34,8 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     name: user?.fullNameEnglish || "Employee",
     email: user?.email || "",
     avatar: user?.employeePhotoUrl || "",
-    role: (user?.role || "employee") as 'admin' | 'hr' | 'manager' | 'employee',
     permissions: user?.permissions || [],
-  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role, user?.permissions])
+  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.permissions])
 
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {
     // Auto-expand menus that contain the current route
@@ -107,11 +106,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                   </p>
                 )}
                 {group.items.filter(item => {
-                  // First check role restriction
-                  if (item.roles && item.roles.length > 0 && !item.roles.includes(mappedUser.role)) {
-                    return false
-                  }
-                  // Then check permissions if defined
+                  // Check permissions if defined
                   if (item.permissions && item.permissions.length > 0) {
                     return canAccessNavItem(item)
                   }
@@ -211,11 +206,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         {isExpanded && (
                           <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-sidebar-border/30 pl-2">
                             {item.items!.filter(subItem => {
-                              // First check role restriction
-                              if (subItem.roles && subItem.roles.length > 0 && !subItem.roles.includes(mappedUser.role)) {
-                                return false
-                              }
-                              // Then check permissions if defined
+                              // Check permissions if defined
                               if (subItem.permissions && subItem.permissions.length > 0) {
                                 return canAccessNavItem(subItem)
                               }
@@ -301,14 +292,14 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
         <div className="border-t border-sidebar-border/30 p-2">
           {!collapsed ? (
             <div className="flex items-center gap-2 rounded-md bg-sidebar-accent/30 p-1.5">
-              <Link to={mappedUser.role === 'admin' ? "/settings" : "/profile"} onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
+              <Link to={user?.permissions?.includes('settings:read') ? "/settings" : "/profile"} onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
                 <UserAvatar user={mappedUser} size="sm" />
                 <div className="flex-1 overflow-hidden">
                   <p className="truncate text-xs font-medium text-sidebar-foreground">
                     {mappedUser.name}
                   </p>
                   <p className="truncate text-[10px] text-muted-foreground">
-                    {mappedUser.role}
+                    {user?.email}
                   </p>
                 </div>
               </Link>
@@ -325,13 +316,13 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
             <div className="flex flex-col items-center gap-1.5 py-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link to={mappedUser.role === 'admin' ? "/settings" : "/profile"} onClick={onLinkClick}>
+                  <Link to={user?.permissions?.includes('settings:read') ? "/settings" : "/profile"} onClick={onLinkClick}>
                     <UserAvatar user={mappedUser} size="sm" />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="text-xs border-border/50 shadow-none">
                   <p>{mappedUser.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{mappedUser.role}</p>
+                  <p className="text-[10px] text-muted-foreground">{user?.email}</p>
                 </TooltipContent>
               </Tooltip>
               <Button

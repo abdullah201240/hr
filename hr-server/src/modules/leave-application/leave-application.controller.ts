@@ -25,7 +25,7 @@ import {
   UpdateLeaveApplicationDto,
 } from './dto/create-leave-application.dto';
 import { LeaveApplicationQueryDto } from './dto/leave-application-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Leave Applications')
 @ApiBearerAuth()
@@ -64,7 +64,7 @@ export class LeaveApplicationController {
 
   // ─── Admin route: Get Leave Balances of a specific employee ────────────────
   @Get('balances/:employeeId')
-  @Roles('admin', 'hr')
+  @Permissions('leave:view_all')
   @ApiOperation({ summary: 'Get leave balances for a specific employee' })
   @ApiParam({ name: 'employeeId', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'List of leave balances' })
@@ -81,11 +81,11 @@ export class LeaveApplicationController {
   @ApiOperation({ summary: 'List leave applications (Employees see own, Admins see all)' })
   @ApiResponse({ status: 200, description: 'List of leave applications' })
   async findAll(@Req() req: any, @Query() query: LeaveApplicationQueryDto) {
-    const role = req.user.role;
     const employeeId = req.user.id;
 
     // Standard employees should only see their own leave requests
-    if (role !== 'admin' && role !== 'hr') {
+    // The guard enforces permissions; if user lacks leave:view_all/view_team, scope to own
+    if (!req.user.customRoleId) {
       query.employeeId = employeeId;
     }
 
@@ -115,13 +115,12 @@ export class LeaveApplicationController {
     @Body() dto: UpdateLeaveApplicationDto,
   ) {
     const employeeId = req.user.id;
-    const role = req.user.role;
-    return this.leaveApplicationService.updateAsync(id, employeeId, role, dto);
+    return this.leaveApplicationService.updateAsync(id, employeeId, '', dto);
   }
 
   // ─── Process Leave (Approve/Reject) ───────────────────────────────────────
   @Patch(':id/status')
-  @Roles('admin', 'hr', 'manager')
+  @Permissions('leave:approve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve or reject a leave application' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -144,7 +143,6 @@ export class LeaveApplicationController {
   @ApiResponse({ status: 404, description: 'Leave application not found' })
   async cancel(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const employeeId = req.user.id;
-    const role = req.user.role;
-    return this.leaveApplicationService.cancel(id, employeeId, role);
+    return this.leaveApplicationService.cancel(id, employeeId, '');
   }
 }

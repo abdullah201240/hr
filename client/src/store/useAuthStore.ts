@@ -9,7 +9,6 @@ interface UserProfile {
   fullNameEnglish: string;
   phone?: string;
   gender?: string;
-  role: 'admin' | 'hr' | 'manager' | 'employee'; // Typed role union — admin | hr | manager | employee
   departmentId?: string;
   customRoleId?: string | null;
   permissions?: string[];

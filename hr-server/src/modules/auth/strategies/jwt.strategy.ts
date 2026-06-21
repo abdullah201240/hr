@@ -12,7 +12,6 @@ import { CacheKeys } from '../../../common/cache/cache-keys';
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
   departmentId: string | null;
   customRoleId: string | null;
   ver: number;
@@ -24,7 +23,6 @@ export interface JwtPayload {
 export interface JwtUser {
   id: string;
   email: string;
-  role: string;
   departmentId: string | null;
   customRoleId: string | null;
   fullNameEnglish: string;
@@ -74,7 +72,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       return {
         id: cached.id,
         email: cached.email,
-        role: cached.role,
         departmentId: cached.departmentId ?? payload.departmentId ?? null,
         customRoleId: cached.customRoleId ?? payload.customRoleId ?? null,
         fullNameEnglish: cached.fullNameEnglish,
@@ -93,7 +90,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           .select({
             id: employees.id,
             email: employees.email,
-            role: employees.role,
             departmentId: employees.departmentId,
             customRoleId: employees.customRoleId,
             status: employees.status,
@@ -139,7 +135,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const userToCache = {
       id: user.id,
       email: user.email,
-      role: user.role,
       departmentId: user.departmentId ?? null,
       customRoleId: user.customRoleId ?? null,
       fullNameEnglish: user.fullNameEnglish,
@@ -153,7 +148,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: user.id,
       email: user.email,
-      role: user.role,
       departmentId: user.departmentId ?? null,
       customRoleId: user.customRoleId ?? null,
       fullNameEnglish: user.fullNameEnglish,

@@ -5,7 +5,6 @@ export const currentUser: User = {
   name: "Alex Johnson",
   email: "alex.johnson@sadoshima.com",
   avatar: "",
-  role: "hr",
 }
 
 export function UserAvatar({

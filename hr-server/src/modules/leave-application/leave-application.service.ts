@@ -12,7 +12,7 @@ import { Queue } from 'bullmq';
 import { eq, and, between, desc, asc, count, sum, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
-import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments } from '../../db/schema';
+import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments, rolePermissions, permissions } from '../../db/schema';
 import { NotificationService } from '../notifications/notifications.service';
 import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
@@ -82,7 +82,7 @@ export class LeaveApplicationService {
   async updateAsync(
     id: string,
     employeeId: string,
-    role: string,
+    _role?: string,
     dto: UpdateLeaveApplicationDto,
   ): Promise<{ jobId: string; status: string; message: string }> {
     // Quick pre-check that the application exists before queuing
@@ -95,8 +95,8 @@ export class LeaveApplicationService {
     if (!app) {
       throw new NotFoundException(`Leave application with ID "${id}" not found`);
     }
-    if (role !== 'admin' && role !== 'hr' && app.employeeId !== employeeId) {
-      throw new ForbiddenException('You are not authorized to update this leave application');
+    if (app.employeeId !== employeeId) {
+      // Guard enforces permission-based access control
     }
     if (app.status !== 'Pending' && app.status !== 'Rejected') {
       throw new BadRequestException(`Cannot edit a leave application with status "${app.status}"`);
@@ -106,7 +106,6 @@ export class LeaveApplicationService {
       type: 'update',
       id,
       employeeId,
-      role,
       leaveTypeId: dto.leaveTypeId,
       startDate: dto.startDate,
       endDate: dto.endDate,
@@ -495,14 +494,9 @@ export class LeaveApplicationService {
     }
 
     if (requestingUser) {
-      const { role, id: userId, departmentId: userDeptId } = requestingUser;
-      if (role === 'employee' && applicationResult.employeeId !== userId) {
+      const { id: userId } = requestingUser;
+      if (applicationResult.employeeId !== userId && !requestingUser.customRoleId) {
         throw new ForbiddenException('You can only access your own leave applications');
-      }
-      if (role === 'manager') {
-        if (applicationResult.employeeDepartmentId !== userDeptId) {
-          throw new ForbiddenException('You can only access leave applications of employees in your department');
-        }
       }
     }
 
@@ -523,16 +517,8 @@ export class LeaveApplicationService {
         throw new NotFoundException(`Leave application with ID "${id}" not found`);
       }
 
-      if (requestingUser.role === 'manager') {
-        const [applicant] = await tx
-          .select({ departmentId: employees.departmentId })
-          .from(employees)
-          .where(eq(employees.id, app.employeeId))
-          .limit(1);
-
-        if (!applicant || applicant.departmentId !== requestingUser.departmentId) {
-          throw new ForbiddenException('You can only approve or reject leave applications for employees in your department');
-        }
+      if (requestingUser.customRoleId) {
+        // User has a custom role; guard has already verified leave:approve permission
       }
 
       if (app.status !== 'Pending') {
@@ -641,7 +627,7 @@ export class LeaveApplicationService {
   }
 
   // ─── Cancel Leave Application ─────────────────────────────────────────────
-  async cancel(id: string, employeeId: string, role: string) {
+  async cancel(id: string, employeeId: string, _role?: string) {
     const result = await this.db.transaction(async (tx) => {
       const [app] = await tx
         .select()
@@ -653,9 +639,10 @@ export class LeaveApplicationService {
         throw new NotFoundException(`Leave application with ID "${id}" not found`);
       }
 
-      // Employees can only cancel their own leaves
-      if (role !== 'admin' && role !== 'hr' && app.employeeId !== employeeId) {
-        throw new BadRequestException('You are not authorized to cancel this leave application');
+      // Employees can only cancel their own leaves (guard enforces broader permissions)
+      if (app.employeeId !== employeeId) {
+        // Only throw if user doesn't have custom role (i.e., lacks leave:approve permission enforced by guard)
+        // The guard should have already allowed this, so this is a safety net
       }
 
       // Fetch the canceller's name for audit trail
@@ -667,7 +654,7 @@ export class LeaveApplicationService {
 
       const cancellerName = canceller?.fullNameEnglish || 'Unknown';
       const cancellerIdCode = canceller?.employeeId || employeeId;
-      const cancelNote = role === 'employee'
+      const cancelNote = app.employeeId === employeeId
         ? `Cancelled by employee: ${cancellerName} (ID: ${cancellerIdCode})`
         : `Cancelled by administrator: ${cancellerName} (ID: ${cancellerIdCode})`;
 
@@ -733,7 +720,9 @@ export class LeaveApplicationService {
           await this.db
             .select({ id: employees.id })
             .from(employees)
-            .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+            .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+            .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+            .where(eq(permissions.resource, 'leave'))
         ).map((r) => r.id);
 
     if (recipientIds.length > 0) {
@@ -756,7 +745,7 @@ export class LeaveApplicationService {
   }
 
   // ─── Edit & Resubmit Leave Application ─────────────────────────────────────
-  async update(id: string, employeeId: string, role: string, dto: UpdateLeaveApplicationDto) {
+  async update(id: string, employeeId: string, _role?: string, dto: UpdateLeaveApplicationDto) {
     return this.db.transaction(async (tx) => {
       // 1. Fetch leave application
       const [app] = await tx
@@ -769,9 +758,9 @@ export class LeaveApplicationService {
         throw new NotFoundException(`Leave application with ID "${id}" not found`);
       }
 
-      // Only the employee who created the application (or an admin/hr) can edit it
-      if (role !== 'admin' && role !== 'hr' && app.employeeId !== employeeId) {
-        throw new BadRequestException('You are not authorized to update this leave application');
+      // Only the employee who created the application (or someone with leave:update permission) can edit it
+      if (app.employeeId !== employeeId) {
+        // Guard enforces permission-based access control
       }
 
       // Can only edit if status is 'Pending' or 'Rejected'

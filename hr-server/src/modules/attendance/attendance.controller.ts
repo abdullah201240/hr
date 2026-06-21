@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { AttendanceService } from './attendance.service';
 import { CheckInDto, CheckOutDto, SubmitCorrectionDto, AdminLogOverrideDto } from './dto/attendance.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
@@ -94,7 +94,7 @@ export class AttendanceController {
   // ─── Admin / HR Routes ─────────────────────────────────────────────────────
 
   @Get('daily')
-  @Roles('admin', 'hr')
+  @Permissions('attendance:view_all')
   @ApiOperation({ summary: 'Get daily attendance logs for all employees' })
   @ApiResponse({ status: 200, description: 'Daily logs for all employees' })
   async getDailyLogs(@Query('date') date: string) {
@@ -102,7 +102,7 @@ export class AttendanceController {
   }
 
   @Get('range')
-  @Roles('admin', 'hr')
+  @Permissions('attendance:view_all')
   @ApiOperation({ summary: 'Get attendance logs for all employees within a date range' })
   @ApiResponse({ status: 200, description: 'Attendance logs list' })
   async getRangeLogs(
@@ -126,7 +126,7 @@ export class AttendanceController {
   }
 
   @Post('correction/approve/:id')
-  @Roles('admin', 'hr')
+  @Permissions('attendance:approve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve a pending attendance correction request' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -138,7 +138,7 @@ export class AttendanceController {
   }
 
   @Post('correction/reject/:id')
-  @Roles('admin', 'hr')
+  @Permissions('attendance:approve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a pending attendance correction request' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -150,7 +150,7 @@ export class AttendanceController {
   }
 
   @Get('corrections/pending')
-  @Roles('admin', 'hr')
+  @Permissions('attendance:view_all')
   @ApiOperation({ summary: 'Get all pending attendance correction requests' })
   @ApiResponse({ status: 200, description: 'List of pending corrections' })
   async getPendingCorrections() {
@@ -158,7 +158,7 @@ export class AttendanceController {
   }
 
   @Post('admin/override')
-  @Roles('admin', 'hr')
+  @Permissions('attendance:create')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Override or create attendance log for an employee manually' })
   @ApiResponse({ status: 200, description: 'Log overridden successfully' })

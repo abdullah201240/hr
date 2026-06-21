@@ -15,14 +15,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@ne
 import { FastifyRequest } from 'fastify';
 import { ChatService } from './chat.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 import { CreateChannelDto, CreateDirectRoomDto, AddMemberDto } from './dto/create-room.dto';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user: {
     id: string;
     email: string;
-    role: string;
+    customRoleId?: string;
   };
 }
 
@@ -49,7 +49,7 @@ export class ChatController {
   }
 
   @Post('rooms/channel')
-  @Roles('admin', 'hr')  // ← Gap G12 fix: only admin/hr can create channels
+  @Permissions('chat:create_channel')  // ← Gap G12 fix
   @ApiOperation({ summary: 'Create a group team channel' })
   @ApiResponse({ status: 201, description: 'Channel room created successfully.' })
   async createChannel(@Req() req: AuthenticatedRequest, @Body() dto: CreateChannelDto) {
@@ -81,7 +81,7 @@ export class ChatController {
   }
 
   @Post('rooms/:roomId/members')
-  @Roles('admin', 'hr')  // ← Gap G12 fix: only admin/hr can add members to channels
+  @Permissions('chat:manage_members')  // ← Gap G12 fix
   @ApiOperation({ summary: 'Add an employee to a group channel' })
   @ApiResponse({ status: 201, description: 'Employee added successfully.' })
   async addMember(
@@ -93,7 +93,7 @@ export class ChatController {
   }
 
   @Delete('rooms/:roomId/members/:employeeId')
-  @Roles('admin', 'hr')  // ← Gap G12 fix: only admin/hr can remove members from channels
+  @Permissions('chat:manage_members')  // ← Gap G12 fix
   @ApiOperation({ summary: 'Remove a member from a group channel, or leave the channel' })
   @ApiResponse({ status: 200, description: 'Member removed successfully.' })
   async removeMember(

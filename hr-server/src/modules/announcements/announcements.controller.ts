@@ -11,7 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto, UpdateAnnouncementDto, AnnouncementQueryDto } from './dto/announcement.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Announcements')
 @Controller('announcements')
@@ -38,7 +38,7 @@ export class AnnouncementsController {
   }
 
   @Post()
-  @Roles('admin', 'hr')  // ← Gap G2 fix: only admin/hr can create announcements
+  @Permissions('announcements:create')  // ← Gap G2 fix: only admin/hr can create announcements
   @ApiOperation({ summary: 'Create a new announcement' })
   @ApiResponse({ status: 201, description: 'The announcement has been created.' })
   create(@Body() createDto: CreateAnnouncementDto) {
@@ -46,7 +46,7 @@ export class AnnouncementsController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'hr')  // ← Gap G2 fix: only admin/hr can update announcements
+  @Permissions('announcements:update')  // ← Gap G2 fix: only admin/hr can update announcements
   @ApiOperation({ summary: 'Update an announcement' })
   @ApiResponse({ status: 200, description: 'The announcement has been updated.' })
   update(@Param('id') id: string, @Body() updateDto: UpdateAnnouncementDto) {
@@ -54,7 +54,7 @@ export class AnnouncementsController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'hr')  // ← Gap G2 fix: only admin/hr can delete announcements
+  @Permissions('announcements:delete')  // ← Gap G2 fix: only admin/hr can delete announcements
   @ApiOperation({ summary: 'Delete an announcement' })
   @ApiResponse({ status: 200, description: 'The announcement has been deleted.' })
   remove(@Param('id') id: string) {

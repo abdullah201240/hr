@@ -17,7 +17,7 @@ import { PreferencesService } from './services/preferences.service';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { UpdatePreferencesDto } from './dto/preferences.dto';
 import { BroadcastDto } from './dto/emit-notification.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 import { employees } from '../../db/schema/employee';
 import { NotificationModule, NotificationCategory, NotificationPriority } from './types/notification.types';
 
@@ -86,7 +86,7 @@ export class NotificationController {
   }
 
   @Post('broadcast')
-  @Roles('admin')
+  @Permissions('notifications:broadcast')
   async broadcast(@Body() dto: BroadcastDto) {
     // If recipientIds is provided, emit to those, otherwise broadcast to everyone
     let targets: string[] = dto.recipientIds || [];

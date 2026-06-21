@@ -25,7 +25,6 @@ import {
   UpdateLeaveTypeDto,
 } from './dto/create-leave-type.dto';
 import { LeaveTypeQueryDto } from './dto/leave-type-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Leave Types')
 @ApiBearerAuth()
@@ -36,7 +35,6 @@ export class LeaveTypeController {
   // ─── Create ────────────────────────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new leave type' })
   @ApiResponse({ status: 201, description: 'Leave type created' })
@@ -78,7 +76,6 @@ export class LeaveTypeController {
   // ─── Update ────────────────────────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a leave type' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Leave type updated' })
@@ -94,7 +91,6 @@ export class LeaveTypeController {
   // ─── Soft delete (deactivate) ──────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a leave type (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

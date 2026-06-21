@@ -345,7 +345,7 @@ export function LeaveDetailsDialog({
         </div>
 
         <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 mt-4">
-          {selectedLeave && selectedLeave.status === "Pending" && (user?.role === "admin" || user?.role === "hr") && (
+          {selectedLeave && selectedLeave.status === "Pending" && (user?.permissions?.includes("leave:approve")) && (
             <>
               <Button
                 variant="default"

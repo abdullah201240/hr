@@ -59,7 +59,7 @@ export function DetailedPayslipDialog({
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground print:text-foreground">Designation</p>
-              <p className="font-semibold mt-0.5">{viewPayslip.role}</p>
+              <p className="font-semibold mt-0.5">{viewPayslip.designationName || "\u2014"}</p>
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground print:text-foreground">Department</p>

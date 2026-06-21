@@ -1,18 +1,15 @@
 import { useAuthStore } from "@/store/useAuthStore"
 
-type AllowedRole = "admin" | "hr" | "manager" | "employee"
-
 interface AuthorizedProps {
   /**
-   * If provided, user's role must be in this list to render children.
-   * Omit to skip role check.
+   * If provided, user must have at least ONE of these permissions to render children.
+   * Omit to skip permission check.
    */
-  roles?: AllowedRole[]
+  permissions?: string[]
 
   /**
    * If true, also enforces that the current user owns the resource.
-   * Only relevant when the user's role is 'employee'.
-   * Admin/HR/Manager always bypass the ownership check.
+   * Only relevant when the user lacks elevated permissions (e.g., employees:view_all).
    */
   ownOnly?: boolean
 
@@ -32,29 +29,29 @@ interface AuthorizedProps {
 /**
  * Authorized — Inline UI element visibility control (Defense-in-depth Layer 6).
  *
- * Conditionally renders children based on the current user's role and/or
+ * Conditionally renders children based on the current user's permissions and/or
  * resource ownership. This is a UX component — the real security is enforced
  * by the backend RolesGuard + OwnershipGuard.
  *
  * Usage examples:
  *
- * // Only admin/hr see the "Add Employee" button
- * <Authorized roles={["admin", "hr"]}>
+ * // Only users with employees:create see the "Add Employee" button
+ * <Authorized permissions={["employees:create"]}>
  *   <Button>Add Employee</Button>
  * </Authorized>
  *
- * // Admin/HR or the resource owner can delete
- * <Authorized roles={["admin", "hr"]} ownOnly resourceOwnerId={claim.employeeId}>
+ * // Users with employees:update OR the resource owner can edit
+ * <Authorized permissions={["employees:update"]} ownOnly resourceOwnerId={claim.employeeId}>
  *   <Button variant="destructive">Delete</Button>
  * </Authorized>
  *
  * // With fallback for non-authorized users
- * <Authorized roles={["admin"]} fallback={<Badge>Read Only</Badge>}>
+ * <Authorized permissions={["settings:update"]} fallback={<Badge>Read Only</Badge>}>
  *   <EditButton />
  * </Authorized>
  */
 export function Authorized({
-  roles,
+  permissions,
   ownOnly,
   resourceOwnerId,
   children,
@@ -64,15 +61,25 @@ export function Authorized({
 
   if (!user) return <>{fallback}</>
 
-  // Role check — if roles prop is provided, user must be in the list
-  if (roles && !roles.includes(user.role)) {
-    return <>{fallback}</>
+  const userPermissions = user.permissions || []
+
+  // Permission check — if permissions prop is provided, user needs at least one
+  if (permissions && permissions.length > 0) {
+    const hasAny = permissions.some((perm) => userPermissions.includes(perm))
+    if (!hasAny) {
+      return <>{fallback}</>
+    }
   }
 
-  // Ownership check — only enforced for employee role
-  // Admin / HR / Manager bypass this check
-  if (ownOnly && user.role === "employee" && resourceOwnerId !== user.id) {
-    return <>{fallback}</>
+  // Ownership check — only enforced if ownOnly is true
+  // Users with elevated permissions (view_all, update) bypass ownership check
+  if (ownOnly && resourceOwnerId !== user.id) {
+    const hasBypass = userPermissions.some((p) =>
+      p.includes("view_all") || p.includes("update")
+    )
+    if (!hasBypass) {
+      return <>{fallback}</>
+    }
   }
 
   return <>{children}</>

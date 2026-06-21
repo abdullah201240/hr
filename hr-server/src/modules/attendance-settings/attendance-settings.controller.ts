@@ -23,7 +23,6 @@ import {
   CreateHolidayDto,
   UpdateHolidayDto,
 } from './dto/attendance-settings.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Attendance Settings')
 @ApiBearerAuth()
@@ -43,7 +42,6 @@ export class AttendanceSettingsController {
   }
 
   @Patch()
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update attendance settings' })
   @ApiResponse({ status: 200, description: 'Settings updated' })
   async updateSettings(@Body() dto: UpdateAttendanceSettingsDto) {
@@ -60,7 +58,6 @@ export class AttendanceSettingsController {
   }
 
   @Post('holidays')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new holiday' })
   @ApiResponse({ status: 201, description: 'Holiday created' })
@@ -69,7 +66,6 @@ export class AttendanceSettingsController {
   }
 
   @Patch('holidays/:id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a holiday' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Holiday updated' })
@@ -82,7 +78,6 @@ export class AttendanceSettingsController {
   }
 
   @Delete('holidays/:id')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a holiday' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

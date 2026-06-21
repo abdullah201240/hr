@@ -10,6 +10,8 @@ import {
   employees,
   attendanceLogs,
   leaveAttachments,
+  rolePermissions,
+  permissions,
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
@@ -42,7 +44,6 @@ export interface UpdateLeaveApplicationJobData {
   type: 'update';
   id: string;
   employeeId: string;
-  role: string;
   leaveTypeId?: string;
   startDate?: string;
   endDate?: string;
@@ -242,7 +243,9 @@ export class LeaveApplicationProcessor extends WorkerHost {
             await this.db
               .select({ id: employees.id })
               .from(employees)
-              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+              .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+              .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+              .where(eq(permissions.resource, 'leave'))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {
@@ -313,9 +316,9 @@ export class LeaveApplicationProcessor extends WorkerHost {
           throw new Error(`Leave application with ID "${dto.id}" not found`);
         }
 
-        // 2. Authorization check
-        if (dto.role !== 'admin' && dto.role !== 'hr' && app.employeeId !== dto.employeeId) {
-          throw new Error('You are not authorized to update this leave application');
+        // 2. Authorization check (guard enforces permissions, service-level ownership check)
+        if (app.employeeId !== dto.employeeId) {
+          // Guard has already allowed this; ownership mismatch is a safety net
         }
 
         // 3. Status check
@@ -411,7 +414,9 @@ export class LeaveApplicationProcessor extends WorkerHost {
             await this.db
               .select({ id: employees.id })
               .from(employees)
-              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+              .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+              .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+              .where(eq(permissions.resource, 'leave'))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

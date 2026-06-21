@@ -44,7 +44,7 @@ import {
 
 export default function AttendancePage() {
   const { user } = useAuthStore()
-  const isAdminOrHR = user?.role === "admin" || user?.role === "hr"
+  const isAdminOrHR = user?.permissions?.includes("attendance:view_all") || user?.permissions?.includes("attendance:approve")
 
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get("tab") || "my-attendance"

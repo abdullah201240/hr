@@ -25,7 +25,6 @@ import {
   UpdateDesignationDto,
 } from './dto/create-designation.dto';
 import { DesignationQueryDto } from './dto/designation-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Designations')
 @ApiBearerAuth()
@@ -36,7 +35,6 @@ export class DesignationController {
   // ─── Create ────────────────────────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new designation' })
   @ApiResponse({ status: 201, description: 'Designation created' })
@@ -81,7 +79,6 @@ export class DesignationController {
   // ─── Update ────────────────────────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a designation' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Designation updated' })
@@ -97,7 +94,6 @@ export class DesignationController {
   // ─── Soft delete (deactivate) ──────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a designation (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

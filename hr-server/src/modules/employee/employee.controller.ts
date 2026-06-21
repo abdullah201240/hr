@@ -25,7 +25,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeQueryDto } from './dto/employee-query.dto';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { ResetEmployeePasswordDto } from './dto/reset-password.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 import { OwnerOnly } from '../auth/guards/owner.decorator';
 
 @ApiTags('Employees')
@@ -37,7 +37,7 @@ export class EmployeeController {
   // ─── Create (async via queue) ─────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
+  @Permissions('employees:create')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Create a new employee (queued)' })
   @ApiResponse({ status: 202, description: 'Employee creation job enqueued' })
@@ -52,7 +52,7 @@ export class EmployeeController {
   // ─── Update (async via queue) ────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
+  @Permissions('employees:update')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Update an employee (queued)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -68,7 +68,7 @@ export class EmployeeController {
   // ─── List with filters ────────────────────────────────────────────────
 
   @Get()
-  @Roles('admin', 'hr', 'manager')  // ← Gap G9 fix: employees cannot browse the directory
+  @Permissions('employees:view_all', 'employees:view_team')
   @ApiOperation({ summary: 'List employees with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Paginated employee list' })
   async findAll(@Query() query: EmployeeQueryDto, @Req() req: any) {
@@ -97,7 +97,7 @@ export class EmployeeController {
   // ─── Job status ───────────────────────────────────────────────────────
 
   @Get('jobs/:jobId')
-  @Roles('admin', 'hr')
+  @Permissions('employees:read')
   @ApiOperation({ summary: 'Check employee processing job status' })
   @ApiParam({ name: 'jobId', type: 'string' })
   @ApiResponse({ status: 200, description: 'Job status details' })
@@ -111,7 +111,7 @@ export class EmployeeController {
   // ─── Change status (active/inactive with optional scheduled date) ──────
 
   @Patch(':id/status')
-  @Roles('admin', 'hr')
+  @Permissions('employees:update')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Change employee status (active/inactive) with optional scheduled date' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -127,7 +127,7 @@ export class EmployeeController {
   // ─── Reset Password (Admin/HR only) ────────────────────────────────────
 
   @Patch(':id/password')
-  @Roles('admin', 'hr')
+  @Permissions('employees:reset_password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset employee password (Admin/HR only)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -143,7 +143,7 @@ export class EmployeeController {
   // ─── Soft delete ──────────────────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
+  @Permissions('employees:delete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Soft delete (terminate) an employee' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

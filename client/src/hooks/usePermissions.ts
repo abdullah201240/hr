@@ -21,7 +21,7 @@ import { useAuthStore } from "@/store/useAuthStore"
 export function usePermissions() {
   const { user } = useAuthStore()
 
-  // Get user's permissions (from custom role or base role)
+  // Get user's permissions from their assigned custom role
   const userPermissions = user?.permissions || []
 
   /**
@@ -48,26 +48,14 @@ export function usePermissions() {
   }
 
   /**
-   * Check if user can access a navigation item based on permissions
-   * (roles are still checked for backward compatibility, but permissions take precedence)
+   * Check if user can access a navigation item based on permissions only
    */
-  const canAccessNavItem = (item: { roles?: string[]; permissions?: string[] }): boolean => {
-    // If no restrictions, allow access
-    if (!item.roles && !item.permissions) return true
+  const canAccessNavItem = (item: { permissions?: string[] }): boolean => {
+    // If no permission restrictions, allow access
+    if (!item.permissions || item.permissions.length === 0) return true
 
-    // Check permission restriction (if defined, this takes precedence)
-    if (item.permissions && item.permissions.length > 0) {
-      // For permissions, user needs at least ONE of the required permissions
-      if (!hasAnyPermission(item.permissions)) return false
-    }
-
-    // Check role restriction (only if no permissions defined)
-    if (!item.permissions && item.roles) {
-      if (!user?.role) return false
-      if (!item.roles.includes(user.role as any)) return false
-    }
-
-    return true
+    // User needs at least ONE of the required permissions
+    return hasAnyPermission(item.permissions)
   }
 
   return {

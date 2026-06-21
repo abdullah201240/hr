@@ -25,11 +25,9 @@ import {
   EmployeeSalaryQueryDto,
   BulkSalaryRevisionDto,
 } from './dto/salary.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Salary Management')
 @ApiBearerAuth()
-@Roles('admin', 'hr')
 @Controller()
 export class SalaryController {
   constructor(private readonly service: SalaryService) {}

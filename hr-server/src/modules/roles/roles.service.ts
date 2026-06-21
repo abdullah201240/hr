@@ -1,7 +1,7 @@
 import { Injectable, Inject, OnModuleInit, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DB_CONNECTION, type Database } from '../../db';
 import { permissions, customRoles, rolePermissions, employees } from '../../db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 // Predefined set of resources and actions for seeding
 export interface PermissionSeed {
@@ -31,9 +31,12 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
 
   // Leave Management
   { resource: 'leave', action: 'apply', description: 'Apply for leave requests' },
+  { resource: 'leave', action: 'create', description: 'Create leave types and configurations' },
+  { resource: 'leave', action: 'update', description: 'Update leave types and configurations' },
   { resource: 'leave', action: 'approve', description: 'Approve leave requests' },
   { resource: 'leave', action: 'reject', description: 'Reject leave requests' },
   { resource: 'leave', action: 'cancel', description: 'Cancel leave requests' },
+  { resource: 'leave', action: 'delete', description: 'Delete leave types and records' },
   { resource: 'leave', action: 'view_own', description: 'View own leave applications and balances' },
   { resource: 'leave', action: 'view_team', description: 'View leave requests of team members' },
   { resource: 'leave', action: 'view_all', description: 'View all leave requests in company' },
@@ -80,6 +83,73 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
 
   // Audit Logs
   { resource: 'audit_logs', action: 'read', description: 'View system audit trails' },
+
+  // Separation / Offboarding
+  { resource: 'separation', action: 'create', description: 'Initiate offboarding process' },
+  { resource: 'separation', action: 'read', description: 'View separation records' },
+  { resource: 'separation', action: 'update', description: 'Update separation clearance' },
+  { resource: 'separation', action: 'delete', description: 'Delete separation records' },
+
+  // Disciplinary
+  { resource: 'disciplinary', action: 'create', description: 'Log disciplinary cases' },
+  { resource: 'disciplinary', action: 'read', description: 'View disciplinary cases' },
+  { resource: 'disciplinary', action: 'update', description: 'Update disciplinary cases' },
+  { resource: 'disciplinary', action: 'delete', description: 'Revoke disciplinary cases' },
+
+  // Performance
+  { resource: 'performance', action: 'create', description: 'Create appraisal cycles and KPIs' },
+  { resource: 'performance', action: 'read', description: 'View performance data' },
+  { resource: 'performance', action: 'update', description: 'Update appraisals and KPIs' },
+  { resource: 'performance', action: 'delete', description: 'Delete KPIs' },
+  { resource: 'performance', action: 'view_own', description: 'View own performance data' },
+  { resource: 'performance', action: 'view_all', description: 'View all performance data' },
+
+  // Attendance
+  { resource: 'attendance', action: 'read', description: 'View attendance logs' },
+  { resource: 'attendance', action: 'view_all', description: 'View all employee attendance' },
+  { resource: 'attendance', action: 'approve', description: 'Approve attendance corrections' },
+  { resource: 'attendance', action: 'update', description: 'Override/update attendance settings' },
+  { resource: 'attendance', action: 'create', description: 'Create attendance overrides and settings' },
+  { resource: 'attendance', action: 'delete', description: 'Delete attendance settings' },
+
+  // Tasks & Projects
+  { resource: 'tasks', action: 'create', description: 'Create tasks and projects' },
+  { resource: 'tasks', action: 'read', description: 'View tasks and projects' },
+  { resource: 'tasks', action: 'update', description: 'Update tasks and projects' },
+  { resource: 'tasks', action: 'delete', description: 'Delete tasks and projects' },
+  { resource: 'tasks', action: 'manage', description: 'Manage projects, milestones, bulk operations' },
+
+  // Organisation Chart
+  { resource: 'org_chart', action: 'read', description: 'View org chart' },
+  { resource: 'org_chart', action: 'create', description: 'Create org chart nodes' },
+  { resource: 'org_chart', action: 'update', description: 'Update org chart nodes' },
+  { resource: 'org_chart', action: 'delete', description: 'Delete org chart nodes' },
+
+  // Notifications
+  { resource: 'notifications', action: 'broadcast', description: 'Broadcast notifications to all employees' },
+
+  // Upload / Files
+  { resource: 'upload', action: 'read', description: 'View uploaded files' },
+  { resource: 'upload', action: 'create', description: 'Upload files' },
+  { resource: 'upload', action: 'delete', description: 'Delete uploaded files' },
+
+  // Departments
+  { resource: 'departments', action: 'create', description: 'Create departments' },
+  { resource: 'departments', action: 'read', description: 'View departments' },
+  { resource: 'departments', action: 'update', description: 'Update departments' },
+  { resource: 'departments', action: 'delete', description: 'Deactivate departments' },
+
+  // Designations
+  { resource: 'designations', action: 'create', description: 'Create designations' },
+  { resource: 'designations', action: 'read', description: 'View designations' },
+  { resource: 'designations', action: 'update', description: 'Update designations' },
+  { resource: 'designations', action: 'delete', description: 'Deactivate designations' },
+
+  // Salary Management
+  { resource: 'salary', action: 'create', description: 'Create salary templates and assignments' },
+  { resource: 'salary', action: 'read', description: 'View salary data' },
+  { resource: 'salary', action: 'update', description: 'Update salary records' },
+  { resource: 'salary', action: 'delete', description: 'Delete salary records' },
 ];
 
 @Injectable()
@@ -96,46 +166,10 @@ export class RolesService implements OnModuleInit {
     if (existing.length > 0) return; // Already seeded
 
     // Insert all permissions
-    const insertedPerms = await this.db
+    await this.db
       .insert(permissions)
       .values(SYSTEM_PERMISSIONS)
       .returning();
-
-    // Map default system roles to permissions
-    // Admin gets everything
-    const adminPerms = insertedPerms.map(p => ({ roleKey: 'admin', permissionId: p.id }));
-    
-    // HR gets everything except settings:update, audit_logs:read
-    const hrPerms = insertedPerms
-      .filter(p => !(p.resource === 'settings' && p.action === 'update') && !(p.resource === 'audit_logs'))
-      .map(p => ({ roleKey: 'hr', permissionId: p.id }));
-
-    // Manager gets team & self scoping plus approval flows
-    const managerPerms = insertedPerms
-      .filter(p => 
-        p.action.includes('view_own') || 
-        p.action.includes('view_team') || 
-        (p.resource === 'leave' && ['apply', 'approve', 'reject', 'cancel'].includes(p.action)) ||
-        (p.resource === 'claims' && ['create', 'delete'].includes(p.action)) ||
-        (p.resource === 'announcements' && p.action === 'read') ||
-        (p.resource === 'chat') ||
-        (p.resource === 'employees' && p.action === 'read')
-      )
-      .map(p => ({ roleKey: 'manager', permissionId: p.id }));
-
-    // Employee gets only self scoping and creation tasks
-    const employeePerms = insertedPerms
-      .filter(p => 
-        p.action.includes('view_own') ||
-        (p.resource === 'leave' && ['apply', 'cancel'].includes(p.action)) ||
-        (p.resource === 'claims' && ['create', 'delete'].includes(p.action)) ||
-        (p.resource === 'announcements' && p.action === 'read') ||
-        (p.resource === 'chat' && p.action === 'direct_message')
-      )
-      .map(p => ({ roleKey: 'employee', permissionId: p.id }));
-
-    const allMappings = [...adminPerms, ...hrPerms, ...managerPerms, ...employeePerms];
-    await this.db.insert(rolePermissions).values(allMappings);
   }
 
   // ─── Query Endpoints ───────────────────────────────────────────────────────
@@ -159,23 +193,13 @@ export class RolesService implements OnModuleInit {
       rolePermsMap[mapping.roleKey].push(mapping.permissionId);
     }
 
-    // Default system roles definition
-    const systemRoles = [
-      { id: 'admin', name: 'Super Admin', description: 'System Administrator with full access', isSystem: true, permissions: rolePermsMap['admin'] || [] },
-      { id: 'hr', name: 'HR Manager', description: 'Human Resources Manager', isSystem: true, permissions: rolePermsMap['hr'] || [] },
-      { id: 'manager', name: 'Manager', description: 'Department or Team Line Manager', isSystem: true, permissions: rolePermsMap['manager'] || [] },
-      { id: 'employee', name: 'Employee', description: 'General Employee self-service role', isSystem: true, permissions: rolePermsMap['employee'] || [] },
-    ];
-
-    const customRolesFormatted = customRolesList.map(cr => ({
+    return customRolesList.map(cr => ({
       id: cr.id,
       name: cr.name,
       description: cr.description,
       isSystem: false,
       permissions: rolePermsMap[cr.id] || [],
     }));
-
-    return [...systemRoles, ...customRolesFormatted];
   }
 
   // ─── Custom Role Mutations ────────────────────────────────────────────────
@@ -256,22 +280,7 @@ export class RolesService implements OnModuleInit {
   }
 
   // ─── Permission Checking Helper ───────────────────────────────────────────
-  async getUserPermissions(role: string, customRoleId?: string): Promise<Set<string>> {
-    // If custom role is assigned, use ONLY custom role permissions (ignore base role)
-    if (customRoleId) {
-      const list = await this.db
-        .select({
-          resource: permissions.resource,
-          action: permissions.action,
-        })
-        .from(rolePermissions)
-        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-        .where(eq(rolePermissions.roleKey, customRoleId));
-
-      return new Set(list.map(p => `${p.resource}:${p.action}`));
-    }
-
-    // If no custom role, use base role permissions
+  async getUserPermissions(customRoleId: string): Promise<Set<string>> {
     const list = await this.db
       .select({
         resource: permissions.resource,
@@ -279,7 +288,7 @@ export class RolesService implements OnModuleInit {
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleKey, role));
+      .where(eq(rolePermissions.roleKey, customRoleId));
 
     return new Set(list.map(p => `${p.resource}:${p.action}`));
   }

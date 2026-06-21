@@ -19,7 +19,7 @@ import {
 import { IsOptional, IsString, IsNumberString } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
 import { CloudinaryService, UploadResult } from './cloudinary.service';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
@@ -205,7 +205,7 @@ export class UploadController {
   // ── Delete by prefix ───────────────────────────────────────────────────────
 
   @Delete()
-  @Roles('admin')
+  @Permissions('upload:delete')
   @ApiOperation({ summary: 'Delete all files matching a prefix (Admin only)' })
   async deleteByPrefix(
     @Query() query: DeleteByPrefixQueryDto,

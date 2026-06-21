@@ -25,7 +25,6 @@ import {
   UpdateDepartmentDto,
 } from './dto/create-department.dto';
 import { DepartmentQueryDto } from './dto/department-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Departments')
 @ApiBearerAuth()
@@ -36,7 +35,6 @@ export class DepartmentController {
   // ─── Create ───────────────────────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Create a new department' })
   @ApiResponse({ status: 201, description: 'Department created' })
   @ApiResponse({ status: 409, description: 'Department code already exists' })
@@ -80,7 +78,6 @@ export class DepartmentController {
   // ─── Update ────────────────────────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a department' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Department updated' })
@@ -96,7 +93,6 @@ export class DepartmentController {
   // ─── Soft delete (deactivate) ──────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a department (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

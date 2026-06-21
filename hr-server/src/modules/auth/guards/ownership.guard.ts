@@ -6,23 +6,26 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { OWNER_ONLY_KEY } from './owner.decorator';
+import { RolesService } from '../../roles/roles.service';
 
 /**
  * OwnershipGuard enforces resource-level access control.
  *
  * Defense-in-depth Layer 3 (after JwtAuthGuard + RolesGuard):
  * - If the endpoint is not decorated with @OwnerOnly() → passthrough (allow)
- * - Admin / HR → always bypass (full access to all resources)
- * - Manager → bypass (team-level access; endpoint-level service checks handle dept scoping)
- * - Employee → route param `:id` (or `:employeeId`) must match their own `user.id`
+ * - Users with employees:view_all or employees:view_team → bypass (broad access)
+ * - Others → route param `:id` (or `:employeeId`) must match their own `user.id`
  *
  * Register as a global guard in AppModule (after RolesGuard).
  */
 @Injectable()
 export class OwnershipGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly rolesService: RolesService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isOwnerOnly = this.reflector.getAllAndOverride<boolean>(OWNER_ONLY_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -38,13 +41,15 @@ export class OwnershipGuard implements CanActivate {
       throw new ForbiddenException('Access denied: authentication required');
     }
 
-    // Admin and HR have full access to all resources
-    if (user.role === 'admin' || user.role === 'hr') return true;
+    // Users with broad view permissions bypass ownership check
+    if (user.customRoleId) {
+      const perms = await this.rolesService.getUserPermissions(user.customRoleId);
+      if (perms.has('employees:view_all') || perms.has('employees:view_team')) {
+        return true;
+      }
+    }
 
-    // Manager has team-level access; fine-grained department scoping is handled in the service layer
-    if (user.role === 'manager') return true;
-
-    // Employee: strictly owner-only — the resource ID must match their own user ID
+    // Strictly owner-only — the resource ID must match their own user ID
     const resourceId: string | undefined = req.params?.id ?? req.params?.employeeId;
 
     if (resourceId && resourceId !== user.id) {

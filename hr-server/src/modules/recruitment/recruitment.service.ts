@@ -8,6 +8,8 @@ import {
   onboardingHires,
   onboardingTasks,
   employees,
+  rolePermissions,
+  permissions,
 } from '../../db/schema';
 import {
   CreateJobOpeningDto,
@@ -258,7 +260,9 @@ export class RecruitmentService {
         await this.db
           .select({ id: employees.id })
           .from(employees)
-          .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+          .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+          .where(eq(permissions.resource, 'recruitment'))
       ).map((r) => r.id);
 
       if (recipientIds.length > 0) {
@@ -286,7 +290,9 @@ export class RecruitmentService {
         await this.db
           .select({ id: employees.id })
           .from(employees)
-          .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+          .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+          .where(eq(permissions.resource, 'recruitment'))
       ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

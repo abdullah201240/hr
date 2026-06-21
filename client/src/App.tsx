@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { AuthLayout } from "@/layouts/auth-layout"
 import { DashboardLayout } from "@/layouts/dashboard-layout"
 import { ProtectedRoute } from "@/components/auth/protected-route"
-import { RoleGuard } from "@/components/auth/role-guard"
+import { PermissionGuard } from "@/components/auth/role-guard"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 
@@ -118,7 +118,7 @@ function App() {
                   <Route path="employees/view/:id" element={<ViewEmployeePage />} />
 
                   {/* ── Manager+ routes ────────────────────────────────────── */}
-                  <Route element={<RoleGuard allowedRoles={["admin", "hr", "manager"]} />}>
+                  <Route element={<PermissionGuard requires={["employees:view_all", "employees:view_team", "employees:read"]} />}>
                     <Route path="employees" element={<EmployeesPage />} />
                     <Route path="attendance/company" element={<CompanyAttendancePage />} />
                     <Route path="performance" element={<PerformancePage />} />
@@ -126,7 +126,7 @@ function App() {
                   </Route>
 
                   {/* ── Admin/HR-only routes ───────────────────────────────── */}
-                  <Route element={<RoleGuard allowedRoles={["admin", "hr"]} />}>
+                  <Route element={<PermissionGuard requires={["employees:create", "employees:update", "employees:delete", "payroll:read", "payroll:process", "recruitment:read", "letters:read"]} />}>
                     <Route path="employees/create" element={<CreateEmployeePage />} />
                     <Route path="employees/edit/:id" element={<EditEmployeePage />} />
                     <Route path="payroll" element={<PayrollPage />} />
@@ -142,7 +142,7 @@ function App() {
                   </Route>
 
                   {/* ── Admin-only routes ──────────────────────────────────── */}
-                  <Route element={<RoleGuard allowedRoles={["admin"]} />}>
+                  <Route element={<PermissionGuard requires={["settings:read", "settings:update"]} />}>
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>
 
@@ -151,9 +151,9 @@ function App() {
                 </Route>
               </Route>
 
-              {/* Printable templates (protected, admin/hr only) */}
+              {/* Printable templates (protected, permission-based) */}
               <Route element={<ProtectedRoute />}>
-                <Route element={<RoleGuard allowedRoles={["admin", "hr"]} />}>
+                <Route element={<PermissionGuard requires={["recruitment:read", "letters:read"]} />}>
                   <Route path="/recruitment/print/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintJoiningLetterPage /></Suspense>} />
                   <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
                   <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />

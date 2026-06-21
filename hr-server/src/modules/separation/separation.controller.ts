@@ -3,7 +3,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SeparationService } from './separation.service';
 import { CreateSeparationDto, UpdateSeparationDto, SeparationQueryDto } from './dto/separation.dto';
 import { CalculateSettlementDto, UpdateSettlementStatusDto } from './dto/settlement.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Separation')
 @ApiBearerAuth()
@@ -12,49 +11,42 @@ export class SeparationController {
   constructor(private readonly separationService: SeparationService) {}
 
   @Get()
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Get all separation/offboarding records' })
   async findAll(@Query() query: SeparationQueryDto) {
     return this.separationService.findAll(query);
   }
 
   @Post()
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Initiate offboarding exit process' })
   async create(@Body() dto: CreateSeparationDto) {
     return this.separationService.create(dto);
   }
 
   @Patch(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update separation clearance status' })
   async update(@Param('id') id: string, @Body() dto: UpdateSeparationDto) {
     return this.separationService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Delete a separation record' })
   async delete(@Param('id') id: string) {
     return this.separationService.delete(id);
   }
 
   @Get(':id/settlement')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Get or calculate draft settlement' })
   async getSettlement(@Param('id') id: string) {
     return this.separationService.getSettlement(id);
   }
 
   @Post(':id/settlement')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Save or update final settlement' })
   async saveSettlement(@Param('id') id: string, @Body() dto: CalculateSettlementDto) {
     return this.separationService.saveOrUpdateSettlement(id, dto);
   }
 
   @Patch(':id/settlement/status')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update final settlement status' })
   async updateSettlementStatus(
     @Param('id') id: string,

@@ -112,7 +112,6 @@ export default function ProfilePage() {
     name: user.fullNameEnglish,
     email: user.email,
     avatar: user.employeePhotoUrl || "",
-    role: user.role, // Already typed as 'admin' | 'hr' | 'manager' | 'employee'
   }
 
   const formattedBirthday = user.dateOfBirth 
@@ -143,7 +142,7 @@ export default function ProfilePage() {
               </div>
               <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 justify-center md:justify-start">
                 <Building className="h-3.5 w-3.5 text-indigo-500" />
-                {designation?.name || user.role} • {department?.name || "Human Resources"}
+                {designation?.name || "Employee"} • {department?.name || "Human Resources"}
               </p>
             </div>
           </div>
@@ -250,7 +249,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground font-medium">Designation</p>
-                  <p className="text-xs font-semibold">{designation?.name || user.role}</p>
+                  <p className="text-xs font-semibold">{designation?.name || "Employee"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] text-muted-foreground font-medium">Employment Status</p>

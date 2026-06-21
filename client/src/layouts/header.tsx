@@ -61,8 +61,7 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
     name: user?.fullNameEnglish || "Employee",
     email: user?.email || "",
     avatar: user?.employeePhotoUrl || "",
-    role: (user?.role || "employee") as 'admin' | 'hr' | 'manager' | 'employee',
-  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role])
+  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl])
 
   const handleLogout = () => {
     logout()

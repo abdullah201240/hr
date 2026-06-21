@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Query, Param, Req } from '@
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { LettersService } from './letters.service';
 import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto } from './dto/letters.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Letters')
 @ApiBearerAuth()
@@ -11,7 +11,6 @@ export class LettersController {
   constructor(private readonly lettersService: LettersService) {}
 
   @Post()
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Issue a new HR letter for an employee' })
   async create(@Req() req: any, @Body() dto: CreateLetterDto) {
     const creatorName = req.user?.fullNameEnglish || 'HR Admin';
@@ -19,28 +18,25 @@ export class LettersController {
   }
 
   @Get()
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Get all issued HR letters with filters & pagination' })
   async findAll(@Query() query: LetterQueryDto) {
     return this.lettersService.findAll(query);
   }
 
   @Get(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Get details of a specific issued HR letter' })
   async findOne(@Param('id') id: string) {
     return this.lettersService.findOne(id);
   }
 
   @Patch(':id/status')
-  @Roles('admin', 'hr')
+  @Permissions('letters:update')
   @ApiOperation({ summary: 'Update status of an issued HR letter' })
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateLetterStatusDto) {
     return this.lettersService.updateStatus(id, dto);
   }
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Delete/revoke an issued HR letter' })
   async delete(@Param('id') id: string) {
     return this.lettersService.delete(id);

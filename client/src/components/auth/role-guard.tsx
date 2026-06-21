@@ -1,29 +1,29 @@
 import { Navigate, Outlet } from "react-router"
 import { useAuthStore } from "@/store/useAuthStore"
 
-interface RoleGuardProps {
-  /** List of roles that are allowed to access the wrapped routes */
-  allowedRoles: Array<"admin" | "hr" | "manager" | "employee">
+interface PermissionGuardProps {
+  /** List of permissions — user needs at least ONE to access the wrapped routes */
+  requires: string[]
   /** Where to redirect unauthorized users. Defaults to "/" (dashboard) */
   fallbackPath?: string
 }
 
 /**
- * RoleGuard — Frontend route-level access control (Gap G4 fix).
+ * PermissionGuard — Frontend route-level access control.
  *
- * Wraps a group of <Route> elements and redirects users whose role is not
- * in `allowedRoles` to `fallbackPath`. This is a UX guard — the backend
+ * Wraps a group of <Route> elements and redirects users who lack ALL
+ * required permissions to `fallbackPath`. This is a UX guard — the backend
  * enforces the real security via RolesGuard + OwnershipGuard.
  *
  * Usage in App.tsx:
- *   <Route element={<RoleGuard allowedRoles={["admin", "hr"]} />}>
- *     <Route path="payroll" element={<PayrollPage />} />
+ *   <Route element={<PermissionGuard requires={["employees:create", "employees:update"]} />}>
+ *     <Route path="employees/create" element={<CreateEmployeePage />} />
  *   </Route>
  */
-export function RoleGuard({
-  allowedRoles,
+export function PermissionGuard({
+  requires,
   fallbackPath = "/",
-}: RoleGuardProps) {
+}: PermissionGuardProps) {
   const { user, isAuthenticated } = useAuthStore()
 
   // Not yet authenticated — ProtectedRoute handles the /login redirect
@@ -31,8 +31,17 @@ export function RoleGuard({
     return <Navigate to="/login" replace />
   }
 
-  // Role not allowed — redirect to dashboard (or custom fallback)
-  if (!allowedRoles.includes(user.role as any)) {
+  const userPermissions = user.permissions || []
+
+  // If no permissions required, allow access
+  if (!requires || requires.length === 0) {
+    return <Outlet />
+  }
+
+  // Check if user has at least ONE of the required permissions
+  const hasAccess = requires.some((perm) => userPermissions.includes(perm))
+
+  if (!hasAccess) {
     return <Navigate to={fallbackPath} replace />
   }
 
