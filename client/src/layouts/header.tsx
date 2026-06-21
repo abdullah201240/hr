@@ -2,7 +2,6 @@ import { useState, useMemo } from "react"
 import { useLocation, useNavigate } from "react-router"
 import {
   Search,
-  Bell,
   Sun,
   Moon,
   Monitor,
@@ -23,7 +22,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +46,7 @@ function getPageTitle(pathname: string): string {
 }
 
 import { useAuthStore } from "@/store/useAuthStore"
-import { useNotificationsQuery, useMarkNotificationReadMutation } from "@/hooks/useTasks"
+import { NotificationBell } from "@/components/notifications/notification-bell"
 
 export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onMobileMenuToggle: () => void }) {
   const location = useLocation()
@@ -56,11 +54,6 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
   const { setTheme } = useTheme()
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const { user, logout } = useAuthStore()
-  const { data: notifications = [] } = useNotificationsQuery()
-  const markReadMutation = useMarkNotificationReadMutation()
-
-  const unreadNotifications = useMemo(() => notifications.filter(n => !n.isRead), [notifications])
-  const unreadCount = unreadNotifications.length
 
   const pageTitle = getPageTitle(location.pathname)
 
@@ -185,61 +178,8 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-8 w-8 text-muted-foreground"
-            >
-              <Bell className="h-4.5 w-4.5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 flex h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 shadow-none border-border/50 text-xs max-h-96 overflow-y-auto">
-            <DropdownMenuLabel className="flex items-center justify-between py-1.5">
-              <span className="font-semibold text-foreground">Notifications</span>
-              {unreadCount > 0 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-none">
-                  {unreadCount} new
-                </Badge>
-              )}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {notifications.length === 0 ? (
-              <div className="py-6 text-center text-muted-foreground">
-                No notifications
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <DropdownMenuItem
-                  key={notification.id}
-                  className={`flex flex-col items-start gap-0.5 p-2.5 cursor-pointer ${
-                    !notification.isRead ? "bg-accent/40" : ""
-                  }`}
-                  onClick={() => {
-                    if (!notification.isRead) {
-                      markReadMutation.mutate(notification.id);
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <span className={`font-medium ${!notification.isRead ? "text-foreground" : "text-muted-foreground"}`}>
-                      {notification.title}
-                    </span>
-                    {!notification.isRead && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    )}
-                  </div>
-                  <span className="text-muted-foreground line-clamp-2">{notification.message}</span>
-                </DropdownMenuItem>
-              ))
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Notifications Bell */}
+        <NotificationBell />
 
         {/* Theme Toggle */}
         <DropdownMenu>

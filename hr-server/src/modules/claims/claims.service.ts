@@ -4,7 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, and, desc, asc, inArray } from 'drizzle-orm';
+import { eq, and, desc, asc, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
 import { claims, claimAttachments, employees } from '../../db/schema';
@@ -15,6 +15,8 @@ import type {
   UpdateClaimStatusDto,
   ClaimQueryDto,
 } from './dto/claims.dto';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 const approver = alias(employees, 'approver');
 
@@ -23,6 +25,7 @@ export class ClaimsService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly cache: CacheService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // ─── Find All (paginated, filtered) ────────────────────────────────────────
@@ -235,14 +238,25 @@ export class ClaimsService {
     }
 
     await this.invalidateCache();
-    return this.findOne(created.id);
+    const result = await this.findOne(created.id);
+
+    // Trigger Notification
+    await this.triggerClaimSubmissionNotification(employeeId, result);
+
+    return result;
   }
 
   // ─── Update Status (Approve / Reject / Settle) ─────────────────────────────
 
   async updateStatus(id: string, approvedById: string, dto: UpdateClaimStatusDto) {
     const [claim] = await this.db
-      .select({ id: claims.id, status: claims.status })
+      .select({
+        id: claims.id,
+        status: claims.status,
+        employeeId: claims.employeeId,
+        claimType: claims.claimType,
+        amount: claims.amount,
+      })
       .from(claims)
       .where(eq(claims.id, id))
       .limit(1);
@@ -288,7 +302,80 @@ export class ClaimsService {
       .returning();
 
     await this.invalidateCache(id);
-    return this.findOne(id);
+    const result = await this.findOne(id);
+
+    // Trigger Notification
+    await this.notificationService.emit({
+      recipientId: claim.employeeId,
+      actorId: approvedById,
+      module: NotificationModule.CLAIMS,
+      category: dto.status === 'Approved' ? NotificationCategory.APPROVAL : dto.status === 'Rejected' ? NotificationCategory.REJECTION : NotificationCategory.STATUS_CHANGE,
+      title: `Claim ${dto.status}`,
+      message: `Your ${claim.claimType} claim of ${claim.amount} BDT has been ${dto.status.toLowerCase()}.${
+        dto.status === 'Rejected' && dto.rejectionReason ? ` Reason: ${dto.rejectionReason}` : ''
+      }`,
+      entityType: 'claim',
+      entityId: claim.id,
+      actionUrl: '/claims',
+    });
+
+    return result;
+  }
+
+  private async triggerClaimSubmissionNotification(employeeId: string, claim: any) {
+    try {
+      const [employee] = await this.db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, employeeId))
+        .limit(1);
+
+      if (!employee) return;
+
+      const recipientIds = employee.lineManagerId
+        ? [employee.lineManagerId]
+        : (
+            await this.db
+              .select({ id: employees.id })
+              .from(employees)
+              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            actorId: employeeId,
+            module: NotificationModule.CLAIMS,
+            category: NotificationCategory.APPROVAL,
+            title: 'New Claim Submission',
+            message: `${employee.fullNameEnglish} has submitted a new ${claim.claimType} claim of ${claim.amount} BDT.`,
+            entityType: 'claim',
+            entityId: claim.id,
+            actionUrl: `/claims`,
+            actions: [
+              {
+                label: 'Approve',
+                style: 'primary',
+                apiMethod: 'PATCH',
+                apiUrl: `/claims/${claim.id}/status`,
+                apiBody: { status: 'Approved' },
+              },
+              {
+                label: 'Reject',
+                style: 'destructive',
+                apiMethod: 'PATCH',
+                apiUrl: `/claims/${claim.id}/status`,
+                apiBody: { status: 'Rejected' },
+                confirmMessage: 'Are you sure you want to reject this claim?',
+              },
+            ],
+          })),
+        );
+      }
+    } catch (err: any) {
+      // Don't fail the operation if notification fails
+    }
   }
 
   // ─── Delete ────────────────────────────────────────────────────────────────

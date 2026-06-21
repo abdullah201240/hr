@@ -1,5 +1,5 @@
-import { IsUUID, IsOptional, IsEnum, IsString, MaxLength, IsObject, IsArray } from 'class-validator';
-import { NotificationModule, NotificationCategory, NotificationAction } from '../types/notification.types';
+import { IsUUID, IsOptional, IsEnum, IsString, MaxLength, IsObject, IsArray, IsDateString } from 'class-validator';
+import { NotificationModule, NotificationCategory, NotificationAction, NotificationPriority } from '../types/notification.types';
 
 export class EmitNotificationDto {
   @IsUUID()
@@ -16,8 +16,8 @@ export class EmitNotificationDto {
   category!: NotificationCategory;
 
   @IsOptional()
-  @IsString()
-  priority?: string; // low, normal, high, urgent
+  @IsEnum(NotificationPriority)
+  priority?: NotificationPriority;
 
   @IsString()
   @MaxLength(255)
@@ -51,7 +51,8 @@ export class EmitNotificationDto {
   dedupKey?: string;
 
   @IsOptional()
-  expiresAt?: Date;
+  @IsDateString()
+  expiresAt?: string;
 }
 
 export class BroadcastDto {
@@ -65,13 +66,13 @@ export class BroadcastDto {
   @IsOptional()
   @IsArray()
   @IsUUID(undefined, { each: true })
-  recipientIds?: string[]; // Empty means everyone
+  recipientIds?: string[];
 
   @IsOptional()
   @IsString()
   actionUrl?: string;
 
   @IsOptional()
-  @IsString()
-  priority?: string;
+  @IsEnum(NotificationPriority)
+  priority?: NotificationPriority;
 }

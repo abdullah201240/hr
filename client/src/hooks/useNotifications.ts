@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { useNotificationStore } from '../store/useNotificationStore';
-import { Notification, NotificationPreferences, NotificationListResponse } from '../types/notifications';
+import type { Notification, NotificationPreferences, NotificationListResponse } from '../types/notifications';
 import { toast } from 'sonner';
 
 export function useNotificationsInfiniteQuery(filters: {
@@ -11,7 +11,6 @@ export function useNotificationsInfiniteQuery(filters: {
   isArchived?: string;
   priority?: string;
 } = {}) {
-  const { setNotifications } = useNotificationStore();
 
   return useInfiniteQuery<NotificationListResponse>({
     queryKey: ['notifications-list', filters],
@@ -48,7 +47,7 @@ export function useMarkAsReadMutation() {
 
   return useMutation<Notification, Error, string>({
     mutationFn: (id) => apiClient.patch<Notification>(`notifications/${id}/read`, {}),
-    onSuccess: (data, id) => {
+    onSuccess: (_, id) => {
       markAsRead(id);
       queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
@@ -77,7 +76,7 @@ export function useArchiveMutation() {
 
   return useMutation<Notification, Error, string>({
     mutationFn: (id) => apiClient.patch<Notification>(`notifications/${id}/archive`, {}),
-    onSuccess: (data, id) => {
+    onSuccess: (_, id) => {
       archiveNotification(id);
       queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
@@ -104,7 +103,7 @@ export function useDeleteNotificationMutation() {
 
   return useMutation<{ success: boolean }, Error, string>({
     mutationFn: (id) => apiClient.delete<{ success: boolean }>(`notifications/${id}`),
-    onSuccess: (data, id) => {
+    onSuccess: (_, id) => {
       removeNotification(id);
       queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
@@ -142,11 +141,14 @@ export function useExecuteActionMutation() {
   >({
     mutationFn: ({ notificationId, actionIndex }) =>
       apiClient.post(`notifications/${notificationId}/actions/${actionIndex}`, {}),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications-list'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
-      // Invalidate relevant business modules caches
-      queryClient.invalidateQueries(); 
+      // Invalidate relevant business modules caches specifically
+      queryClient.invalidateQueries({ queryKey: ['leave-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+      queryClient.invalidateQueries({ queryKey: ['claims'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 }

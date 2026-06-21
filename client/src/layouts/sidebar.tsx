@@ -14,6 +14,7 @@ import { navGroups } from "@/components/navigation/nav-data"
 import { UserAvatar } from "@/components/common/user-avatar"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useNotificationStore } from "@/store/useNotificationStore"
 
 interface SidebarProps {
   collapsed: boolean
@@ -25,6 +26,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle, onLinkClick, className }: SidebarProps) {
   const location = useLocation()
   const { user } = useAuthStore()
+  const unreadCount = useNotificationStore((state) => state.unreadCount)
 
   const mappedUser = useMemo(() => ({
     name: user?.fullNameEnglish || "Employee",
@@ -107,6 +109,10 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                   const hasSubItems = item.items && item.items.length > 0
                   const isExpanded = expandedMenus.has(item.href)
 
+                  const badgeValue = item.title === "Notifications"
+                    ? (unreadCount > 0 ? String(unreadCount) : undefined)
+                    : item.badge
+
                   // Collapsed sidebar: show tooltip, no sub-menus
                   if (collapsed) {
                     const linkContent = (
@@ -137,9 +143,9 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                         <TooltipContent side="right" className="flex items-center gap-1.5 text-xs py-1 px-2.5 border-border/50 shadow-none">
                           <span>{item.title}</span>
-                          {item.badge && (
+                          {badgeValue && (
                             <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium">
-                              {item.badge}
+                              {badgeValue}
                             </span>
                           )}
                         </TooltipContent>
@@ -246,7 +252,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         )}
                       />
                       <span className="truncate">{item.title}</span>
-                      {item.badge && (
+                      {badgeValue && (
                         <span
                           className={cn(
                             "ml-auto inline-flex h-4.5 min-w-[18px] items-center justify-center rounded-full px-1.5 text-[9px] font-medium",
@@ -255,7 +261,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                               : "bg-muted text-muted-foreground"
                           )}
                         >
-                          {item.badge}
+                          {badgeValue}
                         </span>
                       )}
                     </Link>

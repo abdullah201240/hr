@@ -1,7 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { eq, and, between } from 'drizzle-orm';
+import { eq, and, between, or, inArray } from 'drizzle-orm';
 import { v2 as cloudinary } from 'cloudinary';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
@@ -14,6 +14,8 @@ import {
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
 import { LEAVE_APPLICATION_QUEUE } from '../queue/queue.module';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 // ─── Job payload types ────────────────────────────────────────────────────────
 
@@ -61,6 +63,7 @@ export class LeaveApplicationProcessor extends WorkerHost {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly cache: CacheService,
+    private readonly notificationService: NotificationService,
   ) {
     super();
   }
@@ -221,15 +224,61 @@ export class LeaveApplicationProcessor extends WorkerHost {
           );
         }
 
-        return created;
+        return { created, employee, leaveType };
       });
+
+      const { created, employee, leaveType } = result;
 
       // 8. Invalidate caches
       await this.invalidateCache(dto.employeeId, start.getUTCFullYear());
       this.logger.log(
-        `Leave application created: ${result.id} for employee ${dto.employeeId} (${days} days)`,
+        `Leave application created: ${created.id} for employee ${dto.employeeId} (${days} days)`,
       );
-      return { leaveApplicationId: result.id };
+
+      // Emit Notification to line manager or admins
+      const recipientIds = employee.lineManagerId
+        ? [employee.lineManagerId]
+        : (
+            await this.db
+              .select({ id: employees.id })
+              .from(employees)
+              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            actorId: dto.employeeId,
+            module: NotificationModule.LEAVE,
+            category: NotificationCategory.APPROVAL,
+            title: 'New Leave Application',
+            message: `${employee.fullNameEnglish} has applied for ${days} day(s) of ${leaveType.name} starting from ${dto.startDate}.`,
+            entityType: 'leave_application',
+            entityId: created.id,
+            actionUrl: `/leave-applications`,
+            actions: [
+              {
+                label: 'Approve',
+                style: 'primary',
+                apiMethod: 'PATCH',
+                apiUrl: `/leave-applications/${created.id}/status`,
+                apiBody: { status: 'Approved' },
+              },
+              {
+                label: 'Reject',
+                style: 'destructive',
+                apiMethod: 'PATCH',
+                apiUrl: `/leave-applications/${created.id}/status`,
+                apiBody: { status: 'Rejected' },
+                confirmMessage: 'Are you sure you want to reject this leave application?',
+              },
+            ],
+          })),
+        );
+      }
+
+      return { leaveApplicationId: created.id };
     } catch (error: any) {
       this.logger.error(
         `Failed to create leave application for employee ${dto.employeeId}: ${error.message}`,
@@ -339,13 +388,66 @@ export class LeaveApplicationProcessor extends WorkerHost {
           }
         }
 
-        return updated;
+        // 5. Get employee context
+        const [employee] = await tx
+          .select()
+          .from(employees)
+          .where(eq(employees.id, app.employeeId))
+          .limit(1);
+
+        return { updated, employee, leaveType };
       });
 
-      const startYear = this.parseDateUTC(result.startDate).getUTCFullYear();
-      await this.invalidateCache(result.employeeId, startYear, dto.id);
+      const { updated, employee, leaveType } = result;
+
+      const startYear = this.parseDateUTC(updated.startDate).getUTCFullYear();
+      await this.invalidateCache(updated.employeeId, startYear, dto.id);
       this.logger.log(`Leave application updated/resubmitted: ${dto.id} by ${dto.employeeId}`);
-      return { leaveApplicationId: result.id };
+
+      // Emit Notification to line manager or admins
+      const recipientIds = employee.lineManagerId
+        ? [employee.lineManagerId]
+        : (
+            await this.db
+              .select({ id: employees.id })
+              .from(employees)
+              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            actorId: dto.employeeId,
+            module: NotificationModule.LEAVE,
+            category: NotificationCategory.APPROVAL,
+            title: 'Resubmitted Leave Application',
+            message: `${employee.fullNameEnglish} has resubmitted their leave request for ${updated.days} day(s) of ${leaveType.name} starting from ${updated.startDate}.`,
+            entityType: 'leave_application',
+            entityId: updated.id,
+            actionUrl: `/leave-applications`,
+            actions: [
+              {
+                label: 'Approve',
+                style: 'primary',
+                apiMethod: 'PATCH',
+                apiUrl: `/leave-applications/${updated.id}/status`,
+                apiBody: { status: 'Approved' },
+              },
+              {
+                label: 'Reject',
+                style: 'destructive',
+                apiMethod: 'PATCH',
+                apiUrl: `/leave-applications/${updated.id}/status`,
+                apiBody: { status: 'Rejected' },
+                confirmMessage: 'Are you sure you want to reject this leave application?',
+              },
+            ],
+          })),
+        );
+      }
+
+      return { leaveApplicationId: updated.id };
     } catch (error: any) {
       this.logger.error(
         `Failed to update leave application ${dto.id}: ${error.message}`,

@@ -13,9 +13,10 @@ import {
   taskDependencies,
   taskAttachments,
   timeEntries,
-  taskNotifications,
 } from '../../db/schema/tasks';
 import { employees } from '../../db/schema/employee';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 import {
   CreateProjectDto,
   UpdateProjectDto,
@@ -45,6 +46,7 @@ export class TasksService {
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly realtimeGateway: RealtimeGateway,
     @InjectQueue(TASK_RECURRENCE_QUEUE) private readonly taskRecurrenceQueue: Queue,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private broadcastMutation(action: string, id?: string) {
@@ -1221,33 +1223,13 @@ export class TasksService {
   // ─── Notifications CRUD ─────────────────────────────────────────────────────
 
   async createNotification(employeeId: string, title: string, message: string) {
-    const [notification] = await this.db
-      .insert(taskNotifications)
-      .values({
-        employeeId,
-        title,
-        message,
-        isRead: false,
-      })
-      .returning();
-    return notification;
-  }
-
-  async findNotifications(employeeId: string) {
-    return this.db
-      .select()
-      .from(taskNotifications)
-      .where(eq(taskNotifications.employeeId, employeeId))
-      .orderBy(desc(taskNotifications.createdAt));
-  }
-
-  async markNotificationRead(id: string) {
-    const [updated] = await this.db
-      .update(taskNotifications)
-      .set({ isRead: true })
-      .where(eq(taskNotifications.id, id))
-      .returning();
-    return updated;
+    return this.notificationService.emit({
+      recipientId: employeeId,
+      module: NotificationModule.TASKS,
+      category: NotificationCategory.ASSIGNMENT,
+      title,
+      message,
+    });
   }
 
   async bulkCreateTasks(dtos: CreateTaskDto[]) {

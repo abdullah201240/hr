@@ -14,11 +14,14 @@ import {
 } from '../../db/schema';
 import { CreateSeparationDto, UpdateSeparationDto, SeparationQueryDto } from './dto/separation.dto';
 import { CalculateSettlementDto } from './dto/settlement.dto';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 @Injectable()
 export class SeparationService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async findAll(query: SeparationQueryDto) {
@@ -74,6 +77,8 @@ export class SeparationService {
       })
       .returning();
 
+    await this.triggerSeparationRequestNotification(created);
+
     return created;
   }
 
@@ -116,7 +121,73 @@ export class SeparationService {
       .where(eq(separationRecords.id, id))
       .returning();
 
+    await this.triggerSeparationUpdateNotification(updated);
+
     return updated;
+  }
+
+  private async triggerSeparationRequestNotification(sepRecord: any) {
+    try {
+      const [employee] = await this.db
+        .select()
+        .from(employees)
+        .where(eq(employees.email, sepRecord.employeeEmail))
+        .limit(1);
+
+      if (!employee) return;
+
+      const recipientIds = employee.lineManagerId
+        ? [employee.lineManagerId]
+        : (
+            await this.db
+              .select({ id: employees.id })
+              .from(employees)
+              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            actorId: employee.id,
+            module: NotificationModule.SEPARATION,
+            category: NotificationCategory.ASSIGNMENT,
+            title: 'Resignation Request Submitted',
+            message: `${sepRecord.employeeName} has submitted a resignation request. Last working day: ${sepRecord.lastWorkingDay}.`,
+            actionUrl: `/separation`,
+            entityType: 'separation',
+            entityId: sepRecord.id,
+          })),
+        );
+      }
+    } catch (err: any) {
+      // Ignore
+    }
+  }
+
+  private async triggerSeparationUpdateNotification(sepRecord: any) {
+    try {
+      const [employee] = await this.db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.email, sepRecord.employeeEmail))
+        .limit(1);
+
+      if (employee) {
+        await this.notificationService.emit({
+          recipientId: employee.id,
+          module: NotificationModule.SEPARATION,
+          category: NotificationCategory.STATUS_CHANGE,
+          title: 'Separation Status Updated',
+          message: `Your resignation/separation case status has been updated to "${sepRecord.status}".`,
+          actionUrl: '/separation',
+          entityType: 'separation',
+          entityId: sepRecord.id,
+        });
+      }
+    } catch (err: any) {
+      // Ignore
+    }
   }
 
   async delete(id: string) {

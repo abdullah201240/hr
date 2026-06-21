@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useNotificationStore } from '../store/useNotificationStore';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router';
 
 let socketInstance: WebSocket | null = null;
 let reconnectTimeoutId: any = null;
@@ -11,6 +12,7 @@ let reconnectAttempts = 0;
 export function useNotificationSocket() {
   const { accessToken, isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const {
     setWsConnected,
     addNotification,
@@ -43,8 +45,11 @@ export function useNotificationSocket() {
     if (disconnectRef.current) return;
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-    const wsBase = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '');
-    const wsUrl = `${wsBase}/notifications?token=${accessToken}`;
+    const urlObj = new URL(API_BASE_URL);
+    const protocol = urlObj.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = urlObj.host;
+    const path = urlObj.pathname.endsWith('/api') ? urlObj.pathname.slice(0, -4) : urlObj.pathname;
+    const wsUrl = `${protocol}//${host}${path}/notifications?token=${accessToken}`;
 
     cleanupSocket();
 
@@ -128,7 +133,7 @@ export function useNotificationSocket() {
             ? {
                 label: 'View',
                 onClick: () => {
-                  window.location.href = data.actionUrl;
+                  navigate(data.actionUrl);
                 },
               }
             : undefined,

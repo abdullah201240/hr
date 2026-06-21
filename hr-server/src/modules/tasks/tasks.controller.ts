@@ -119,20 +119,6 @@ export class TasksController {
     return this.tasksService.createTask(dto, req.user.id);
   }
 
-  // ─── User Notifications Endpoints ───────────────────────────────────────────
-
-  @Get('notifications')
-  @ApiOperation({ summary: 'Get all notifications for logged-in user' })
-  async findNotifications(@Req() req: FastifyRequest & { user: { id: string } }) {
-    return this.tasksService.findNotifications(req.user.id);
-  }
-
-  @Patch('notifications/:id/read')
-  @Roles('admin', 'hr', 'employee')
-  @ApiOperation({ summary: 'Mark a notification as read' })
-  async markNotificationRead(@Param('id') id: string) {
-    return this.tasksService.markNotificationRead(id);
-  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single task details with activities/checklists' })

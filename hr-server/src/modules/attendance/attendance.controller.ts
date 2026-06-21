@@ -132,8 +132,9 @@ export class AttendanceController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Correction request approved' })
   @ApiResponse({ status: 404, description: 'Log not found' })
-  async approveCorrection(@Param('id', ParseUUIDPipe) id: string) {
-    return this.attendanceService.approveCorrection(id);
+  async approveCorrection(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    const approvedById = req.user.id;
+    return this.attendanceService.approveCorrection(id, approvedById);
   }
 
   @Post('correction/reject/:id')
@@ -143,8 +144,9 @@ export class AttendanceController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Correction request rejected' })
   @ApiResponse({ status: 404, description: 'Log not found' })
-  async rejectCorrection(@Param('id', ParseUUIDPipe) id: string) {
-    return this.attendanceService.rejectCorrection(id);
+  async rejectCorrection(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    const rejectedById = req.user.id;
+    return this.attendanceService.rejectCorrection(id, rejectedById);
   }
 
   @Get('corrections/pending')
@@ -160,7 +162,8 @@ export class AttendanceController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Override or create attendance log for an employee manually' })
   @ApiResponse({ status: 200, description: 'Log overridden successfully' })
-  async overrideAttendance(@Body() dto: AdminLogOverrideDto) {
-    return this.attendanceService.overrideAttendance(dto);
+  async overrideAttendance(@Req() req: any, @Body() dto: AdminLogOverrideDto) {
+    const adminId = req.user.id;
+    return this.attendanceService.overrideAttendance(dto, adminId);
   }
 }

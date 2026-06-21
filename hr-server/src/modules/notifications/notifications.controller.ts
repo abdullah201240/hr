@@ -19,6 +19,7 @@ import { UpdatePreferencesDto } from './dto/preferences.dto';
 import { BroadcastDto } from './dto/emit-notification.dto';
 import { Roles } from '../auth/guards/roles.decorator';
 import { employees } from '../../db/schema/employee';
+import { NotificationModule, NotificationCategory, NotificationPriority } from './types/notification.types';
 
 type RequestWithUser = FastifyRequest & { user: { id: string } };
 
@@ -90,18 +91,14 @@ export class NotificationController {
     // If recipientIds is provided, emit to those, otherwise broadcast to everyone
     let targets: string[] = dto.recipientIds || [];
     if (targets.length === 0) {
-      // Find all employee IDs from DB
-      const allEmployees = await this.notificationService['db']
-        .select({ id: employees.id })
-        .from(employees);
-      targets = allEmployees.map((e: any) => e.id);
+      targets = await this.notificationService.getAllEmployeeIds();
     }
 
     const dtos = targets.map((id) => ({
       recipientId: id,
-      module: 'announcements' as any,
-      category: 'broadcast' as any,
-      priority: dto.priority || 'normal',
+      module: NotificationModule.ANNOUNCEMENTS,
+      category: NotificationCategory.BROADCAST,
+      priority: dto.priority || NotificationPriority.NORMAL,
       title: dto.title,
       message: dto.message,
       actionUrl: dto.actionUrl,

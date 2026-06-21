@@ -103,10 +103,3 @@ export const timeEntries = pgTable('time_entries', {
   description: text('description').default(''),
 });
 
-export const taskNotifications = pgTable('task_notifications', {
-  ...baseTable,
-  employeeId: uuid('employee_id').references((): AnyPgColumn => employees.id, { onDelete: 'cascade' }).notNull(),
-  title: varchar('title', { length: 255 }).notNull(),
-  message: text('message').notNull(),
-  isRead: boolean('is_read').default(false).notNull(),
-});

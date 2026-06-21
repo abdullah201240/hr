@@ -17,6 +17,8 @@ import { AttendanceSettingsService } from '../attendance-settings/attendance-set
 import { CheckInDto, CheckOutDto, SubmitCorrectionDto, AdminLogOverrideDto } from './dto/attendance.dto';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 @Injectable()
 export class AttendanceService implements OnModuleInit {
@@ -27,6 +29,7 @@ export class AttendanceService implements OnModuleInit {
     @InjectQueue(ATTENDANCE_QUEUE) private readonly attendanceQueue: Queue,
     private readonly settingsService: AttendanceSettingsService,
     private readonly cache: CacheService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit() {
@@ -132,6 +135,11 @@ export class AttendanceService implements OnModuleInit {
         .returning();
       
       await this.invalidateAttendanceCache(employeeId, dateStr);
+
+      if (status === 'late') {
+        await this.triggerLateNotifications(employeeId, checkInStr, settings, updated.id);
+      }
+
       return updated;
     } else {
       // Create new record
@@ -150,6 +158,11 @@ export class AttendanceService implements OnModuleInit {
         .returning();
       
       await this.invalidateAttendanceCache(employeeId, dateStr);
+
+      if (status === 'late') {
+        await this.triggerLateNotifications(employeeId, checkInStr, settings, created.id);
+      }
+
       return created;
     }
   }
@@ -364,6 +377,9 @@ export class AttendanceService implements OnModuleInit {
 
     await this.invalidateAttendanceCache(employeeId, dto.date);
     await this.invalidateCorrectionsCache();
+
+    await this.triggerCorrectionSubmissionNotification(employeeId, updated);
+
     return updated;
   }
 
@@ -522,7 +538,7 @@ export class AttendanceService implements OnModuleInit {
   }
 
   // ─── Approve Correction ────────────────────────────────────────────────────
-  async approveCorrection(logId: string) {
+  async approveCorrection(logId: string, approvedById?: string) {
     const [log] = await this.db
       .select()
       .from(attendanceLogs)
@@ -582,11 +598,25 @@ export class AttendanceService implements OnModuleInit {
 
     await this.invalidateAttendanceCache(log.employeeId, log.date);
     await this.invalidateCorrectionsCache();
+
+    // Trigger Notification
+    await this.notificationService.emit({
+      recipientId: log.employeeId,
+      actorId: approvedById || undefined,
+      module: NotificationModule.ATTENDANCE,
+      category: NotificationCategory.STATUS_CHANGE,
+      title: 'Attendance Correction Approved',
+      message: `Your attendance correction request for ${log.date} has been approved.`,
+      entityType: 'attendance',
+      entityId: log.id,
+      actionUrl: '/attendance',
+    });
+
     return updated;
   }
 
   // ─── Reject Correction ─────────────────────────────────────────────────────
-  async rejectCorrection(logId: string) {
+  async rejectCorrection(logId: string, rejectedById?: string) {
     const [log] = await this.db
       .select()
       .from(attendanceLogs)
@@ -610,6 +640,20 @@ export class AttendanceService implements OnModuleInit {
       .returning();
 
     await this.invalidateCorrectionsCache();
+
+    // Trigger Notification
+    await this.notificationService.emit({
+      recipientId: log.employeeId,
+      actorId: rejectedById || undefined,
+      module: NotificationModule.ATTENDANCE,
+      category: NotificationCategory.STATUS_CHANGE,
+      title: 'Attendance Correction Rejected',
+      message: `Your attendance correction request for ${log.date} has been rejected.`,
+      entityType: 'attendance',
+      entityId: log.id,
+      actionUrl: '/attendance',
+    });
+
     return updated;
   }
 
@@ -642,7 +686,7 @@ export class AttendanceService implements OnModuleInit {
   }
 
   // ─── Manual Override/Log Creation by Admin/HR ──────────────────────────────
-  async overrideAttendance(dto: AdminLogOverrideDto) {
+  async overrideAttendance(dto: AdminLogOverrideDto, adminId?: string) {
     const { employeeId, date, status, checkIn, checkOut, notes } = dto;
 
     // Check if employee exists
@@ -700,6 +744,20 @@ export class AttendanceService implements OnModuleInit {
         .returning();
       
       await this.invalidateAttendanceCache(employeeId, date);
+
+      // Trigger Notification
+      await this.notificationService.emit({
+        recipientId: employeeId,
+        actorId: adminId || undefined,
+        module: NotificationModule.ATTENDANCE,
+        category: NotificationCategory.STATUS_CHANGE,
+        title: 'Attendance Status Overridden',
+        message: `Your attendance status for ${date} was updated to ${status} by Admin.`,
+        entityType: 'attendance',
+        entityId: updated.id,
+        actionUrl: '/attendance',
+      });
+
       return updated;
     } else {
       const [created] = await this.db
@@ -717,7 +775,119 @@ export class AttendanceService implements OnModuleInit {
         .returning();
       
       await this.invalidateAttendanceCache(employeeId, date);
+
+      // Trigger Notification
+      await this.notificationService.emit({
+        recipientId: employeeId,
+        actorId: adminId || undefined,
+        module: NotificationModule.ATTENDANCE,
+        category: NotificationCategory.STATUS_CHANGE,
+        title: 'Attendance Entry Created',
+        message: `An attendance entry for ${date} was created with status ${status} by Admin.`,
+        entityType: 'attendance',
+        entityId: created.id,
+        actionUrl: '/attendance',
+      });
+
       return created;
+    }
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+
+  private async triggerLateNotifications(employeeId: string, checkInTime: string, settings: any, logId: string) {
+    try {
+      const [employee] = await this.db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, employeeId))
+        .limit(1);
+
+      if (!employee) return;
+
+      // 1. Notify Employee
+      await this.notificationService.emit({
+        recipientId: employeeId,
+        actorId: employeeId,
+        module: NotificationModule.ATTENDANCE,
+        category: NotificationCategory.REMINDER,
+        title: 'Late Check-In Alert',
+        message: `You checked in late today at ${checkInTime}. Office shift starts at ${settings.startTime}.`,
+        entityType: 'attendance',
+        entityId: logId,
+        actionUrl: '/attendance',
+      });
+
+      // 2. Notify Line Manager (if any)
+      if (employee.lineManagerId) {
+        await this.notificationService.emit({
+          recipientId: employee.lineManagerId,
+          actorId: employeeId,
+          module: NotificationModule.ATTENDANCE,
+          category: NotificationCategory.REMINDER,
+          title: 'Late Check-In Notification',
+          message: `${employee.fullNameEnglish} checked in late today at ${checkInTime}.`,
+          entityType: 'attendance',
+          entityId: logId,
+          actionUrl: '/attendance',
+        });
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to trigger late notifications: ${err.message}`);
+    }
+  }
+
+  private async triggerCorrectionSubmissionNotification(employeeId: string, log: any) {
+    try {
+      const [employee] = await this.db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, employeeId))
+        .limit(1);
+
+      if (!employee) return;
+
+      const recipientIds = employee.lineManagerId
+        ? [employee.lineManagerId]
+        : (
+            await this.db
+              .select({ id: employees.id })
+              .from(employees)
+              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            actorId: employeeId,
+            module: NotificationModule.ATTENDANCE,
+            category: NotificationCategory.APPROVAL,
+            title: 'Attendance Correction Request',
+            message: `${employee.fullNameEnglish} has submitted an attendance correction request for ${log.date}.`,
+            entityType: 'attendance',
+            entityId: log.id,
+            actionUrl: `/attendance/corrections`,
+            actions: [
+              {
+                label: 'Approve',
+                style: 'primary',
+                apiMethod: 'POST',
+                apiUrl: `/attendance/correction/approve/${log.id}`,
+              },
+              {
+                label: 'Reject',
+                style: 'destructive',
+                apiMethod: 'POST',
+                apiUrl: `/attendance/correction/reject/${log.id}`,
+                confirmMessage: 'Are you sure you want to reject this correction request?',
+              },
+            ],
+          })),
+        );
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to trigger correction notification: ${err.message}`);
     }
   }
 

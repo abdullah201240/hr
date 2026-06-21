@@ -1,11 +1,14 @@
 import { Logger, Inject } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import Redis from 'ioredis';
+import { REDIS_CLIENT } from '../../common/cache/cache.service';
 import { NOTIFICATION_QUEUE, NotificationService } from './notifications.service';
 import { DB_CONNECTION } from '../../db';
 import type { Database } from '../../db';
 import { notifications } from '../../db/schema/notifications';
 import { and, eq, lt } from 'drizzle-orm';
+import { NotificationModule, NotificationCategory, NotificationPriority } from './types/notification.types';
 
 @Processor(NOTIFICATION_QUEUE, { concurrency: 5 })
 export class NotificationProcessor extends WorkerHost {
@@ -14,6 +17,7 @@ export class NotificationProcessor extends WorkerHost {
   constructor(
     private readonly notificationService: NotificationService,
     @Inject(DB_CONNECTION) private readonly db: Database,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {
     super();
   }
@@ -25,7 +29,6 @@ export class NotificationProcessor extends WorkerHost {
       if (job.name === 'delayed-delivery') {
         const dto = job.data;
         this.logger.log(`Executing delayed notification delivery for recipient: ${dto.recipientId}`);
-        // Deliver bypassing quiet hours check
         return await this.notificationService.emit(dto, true);
       }
 
@@ -35,9 +38,17 @@ export class NotificationProcessor extends WorkerHost {
       }
 
       if (job.name === 'digest') {
-        this.logger.log(`Processing digest queue job for recipient: ${job.data.recipientId}`);
-        // Consolidate rate-limited notifications (mock/digest helper)
+        const dto = job.data;
+        this.logger.log(`Pushing rate-limited notification to digest queue for recipient: ${dto.recipientId}`);
+        await this.redis.rpush(`notif:digest:${dto.recipientId}`, JSON.stringify(dto));
+        // Keep TTL of digest queue to 7 days
+        await this.redis.expire(`notif:digest:${dto.recipientId}`, 604800);
         return { status: 'queued_for_digest' };
+      }
+
+      if (job.name === 'send-digests') {
+        this.logger.log('Processing consolidated notification digests...');
+        return await this.sendDigests();
       }
 
       this.logger.warn(`Unknown notification job name: ${job.name}`);
@@ -85,5 +96,43 @@ export class NotificationProcessor extends WorkerHost {
       archivedCount: archivedResult.length,
       deletedCount: deletedResult.length,
     };
+  }
+
+  /**
+   * Consolidate and emit daily digests for users who had rate-limited notifications
+   */
+  private async sendDigests(): Promise<any> {
+    const keys = await this.redis.keys('notif:digest:*');
+    let processedUsersCount = 0;
+
+    for (const key of keys) {
+      const recipientId = key.replace('notif:digest:', '');
+      const items = await this.redis.lrange(key, 0, -1);
+      
+      if (items.length > 0) {
+        // Clear list
+        await this.redis.del(key);
+        const dtos = items.map((item) => JSON.parse(item));
+        processedUsersCount++;
+
+        // Compile titles summary
+        const titles = dtos.map((d) => d.title).join(', ');
+        const truncatedTitles = titles.length > 150 ? `${titles.substring(0, 147)}...` : titles;
+
+        await this.notificationService.emit(
+          {
+            recipientId,
+            module: NotificationModule.ANNOUNCEMENTS,
+            category: NotificationCategory.SYSTEM, // Using SYSTEM as it is a system-generated summary digest
+            priority: NotificationPriority.NORMAL,
+            title: 'Daily Notification Digest',
+            message: `You missed ${dtos.length} notifications: ${truncatedTitles}`,
+          },
+          true, // Bypass preferences/rate limiting for direct digest delivery
+        );
+      }
+    }
+
+    return { processedUsersCount };
   }
 }

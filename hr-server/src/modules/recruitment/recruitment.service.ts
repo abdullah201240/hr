@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { eq, and, desc, asc, count } from 'drizzle-orm';
+import { eq, and, desc, asc, count, or } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   jobOpenings,
@@ -7,6 +7,7 @@ import {
   candidateStageHistories,
   onboardingHires,
   onboardingTasks,
+  employees,
 } from '../../db/schema';
 import {
   CreateJobOpeningDto,
@@ -17,12 +18,17 @@ import {
   GenerateOfferLetterDto,
   GenerateJoiningLetterDto,
 } from './dto/recruitment.dto';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 @Injectable()
 export class RecruitmentService {
   private readonly logger = new Logger(RecruitmentService.name);
 
-  constructor(@Inject(DB_CONNECTION) private readonly db: Database) {}
+  constructor(
+    @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   // ─── Job Openings CRUD ──────────────────────────────────────────────────────
 
@@ -221,6 +227,9 @@ export class RecruitmentService {
       }
 
       this.logger.log(`Candidate ${updated.name} stage updated to ${stage}`);
+
+      await this.triggerStageUpdateNotification(updated, stage);
+
       return updated;
     });
   }
@@ -237,7 +246,66 @@ export class RecruitmentService {
       .returning();
 
     if (!cand) throw new NotFoundException(`Candidate with ID "${id}" not found`);
+
+    await this.triggerInterviewScheduledNotification(cand, dto);
+
     return cand;
+  }
+
+  private async triggerStageUpdateNotification(cand: any, stage: string) {
+    try {
+      const recipientIds = (
+        await this.db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+      ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            module: NotificationModule.RECRUITMENT,
+            category: NotificationCategory.STATUS_CHANGE,
+            title: 'Candidate Stage Update',
+            message: `Candidate ${cand.name} has progressed to stage "${stage}" for role "${cand.role}".`,
+            actionUrl: `/recruitment`,
+            entityType: 'candidate',
+            entityId: cand.id,
+          })),
+        );
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to trigger candidate stage notification: ${err.message}`);
+    }
+  }
+
+  private async triggerInterviewScheduledNotification(cand: any, dto: ScheduleInterviewDto) {
+    try {
+      const recipientIds = (
+        await this.db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+      ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            module: NotificationModule.RECRUITMENT,
+            category: NotificationCategory.ASSIGNMENT,
+            title: 'Interview Scheduled',
+            message: `Interview scheduled for candidate ${cand.name} on ${dto.date} at ${dto.time} (${cand.interviewLocation}).`,
+            actionUrl: `/recruitment`,
+            entityType: 'candidate',
+            entityId: cand.id,
+          })),
+        );
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to trigger interview scheduled notification: ${err.message}`);
+    }
   }
 
   // ─── Documents Issuing ──────────────────────────────────────────────────────

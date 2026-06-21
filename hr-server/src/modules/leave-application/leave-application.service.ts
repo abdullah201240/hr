@@ -8,10 +8,12 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { eq, and, between, desc, asc, count, sum, inArray } from 'drizzle-orm';
+import { eq, and, between, desc, asc, count, sum, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
 import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments } from '../../db/schema';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 const approver = alias(employees, 'approver');
 import { CacheService } from '../../common/cache/cache.service';
@@ -37,6 +39,7 @@ export class LeaveApplicationService {
     private readonly cache: CacheService,
     @InjectQueue(LEAVE_APPLICATION_QUEUE)
     private readonly leaveQueue: Queue<CreateLeaveApplicationJobData | UpdateLeaveApplicationJobData>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // ─── Enqueue Create (async via BullMQ) ───────────────────────────────────
@@ -488,27 +491,27 @@ export class LeaveApplicationService {
 
   // ─── Update Status (Approve/Reject) ───────────────────────────────────────
   async updateStatus(id: string, approvedById: string, dto: UpdateLeaveApplicationStatusDto) {
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       const [app] = await tx
         .select()
         .from(leaveApplications)
         .where(eq(leaveApplications.id, id))
         .limit(1);
-
+ 
       if (!app) {
         throw new NotFoundException(`Leave application with ID "${id}" not found`);
       }
-
+ 
       if (app.status !== 'Pending') {
         throw new BadRequestException(`This application is already processed (Status: ${app.status})`);
       }
-
+ 
       const [leaveType] = await tx
         .select()
         .from(leaveTypes)
         .where(eq(leaveTypes.id, app.leaveTypeId))
         .limit(1);
-
+ 
       const updateData: Record<string, any> = {
         status: dto.status,
         approvedById: dto.status === 'Approved' ? approvedById : null,
@@ -516,16 +519,16 @@ export class LeaveApplicationService {
         rejectedAt: dto.status === 'Rejected' ? new Date() : null,
         rejectionReason: dto.status === 'Rejected' ? dto.rejectionReason || 'No reason provided' : null,
       };
-
+ 
       const [updated] = await tx
         .update(leaveApplications)
         .set(updateData)
         .where(eq(leaveApplications.id, id))
         .returning();
-
+ 
       const start = this.parseDateUTC(app.startDate);
       const startYear = start.getUTCFullYear();
-
+ 
       // ─── If Approved: Sync attendance logs ───
       if (dto.status === 'Approved') {
         const totalDays = app.days;
@@ -534,7 +537,7 @@ export class LeaveApplicationService {
           const currentDate = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
           dateStrings.push(this.getLocalDateStr(currentDate));
         }
-
+ 
         // Fetch existing logs in a single query
         const existingLogs = await tx
           .select()
@@ -545,12 +548,12 @@ export class LeaveApplicationService {
               inArray(attendanceLogs.date, dateStrings),
             ),
           );
-
+ 
         const existingLogsMap = new Map(existingLogs.map((log) => [log.date, log]));
-
+ 
         const toUpdateIds: string[] = [];
         const toInsert: any[] = [];
-
+ 
         for (const dateStr of dateStrings) {
           const existingLog = existingLogsMap.get(dateStr);
           if (existingLog) {
@@ -564,7 +567,7 @@ export class LeaveApplicationService {
             });
           }
         }
-
+ 
         if (toUpdateIds.length > 0) {
           await tx
             .update(attendanceLogs)
@@ -574,21 +577,39 @@ export class LeaveApplicationService {
             })
             .where(inArray(attendanceLogs.id, toUpdateIds));
         }
-
+ 
         if (toInsert.length > 0) {
           await tx.insert(attendanceLogs).values(toInsert);
         }
       }
-
+ 
       await this.invalidateCache(app.employeeId, startYear, id);
       this.logger.log(`Leave application ${id} status updated to ${dto.status} by ${approvedById}`);
-      return updated;
+      return { updated, app, leaveType };
     });
+
+    const { updated, app, leaveType } = result;
+
+    await this.notificationService.emit({
+      recipientId: app.employeeId,
+      actorId: approvedById,
+      module: NotificationModule.LEAVE,
+      category: dto.status === 'Approved' ? NotificationCategory.APPROVAL : NotificationCategory.REJECTION,
+      title: `Leave Application ${dto.status}`,
+      message: `Your leave request for ${app.days} day(s) of ${leaveType?.name || 'Leave'} has been ${dto.status.toLowerCase()}.${
+        dto.status === 'Rejected' && dto.rejectionReason ? ` Reason: ${dto.rejectionReason}` : ''
+      }`,
+      entityType: 'leave_application',
+      entityId: app.id,
+      actionUrl: `/leave-applications`,
+    });
+
+    return updated;
   }
 
   // ─── Cancel Leave Application ─────────────────────────────────────────────
   async cancel(id: string, employeeId: string, role: string) {
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       const [app] = await tx
         .select()
         .from(leaveApplications)
@@ -653,10 +674,52 @@ export class LeaveApplicationService {
           );
       }
 
+      const [leaveType] = await tx
+        .select()
+        .from(leaveTypes)
+        .where(eq(leaveTypes.id, app.leaveTypeId))
+        .limit(1);
+
+      const [applicant] = await tx
+        .select()
+        .from(employees)
+        .where(eq(employees.id, app.employeeId))
+        .limit(1);
+
       await this.invalidateCache(app.employeeId, startYear, id);
       this.logger.log(`Leave application ${id} cancelled by ${employeeId}`);
-      return updated;
+      return { updated, app, applicant, leaveType };
     });
+
+    const { updated, app, applicant, leaveType } = result;
+
+    // Emit Notification
+    const recipientIds = applicant.lineManagerId
+      ? [applicant.lineManagerId]
+      : (
+          await this.db
+            .select({ id: employees.id })
+            .from(employees)
+            .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+        ).map((r) => r.id);
+
+    if (recipientIds.length > 0) {
+      await this.notificationService.emitBulk(
+        recipientIds.map((recipientId) => ({
+          recipientId,
+          actorId: employeeId,
+          module: NotificationModule.LEAVE,
+          category: NotificationCategory.STATUS_CHANGE,
+          title: 'Leave Application Cancelled',
+          message: `${applicant.fullNameEnglish} has cancelled their leave request for ${app.days} day(s) of ${leaveType?.name || 'Leave'}.`,
+          entityType: 'leave_application',
+          entityId: app.id,
+          actionUrl: `/leave-applications`,
+        })),
+      );
+    }
+
+    return updated;
   }
 
   // ─── Edit & Resubmit Leave Application ─────────────────────────────────────

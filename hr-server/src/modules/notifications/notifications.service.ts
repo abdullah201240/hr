@@ -1,7 +1,8 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { eq, and, desc, lt, gt } from 'drizzle-orm';
+import { eq, and, desc, lt, gt, count } from 'drizzle-orm';
 import Redis from 'ioredis';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -21,7 +22,7 @@ import { NotificationModule, NotificationCategory } from './types/notification.t
 export const NOTIFICATION_QUEUE = 'notifications';
 
 @Injectable()
-export class NotificationService {
+export class NotificationService implements OnModuleInit {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     @InjectQueue(NOTIFICATION_QUEUE) private readonly queue: Queue,
@@ -32,7 +33,30 @@ export class NotificationService {
     private readonly preferences: PreferencesService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly httpAdapterHost: HttpAdapterHost,
   ) {}
+
+  async onModuleInit() {
+    // Register repeatable cleanup-expired job (Daily at midnight)
+    await this.queue.add(
+      'cleanup-expired',
+      {},
+      {
+        repeat: { pattern: '0 0 * * *' },
+        jobId: 'cleanup-expired-daily',
+      },
+    );
+
+    // Register repeatable send-digests job (Daily at 8 AM)
+    await this.queue.add(
+      'send-digests',
+      {},
+      {
+        repeat: { pattern: '0 8 * * *' },
+        jobId: 'send-digests-daily',
+      },
+    );
+  }
 
   // ─── Emit Pipeline ──────────────────────────────────────────────
 
@@ -71,28 +95,37 @@ export class NotificationService {
     // 4. Mark deduplication key
     await this.dedup.markEmitted(dto);
 
-    // 5. Persist
-    const [notification] = await this.db
-      .insert(notifications)
-      .values({
-        recipientId: dto.recipientId,
-        actorId: dto.actorId || null,
-        module: dto.module,
-        category: dto.category,
-        priority: dto.priority || 'normal',
-        title: dto.title,
-        message: dto.message,
-        entityType: dto.entityType || null,
-        entityId: dto.entityId || null,
-        actionUrl: dto.actionUrl || null,
-        actions: dto.actions || null,
-        metadata: dto.metadata || null,
-        dedupKey: this.dedup.resolveDedupKey(dto),
-        expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
-        isRead: false,
-        isArchived: false,
-      })
-      .returning();
+    // 5. Persist with unique key violation handling
+    let notification: any;
+    try {
+      const [inserted] = await this.db
+        .insert(notifications)
+        .values({
+          recipientId: dto.recipientId,
+          actorId: dto.actorId || null,
+          module: dto.module,
+          category: dto.category,
+          priority: dto.priority || 'normal',
+          title: dto.title,
+          message: dto.message,
+          entityType: dto.entityType || null,
+          entityId: dto.entityId || null,
+          actionUrl: dto.actionUrl || null,
+          actions: dto.actions || null,
+          metadata: dto.metadata || null,
+          dedupKey: this.dedup.resolveDedupKey(dto),
+          expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
+          isRead: false,
+          isArchived: false,
+        })
+        .returning();
+      notification = inserted;
+    } catch (dbErr: any) {
+      if (dbErr.code === '23505' || dbErr.message?.includes('unique') || dbErr.message?.includes('duplicate')) {
+        return null;
+      }
+      throw dbErr;
+    }
 
     // Increment unread count in Redis
     await this.redis.incr(`notif:unread:${dto.recipientId}`);
@@ -107,8 +140,11 @@ export class NotificationService {
    * Bulk notifications delivery wrapper
    */
   async emitBulk(dtos: EmitNotificationDto[]): Promise<void> {
-    // Process items in parallel
-    await Promise.all(dtos.map((dto) => this.emit(dto).catch(() => null)));
+    const chunkSize = 50;
+    for (let i = 0; i < dtos.length; i += chunkSize) {
+      const chunk = dtos.slice(i, i + chunkSize);
+      await Promise.all(chunk.map((dto) => this.emit(dto).catch(() => null)));
+    }
   }
 
   // ─── CRUD Operations ─────────────────────────────────────────────
@@ -177,8 +213,8 @@ export class NotificationService {
       return parseInt(cached, 10);
     }
 
-    const countResult = await this.db
-      .select()
+    const [result] = await this.db
+      .select({ count: count() })
       .from(notifications)
       .where(
         and(
@@ -188,9 +224,9 @@ export class NotificationService {
         )
       );
 
-    const count = countResult.length;
-    await this.redis.setex(`notif:unread:${recipientId}`, 3600, count.toString());
-    return count;
+    const countVal = result?.count || 0;
+    await this.redis.setex(`notif:unread:${recipientId}`, 3600, countVal.toString());
+    return countVal;
   }
 
   /**
@@ -318,8 +354,6 @@ export class NotificationService {
         )
       );
 
-    // Sync state
-    await this.findAll(recipientId, { isArchived: 'false' });
     return { success: true };
   }
 
@@ -392,26 +426,26 @@ export class NotificationService {
       { secret: this.configService.get<string>('jwt.accessTokenSecret') }
     );
 
-    // 3. Make internal local HTTP request
-    const port = this.configService.get<number>('app.port', 3000);
-    const url = `http://localhost:${port}/api${action.apiUrl}`;
+    // 3. Make internal local HTTP request in-process using Fastify Adapter
+    const instance = this.httpAdapterHost.httpAdapter.getInstance();
 
     try {
-      const response = await fetch(url, {
+      const response = await instance.inject({
         method: action.apiMethod,
+        url: `/api${action.apiUrl}`,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'content-type': 'application/json',
+          'authorization': `Bearer ${token}`,
         },
-        body: action.apiBody ? JSON.stringify(action.apiBody) : undefined,
+        payload: action.apiBody || undefined,
       });
 
-      const success = response.status >= 200 && response.status < 300;
+      const success = response.statusCode >= 200 && response.statusCode < 300;
       let responseBody: any = null;
       try {
-        responseBody = await response.json();
+        responseBody = typeof response.json === 'function' ? response.json() : JSON.parse(response.body);
       } catch {
-        responseBody = { status: response.status, statusText: response.statusText };
+        responseBody = { status: response.statusCode, statusText: response.statusMessage };
       }
 
       if (success) {
@@ -462,5 +496,31 @@ export class NotificationService {
       });
       return { success: false, error: errMsg };
     }
+  }
+
+  /**
+   * Expose helper to fetch all employee IDs for broadcasting (Issue 4)
+   */
+  async getAllEmployeeIds(): Promise<string[]> {
+    const list = await this.db.select({ id: employees.id }).from(employees);
+    return list.map((e) => e.id);
+  }
+
+  /**
+   * Helper to retrieve recent unread notifications for reconnection sync (Issue 6)
+   */
+  async getRecentUnread(recipientId: string, limit = 50) {
+    return this.db
+      .select()
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.recipientId, recipientId),
+          eq(notifications.isRead, false),
+          eq(notifications.isArchived, false),
+        )
+      )
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
   }
 }

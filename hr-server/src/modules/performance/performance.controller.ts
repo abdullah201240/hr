@@ -121,8 +121,10 @@ export class PerformanceController {
   @ApiOperation({ summary: 'Submit manager appraisal ratings and feedback for employee' })
   async submitManagerAppraisal(
     @Param('id') id: string,
+    @Req() req: any,
     @Body() dto: SubmitManagerAppraisalDto,
   ) {
-    return this.performanceService.submitManagerAppraisal(id, dto);
+    const managerId = req.user.id;
+    return this.performanceService.submitManagerAppraisal(id, dto, managerId);
   }
 }

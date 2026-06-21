@@ -17,6 +17,8 @@ import { DB_CONNECTION } from '../../db';
 import type { Database } from '../../db';
 import { notifications } from '../../db/schema/notifications';
 import { eq, and, gt, desc } from 'drizzle-orm';
+import { ModuleRef } from '@nestjs/core';
+import { NotificationService } from './notifications.service';
 
 interface AuthenticatedWebSocket extends WebSocket {
   employeeId: string;
@@ -42,6 +44,7 @@ export class NotificationGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly moduleRef: ModuleRef,
     @Inject(DB_CONNECTION) private readonly db: Database,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
@@ -49,7 +52,7 @@ export class NotificationGateway
   async afterInit() {
     this.logger.log('Notifications WebSocket Gateway Initialized');
 
-    this.pubClient = this.redis;
+    this.pubClient = this.redis.duplicate();
     this.subClient = this.redis.duplicate();
 
     await this.subClient.subscribe('notification_events');
@@ -147,7 +150,11 @@ export class NotificationGateway
     if (userSockets.length === 0) {
       this.localClients.delete(employeeId);
       // Record last seen key in Redis (expires in 7 days)
-      await this.redis.setex(`notif:last_seen:${employeeId}`, 604800, new Date().toISOString());
+      const nowStr = new Date().toISOString();
+      const existing = await this.redis.get(`notif:last_seen:${employeeId}`);
+      if (!existing || new Date(nowStr) > new Date(existing)) {
+        await this.redis.setex(`notif:last_seen:${employeeId}`, 604800, nowStr);
+      }
       this.logger.log(`Client fully disconnected from notifications: ${employeeId}`);
     } else {
       this.localClients.set(employeeId, userSockets);
@@ -167,24 +174,17 @@ export class NotificationGateway
 
     if (lastSeenStr) {
       const lastSeen = new Date(lastSeenStr);
+      const service = this.moduleRef.get(NotificationService, { strict: false });
       
-      // Select all notifications since lastSeen
-      const missedNotifications = await this.db
-        .select()
-        .from(notifications)
-        .where(
-          and(
-            eq(notifications.recipientId, employeeId),
-            gt(notifications.createdAt, lastSeen),
-            eq(notifications.isArchived, false)
-          )
-        )
-        .orderBy(desc(notifications.createdAt))
-        .limit(50);
+      // Delegate to NotificationService instead of direct DB query (Issue 6)
+      const missedNotifications = await service.getRecentUnread(employeeId, 50);
+      const filteredMissed = missedNotifications.filter(
+        (n) => n.createdAt.getTime() > lastSeen.getTime(),
+      );
 
-      if (missedNotifications.length > 0) {
+      if (filteredMissed.length > 0) {
         this.sendToClient(client, 'reconnect_sync', {
-          notifications: missedNotifications,
+          notifications: filteredMissed,
           lastSeenAt: lastSeenStr,
         });
       }

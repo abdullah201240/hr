@@ -17,6 +17,8 @@ import { CacheKeys } from '../../common/cache/cache-keys';
 import { DisburseDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 @Injectable()
 export class PayrollService implements OnModuleInit {
@@ -26,6 +28,7 @@ export class PayrollService implements OnModuleInit {
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly cache: CacheService,
     @InjectQueue('payroll') private readonly payrollQueue: Queue,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit() {
@@ -395,6 +398,9 @@ export class PayrollService implements OnModuleInit {
     // Queue background email distribution
     await this.payrollQueue.add('distribute-emails', { monthKey, cycleId: cycle.id });
 
+    // Trigger Notification
+    await this.triggerPayrollDistributionNotifications(cycle.id, monthKey);
+
     await this.invalidateCache(monthKey);
     return this.getOrCreateCycle(monthKey);
   }
@@ -452,8 +458,56 @@ export class PayrollService implements OnModuleInit {
         .where(eq(payrollCycles.id, cycle.id));
     });
 
+    // Trigger Notification
+    await this.triggerPayrollDisbursementNotifications(payslips, dto);
+
     await this.invalidateCache(dto.monthKey);
     return this.getOrCreateCycle(dto.monthKey);
+  }
+
+  private async triggerPayrollDistributionNotifications(cycleId: string, monthKey: string) {
+    try {
+      const payslips = await this.db
+        .select({
+          employeeId: employeePayslips.employeeId,
+          netPay: employeePayslips.netPay,
+        })
+        .from(employeePayslips)
+        .where(eq(employeePayslips.payrollCycleId, cycleId));
+
+      await this.notificationService.emitBulk(
+        payslips.map((slip) => ({
+          recipientId: slip.employeeId,
+          module: NotificationModule.PAYROLL,
+          category: NotificationCategory.SYSTEM,
+          title: 'Payslip Published',
+          message: `Your payslip for ${monthKey} has been published. Net Pay: ${slip.netPay} BDT.`,
+          actionUrl: '/payroll',
+          entityType: 'payroll_cycle',
+          entityId: cycleId,
+        })),
+      );
+    } catch (err: any) {
+      this.logger.error(`Failed to trigger payroll distribution notifications: ${err.message}`);
+    }
+  }
+
+  private async triggerPayrollDisbursementNotifications(payslips: any[], dto: DisburseDto) {
+    try {
+      await this.notificationService.emitBulk(
+        payslips.map((slip) => ({
+          recipientId: slip.employeeId,
+          module: NotificationModule.PAYROLL,
+          category: NotificationCategory.SYSTEM,
+          title: 'Salary Disbursed',
+          message: `Your salary for ${dto.monthKey} has been disbursed via ${dto.paymentMethod}. Net Pay: ${slip.netPay} BDT.`,
+          actionUrl: '/payroll',
+          entityType: 'disbursement',
+        })),
+      );
+    } catch (err: any) {
+      this.logger.error(`Failed to trigger payroll disbursement notifications: ${err.message}`);
+    }
   }
 
   // Sync / Recalculate Draft Cycle

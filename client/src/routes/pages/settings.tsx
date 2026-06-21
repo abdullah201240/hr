@@ -18,6 +18,7 @@ import {
   useUpdateLeaveTypeMutation,
 } from "@/hooks/useLeaveTypes"
 import type { LeaveType } from "@/types"
+import { NotificationPreferences } from "@/components/notifications/notification-preferences"
 
 export default function SettingsPage() {
   const [editingLeave, setEditingLeave] = useState<LeaveType | null>(null)
@@ -121,12 +122,13 @@ export default function SettingsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 shadow-none border border-border/40">
+        <TabsList className="grid w-full grid-cols-6 shadow-none border border-border/40">
           <TabsTrigger value="leave" className="text-xs">Leave Management</TabsTrigger>
           <TabsTrigger value="attendance" className="text-xs">Attendance Setup</TabsTrigger>
           <TabsTrigger value="office" className="text-xs">Office Hours</TabsTrigger>
           <TabsTrigger value="salary" className="text-xs">Salary Structure</TabsTrigger>
           <TabsTrigger value="appearance" className="text-xs">Theme</TabsTrigger>
+          <TabsTrigger value="notifications" className="text-xs">Notification Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="leave">
@@ -187,6 +189,10 @@ export default function SettingsPage() {
 
         <TabsContent value="appearance">
           <ThemeSettings />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <NotificationPreferences />
         </TabsContent>
       </Tabs>
 

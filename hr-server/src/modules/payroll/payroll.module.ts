@@ -4,6 +4,7 @@ import { PayrollService } from './payroll.service';
 import { PayrollController } from './payroll.controller';
 import { PayrollProcessor } from './payroll.processor';
 import { SalaryModule } from '../salary/salary.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { SalaryModule } from '../salary/salary.module';
       name: 'payroll',
     }),
     SalaryModule,
+    NotificationsModule,
   ],
   controllers: [PayrollController],
   providers: [PayrollService, PayrollProcessor],

@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, or } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { employeeKpis, employees, designations, departments, appraisalCycles, employeeAppraisals } from '../../db/schema';
 import {
@@ -13,6 +13,8 @@ import {
   SubmitManagerAppraisalDto
 } from './dto/performance.dto';
 import { KPI_CALCULATION_QUEUE } from '../queue/queue.module';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 const defaultKPITemplates = {
   engineer: [
@@ -37,6 +39,7 @@ export class PerformanceService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     @InjectQueue(KPI_CALCULATION_QUEUE) private readonly kpiCalculationQueue: Queue,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // --- Cycles Management ---
@@ -437,13 +440,15 @@ export class PerformanceService {
       .where(eq(employeeAppraisals.id, appraisalId))
       .returning();
 
+    await this.triggerSelfAppraisalSubmissionNotification(updated);
+
     return {
       appraisal: updated,
       kpis,
     };
   }
 
-  async submitManagerAppraisal(appraisalId: string, dto: SubmitManagerAppraisalDto) {
+  async submitManagerAppraisal(appraisalId: string, dto: SubmitManagerAppraisalDto, managerId?: string) {
     const [appraisal] = await this.db
       .select()
       .from(employeeAppraisals)
@@ -498,10 +503,61 @@ export class PerformanceService {
       .where(eq(employeeAppraisals.id, appraisalId))
       .returning();
 
+    await this.notificationService.emit({
+      recipientId: appraisal.employeeId,
+      actorId: managerId || undefined,
+      module: NotificationModule.PERFORMANCE,
+      category: NotificationCategory.STATUS_CHANGE,
+      title: 'Performance Appraisal Completed',
+      message: `Your manager has completed your performance appraisal. Final Score: ${roundedManagerScore}.`,
+      actionUrl: '/performance',
+      entityType: 'appraisal',
+      entityId: appraisal.id,
+    });
+
     return {
       appraisal: updated,
       kpis,
     };
+  }
+
+  private async triggerSelfAppraisalSubmissionNotification(appraisal: any) {
+    try {
+      const [employee] = await this.db
+        .select()
+        .from(employees)
+        .where(eq(employees.id, appraisal.employeeId))
+        .limit(1);
+
+      if (!employee) return;
+
+      const recipientIds = employee.lineManagerId
+        ? [employee.lineManagerId]
+        : (
+            await this.db
+              .select({ id: employees.id })
+              .from(employees)
+              .where(or(eq(employees.role, 'admin'), eq(employees.role, 'hr')))
+          ).map((r) => r.id);
+
+      if (recipientIds.length > 0) {
+        await this.notificationService.emitBulk(
+          recipientIds.map((recipientId) => ({
+            recipientId,
+            actorId: appraisal.employeeId,
+            module: NotificationModule.PERFORMANCE,
+            category: NotificationCategory.ASSIGNMENT,
+            title: 'Performance Self-Appraisal Submitted',
+            message: `${employee.fullNameEnglish} has submitted their performance self-appraisal. Please review it.`,
+            actionUrl: `/performance`,
+            entityType: 'appraisal',
+            entityId: appraisal.id,
+          })),
+        );
+      }
+    } catch (err: any) {
+      // Ignore
+    }
   }
 
   async getCycleAppraisals(cycleId: string) {
