@@ -29,8 +29,10 @@ export const leaveApplications = pgTable(
     endDate: date('end_date').notNull(),
     days: integer('days').notNull(),
     reason: text('reason').default('').notNull(),
-    status: varchar('status', { length: 20 }).default('Pending').notNull(), // 'Pending', 'Approved', 'Rejected'
+    status: varchar('status', { length: 20 }).default('Pending').notNull(), // 'Pending', 'Pending_2nd', 'Approved', 'Rejected'
 
+    firstApprovedById: uuid('first_approved_by_id').references(() => employees.id, { onDelete: 'set null' }),
+    firstApprovedAt: timestamp('first_approved_at', { withTimezone: true }),
     approvedById: uuid('approved_by_id').references(() => employees.id, { onDelete: 'set null' }),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     rejectedAt: timestamp('rejected_at', { withTimezone: true }),
@@ -56,6 +58,11 @@ export const leaveApplicationsRelations = relations(
     leaveType: one(leaveTypes, {
       fields: [leaveApplications.leaveTypeId],
       references: [leaveTypes.id],
+    }),
+    firstApprovedBy: one(employees, {
+      fields: [leaveApplications.firstApprovedById],
+      references: [employees.id],
+      relationName: 'firstApprovedApplications',
     }),
     approvedBy: one(employees, {
       fields: [leaveApplications.approvedById],

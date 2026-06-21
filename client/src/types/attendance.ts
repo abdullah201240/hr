@@ -14,6 +14,7 @@ export interface AttendanceSettings {
   halfDayThreshold: number;
   weeklyHolidays: string[];
   lateRules: LateRule[];
+  twoStepLeaveThresholdDays: number;
 }
 
 export interface Holiday {
@@ -34,6 +35,7 @@ export interface UpdateAttendanceSettingsPayload {
   halfDayThreshold?: number;
   weeklyHolidays?: string[];
   lateRules?: LateRule[];
+  twoStepLeaveThresholdDays?: number;
 }
 
 export interface CreateHolidayPayload {

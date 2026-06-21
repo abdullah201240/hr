@@ -12,7 +12,7 @@ import { Queue } from 'bullmq';
 import { eq, and, between, desc, asc, count, sum, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
-import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments, rolePermissions, permissions } from '../../db/schema';
+import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments, rolePermissions, permissions, attendanceSettings } from '../../db/schema';
 import { NotificationService } from '../notifications/notifications.service';
 import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
@@ -363,6 +363,7 @@ export class LeaveApplicationService {
         approvedByName: approver.fullNameEnglish,
         approvedAt: leaveApplications.approvedAt,
         rejectedAt: leaveApplications.rejectedAt,
+        lineManagerId: employees.lineManagerId,
       })
       .from(leaveApplications)
       .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
@@ -462,6 +463,7 @@ export class LeaveApplicationService {
           approvedByName: approver.fullNameEnglish,
           approvedAt: leaveApplications.approvedAt,
           rejectedAt: leaveApplications.rejectedAt,
+          lineManagerId: employees.lineManagerId,
         })
         .from(leaveApplications)
         .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
@@ -516,46 +518,103 @@ export class LeaveApplicationService {
         throw new NotFoundException(`Leave application with ID "${id}" not found`);
       }
 
-      if (requestingUser.customRoleId) {
-        // User has a custom role; guard has already verified leave:approve permission
+      const [applicant] = await tx
+        .select()
+        .from(employees)
+        .where(eq(employees.id, app.employeeId))
+        .limit(1);
+
+      if (!applicant) {
+        throw new NotFoundException(`Applicant employee not found`);
       }
 
-      if (app.status !== 'Pending') {
-        throw new BadRequestException(`This application is already processed (Status: ${app.status})`);
+      let [settings] = await tx
+        .select()
+        .from(attendanceSettings)
+        .where(eq(attendanceSettings.id, 'default'))
+        .limit(1);
+      const threshold = settings?.twoStepLeaveThresholdDays ?? 2;
+
+      const isLineManager = applicant.lineManagerId === approvedById;
+      const hasApprovePerm = requestingUser.permissions?.has('leave:approve') || !requestingUser.customRoleId;
+
+      const updateData: Record<string, any> = {};
+
+      if (dto.status === 'Approved') {
+        if (app.status === 'Pending') {
+          const needsTwoStep = app.days >= threshold && applicant.lineManagerId;
+
+          if (needsTwoStep) {
+            // First step approval by Line Manager
+            if (!isLineManager) {
+              throw new ForbiddenException('Only the Line Manager can perform the first step of approval');
+            }
+            updateData.status = 'Pending_2nd';
+            updateData.firstApprovedById = approvedById;
+            updateData.firstApprovedAt = new Date();
+          } else {
+            // Single step approval (either line manager or leave:approve)
+            if (!isLineManager && !hasApprovePerm) {
+              throw new ForbiddenException('You do not have permission to approve this leave request');
+            }
+            updateData.status = 'Approved';
+            updateData.approvedById = approvedById;
+            updateData.approvedAt = new Date();
+          }
+        } else if (app.status === 'Pending_2nd') {
+          // Second step approval
+          if (!hasApprovePerm) {
+            throw new ForbiddenException('Only users with leave:approve permission can perform the second step of approval');
+          }
+          updateData.status = 'Approved';
+          updateData.approvedById = approvedById;
+          updateData.approvedAt = new Date();
+        } else {
+          throw new BadRequestException(`This application is already processed (Status: ${app.status})`);
+        }
+      } else if (dto.status === 'Rejected') {
+        // Rejecting a leave request
+        // Either line manager (if Pending) or leave:approve (if Pending or Pending_2nd)
+        if (app.status === 'Pending') {
+          if (!isLineManager && !hasApprovePerm) {
+            throw new ForbiddenException('You do not have permission to reject this leave request');
+          }
+        } else if (app.status === 'Pending_2nd') {
+          if (!hasApprovePerm) {
+            throw new ForbiddenException('Only users with leave:approve permission can reject this leave request');
+          }
+        } else {
+          throw new BadRequestException(`This application is already processed (Status: ${app.status})`);
+        }
+        updateData.status = 'Rejected';
+        updateData.rejectedAt = new Date();
+        updateData.rejectionReason = dto.rejectionReason || 'No reason provided';
       }
- 
+
       const [leaveType] = await tx
         .select()
         .from(leaveTypes)
         .where(eq(leaveTypes.id, app.leaveTypeId))
         .limit(1);
- 
-      const updateData: Record<string, any> = {
-        status: dto.status,
-        approvedById: dto.status === 'Approved' ? approvedById : null,
-        approvedAt: dto.status === 'Approved' ? new Date() : null,
-        rejectedAt: dto.status === 'Rejected' ? new Date() : null,
-        rejectionReason: dto.status === 'Rejected' ? dto.rejectionReason || 'No reason provided' : null,
-      };
- 
+
       const [updated] = await tx
         .update(leaveApplications)
         .set(updateData)
         .where(eq(leaveApplications.id, id))
         .returning();
- 
+
       const start = this.parseDateUTC(app.startDate);
       const startYear = start.getUTCFullYear();
- 
+
       // ─── If Approved: Sync attendance logs ───
-      if (dto.status === 'Approved') {
+      if (updateData.status === 'Approved') {
         const totalDays = app.days;
         const dateStrings: string[] = [];
         for (let i = 0; i < totalDays; i++) {
           const currentDate = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
           dateStrings.push(this.getLocalDateStr(currentDate));
         }
- 
+
         // Fetch existing logs in a single query
         const existingLogs = await tx
           .select()
@@ -566,12 +625,12 @@ export class LeaveApplicationService {
               inArray(attendanceLogs.date, dateStrings),
             ),
           );
- 
+
         const existingLogsMap = new Map(existingLogs.map((log) => [log.date, log]));
- 
+
         const toUpdateIds: string[] = [];
         const toInsert: any[] = [];
- 
+
         for (const dateStr of dateStrings) {
           const existingLog = existingLogsMap.get(dateStr);
           if (existingLog) {
@@ -585,7 +644,7 @@ export class LeaveApplicationService {
             });
           }
         }
- 
+
         if (toUpdateIds.length > 0) {
           await tx
             .update(attendanceLogs)
@@ -595,32 +654,72 @@ export class LeaveApplicationService {
             })
             .where(inArray(attendanceLogs.id, toUpdateIds));
         }
- 
+
         if (toInsert.length > 0) {
           await tx.insert(attendanceLogs).values(toInsert);
         }
       }
- 
+
       await this.invalidateCache(app.employeeId, startYear, id);
-      this.logger.log(`Leave application ${id} status updated to ${dto.status} by ${approvedById}`);
-      return { updated, app, leaveType };
+      this.logger.log(`Leave application ${id} status updated to ${updateData.status} by ${approvedById}`);
+      return { updated, app, leaveType, resultingStatus: updateData.status, applicant };
     });
 
-    const { updated, app, leaveType } = result;
+    const { updated, app, leaveType, resultingStatus, applicant } = result;
 
-    await this.notificationService.emit({
-      recipientId: app.employeeId,
-      actorId: approvedById,
-      module: NotificationModule.LEAVE,
-      category: dto.status === 'Approved' ? NotificationCategory.APPROVAL : NotificationCategory.REJECTION,
-      title: `Leave Application ${dto.status}`,
-      message: `Your leave request for ${app.days} day(s) of ${leaveType?.name || 'Leave'} has been ${dto.status.toLowerCase()}.${
-        dto.status === 'Rejected' && dto.rejectionReason ? ` Reason: ${dto.rejectionReason}` : ''
-      }`,
-      entityType: 'leave_application',
-      entityId: app.id,
-      actionUrl: `/leave-applications`,
-    });
+    if (resultingStatus === 'Pending_2nd') {
+      // Notify employee
+      await this.notificationService.emit({
+        recipientId: app.employeeId,
+        actorId: approvedById,
+        module: NotificationModule.LEAVE,
+        category: NotificationCategory.STATUS_CHANGE,
+        title: `Leave 1st Step Approved`,
+        message: `Your leave request for ${app.days} day(s) of ${leaveType?.name || 'Leave'} has been approved by your Line Manager and is now awaiting second approval.`,
+        entityType: 'leave_application',
+        entityId: app.id,
+        actionUrl: `/leave-applications`,
+      });
+
+      // Notify authorized role users (who have leave:approve)
+      const adminRecipients = await this.db
+        .select({ id: employees.id })
+        .from(employees)
+        .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+        .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+        .where(eq(permissions.resource, 'leave'));
+
+      if (adminRecipients.length > 0) {
+        await this.notificationService.emitBulk(
+          adminRecipients.map((admin) => ({
+            recipientId: admin.id,
+            actorId: approvedById,
+            module: NotificationModule.LEAVE,
+            category: NotificationCategory.STATUS_CHANGE,
+            title: `Awaiting 2nd Approval`,
+            message: `A leave request of ${app.days} day(s) for ${applicant.fullNameEnglish} is approved by Line Manager and awaits 2nd approval.`,
+            entityType: 'leave_application',
+            entityId: app.id,
+            actionUrl: `/leave-applications`,
+          })),
+        );
+      }
+    } else {
+      // Final Approve or Reject
+      await this.notificationService.emit({
+        recipientId: app.employeeId,
+        actorId: approvedById,
+        module: NotificationModule.LEAVE,
+        category: resultingStatus === 'Approved' ? NotificationCategory.APPROVAL : NotificationCategory.REJECTION,
+        title: `Leave Application ${resultingStatus}`,
+        message: `Your leave request for ${app.days} day(s) of ${leaveType?.name || 'Leave'} has been ${resultingStatus.toLowerCase()}.${
+          resultingStatus === 'Rejected' && dto.rejectionReason ? ` Reason: ${dto.rejectionReason}` : ''
+        }`,
+        entityType: 'leave_application',
+        entityId: app.id,
+        actionUrl: `/leave-applications`,
+      });
+    }
 
     return updated;
   }

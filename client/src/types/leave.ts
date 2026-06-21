@@ -84,7 +84,7 @@ export interface LeaveApplication {
   endDate: string;
   days: number;
   reason: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: 'Pending' | 'Pending_2nd' | 'Approved' | 'Rejected';
   attachments: Attachment[];
   createdAt: string;
   employeeName: string;
@@ -130,7 +130,7 @@ export interface LeaveApplicationQuery {
   page?: number;
   limit?: number;
   search?: string;
-  status?: 'Pending' | 'Approved' | 'Rejected';
+  status?: 'Pending' | 'Pending_2nd' | 'Approved' | 'Rejected';
   leaveTypeId?: string;
   employeeId?: string;
   sortBy?: string;

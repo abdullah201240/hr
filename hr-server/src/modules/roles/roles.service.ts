@@ -1,7 +1,7 @@
 import { Injectable, Inject, OnModuleInit, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DB_CONNECTION, type Database } from '../../db';
-import { permissions, customRoles, rolePermissions, employees } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { permissions, customRoles, rolePermissions, employees, leaveApplications } from '../../db/schema';
+import { eq, and } from 'drizzle-orm';
 
 // Predefined set of resources and actions for seeding
 export interface PermissionSeed {
@@ -288,5 +288,18 @@ export class RolesService implements OnModuleInit {
       .where(eq(rolePermissions.roleKey, customRoleId));
 
     return new Set(list.map(p => `${p.resource}:${p.action}`));
+  }
+
+  async isLineManagerForLeave(userId: string, leaveId: string): Promise<boolean> {
+    const [result] = await this.db
+      .select({
+        lineManagerId: employees.lineManagerId,
+      })
+      .from(leaveApplications)
+      .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
+      .where(eq(leaveApplications.id, leaveId))
+      .limit(1);
+
+    return result ? result.lineManagerId === userId : false;
   }
 }

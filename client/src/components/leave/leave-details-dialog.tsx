@@ -29,6 +29,8 @@ interface LeaveApplicationDetail {
   approvedAt?: string
   rejectedAt?: string
   createdAt?: string
+  firstApprovedAt?: string
+  lineManagerId?: string
   attachments?: Array<{ id: string; title: string; fileName: string; fileUrl: string }>
 }
 
@@ -115,33 +117,48 @@ export function LeaveDetailsDialog({
   if (!selectedLeave) return null
 
   const getApprovalHistory = () => {
-    const history = [
-      { sl: 1, activityBy: "Sadek Ahmed", time: "21-05-2026 11:11 AM", type: "First Approved", remark: "" },
-      { sl: 2, activityBy: "Emdadul Kabir Siddique", time: "21-05-2026 11:23 AM", type: "Second Approved", remark: "" }
-    ]
+    const history = []
+
+    if (selectedLeave.status === "Pending_2nd" || selectedLeave.firstApprovedAt) {
+      history.push({
+        sl: 1,
+        activityBy: "Line Manager",
+        time: selectedLeave.firstApprovedAt ? formatDateTimeDMY(selectedLeave.firstApprovedAt) : "Just now",
+        type: "Line Manager Approved (1st Step)",
+        remark: ""
+      })
+    }
 
     if (selectedLeave.status === "Approved") {
       history.push({
-        sl: 3,
+        sl: history.length + 1,
         activityBy: selectedLeave.approvedByName || "Admin",
-        time: selectedLeave.approvedAt ? formatDateTimeDMY(selectedLeave.approvedAt) : "12-06-2026 12:20 PM",
+        time: selectedLeave.approvedAt ? formatDateTimeDMY(selectedLeave.approvedAt) : "Just now",
         type: "Final Approved",
         remark: ""
       })
     } else if (selectedLeave.status === "Rejected") {
       history.push({
-        sl: 3,
+        sl: history.length + 1,
         activityBy: selectedLeave.approvedByName || "Admin",
-        time: selectedLeave.rejectedAt ? formatDateTimeDMY(selectedLeave.rejectedAt) : "12-06-2026 12:20 PM",
+        time: selectedLeave.rejectedAt ? formatDateTimeDMY(selectedLeave.rejectedAt) : "Just now",
         type: "Rejected",
         remark: selectedLeave.rejectionReason || "No reason provided"
       })
-    } else {
+    } else if (selectedLeave.status === "Pending_2nd") {
       history.push({
-        sl: 3,
+        sl: history.length + 1,
         activityBy: "—",
         time: "—",
         type: "Pending Final Approval",
+        remark: ""
+      })
+    } else {
+      history.push({
+        sl: 1,
+        activityBy: "—",
+        time: "—",
+        type: "Awaiting Line Manager Approval",
         remark: ""
       })
     }
@@ -252,9 +269,10 @@ export function LeaveDetailsDialog({
                       <span className={
                         selectedLeave.status === "Approved" ? "font-bold text-emerald-700" :
                         selectedLeave.status === "Pending" ? "font-bold text-amber-600" :
+                        selectedLeave.status === "Pending_2nd" ? "font-bold text-sky-600" :
                         "font-bold text-rose-600"
                       }>
-                        {selectedLeave.status}
+                        {selectedLeave.status === "Pending_2nd" ? "Pending 2nd Step" : selectedLeave.status}
                       </span>
                     </td>
                   </tr>
@@ -345,31 +363,45 @@ export function LeaveDetailsDialog({
         </div>
 
         <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 mt-4">
-          {selectedLeave && selectedLeave.status === "Pending" && (user?.permissions?.includes("leave:approve")) && (
-            <>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  onApprove(selectedLeave.id)
-                  onClose()
-                }}
-                className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-sm transition-colors"
-              >
-                Approve
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onReject(selectedLeave.id)
-                  onClose()
-                }}
-                className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10 shadow-sm transition-colors"
-              >
-                Reject
-              </Button>
-            </>
+          {selectedLeave && (
+            (() => {
+              const isPending1st = selectedLeave.status === "Pending";
+              const isPending2nd = selectedLeave.status === "Pending_2nd";
+              const isLineManager = selectedLeave.lineManagerId === user?.id;
+              const hasApprovePerm = user?.permissions?.includes("leave:approve");
+
+              const canAction = (isPending1st && (isLineManager || (!selectedLeave.lineManagerId && hasApprovePerm))) ||
+                                (isPending2nd && hasApprovePerm);
+
+              if (!canAction) return null;
+
+              return (
+                <>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      onApprove(selectedLeave.id)
+                      onClose()
+                    }}
+                    className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-sm transition-colors"
+                  >
+                    {isPending2nd ? "Approve (2nd Step)" : "Approve"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onReject(selectedLeave.id)
+                      onClose()
+                    }}
+                    className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10 shadow-sm transition-colors"
+                  >
+                    Reject
+                  </Button>
+                </>
+              );
+            })()
           )}
           
           <Button

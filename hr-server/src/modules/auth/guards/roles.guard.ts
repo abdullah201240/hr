@@ -55,6 +55,15 @@ export class RolesGuard implements CanActivate {
       const hasAny = requiredPermissions.some(p => userPermissions.has(p));
       if (hasAny) return true;
 
+      // Special check: If leave:approve is required and user is the Line Manager of the applicant, allow.
+      if (requiredPermissions.includes('leave:approve')) {
+        const reqId = req.params.id;
+        if (reqId) {
+          const isLineManager = await this.rolesService.isLineManagerForLeave(user.id, reqId);
+          if (isLineManager) return true;
+        }
+      }
+
       throw new ForbiddenException(
         `Access denied: lacks required permission [${requiredPermissions.join(', ')}]`,
       );

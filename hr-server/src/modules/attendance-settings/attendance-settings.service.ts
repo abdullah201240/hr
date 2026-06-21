@@ -89,6 +89,8 @@ export class AttendanceSettingsService {
         updateData.weeklyHolidays = dto.weeklyHolidays;
       if (dto.lateRules !== undefined)
         updateData.lateRules = dto.lateRules;
+      if (dto.twoStepLeaveThresholdDays !== undefined)
+        updateData.twoStepLeaveThresholdDays = dto.twoStepLeaveThresholdDays;
 
       const [updated] = await tx
         .update(attendanceSettings)

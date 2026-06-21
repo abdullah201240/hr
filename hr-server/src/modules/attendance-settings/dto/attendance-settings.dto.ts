@@ -69,6 +69,12 @@ export class UpdateAttendanceSettingsDto {
   @IsOptional()
   @IsArray()
   lateRules?: Array<{ minMinutes: number; maxMinutes: number; penalty: string }>;
+
+  @ApiPropertyOptional({ example: 2 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  twoStepLeaveThresholdDays?: number;
 }
 
 // ─── Holiday DTOs ────────────────────────────────────────────────────────

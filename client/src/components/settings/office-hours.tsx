@@ -13,6 +13,7 @@ import {
   Loader2,
   Plus,
   X,
+  ShieldCheck,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
@@ -32,6 +33,7 @@ interface OfficeSettings {
   lateThreshold: number
   halfDayThreshold: number
   lateRules: LateRule[]
+  twoStepLeaveThresholdDays: number
 }
 
 const DEFAULT_SETTINGS: OfficeSettings = {
@@ -47,6 +49,7 @@ const DEFAULT_SETTINGS: OfficeSettings = {
     { minMinutes: 61, maxMinutes: 120, penalty: '2 Hours Basic Salary Deduction' },
     { minMinutes: 121, maxMinutes: 240, penalty: 'Half-Day Leave Deduction or Equivalent Basic Salary Deduction' }
   ],
+  twoStepLeaveThresholdDays: 2,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -88,6 +91,7 @@ export function OfficeHours() {
         lateThreshold: d.lateThreshold || DEFAULT_SETTINGS.lateThreshold,
         halfDayThreshold: d.halfDayThreshold || DEFAULT_SETTINGS.halfDayThreshold,
         lateRules: d.lateRules || DEFAULT_SETTINGS.lateRules,
+        twoStepLeaveThresholdDays: d.twoStepLeaveThresholdDays ?? DEFAULT_SETTINGS.twoStepLeaveThresholdDays,
       })
     }
   }, [settingsQuery.data])
@@ -118,6 +122,10 @@ export function OfficeHours() {
 
     if (settings.lateThreshold <= 0) {
       errors.push("Late threshold must be positive.")
+    }
+
+    if (settings.twoStepLeaveThresholdDays <= 0) {
+      errors.push("Two-step threshold days must be positive.")
     }
 
     return {
@@ -151,11 +159,12 @@ export function OfficeHours() {
       lateThreshold: settings.lateThreshold,
       halfDayThreshold: settings.halfDayThreshold,
       lateRules: settings.lateRules,
+      twoStepLeaveThresholdDays: settings.twoStepLeaveThresholdDays,
     }
 
     updateSettingsMut.mutate(payload, {
       onSuccess: () => {
-        toast.success("Office settings saved!", {
+        toast.success("Office & Leave settings saved!", {
           description: `Office hours: ${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)} (${formatDuration(validation.workMinutes)} working)`,
         })
       },
@@ -411,6 +420,37 @@ export function OfficeHours() {
                 color="red"
                 rule="No clock-in recorded for the day"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── 2-Step Leave Verification Card ── */}
+        <Card className="shadow-none border-border/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              2-Step Leave Verification
+            </CardTitle>
+            <CardDescription>
+              Configure leave duration that requires double approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">
+                Threshold (Days)
+              </Label>
+              <Input
+                type="number"
+                value={settings.twoStepLeaveThresholdDays}
+                onChange={(e) => updateField("twoStepLeaveThresholdDays", parseInt(e.target.value) || 1)}
+                min={1}
+                max={365}
+                className="h-10"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Leaves with a duration of {settings.twoStepLeaveThresholdDays} days or more will require 2nd level of approval (from HR/Admins) after the Line Manager's initial approval.
+              </p>
             </div>
           </CardContent>
         </Card>

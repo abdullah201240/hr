@@ -29,7 +29,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ShieldCheck,
 } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Swal from "sweetalert2"
 import { toast } from "sonner"
 import {
@@ -89,6 +91,8 @@ interface LeaveApplicationDetail {
   approvedAt?: string
   rejectedAt?: string
   createdAt?: string
+  firstApprovedAt?: string
+  lineManagerId?: string
   attachments?: Array<{ id: string; title: string; fileName: string; fileUrl: string }>
 }
 
@@ -151,16 +155,21 @@ export default function LeavePage() {
     setSelectedLeave(null)
   }
 
+  // Tab state: "all" or "second_approval"
+  const [activeTab, setActiveTab] = useState<string>("all")
+
   // Build query params for server-side filtering/pagination
   const queryParams = useMemo(() => ({
     page,
     limit: pageSize,
     search: debouncedSearch || undefined,
-    status: statusFilter !== "All" ? (statusFilter as "Pending" | "Approved" | "Rejected") : undefined,
+    status: activeTab === "second_approval"
+      ? "Pending_2nd"
+      : (statusFilter !== "All" ? (statusFilter as any) : undefined),
     leaveTypeId: leaveTypeFilter !== "all" ? leaveTypeFilter : undefined,
     sortBy,
     sortOrder,
-  }), [page, pageSize, debouncedSearch, statusFilter, leaveTypeFilter, sortBy, sortOrder])
+  }), [page, pageSize, debouncedSearch, statusFilter, leaveTypeFilter, sortBy, sortOrder, activeTab])
 
   // API Queries & Mutations
   const { data: listResponse, isLoading, isFetching } = useLeaveApplicationsQuery(queryParams)
@@ -270,35 +279,49 @@ export default function LeavePage() {
       </div>
 
       {/* Main List Container */}
-      <div className="space-y-4">
-        {/* Search, Filter controls */}
-        <div className="flex flex-col gap-3">
-          {/* Row 1: Search + Status + Leave Type */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, type, or reason..."
-                className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors text-xs h-9"
-                value={searchTerm}
-                onChange={e => handleSearchChange(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Select value={statusFilter} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-36 text-xs h-9 bg-transparent border-border/60">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All" className="text-xs">All Status</SelectItem>
-                  <SelectItem value="Pending" className="text-xs">Pending Only</SelectItem>
-                  <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
-                  <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setPage(1); }} className="space-y-4">
+        {user?.permissions?.includes("leave:approve") && (
+          <TabsList className="grid w-full grid-cols-2 max-w-[400px] border border-border/40 bg-transparent p-0">
+            <TabsTrigger value="all" className="text-xs h-9">All Leaves</TabsTrigger>
+            <TabsTrigger value="second_approval" className="text-xs h-9 flex items-center gap-2">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Awaiting 2nd Approval
+            </TabsTrigger>
+          </TabsList>
+        )}
+
+        <div className="space-y-4">
+          {/* Search, Filter controls */}
+          <div className="flex flex-col gap-3">
+            {/* Row 1: Search + Status + Leave Type */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, type, or reason..."
+                  className="pl-9 bg-transparent border-border/60 hover:border-border transition-colors text-xs h-9"
+                  value={searchTerm}
+                  onChange={e => handleSearchChange(e.target.value)}
+                />
+              </div>
+              
+              {activeTab !== "second_approval" && (
+                <div className="flex items-center gap-2">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <Select value={statusFilter} onValueChange={handleStatusChange}>
+                    <SelectTrigger className="w-36 text-xs h-9 bg-transparent border-border/60">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All" className="text-xs">All Status</SelectItem>
+                      <SelectItem value="Pending" className="text-xs">Awaiting Line Manager</SelectItem>
+                      <SelectItem value="Pending_2nd" className="text-xs">Awaiting 2nd Approval</SelectItem>
+                      <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
+                      <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
             <Select value={leaveTypeFilter} onValueChange={handleLeaveTypeChange}>
               <SelectTrigger className="w-44 text-xs h-9 bg-transparent border-border/60">
@@ -420,9 +443,17 @@ export default function LeavePage() {
                     <TableCell className="py-3">
                       <div>
                         <Badge
-                          className={req.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : req.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
+                          className={
+                            req.status === "Approved"
+                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10"
+                              : req.status === "Pending"
+                              ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10"
+                              : req.status === "Pending_2nd"
+                              ? "bg-sky-500/10 text-sky-600 border-sky-500/20 hover:bg-sky-500/10"
+                              : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"
+                          }
                         >
-                          {req.status}
+                          {req.status === "Pending_2nd" ? "Pending 2nd Step" : req.status}
                         </Badge>
                         {req.status === "Rejected" && req.rejectionReason && (
                           <p className="text-[9px] text-rose-500 font-medium max-w-[120px] truncate" title={req.rejectionReason}>
@@ -444,32 +475,47 @@ export default function LeavePage() {
                           <Eye className="h-4 w-4" />
                         </Button>
 
-                        {req.status === "Pending" ? (
-                          (user?.permissions?.includes("leave:approve")) ? (
-                            <>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handleApprove(req.id)}
-                                className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleReject(req.id)}
-                                className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Pending</span>
-                          )
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Processed</span>
-                        )}
+                        {(() => {
+                          const isPending1st = req.status === "Pending";
+                          const isPending2nd = req.status === "Pending_2nd";
+                          const isLineManager = (req as any).lineManagerId === user?.id;
+                          const hasApprovePerm = user?.permissions?.includes("leave:approve");
+
+                          const canAction = (isPending1st && (isLineManager || (!(req as any).lineManagerId && hasApprovePerm))) ||
+                                            (isPending2nd && hasApprovePerm);
+
+                          if (isPending1st || isPending2nd) {
+                            if (canAction) {
+                              return (
+                                <>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleApprove(req.id)}
+                                    className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                                  >
+                                    {isPending2nd ? "Approve (2nd)" : "Approve"}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleReject(req.id)}
+                                    className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <span className="text-xs text-muted-foreground italic">
+                                  {isPending1st ? "Awaiting Line Mgr" : "Awaiting 2nd Step"}
+                                </span>
+                              );
+                            }
+                          }
+                          return <span className="text-xs text-muted-foreground italic">Processed</span>;
+                        })()}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -550,7 +596,8 @@ export default function LeavePage() {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </Tabs>
 
       {/* Leave Details Dialog */}
       <LeaveDetailsDialog

@@ -46,6 +46,9 @@ export const attendanceSettings = pgTable('attendance_settings', {
     ])
     .notNull()
     .$type<Array<{ minMinutes: number; maxMinutes: number; penalty: string }>>(),
+
+  // Two-step leave approval threshold days
+  twoStepLeaveThresholdDays: integer('two_step_leave_threshold_days').default(2).notNull(),
 });
 
 // ─── Holidays ──────────────────────────────────────────────────────────────
