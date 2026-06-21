@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -60,29 +59,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseIS
 
 export default function TasksPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
 
-  // Real-time collaborative sync via WebSocket
-  useEffect(() => {
-    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3001/ws";
-    const socket = new WebSocket(wsUrl);
-
-    socket.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload.event === "tasks_mutated") {
-          queryClient.invalidateQueries({ queryKey: ["tasks"] });
-          queryClient.invalidateQueries({ queryKey: ["task-projects"] });
-        }
-      } catch (err) {
-        console.error("Failed to parse WebSocket message:", err);
-      }
-    };
-
-    return () => {
-      socket.close();
-    };
-  }, [queryClient]);
 
   // Search & Filter state synced with URL search params
   const tab = searchParams.get("tab") || "board";

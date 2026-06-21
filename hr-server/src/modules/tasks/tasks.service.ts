@@ -506,88 +506,91 @@ export class TasksService {
       throw new NotFoundException(`Task with ID "${id}" not found`);
     }
 
-    // Load comments
-    const comments = await this.db
-      .select({
-        id: taskComments.id,
-        content: taskComments.content,
-        createdAt: taskComments.createdAt,
-        userId: taskComments.userId,
-        isPinned: taskComments.isPinned,
-        category: taskComments.category,
-        reactions: taskComments.reactions,
-        userName: employees.fullNameEnglish,
-        userPhotoUrl: employees.employeePhotoUrl,
-      })
-      .from(taskComments)
-      .leftJoin(employees, eq(taskComments.userId, employees.id))
-      .where(eq(taskComments.taskId, id))
-      .orderBy(desc(taskComments.createdAt));
+    // Load related task details in parallel
+    const [comments, activities, checklist, dependencies, attachments, timeLogs] = await Promise.all([
+      // Load comments
+      this.db
+        .select({
+          id: taskComments.id,
+          content: taskComments.content,
+          createdAt: taskComments.createdAt,
+          userId: taskComments.userId,
+          isPinned: taskComments.isPinned,
+          category: taskComments.category,
+          reactions: taskComments.reactions,
+          userName: employees.fullNameEnglish,
+          userPhotoUrl: employees.employeePhotoUrl,
+        })
+        .from(taskComments)
+        .leftJoin(employees, eq(taskComments.userId, employees.id))
+        .where(eq(taskComments.taskId, id))
+        .orderBy(desc(taskComments.createdAt)),
 
-    // Load activities
-    const activities = await this.db
-      .select({
-        id: taskActivities.id,
-        action: taskActivities.action,
-        details: taskActivities.details,
-        createdAt: taskActivities.createdAt,
-        userId: taskActivities.userId,
-        userName: employees.fullNameEnglish,
-      })
-      .from(taskActivities)
-      .leftJoin(employees, eq(taskActivities.userId, employees.id))
-      .where(eq(taskActivities.taskId, id))
-      .orderBy(desc(taskActivities.createdAt));
+      // Load activities
+      this.db
+        .select({
+          id: taskActivities.id,
+          action: taskActivities.action,
+          details: taskActivities.details,
+          createdAt: taskActivities.createdAt,
+          userId: taskActivities.userId,
+          userName: employees.fullNameEnglish,
+        })
+        .from(taskActivities)
+        .leftJoin(employees, eq(taskActivities.userId, employees.id))
+        .where(eq(taskActivities.taskId, id))
+        .orderBy(desc(taskActivities.createdAt)),
 
-    // Load checklists
-    const checklist = await this.db
-      .select()
-      .from(taskChecklists)
-      .where(eq(taskChecklists.taskId, id))
-      .orderBy(taskChecklists.createdAt);
+      // Load checklists
+      this.db
+        .select()
+        .from(taskChecklists)
+        .where(eq(taskChecklists.taskId, id))
+        .orderBy(taskChecklists.createdAt),
 
-    // Load dependencies
-    const dependencies = await this.db
-      .select({
-        id: taskDependencies.id,
-        dependsOnTaskId: taskDependencies.dependsOnTaskId,
-        dependencyType: taskDependencies.dependencyType,
-        dependsOnTaskTitle: tasks.title,
-        dependsOnTaskStatus: tasks.status,
-      })
-      .from(taskDependencies)
-      .innerJoin(tasks, eq(taskDependencies.dependsOnTaskId, tasks.id))
-      .where(eq(taskDependencies.taskId, id));
+      // Load dependencies
+      this.db
+        .select({
+          id: taskDependencies.id,
+          dependsOnTaskId: taskDependencies.dependsOnTaskId,
+          dependencyType: taskDependencies.dependencyType,
+          dependsOnTaskTitle: tasks.title,
+          dependsOnTaskStatus: tasks.status,
+        })
+        .from(taskDependencies)
+        .innerJoin(tasks, eq(taskDependencies.dependsOnTaskId, tasks.id))
+        .where(eq(taskDependencies.taskId, id)),
 
-    // Load attachments
-    const attachments = await this.db
-      .select({
-        id: taskAttachments.id,
-        fileName: taskAttachments.fileName,
-        fileUrl: taskAttachments.fileUrl,
-        fileSize: taskAttachments.fileSize,
-        uploadedById: taskAttachments.uploadedById,
-        uploadedByName: employees.fullNameEnglish,
-      })
-      .from(taskAttachments)
-      .leftJoin(employees, eq(taskAttachments.uploadedById, employees.id))
-      .where(eq(taskAttachments.taskId, id));
+      // Load attachments
+      this.db
+        .select({
+          id: taskAttachments.id,
+          fileName: taskAttachments.fileName,
+          fileUrl: taskAttachments.fileUrl,
+          fileSize: taskAttachments.fileSize,
+          uploadedById: taskAttachments.uploadedById,
+          uploadedByName: employees.fullNameEnglish,
+        })
+        .from(taskAttachments)
+        .leftJoin(employees, eq(taskAttachments.uploadedById, employees.id))
+        .where(eq(taskAttachments.taskId, id)),
 
-    // Load time entries
-    const timeLogs = await this.db
-      .select({
-        id: timeEntries.id,
-        employeeId: timeEntries.employeeId,
-        employeeName: employees.fullNameEnglish,
-        startTime: timeEntries.startTime,
-        endTime: timeEntries.endTime,
-        durationSeconds: timeEntries.durationSeconds,
-        description: timeEntries.description,
-      })
-      .from(timeEntries)
-      .leftJoin(employees, eq(timeEntries.employeeId, employees.id))
-      .where(eq(timeEntries.taskId, id))
-      .orderBy(desc(timeEntries.startTime));
+      // Load time entries
+      this.db
+        .select({
+          id: timeEntries.id,
+          employeeId: timeEntries.employeeId,
+          employeeName: employees.fullNameEnglish,
+          startTime: timeEntries.startTime,
+          endTime: timeEntries.endTime,
+          durationSeconds: timeEntries.durationSeconds,
+          description: timeEntries.description,
+        })
+        .from(timeEntries)
+        .leftJoin(employees, eq(timeEntries.employeeId, employees.id))
+        .where(eq(timeEntries.taskId, id))
+        .orderBy(desc(timeEntries.startTime)),
+    ]);
 
     return {
       ...task,

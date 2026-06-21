@@ -9,10 +9,12 @@ import { cn } from "@/lib/utils"
 import { PageSkeleton } from "@/components/common/page-skeleton"
 import { useWebSocket } from "@/hooks/useWebSocket"
 import { useNotificationSocket } from "@/hooks/useNotificationSocket"
+import { useTasksWebSocket } from "@/hooks/useTasksWebSocket"
 
 export function DashboardLayout() {
   useWebSocket()
   useNotificationSocket()
+  useTasksWebSocket()
   const { sidebarSize, setSidebarSize } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 

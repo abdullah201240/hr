@@ -89,9 +89,7 @@ export function TaskDetailsSheet({
   const { user: currentUser } = useAuthStore();
   const { data: task, isLoading } = useTaskDetailQuery(taskId || "", isOpen);
   const { data: employees = [] } = useEmployeeOptionsQuery();
-  const { data: allTasks = [] } = useTasksQuery({});
-  const { data: milestones = [] } = useMilestonesQuery(task?.projectId || "");
-
+ 
   const updateTaskMut = useUpdateTaskMutation();
   const addChecklistMut = useAddChecklistItemMutation();
   const updateChecklistMut = useUpdateChecklistItemMutation(taskId || "");
@@ -99,7 +97,7 @@ export function TaskDetailsSheet({
   const addCommentMut = useAddCommentMutation();
   const deleteCommentMut = useDeleteCommentMutation(taskId || "");
   const updateCommentMut = useUpdateCommentMutation(taskId || "");
-
+ 
   // Advanced feature mutations
   const createDependencyMut = useCreateDependencyMutation(taskId || "");
   const deleteDependencyMut = useDeleteDependencyMutation(taskId || "");
@@ -107,7 +105,7 @@ export function TaskDetailsSheet({
   const deleteTimeEntryMut = useDeleteTimeEntryMutation(taskId || "");
   const createAttachmentMut = useCreateAttachmentMutation(taskId || "");
   const deleteAttachmentMut = useDeleteAttachmentMutation(taskId || "");
-
+ 
   // Local UI states
   const [titleText, setTitleText] = useState("");
   const [descText, setDescText] = useState("");
@@ -118,6 +116,9 @@ export function TaskDetailsSheet({
   const [timerVal, setTimerVal] = useState("00:00:00");
   const [watchersList, setWatchersList] = useState<string[]>([]);
   const [isAddingWatcher, setIsAddingWatcher] = useState(false);
+ 
+  const { data: allTasks = [] } = useTasksQuery({}, { enabled: isOpen && activeTab === "dependencies" });
+  const { data: milestones = [] } = useMilestonesQuery(task?.projectId || "", { enabled: isOpen && activeMainTab === "properties" });
 
   useEffect(() => {
     if (task) {

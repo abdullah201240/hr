@@ -208,10 +208,11 @@ export function useDeleteProjectMutation() {
 
 // ─── Tasks Hooks ─────────────────────────────────────────────────────────────
 
-export function useTasksQuery(filters: TaskQueryFilters) {
+export function useTasksQuery(filters: TaskQueryFilters, options?: { enabled?: boolean }) {
   return useQuery<Task[]>({
     queryKey: ["tasks", filters],
     queryFn: () => apiClient.get<Task[]>("tasks", { params: filters }),
+    ...options,
   });
 }
 
@@ -256,9 +257,15 @@ export function useUpdateTaskMutation() {
   const queryClient = useQueryClient();
   return useMutation<Task, Error, { id: string; data: Partial<Task> }>({
     mutationFn: (payload) => apiClient.patch<Task>(`tasks/${payload.id}`, payload.data),
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedTask, variables) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", variables.id], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          ...updatedTask,
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["task-projects"] });
     },
   });
@@ -293,30 +300,50 @@ export function useAddChecklistItemMutation() {
   const queryClient = useQueryClient();
   return useMutation<ChecklistItem, Error, { taskId: string; title: string }>({
     mutationFn: (payload) => apiClient.post<ChecklistItem>(`tasks/${payload.taskId}/checklist`, { title: payload.title }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", variables.taskId] });
+    onSuccess: (newItem, variables) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", variables.taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          checklist: [...(old.checklist || []), newItem],
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }
-
+ 
 export function useUpdateChecklistItemMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<ChecklistItem, Error, { itemId: string; data: { isCompleted?: boolean; title?: string } }>({
     mutationFn: (payload) => apiClient.patch<ChecklistItem>(`tasks/checklist/${payload.itemId}`, payload.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (updatedItem) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          checklist: (old.checklist || []).map((item) =>
+            item.id === updatedItem.id ? updatedItem : item
+          ),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }
-
+ 
 export function useDeleteChecklistItemMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (itemId) => apiClient.delete<{ message: string }>(`tasks/checklist/${itemId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (_, itemId) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          checklist: (old.checklist || []).filter((item) => item.id !== itemId),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
@@ -328,41 +355,61 @@ export function useAddCommentMutation() {
   const queryClient = useQueryClient();
   return useMutation<TaskComment, Error, { taskId: string; content: string; category?: string }>({
     mutationFn: (payload) => apiClient.post<TaskComment>(`tasks/${payload.taskId}/comments`, { content: payload.content, category: payload.category }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", variables.taskId] });
+    onSuccess: (newComment, variables) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", variables.taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: [newComment, ...(old.comments || [])],
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }
-
+ 
 export function useDeleteCommentMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (commentId) => apiClient.delete<{ message: string }>(`tasks/comments/${commentId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (_, commentId) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: (old.comments || []).filter((c) => c.id !== commentId),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }
-
+ 
 export function useUpdateCommentMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<TaskComment, Error, { commentId: string; data: { content?: string; isPinned?: boolean; reactions?: string } }>({
     mutationFn: (payload) => apiClient.patch<TaskComment>(`tasks/comments/${payload.commentId}`, payload.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (updatedComment) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: (old.comments || []).map((c) =>
+            c.id === updatedComment.id ? updatedComment : c
+          ),
+        };
+      });
     },
   });
 }
 
 // ─── Milestones Hooks ────────────────────────────────────────────────────────
 
-export function useMilestonesQuery(projectId: string) {
+export function useMilestonesQuery(projectId: string, options?: { enabled?: boolean }) {
   return useQuery<TaskMilestone[]>({
     queryKey: ["task-projects", "milestones", projectId],
     queryFn: () => apiClient.get<TaskMilestone[]>(`tasks/projects/${projectId}/milestones`),
-    enabled: !!projectId && projectId !== "all",
+    enabled: !!projectId && projectId !== "all" && (options?.enabled ?? true),
   });
 }
 
@@ -402,18 +449,30 @@ export function useCreateDependencyMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<any, Error, { dependsOnTaskId: string; dependencyType?: string }>({
     mutationFn: (payload) => apiClient.post<any>(`tasks/${taskId}/dependencies`, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (newDep) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          dependencies: [...(old.dependencies || []), newDep],
+        };
+      });
     },
   });
 }
-
+ 
 export function useDeleteDependencyMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (id) => apiClient.delete<{ message: string }>(`tasks/dependencies/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (_, dependencyLinkId) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          dependencies: (old.dependencies || []).filter((d) => d.id !== dependencyLinkId),
+        };
+      });
     },
   });
 }
@@ -424,19 +483,31 @@ export function useCreateTimeEntryMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<TimeEntry, Error, Omit<TimeEntry, "id" | "employeeName">>({
     mutationFn: (payload) => apiClient.post<TimeEntry>(`tasks/${taskId}/time-entries`, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (newEntry) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          timeEntries: [newEntry, ...(old.timeEntries || [])],
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }
-
+ 
 export function useDeleteTimeEntryMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (id) => apiClient.delete<{ message: string }>(`tasks/time-entries/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (_, timeEntryId) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          timeEntries: (old.timeEntries || []).filter((te) => te.id !== timeEntryId),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
@@ -459,18 +530,30 @@ export function useCreateAttachmentMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<TaskAttachment, Error, Omit<TaskAttachment, "id" | "uploadedByName">>({
     mutationFn: (payload) => apiClient.post<TaskAttachment>(`tasks/${taskId}/attachments`, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (newAttachment) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          attachments: [...(old.attachments || []), newAttachment],
+        };
+      });
     },
   });
 }
-
+ 
 export function useDeleteAttachmentMutation(taskId: string) {
   const queryClient = useQueryClient();
   return useMutation<{ message: string }, Error, string>({
     mutationFn: (id) => apiClient.delete<{ message: string }>(`tasks/attachments/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks", "detail", taskId] });
+    onSuccess: (_, attachmentId) => {
+      queryClient.setQueryData<TaskDetails>(["tasks", "detail", taskId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          attachments: (old.attachments || []).filter((a) => a.id !== attachmentId),
+        };
+      });
     },
   });
 }
