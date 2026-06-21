@@ -36,7 +36,7 @@ export const claims = pgTable(
 
     /** Common fields */
     amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
-    status: varchar('status', { length: 20 }).default('Pending').notNull(), // 'Pending' | 'Approved' | 'Rejected' | 'Settled'
+    status: varchar('status', { length: 20 }).default('Pending').notNull(), // 'Pending' | 'Pending_2nd' | 'Approved' | 'Rejected' | 'Settled'
     description: text('description').default('').notNull(),
 
     /** Travel advance: approved amount (may differ from requested) */
@@ -50,6 +50,8 @@ export const claims = pgTable(
     details: jsonb('details').$type<Record<string, any>>(),
 
     /** Approval tracking */
+    firstApprovedById: uuid('first_approved_by_id').references(() => employees.id, { onDelete: 'set null' }),
+    firstApprovedAt: timestamp('first_approved_at', { withTimezone: true }),
     approvedById: uuid('approved_by_id').references(() => employees.id, { onDelete: 'set null' }),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     rejectedAt: timestamp('rejected_at', { withTimezone: true }),
@@ -69,6 +71,11 @@ export const claimsRelations = relations(claims, ({ one, many }) => ({
     fields: [claims.employeeId],
     references: [employees.id],
     relationName: 'employeeClaims',
+  }),
+  firstApprovedBy: one(employees, {
+    fields: [claims.firstApprovedById],
+    references: [employees.id],
+    relationName: 'firstApprovedClaims',
   }),
   approvedBy: one(employees, {
     fields: [claims.approvedById],

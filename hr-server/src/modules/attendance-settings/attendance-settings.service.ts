@@ -67,9 +67,13 @@ export class AttendanceSettingsService {
 
       if (!existing) {
         // Create with defaults + overrides
+        const insertData: Record<string, any> = { id: SINGLETON_ID, ...dto };
+        if (dto.twoStepClaimThresholdAmount !== undefined) {
+          insertData.twoStepClaimThresholdAmount = String(dto.twoStepClaimThresholdAmount);
+        }
         const [created] = await tx
           .insert(attendanceSettings)
-          .values({ id: SINGLETON_ID, ...dto })
+          .values(insertData as any)
           .returning();
         await this.invalidateCache();
         this.logger.log('Attendance settings created with defaults');
@@ -91,6 +95,8 @@ export class AttendanceSettingsService {
         updateData.lateRules = dto.lateRules;
       if (dto.twoStepLeaveThresholdDays !== undefined)
         updateData.twoStepLeaveThresholdDays = dto.twoStepLeaveThresholdDays;
+      if (dto.twoStepClaimThresholdAmount !== undefined)
+        updateData.twoStepClaimThresholdAmount = String(dto.twoStepClaimThresholdAmount);
 
       const [updated] = await tx
         .update(attendanceSettings)

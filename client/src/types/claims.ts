@@ -1,7 +1,7 @@
 // ─── Claim Types ─────────────────────────────────────────────────────────────
 
 export type ClaimType = 'medical_reimbursement' | 'tada' | 'travel_advance';
-export type ClaimStatus = 'Pending' | 'Approved' | 'Rejected' | 'Settled';
+export type ClaimStatus = 'Pending' | 'Pending_2nd' | 'Approved' | 'Rejected' | 'Settled';
 
 export interface ClaimAttachment {
   id: string;
@@ -19,6 +19,8 @@ export interface Claim {
   description: string;
   approvedAmount: string | null;
   details: Record<string, any> | null;
+  firstApprovedById: string | null;
+  firstApprovedAt: string | null;
   approvedById: string | null;
   approvedAt: string | null;
   rejectedAt: string | null;
@@ -30,7 +32,9 @@ export interface Claim {
   employeeName: string;
   employeeEmail: string;
   employeeIdCode: string;
+  employeeLineManagerId: string | null;
   approvedByName: string | null;
+  firstApprovedByName: string | null;
   attachments: ClaimAttachment[];
 }
 

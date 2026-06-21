@@ -23,6 +23,7 @@ export enum ClaimType {
 
 export enum ClaimStatus {
   PENDING = 'Pending',
+  PENDING_2ND = 'Pending_2nd',
   APPROVED = 'Approved',
   REJECTED = 'Rejected',
   SETTLED = 'Settled',

@@ -75,6 +75,7 @@ const travelAdvanceSchema = z.object({
 export default function BusinessTravelAdvancePage() {
   const user = useAuthStore((s) => s.user)
   const isAdmin = user?.permissions?.includes("claims:approve") || user?.permissions?.includes("claims:read")
+  const hasApprovePerm = user?.permissions?.includes("claims:approve") || !user?.customRoleId;
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -102,7 +103,7 @@ export default function BusinessTravelAdvancePage() {
   const createMutation = useCreateClaimMutation()
   const statusMutation = useUpdateClaimStatusMutation()
 
-  const pendingAdvances = advances.filter(a => a.status === "Pending").length
+  const pendingAdvances = advances.filter(a => a.status === "Pending" || a.status === "Pending_2nd").length
   const approvedAdvances = advances.filter(a => a.status === "Approved").length
   const settledAdvances = advances.filter(a => a.status === "Settled").length
   const totalRequested = advances.reduce((sum, a) => sum + parseFloat(a.amount || "0"), 0)
@@ -372,6 +373,7 @@ export default function BusinessTravelAdvancePage() {
             <SelectContent>
               <SelectItem value="all" className="text-xs">All Status</SelectItem>
               <SelectItem value="Pending" className="text-xs">Pending Only</SelectItem>
+              <SelectItem value="Pending_2nd" className="text-xs">Awaiting 2nd Approval</SelectItem>
               <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
               <SelectItem value="Settled" className="text-xs">Settled Only</SelectItem>
               <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
@@ -455,48 +457,74 @@ export default function BusinessTravelAdvancePage() {
                   </TableCell>
                   <TableCell className="py-3">
                     <Badge
-                      className={advance.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : advance.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : advance.status === "Settled" ? "bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
+                      className={
+                        advance.status === "Approved"
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10"
+                          : advance.status === "Pending"
+                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10"
+                          : advance.status === "Pending_2nd"
+                          ? "bg-sky-500/10 text-sky-600 border-sky-500/20 hover:bg-sky-500/10"
+                          : advance.status === "Settled"
+                          ? "bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/10"
+                          : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"
+                      }
                     >
-                      {advance.status}
+                      {advance.status === "Pending_2nd" ? "Pending 2nd Step" : advance.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3 text-right">
-                    {isAdmin && advance.status === "Pending" ? (
-                      <div className="inline-flex gap-2 justify-end">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
-                          disabled={statusMutation.isPending}
-                          onClick={() => handleStatusChange(advance.id, "Approved")}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
-                          disabled={statusMutation.isPending}
-                          onClick={() => handleStatusChange(advance.id, "Rejected")}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    ) : isAdmin && advance.status === "Approved" ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-xs font-semibold border-blue-500/20 text-blue-500 hover:bg-blue-500/10"
-                        disabled={statusMutation.isPending}
-                        onClick={() => handleStatusChange(advance.id, "Settled")}
-                      >
-                        Mark Settled
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">
-                        {!isAdmin && advance.status === "Pending" ? "Pending Review" : "Processed"}
-                      </span>
-                    )}
+                    {(() => {
+                      const isLineManager = advance.employeeLineManagerId === user?.id;
+                      const isPending1st = advance.status === "Pending";
+                      const isPending2nd = advance.status === "Pending_2nd";
+                      const canAction = (isPending1st && (isLineManager || (!advance.employeeLineManagerId && hasApprovePerm))) ||
+                                        (isPending2nd && hasApprovePerm);
+
+                      if (canAction) {
+                        return (
+                          <div className="inline-flex gap-2 justify-end">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                              disabled={statusMutation.isPending}
+                              onClick={() => handleStatusChange(advance.id, "Approved")}
+                            >
+                              {isPending2nd ? "Approve (2nd)" : "Approve"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                              disabled={statusMutation.isPending}
+                              onClick={() => handleStatusChange(advance.id, "Rejected")}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      if (isAdmin && advance.status === "Approved") {
+                        return (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs font-semibold border-blue-500/20 text-blue-500 hover:bg-blue-500/10"
+                            disabled={statusMutation.isPending}
+                            onClick={() => handleStatusChange(advance.id, "Settled")}
+                          >
+                            Mark Settled
+                          </Button>
+                        );
+                      }
+
+                      return (
+                        <span className="text-xs text-muted-foreground italic">
+                          {advance.status === "Pending" ? "Pending Line Manager" : advance.status === "Pending_2nd" ? "Pending Final Approval" : "Processed"}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
                 )

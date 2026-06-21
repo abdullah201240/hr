@@ -81,8 +81,7 @@ export class ClaimsController {
     @Req() req: any,
     @Body() dto: UpdateClaimStatusDto,
   ) {
-    const approvedById = req.user.id;
-    return this.claimsService.updateStatus(id, approvedById, dto);
+    return this.claimsService.updateStatus(id, req.user, dto);
   }
 
   // ─── Delete Claim (only pending claims) ────────────────────────────────────

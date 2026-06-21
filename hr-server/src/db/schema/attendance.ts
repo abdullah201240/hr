@@ -8,6 +8,7 @@ import {
   doublePrecision,
   index,
   uniqueIndex,
+  numeric,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
@@ -49,6 +50,9 @@ export const attendanceSettings = pgTable('attendance_settings', {
 
   // Two-step leave approval threshold days
   twoStepLeaveThresholdDays: integer('two_step_leave_threshold_days').default(2).notNull(),
+
+  // Two-step claim approval threshold amount
+  twoStepClaimThresholdAmount: numeric('two_step_claim_threshold_amount', { precision: 12, scale: 2 }).default('1000.00').notNull(),
 });
 
 // ─── Holidays ──────────────────────────────────────────────────────────────

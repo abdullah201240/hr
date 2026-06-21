@@ -8,7 +8,7 @@ import {
 import { eq, and, desc, asc, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
-import { claims, claimAttachments, employees, rolePermissions, permissions } from '../../db/schema';
+import { claims, claimAttachments, employees, rolePermissions, permissions, attendanceSettings } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
 import type {
@@ -20,6 +20,7 @@ import { NotificationService } from '../notifications/notifications.service';
 import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 const approver = alias(employees, 'approver');
+const firstApprover = alias(employees, 'first_approver');
 
 @Injectable()
 export class ClaimsService {
@@ -79,6 +80,8 @@ export class ClaimsService {
         details: claims.details,
         approvedById: claims.approvedById,
         approvedAt: claims.approvedAt,
+        firstApprovedById: claims.firstApprovedById,
+        firstApprovedAt: claims.firstApprovedAt,
         rejectedAt: claims.rejectedAt,
         rejectionReason: claims.rejectionReason,
         settledAt: claims.settledAt,
@@ -87,11 +90,14 @@ export class ClaimsService {
         employeeName: employees.fullNameEnglish,
         employeeEmail: employees.email,
         employeeIdCode: employees.employeeId,
+        employeeLineManagerId: employees.lineManagerId,
         approvedByName: approver.fullNameEnglish,
+        firstApprovedByName: firstApprover.fullNameEnglish,
       })
       .from(claims)
       .innerJoin(employees, eq(claims.employeeId, employees.id))
       .leftJoin(approver, eq(claims.approvedById, approver.id))
+      .leftJoin(firstApprover, eq(claims.firstApprovedById, firstApprover.id))
       .where(finalWhere)
       .orderBy(orderFn(orderColumn));
 
@@ -176,6 +182,8 @@ export class ClaimsService {
           details: claims.details,
           approvedById: claims.approvedById,
           approvedAt: claims.approvedAt,
+          firstApprovedById: claims.firstApprovedById,
+          firstApprovedAt: claims.firstApprovedAt,
           rejectedAt: claims.rejectedAt,
           rejectionReason: claims.rejectionReason,
           settledAt: claims.settledAt,
@@ -185,11 +193,14 @@ export class ClaimsService {
           employeeEmail: employees.email,
           employeeIdCode: employees.employeeId,
           employeeDepartmentId: employees.departmentId,
+          employeeLineManagerId: employees.lineManagerId,
           approvedByName: approver.fullNameEnglish,
+          firstApprovedByName: firstApprover.fullNameEnglish,
         })
         .from(claims)
         .innerJoin(employees, eq(claims.employeeId, employees.id))
         .leftJoin(approver, eq(claims.approvedById, approver.id))
+        .leftJoin(firstApprover, eq(claims.firstApprovedById, firstApprover.id))
         .where(eq(claims.id, id))
         .limit(1);
 
@@ -261,7 +272,8 @@ export class ClaimsService {
 
   // ─── Update Status (Approve / Reject / Settle) ─────────────────────────────
 
-  async updateStatus(id: string, approvedById: string, dto: UpdateClaimStatusDto) {
+  async updateStatus(id: string, requestingUser: any, dto: UpdateClaimStatusDto) {
+    const approvedById = requestingUser.id;
     const [claim] = await this.db
       .select({
         id: claims.id,
@@ -278,33 +290,95 @@ export class ClaimsService {
       throw new NotFoundException(`Claim with ID "${id}" not found`);
     }
 
+    const [applicant] = await this.db
+      .select({
+        id: employees.id,
+        lineManagerId: employees.lineManagerId,
+      })
+      .from(employees)
+      .where(eq(employees.id, claim.employeeId))
+      .limit(1);
+
+    if (!applicant) {
+      throw new NotFoundException(`Applicant employee not found`);
+    }
+
+    let [settings] = await this.db
+      .select()
+      .from(attendanceSettings)
+      .where(eq(attendanceSettings.id, 'default'))
+      .limit(1);
+    const threshold = settings?.twoStepClaimThresholdAmount ? Number(settings.twoStepClaimThresholdAmount) : 1000.00;
+
+    const isLineManager = applicant.lineManagerId === approvedById;
+    const hasApprovePerm = requestingUser.permissions?.has('claims:approve') || !requestingUser.customRoleId;
+
     // Validate status transitions
     if (dto.status === 'Settled' && claim.status !== 'Approved') {
       throw new BadRequestException('Only approved claims can be settled');
     }
-    if (
-      (dto.status === 'Approved' || dto.status === 'Rejected') &&
-      claim.status !== 'Pending'
-    ) {
-      throw new BadRequestException(
-        `Cannot ${dto.status.toLowerCase()} a claim with status "${claim.status}"`,
-      );
-    }
 
-    const updateData: Record<string, any> = {
-      status: dto.status,
-      approvedById,
-    };
+    const updateData: Record<string, any> = {};
 
     if (dto.status === 'Approved') {
-      updateData.approvedAt = new Date();
-      if (dto.approvedAmount !== undefined) {
-        updateData.approvedAmount = String(dto.approvedAmount);
+      if (claim.status === 'Pending') {
+        const needsTwoStep = Number(claim.amount) >= threshold && applicant.lineManagerId;
+
+        if (needsTwoStep) {
+          // First step approval by Line Manager
+          if (!isLineManager) {
+            throw new ForbiddenException('Only the Line Manager can perform the first step of approval');
+          }
+          updateData.status = 'Pending_2nd';
+          updateData.firstApprovedById = approvedById;
+          updateData.firstApprovedAt = new Date();
+        } else {
+          // Single step approval (either line manager or claims:approve)
+          if (!isLineManager && !hasApprovePerm) {
+            throw new ForbiddenException('You do not have permission to approve this claim request');
+          }
+          updateData.status = 'Approved';
+          updateData.approvedById = approvedById;
+          updateData.approvedAt = new Date();
+          if (dto.approvedAmount !== undefined) {
+            updateData.approvedAmount = String(dto.approvedAmount);
+          }
+        }
+      } else if (claim.status === 'Pending_2nd') {
+        // Second step approval
+        if (!hasApprovePerm) {
+          throw new ForbiddenException('Only users with claims:approve permission can perform the second step of approval');
+        }
+        updateData.status = 'Approved';
+        updateData.approvedById = approvedById;
+        updateData.approvedAt = new Date();
+        if (dto.approvedAmount !== undefined) {
+          updateData.approvedAmount = String(dto.approvedAmount);
+        }
+      } else {
+        throw new BadRequestException(`Cannot approve a claim with status "${claim.status}"`);
       }
     } else if (dto.status === 'Rejected') {
+      // Rejecting a claim request
+      if (claim.status === 'Pending') {
+        if (!isLineManager && !hasApprovePerm) {
+          throw new ForbiddenException('You do not have permission to reject this claim request');
+        }
+      } else if (claim.status === 'Pending_2nd') {
+        if (!hasApprovePerm) {
+          throw new ForbiddenException('Only users with claims:approve permission can reject this claim request');
+        }
+      } else {
+        throw new BadRequestException(`Cannot reject a claim with status "${claim.status}"`);
+      }
+      updateData.status = 'Rejected';
       updateData.rejectedAt = new Date();
-      updateData.rejectionReason = dto.rejectionReason || null;
+      updateData.rejectionReason = dto.rejectionReason || 'No reason provided';
     } else if (dto.status === 'Settled') {
+      if (claim.status !== 'Approved') {
+        throw new BadRequestException('Only approved claims can be settled');
+      }
+      updateData.status = 'Settled';
       updateData.settledAt = new Date();
     }
 
@@ -318,19 +392,74 @@ export class ClaimsService {
     const result = await this.findOne(id);
 
     // Trigger Notification
+    let notificationMessage = `Your ${claim.claimType} claim of ${claim.amount} BDT has been `;
+    if (updateData.status === 'Pending_2nd') {
+      notificationMessage += `approved by your Line Manager and is now awaiting final HR/Admin approval.`;
+    } else {
+      notificationMessage += `${dto.status.toLowerCase()}.${
+        dto.status === 'Rejected' && dto.rejectionReason ? ` Reason: ${dto.rejectionReason}` : ''
+      }`;
+    }
+
     await this.notificationService.emit({
       recipientId: claim.employeeId,
       actorId: approvedById,
       module: NotificationModule.CLAIMS,
-      category: dto.status === 'Approved' ? NotificationCategory.APPROVAL : dto.status === 'Rejected' ? NotificationCategory.REJECTION : NotificationCategory.STATUS_CHANGE,
-      title: `Claim ${dto.status}`,
-      message: `Your ${claim.claimType} claim of ${claim.amount} BDT has been ${dto.status.toLowerCase()}.${
-        dto.status === 'Rejected' && dto.rejectionReason ? ` Reason: ${dto.rejectionReason}` : ''
-      }`,
+      category: updateData.status === 'Pending_2nd' ? NotificationCategory.APPROVAL : dto.status === 'Approved' ? NotificationCategory.APPROVAL : dto.status === 'Rejected' ? NotificationCategory.REJECTION : NotificationCategory.STATUS_CHANGE,
+      title: updateData.status === 'Pending_2nd' ? 'Claim Line Manager Approved' : `Claim ${dto.status}`,
+      message: notificationMessage,
       entityType: 'claim',
       entityId: claim.id,
       actionUrl: '/claims',
     });
+
+    // If it was line-manager approved (Pending_2nd), notify standard claims approvers
+    if (updateData.status === 'Pending_2nd') {
+      try {
+        const adminApprovers = await this.db
+          .select({ id: employees.id })
+          .from(employees)
+          .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+          .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+          .where(eq(permissions.resource, 'claims'));
+
+        const recipientIds = adminApprovers.map((r) => r.id);
+        if (recipientIds.length > 0) {
+          await this.notificationService.emitBulk(
+            recipientIds.map((recipientId) => ({
+              recipientId,
+              actorId: approvedById,
+              module: NotificationModule.CLAIMS,
+              category: NotificationCategory.APPROVAL,
+              title: 'Claim Awaiting 2nd Approval',
+              message: `A ${claim.claimType} claim of ${claim.amount} BDT has been approved by the Line Manager and awaits your final approval.`,
+              entityType: 'claim',
+              entityId: claim.id,
+              actionUrl: `/claims`,
+              actions: [
+                {
+                  label: 'Approve',
+                  style: 'primary',
+                  apiMethod: 'PATCH',
+                  apiUrl: `/claims/${claim.id}/status`,
+                  apiBody: { status: 'Approved' },
+                },
+                {
+                  label: 'Reject',
+                  style: 'destructive',
+                  apiMethod: 'PATCH',
+                  apiUrl: `/claims/${claim.id}/status`,
+                  apiBody: { status: 'Rejected' },
+                  confirmMessage: 'Are you sure you want to reject this claim?',
+                },
+              ],
+            }))
+          );
+        }
+      } catch (e) {
+        // don't fail operation
+      }
+    }
 
     return result;
   }

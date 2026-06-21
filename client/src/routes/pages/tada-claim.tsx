@@ -76,7 +76,7 @@ const tadaClaimSchema = z.object({
 
 export default function TADAClaimPage() {
   const user = useAuthStore((s) => s.user)
-  const isAdmin = user?.permissions?.includes("claims:approve") || user?.permissions?.includes("claims:read")
+  const hasApprovePerm = user?.permissions?.includes("claims:approve") || !user?.customRoleId;
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
@@ -105,7 +105,7 @@ export default function TADAClaimPage() {
   const createMutation = useCreateClaimMutation()
   const statusMutation = useUpdateClaimStatusMutation()
 
-  const pendingClaims = claims.filter(c => c.status === "Pending").length
+  const pendingClaims = claims.filter(c => c.status === "Pending" || c.status === "Pending_2nd").length
   const approvedClaims = claims.filter(c => c.status === "Approved").length
   const rejectedClaims = claims.filter(c => c.status === "Rejected").length
   const totalAmount = claims.reduce((sum, c) => sum + parseFloat(c.amount || "0"), 0)
@@ -387,6 +387,7 @@ export default function TADAClaimPage() {
             <SelectContent>
               <SelectItem value="all" className="text-xs">All Status</SelectItem>
               <SelectItem value="Pending" className="text-xs">Pending Only</SelectItem>
+              <SelectItem value="Pending_2nd" className="text-xs">Awaiting 2nd Approval</SelectItem>
               <SelectItem value="Approved" className="text-xs">Approved Only</SelectItem>
               <SelectItem value="Rejected" className="text-xs">Rejected Only</SelectItem>
             </SelectContent>
@@ -465,38 +466,58 @@ export default function TADAClaimPage() {
                   </TableCell>
                   <TableCell className="py-3">
                     <Badge
-                      className={claim.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10" : claim.status === "Pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"}
+                      className={
+                        claim.status === "Approved"
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/10"
+                          : claim.status === "Pending"
+                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10"
+                          : claim.status === "Pending_2nd"
+                          ? "bg-sky-500/10 text-sky-600 border-sky-500/20 hover:bg-sky-500/10"
+                          : "bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/10"
+                      }
                     >
-                      {claim.status}
+                      {claim.status === "Pending_2nd" ? "Pending 2nd Step" : claim.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-3 text-right">
-                    {isAdmin && claim.status === "Pending" ? (
-                      <div className="inline-flex gap-2 justify-end">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
-                          disabled={statusMutation.isPending}
-                          onClick={() => handleStatusChange(claim.id, "Approved")}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
-                          disabled={statusMutation.isPending}
-                          onClick={() => handleStatusChange(claim.id, "Rejected")}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">
-                        {claim.status === "Pending" && !isAdmin ? "Pending Review" : "Processed"}
-                      </span>
-                    )}
+                    {(() => {
+                      const isLineManager = claim.employeeLineManagerId === user?.id;
+                      const isPending1st = claim.status === "Pending";
+                      const isPending2nd = claim.status === "Pending_2nd";
+                      const canAction = (isPending1st && (isLineManager || (!claim.employeeLineManagerId && hasApprovePerm))) ||
+                                        (isPending2nd && hasApprovePerm);
+
+                      if (canAction) {
+                        return (
+                          <div className="inline-flex gap-2 justify-end">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none"
+                              disabled={statusMutation.isPending}
+                              onClick={() => handleStatusChange(claim.id, "Approved")}
+                            >
+                              {isPending2nd ? "Approve (2nd)" : "Approve"}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10"
+                              disabled={statusMutation.isPending}
+                              onClick={() => handleStatusChange(claim.id, "Rejected")}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <span className="text-xs text-muted-foreground italic">
+                          {claim.status === "Pending" ? "Pending Line Manager" : claim.status === "Pending_2nd" ? "Pending Final Approval" : "Processed"}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
                 )

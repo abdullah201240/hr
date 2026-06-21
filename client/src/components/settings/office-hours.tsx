@@ -34,6 +34,7 @@ interface OfficeSettings {
   halfDayThreshold: number
   lateRules: LateRule[]
   twoStepLeaveThresholdDays: number
+  twoStepClaimThresholdAmount: number
 }
 
 const DEFAULT_SETTINGS: OfficeSettings = {
@@ -50,6 +51,7 @@ const DEFAULT_SETTINGS: OfficeSettings = {
     { minMinutes: 121, maxMinutes: 240, penalty: 'Half-Day Leave Deduction or Equivalent Basic Salary Deduction' }
   ],
   twoStepLeaveThresholdDays: 2,
+  twoStepClaimThresholdAmount: 1000,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -93,6 +95,7 @@ export function OfficeHours() {
         halfDayThreshold: d.halfDayThreshold || DEFAULT_SETTINGS.halfDayThreshold,
         lateRules: d.lateRules || DEFAULT_SETTINGS.lateRules,
         twoStepLeaveThresholdDays: d.twoStepLeaveThresholdDays ?? DEFAULT_SETTINGS.twoStepLeaveThresholdDays,
+        twoStepClaimThresholdAmount: d.twoStepClaimThresholdAmount ? Number(d.twoStepClaimThresholdAmount) : DEFAULT_SETTINGS.twoStepClaimThresholdAmount,
       })
     }
   }, [settingsQuery.data])
@@ -179,18 +182,23 @@ export function OfficeHours() {
 
   const saveLeaveRules = () => {
     if (settings.twoStepLeaveThresholdDays <= 0) {
-      toast.error("Validation Error", { description: "Threshold days must be positive." })
+      toast.error("Validation Error", { description: "Leave threshold days must be positive." })
+      return
+    }
+    if (settings.twoStepClaimThresholdAmount <= 0) {
+      toast.error("Validation Error", { description: "Claim threshold amount must be positive." })
       return
     }
 
     updateSettingsMut.mutate({
       twoStepLeaveThresholdDays: settings.twoStepLeaveThresholdDays,
+      twoStepClaimThresholdAmount: settings.twoStepClaimThresholdAmount,
     }, {
       onSuccess: () => {
-        toast.success("2-step leave approval rules saved!")
+        toast.success("2-step verification rules saved!")
       },
       onError: () => {
-        toast.error("Failed to save leave approval rules")
+        toast.error("Failed to save verification rules")
       }
     })
   }
@@ -243,7 +251,7 @@ export function OfficeHours() {
               : "border-transparent text-muted-foreground hover:text-foreground"
           )}
         >
-          Leave Verification
+          Approval Rules
         </button>
       </div>
 
@@ -537,23 +545,23 @@ export function OfficeHours() {
         </div>
       )}
 
-      {/* ── Leave Verification Sub-tab ── */}
+      {/* ── Approval Rules Sub-tab ── */}
       {activeSubTab === "leave" && (
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Card left: Leave threshold configuration */}
+          {/* Card left: Leave & Claim threshold configuration */}
           <Card className="shadow-none border-border/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShieldCheck className="h-5 w-5 text-primary" />
-                2-Step Leave Approvals
+                2-Step Verification Rules
               </CardTitle>
               <CardDescription>
                 Set rules for double-approval authorizations
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Threshold (Days)</Label>
+                <Label className="text-xs font-semibold">2-Step Leave Threshold (Days)</Label>
                 <Input
                   type="number"
                   value={settings.twoStepLeaveThresholdDays}
@@ -562,14 +570,30 @@ export function OfficeHours() {
                   max={365}
                   className="h-10"
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">
+                <p className="text-[10px] text-muted-foreground">
                   Leaves with a duration of {settings.twoStepLeaveThresholdDays} days or more will trigger a two-step approval process.
+                </p>
+              </div>
+
+              <Separator className="bg-border/30" />
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">2-Step Claim Threshold (BDT)</Label>
+                <Input
+                  type="number"
+                  value={settings.twoStepClaimThresholdAmount}
+                  onChange={(e) => updateField("twoStepClaimThresholdAmount", parseInt(e.target.value) || 0)}
+                  min={1}
+                  className="h-10"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Claims equal to or exceeding {settings.twoStepClaimThresholdAmount} BDT will require two-step approval.
                 </p>
               </div>
 
               <Button onClick={saveLeaveRules} disabled={isSaving} className="w-full gap-2 h-10 mt-2">
                 {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                Save Leave Rules
+                Save Approval Rules
               </Button>
             </CardContent>
           </Card>
@@ -581,29 +605,29 @@ export function OfficeHours() {
                 <AlertCircle className="h-4 w-4 text-primary" />
                 How 2-Step Verification Works
               </CardTitle>
-              <CardDescription>Visual workflow overview</CardDescription>
+              <CardDescription>Visual workflow overview for leaves & claims</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative border-l-2 border-primary/20 pl-4 space-y-4 text-xs">
                 <div className="relative">
                   <div className="absolute -left-[21px] top-0.5 h-2 w-2 rounded-full bg-primary" />
-                  <p className="font-bold text-foreground">Step 1: Employee Applies</p>
+                  <p className="font-bold text-foreground">Step 1: Submission & Threshold Check</p>
                   <p className="text-muted-foreground mt-0.5">
-                    If the leave duration is {settings.twoStepLeaveThresholdDays} days or more, 2-step verification is engaged automatically.
+                    If a Leave is &ge; {settings.twoStepLeaveThresholdDays} days, or a Claim is &ge; {settings.twoStepClaimThresholdAmount} BDT, 2-step verification triggers automatically.
                   </p>
                 </div>
                 <div className="relative">
                   <div className="absolute -left-[21px] top-0.5 h-2 w-2 rounded-full bg-primary" />
                   <p className="font-bold text-foreground">Step 2: Line Manager Approval</p>
                   <p className="text-muted-foreground mt-0.5">
-                    The request goes to the employee's Line Manager for the first step authorization. Status becomes "Pending 2nd Step".
+                    The request goes to the employee's designated Line Manager. Once approved, its status moves to "Pending 2nd Step".
                   </p>
                 </div>
                 <div className="relative">
                   <div className="absolute -left-[21px] top-0.5 h-2 w-2 rounded-full bg-primary" />
                   <p className="font-bold text-foreground">Step 3: Final HR/Admin Approval</p>
                   <p className="text-muted-foreground mt-0.5">
-                    Once the Line Manager approves, the leave moves to the 2nd approval queue for authorized roles (like Sakib) to fully approve.
+                    Authorized roles with approval permissions (e.g. HR/Admin) review the request in their 2nd approval queue for final authorization.
                   </p>
                 </div>
               </div>

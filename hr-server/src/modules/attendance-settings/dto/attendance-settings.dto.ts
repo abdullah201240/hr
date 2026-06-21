@@ -8,6 +8,7 @@ import {
   Max,
   MaxLength,
   Matches,
+  IsNumber,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -75,6 +76,12 @@ export class UpdateAttendanceSettingsDto {
   @IsInt()
   @Min(1)
   twoStepLeaveThresholdDays?: number;
+
+  @ApiPropertyOptional({ example: 1000.00 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  twoStepClaimThresholdAmount?: number;
 }
 
 // ─── Holiday DTOs ────────────────────────────────────────────────────────
