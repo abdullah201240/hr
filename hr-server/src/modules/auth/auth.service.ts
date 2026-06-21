@@ -100,6 +100,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
+    // Block login if no custom role has been assigned
+    if (!user.customRoleId) {
+      throw new UnauthorizedException(
+        'No role has been assigned to your account. Please contact your administrator to assign a role before logging in.',
+      );
+    }
+
     // Generate token pair
     const tokens = await this.generateTokens(
       user.id,

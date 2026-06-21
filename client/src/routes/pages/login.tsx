@@ -25,6 +25,8 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
+const LOGIN_EMAIL_KEY = "login_email_draft"
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
@@ -38,7 +40,7 @@ export default function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      email: sessionStorage.getItem(LOGIN_EMAIL_KEY) || "",
       password: "",
       rememberMe: false,
     },
@@ -53,6 +55,8 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password)
 
+      // Clear draft on successful login
+      sessionStorage.removeItem(LOGIN_EMAIL_KEY)
       navigate("/")
     } catch (err: any) {
       setServerError(err.message || "Invalid email or password. Please try again.")
@@ -90,7 +94,16 @@ export default function LoginPage() {
             placeholder="you@sadoshima.com"
             autoComplete="email"
             className={cn(errors.email && "border-destructive focus-visible:ring-destructive")}
-            {...register("email")}
+            {...register("email", {
+              onChange: (e) => {
+                const val = e.target.value as string
+                if (val) {
+                  sessionStorage.setItem(LOGIN_EMAIL_KEY, val)
+                } else {
+                  sessionStorage.removeItem(LOGIN_EMAIL_KEY)
+                }
+              },
+            })}
           />
           {errors.email && (
             <p className="text-xs text-destructive">{errors.email.message}</p>

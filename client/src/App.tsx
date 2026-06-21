@@ -10,8 +10,9 @@ import { RoleGuard } from "@/components/auth/role-guard"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 
+import LoginPage from "@/routes/pages/login"
+
 // Lazy loaded page components
-const LoginPage = lazy(() => import("@/routes/pages/login"))
 const DashboardPage = lazy(() => import("@/routes/pages/dashboard"))
 const EmployeesPage = lazy(() => import("@/routes/pages/employees"))
 const CreateEmployeePage = lazy(() => import("@/routes/pages/create-employee"))
