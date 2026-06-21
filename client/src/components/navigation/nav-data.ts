@@ -125,7 +125,7 @@ export const navGroups: NavGroup[] = [
         title: "Claims & Reimbursement",
         href: "/claims",
         icon: HeartPulse,
-        // No roles — visible to all (employees can file claims)
+        permissions: ["claims:create", "claims:view_own", "claims:view_team", "claims:view_all", "claims:approve", "claims:reject", "claims:settle", "claims:delete"],
         items: [
           {
             title: "Medical Reimbursement",
@@ -153,13 +153,13 @@ export const navGroups: NavGroup[] = [
         title: "Org Structure",
         href: "/departments",
         icon: Building2,
-        // No roles — visible to all
+        permissions: ["departments:read", "designations:read"],
       },
       {
         title: "Announcements",
         href: "/announcements",
         icon: Megaphone,
-        // No roles — visible to all
+        permissions: ["announcements:read", "announcements:create"],
       },
       {
         title: "Reports",

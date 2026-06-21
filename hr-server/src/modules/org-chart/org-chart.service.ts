@@ -1,8 +1,9 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
-import { orgChartNodes } from '../../db/schema';
+import { orgChartNodes, employees, designations, departments } from '../../db/schema';
 import { CreateOrgNodeDto, UpdateOrgNodeDto } from './dto/org-chart.dto';
+
 
 const DEPT_COLORS: Record<string, string> = {
   Executive: "bg-gradient-to-br from-violet-500 to-purple-600",
@@ -340,7 +341,109 @@ export class OrgChartService {
     @Inject(DB_CONNECTION) private readonly db: Database,
   ) {}
 
+  async getTreeFromEmployees(): Promise<any> {
+    const list = await this.db
+      .select({
+        id: employees.id,
+        parentId: employees.lineManagerId,
+        personName: employees.fullNameEnglish,
+        title: designations.name,
+        department: departments.name,
+        grade: designations.grade,
+        employeePhotoUrl: employees.employeePhotoUrl,
+      })
+      .from(employees)
+      .innerJoin(designations, eq(employees.designationId, designations.id))
+      .innerJoin(departments, eq(employees.departmentId, departments.id))
+      .where(eq(employees.status, 'active'));
+
+    if (list.length === 0) {
+      return null;
+    }
+
+    // Map database active employees to OrgNode structure
+    const nodes = list.map(emp => {
+      // Pick color based on department or fallback to Engineering
+      const deptColor = DEPT_COLORS[emp.department] || DEPT_COLORS["Engineering"] || "bg-gradient-to-br from-blue-500 to-indigo-600";
+      return {
+        id: emp.id,
+        parentId: emp.parentId || undefined,
+        personName: emp.personName,
+        title: emp.title,
+        department: emp.department,
+        grade: emp.grade,
+        headcount: 0, // Computed below
+        openRoles: 0,
+        avatarColor: deptColor,
+        children: [] as any[],
+      };
+    });
+
+    const nodeMap = new Map<string, typeof nodes[0]>();
+    nodes.forEach(n => nodeMap.set(n.id, n));
+
+    const roots: typeof nodes = [];
+    nodes.forEach(n => {
+      const parent = (n.parentId && n.parentId !== n.id) ? nodeMap.get(n.parentId) : undefined;
+      if (parent) {
+        parent.children.push(n);
+      } else {
+        roots.push(n);
+      }
+    });
+
+    // Compute headcount recursively (descendants count)
+    const computeHeadcount = (node: any): number => {
+      let count = 0;
+      node.children.forEach((c: any) => {
+        count += 1 + computeHeadcount(c);
+      });
+      node.headcount = count;
+      return count;
+    };
+
+    roots.forEach(r => computeHeadcount(r));
+
+    if (roots.length === 0) {
+      return null;
+    }
+
+    if (roots.length === 1) {
+      return roots[0];
+    }
+
+    // Sort multiple roots by grade priority to determine the primary CEO/MD root
+    const getGradePriority = (grade: string | null): number => {
+      if (!grade) return 4;
+      const g = grade.toUpperCase();
+      if (g.includes("CEO") || g.includes("C-SUITE") || g.includes("ADMIN") || g.includes("PRESIDENT")) return 0;
+      if (g.includes("VP") || g.includes("VICE")) return 1;
+      if (g.includes("DIR") || g.includes("DIRECTOR")) return 2;
+      if (g.includes("MGR") || g.includes("MANAGER")) return 3;
+      return 4;
+    };
+
+    roots.sort((a, b) => getGradePriority(a.grade) - getGradePriority(b.grade));
+    
+    // Set the highest priority node as main root, and attach all other independent nodes under it
+    const mainRoot = roots[0];
+    const otherRoots = roots.slice(1);
+    mainRoot.children.push(...otherRoots);
+    
+    // Recompute headcount for the consolidated root node
+    computeHeadcount(mainRoot);
+
+    return mainRoot;
+  }
+
   async getTree() {
+    // 1. Try to build the tree from actual active employees
+    const realTree = await this.getTreeFromEmployees();
+    if (realTree) {
+      return { ...realTree, isRealData: true };
+    }
+
+    // 2. Fall back to standard seeded org chart database nodes if no employees exist
     const nodes = await this.db.select().from(orgChartNodes);
 
     if (nodes.length === 0) {

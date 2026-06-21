@@ -11,6 +11,7 @@ export interface OrgNode {
   headcount: number;
   openRoles: number;
   avatarColor: string;
+  isRealData?: boolean;
   children: OrgNode[];
 }
 

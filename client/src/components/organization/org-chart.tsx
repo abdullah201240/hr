@@ -169,33 +169,35 @@ function OrgCard({
       </div>
 
       {/* Actions menu */}
-      <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="h-4 w-4 rounded bg-background/80 border border-border/40 flex items-center justify-center hover:bg-muted transition-colors">
-              <MoreHorizontal className="h-2 w-2" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            {onAdd && (
-              <DropdownMenuItem onClick={() => onAdd(node.id, node.personName)}>
-                <Plus className="mr-2 h-3 w-3" /> Add Report
-              </DropdownMenuItem>
-            )}
-            {onEdit && (
-              <DropdownMenuItem onClick={() => onEdit(node)}>
-                <Pencil className="mr-2 h-3 w-3" /> Edit
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            {onDelete && (
-              <DropdownMenuItem variant="destructive" onClick={() => onDelete(node)}>
-                <Trash2 className="mr-2 h-3 w-3" /> Remove
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {(onAdd || onEdit || onDelete) && (
+        <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-4 w-4 rounded bg-background/80 border border-border/40 flex items-center justify-center hover:bg-muted transition-colors">
+                <MoreHorizontal className="h-2 w-2" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              {onAdd && (
+                <DropdownMenuItem onClick={() => onAdd(node.id, node.personName)}>
+                  <Plus className="mr-2 h-3 w-3" /> Add Report
+                </DropdownMenuItem>
+              )}
+              {onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(node)}>
+                  <Pencil className="mr-2 h-3 w-3" /> Edit
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              {onDelete && (
+                <DropdownMenuItem variant="destructive" onClick={() => onDelete(node)}>
+                  <Trash2 className="mr-2 h-3 w-3" /> Remove
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   )
 }
@@ -467,7 +469,9 @@ export default function OrgChart() {
   // ── Stats ────────────────────────────────────────────────────────────────
 
   const countAll = (n: OrgNode): { nodes: number; people: number; open: number } => {
-    let nodes = 1, people = n.headcount, open = n.openRoles
+    let nodes = 1
+    let people = tree?.isRealData ? 1 : n.headcount
+    let open = n.openRoles
     n.children?.forEach((c) => {
       const r = countAll(c)
       nodes += r.nodes
@@ -505,9 +509,11 @@ export default function OrgChart() {
           <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={handleCollapseAll}>
             <ChevronRight className="h-3 w-3" /> Collapse All
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={handleReset}>
-            <RotateCcw className="h-3 w-3" /> Reset
-          </Button>
+          {!tree?.isRealData && (
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={handleReset}>
+              <RotateCcw className="h-3 w-3" /> Reset
+            </Button>
+          )}
         </div>
 
         <div className="flex items-center gap-2 text-xs">
@@ -560,9 +566,9 @@ export default function OrgChart() {
           >
             <TreeBranch
               node={filteredTree}
-              onAdd={openAddDialog}
-              onEdit={openEditDialog}
-              onDelete={handleDelete}
+              onAdd={tree?.isRealData ? undefined : openAddDialog}
+              onEdit={tree?.isRealData ? undefined : openEditDialog}
+              onDelete={tree?.isRealData ? undefined : handleDelete}
               collapsed={collapsed}
               toggleCollapse={toggleCollapse}
             />
