@@ -89,7 +89,7 @@ export default function ChatPage() {
   const [inviteSearchText, setInviteSearchText] = useState('');
 
   // Refs for auto-scroll and typing debounces
-  const messageEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef<any>(null);
 
@@ -116,7 +116,9 @@ export default function ChatPage() {
   }, [activeRoomId, messages]);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [roomMessages]);
 
   const activeRoom = useMemo(() => {
@@ -187,7 +189,7 @@ export default function ChatPage() {
   };
 
   // Handle typing state broadcast
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setInputVal(e.target.value);
     if (!activeRoomId || editingMessageId) return; // Disable typing indicators on edits
 
@@ -203,7 +205,7 @@ export default function ChatPage() {
   };
 
   // Up-Arrow / Escape hotkey overrides
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (e.key === 'ArrowUp' && !inputVal.trim() && activeRoomId) {
       // Select the last message sent by user in this room that isn't deleted
       const myMsgs = roomMessages.filter((m) => m.senderId === user?.id && !m.isDeleted);
@@ -217,6 +219,9 @@ export default function ChatPage() {
         setEditingMessageId(null);
         setInputVal('');
       }
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
     }
   };
 
@@ -510,7 +515,7 @@ export default function ChatPage() {
       <div className={`flex-1 flex-col bg-background ${activeRoomId ? 'flex' : 'hidden md:flex'}`}>
         {activeRoom ? (
           <>
-            <div className="flex h-14 items-center justify-between border-b border-border/30 px-4">
+            <div className="flex h-16 items-center justify-between border-b border-border/20 px-6 bg-card/45 backdrop-blur-sm">
               <div className="flex items-center gap-3">
                 {/* Back button for mobile */}
                 <Button 
@@ -522,14 +527,21 @@ export default function ChatPage() {
                   <ArrowLeft className="h-4.5 w-4.5" />
                 </Button>
                 {activeRoom.type === 'channel' ? (
-                  <Hash className="h-5 w-5 text-muted-foreground/60" />
+                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10 text-primary">
+                    <Hash className="h-4.5 w-4.5" />
+                  </div>
                 ) : (
-                  <Avatar className="h-7 w-7 border border-border/20">
-                    <AvatarImage src={activeRoom.displayPhotoUrl || undefined} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                      {activeRoom.displayName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-8 w-8 border border-border/20">
+                      <AvatarImage src={activeRoom.displayPhotoUrl || undefined} />
+                      <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
+                        {activeRoom.displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {activeRoom.members.find(m => m.id !== user?.id)?.presence === 'online' && (
+                      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+                    )}
+                  </div>
                 )}
                 <div>
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -544,160 +556,175 @@ export default function ChatPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={() => setShowInfoModal(true)}
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground rounded"
+                  className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg"
                 >
-                  <Info className="h-4.5 w-4.5" />
+                  <Info className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             {/* Messages Feed Grouped by Dates */}
-            <div className="flex-1 p-4 overflow-hidden relative">
-              <ScrollArea className="h-full pr-3">
-                <div className="space-y-6">
-                  {roomMessages.length >= 50 && (
-                    <div className="flex justify-center pt-2">
-                      <Button
-                        onClick={handleLoadMoreMessages}
-                        variant="ghost"
-                        size="xs"
-                        disabled={loadingMore}
-                        className="text-[10px] text-muted-foreground hover:text-foreground h-7 flex items-center gap-1.5"
-                      >
-                        {loadingMore ? (
-                          <div className="h-3 w-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
-                        ) : null}
-                        <span>{loadingMore ? 'Loading older messages...' : 'Load older messages'}</span>
-                      </Button>
-                    </div>
-                  )}
-                  {roomMessages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-                      <MessageCircle className="h-10 w-10 text-muted-foreground/30 mb-2 animate-bounce" />
-                      <p className="text-xs font-semibold">Start of message logs</p>
-                      <p className="text-[10px] text-muted-foreground/75">Be nice and keep it professional.</p>
-                    </div>
-                  ) : (
-                    Object.entries(groupedMessages).map(([dateStr, messagesList]) => (
-                      <div key={dateStr} className="space-y-4">
-                        
-                        {/* Date Separator Divider */}
-                        <div className="flex items-center gap-3 py-2">
-                          <div className="flex-1 border-t border-border/20" />
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-background px-2">
-                            {getGroupLabel(dateStr)}
-                          </span>
-                          <div className="flex-1 border-t border-border/20" />
-                        </div>
-
-                        {/* Messages List */}
-                        {messagesList.map((msg: ChatMessage) => {
-                          const isMe = msg.senderId === user?.id;
-                          return (
-                            <div 
-                              key={msg.id} 
-                              className={`group/message relative flex items-start gap-2.5 px-2 py-1 rounded-lg hover:bg-muted/30 transition-all ${
-                                isMe ? 'flex-row-reverse' : ''
-                              }`}
-                            >
-                              
-                              {/* Avatar */}
-                              <Avatar className="h-8 w-8 border border-border/20 mt-0.5">
-                                <AvatarImage src={msg.senderPhotoUrl || undefined} />
-                                <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                                  {msg.senderName.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-
-                              {/* Message bubble */}
-                              <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : ''}`}>
-                                <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="text-[11px] font-semibold text-foreground">{msg.senderName}</span>
-                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                                    <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    {isMe && !msg.isDeleted && (
-                                      <span className="inline-flex ml-0.5">
-                                        {msg.isPending ? (
-                                          <Clock className="h-2.5 w-2.5 text-muted-foreground/50 animate-pulse" />
-                                        ) : (() => {
-                                          if (!activeRoom) return <Check className="h-2.5 w-2.5 text-muted-foreground/50" />;
-                                          const otherMembers = activeRoom.members.filter((m) => m.id !== user?.id);
-                                          if (otherMembers.length === 0) return <Check className="h-2.5 w-2.5 text-muted-foreground/50" />;
-                                          
-                                          const anyRead = otherMembers.some(
-                                            (m) => m.lastReadAt && new Date(m.lastReadAt).getTime() >= new Date(msg.createdAt).getTime()
-                                          );
-                                          
-                                          if (anyRead) {
-                                            return <CheckCheck className="h-2.5 w-2.5 text-sky-500" />;
-                                          }
-                                          return <CheckCheck className="h-2.5 w-2.5 text-muted-foreground/50" />;
-                                        })()}
-                                      </span>
-                                    )}
-                                  </span>
-                                  {msg.isEdited && !msg.isDeleted && (
-                                    <span className="text-[8px] text-muted-foreground/80 italic">(edited)</span>
-                                  )}
-                                </div>
-                                <div className={`rounded-xl px-3 py-2 text-xs shadow-sm leading-relaxed ${
-                                  msg.isDeleted
-                                    ? 'bg-muted/20 text-muted-foreground/50 border border-border/10 italic rounded-tr-none'
-                                    : isMe 
-                                      ? 'bg-primary text-primary-foreground rounded-tr-none' 
-                                      : 'bg-muted/70 text-foreground rounded-tl-none'
-                                }`}>
-                                  {msg.content}
-                                </div>
-                              </div>
-
-                              {/* Message edit/delete hover controls */}
-                              {isMe && !msg.isDeleted && (
-                                <div className={`absolute top-2 flex items-center gap-0.5 bg-background border border-border/40 rounded-lg p-0.5 shadow-sm opacity-100 md:opacity-0 md:group-hover/message:opacity-100 transition-opacity ${
-                                  isMe ? 'left-4' : 'right-4'
-                                }`}>
-                                  <Button
-                                    onClick={() => {
-                                      setEditingMessageId(msg.id);
-                                      setInputVal(msg.content);
-                                    }}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-muted-foreground hover:text-foreground rounded"
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleDeleteMessage(msg.id)}
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-destructive hover:bg-destructive/10 rounded"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              )}
-
-                            </div>
-                          );
-                        })}
-
-                      </div>
-                    ))
-                  )}
-                  <div ref={messageEndRef} />
+            <div 
+              ref={chatContainerRef}
+              className="flex-1 p-6 overflow-y-auto space-y-6 scroll-smooth"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              {roomMessages.length >= 50 && (
+                <div className="flex justify-center pb-2">
+                  <Button
+                    onClick={handleLoadMoreMessages}
+                    variant="ghost"
+                    size="xs"
+                    disabled={loadingMore}
+                    className="text-[10px] text-muted-foreground hover:text-foreground h-7 flex items-center gap-1.5 bg-muted/30 px-3 rounded-full"
+                  >
+                    {loadingMore ? (
+                      <div className="h-3 w-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
+                    ) : null}
+                    <span>{loadingMore ? 'Loading older messages...' : 'Load older messages'}</span>
+                  </Button>
                 </div>
-              </ScrollArea>
+              )}
+              {roomMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
+                    <MessageCircle className="h-6 w-6 animate-bounce" />
+                  </div>
+                  <p className="text-xs font-semibold text-foreground">Start of message logs</p>
+                  <p className="text-[10px] text-muted-foreground/75 mt-0.5">Be nice and keep it professional.</p>
+                </div>
+              ) : (
+                Object.entries(groupedMessages).map(([dateStr, messagesList]) => (
+                  <div key={dateStr} className="space-y-4">
+                    
+                    {/* Date Separator Divider */}
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="flex-1 border-t border-border/10" />
+                      <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider bg-background px-2.5 py-0.5 rounded-full border border-border/10">
+                        {getGroupLabel(dateStr)}
+                      </span>
+                      <div className="flex-1 border-t border-border/10" />
+                    </div>
+
+                    {/* Messages List */}
+                    {messagesList.map((msg: ChatMessage) => {
+                      const isMe = msg.senderId === user?.id;
+                      return (
+                        <div 
+                          key={msg.id} 
+                          className={`group/message relative flex items-start gap-3 px-1 py-1 rounded-xl transition-all ${
+                            isMe ? 'flex-row-reverse' : ''
+                          }`}
+                        >
+                          
+                          {/* Avatar */}
+                          <Avatar className="h-8 w-8 border border-border/10 mt-0.5">
+                            <AvatarImage src={msg.senderPhotoUrl || undefined} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
+                              {msg.senderName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          {/* Message bubble wrapper */}
+                          <div className={`flex flex-col max-w-[75%] ${isMe ? 'items-end' : 'items-start'}`}>
+                            <div className="flex items-center gap-1.5 mb-1 px-1">
+                              <span className="text-[10px] font-bold text-muted-foreground/80">{msg.senderName}</span>
+                              <span className="text-[8px] text-muted-foreground/50 flex items-center gap-0.5">
+                                <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                {isMe && !msg.isDeleted && (
+                                  <span className="inline-flex ml-0.5">
+                                    {msg.isPending ? (
+                                      <Clock className="h-2.5 w-2.5 text-muted-foreground/40 animate-pulse" />
+                                    ) : (() => {
+                                      if (!activeRoom) return <Check className="h-2.5 w-2.5 text-muted-foreground/40" />;
+                                      const otherMembers = activeRoom.members.filter((m) => m.id !== user?.id);
+                                      if (otherMembers.length === 0) return <Check className="h-2.5 w-2.5 text-muted-foreground/40" />;
+                                      
+                                      const anyRead = otherMembers.some(
+                                        (m) => m.lastReadAt && new Date(m.lastReadAt).getTime() >= new Date(msg.createdAt).getTime()
+                                      );
+                                      
+                                      if (anyRead) {
+                                        return <CheckCheck className="h-2.5 w-2.5 text-sky-500" />;
+                                      }
+                                      return <CheckCheck className="h-2.5 w-2.5 text-muted-foreground/40" />;
+                                    })()}
+                                  </span>
+                                )}
+                              </span>
+                              {msg.isEdited && !msg.isDeleted && (
+                                <span className="text-[8px] text-muted-foreground/50 italic">(edited)</span>
+                              )}
+                            </div>
+                            
+                            {/* Bubble itself */}
+                            <div className={`relative rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed ${
+                              msg.isDeleted
+                                ? 'bg-muted/30 text-muted-foreground/40 border border-border/10 italic rounded-tr-sm'
+                                : isMe 
+                                  ? 'bg-primary text-primary-foreground rounded-tr-sm shadow-primary/10' 
+                                  : 'bg-muted/70 text-foreground rounded-tl-sm'
+                            }`}>
+                              {msg.content}
+                              {isMe ? (
+                                <svg className={`absolute top-0 -right-[5px] h-[10px] w-[8px] fill-current ${
+                                  msg.isDeleted ? 'text-muted/30' : 'text-primary'
+                                }`} viewBox="0 0 8 10">
+                                  <path d="M 0,0 C 4,0 8,2 8,10 L 8,0 Z" />
+                                </svg>
+                              ) : (
+                                <svg className={`absolute top-0 -left-[5px] h-[10px] w-[8px] fill-current ${
+                                  msg.isDeleted ? 'text-muted/30' : 'text-muted/70'
+                                }`} viewBox="0 0 8 10">
+                                  <path d="M 8,0 C 4,0 0,2 0,10 L 0,0 Z" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Message edit/delete hover controls */}
+                          {isMe && !msg.isDeleted && (
+                            <div className={`absolute top-2 flex items-center gap-0.5 bg-background border border-border/40 rounded-lg p-0.5 shadow-sm opacity-100 md:opacity-0 md:group-hover/message:opacity-100 transition-opacity ${
+                              isMe ? 'left-4' : 'right-4'
+                            }`}>
+                              <Button
+                                onClick={() => {
+                                  setEditingMessageId(msg.id);
+                                  setInputVal(msg.content);
+                                }}
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-foreground rounded"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive hover:bg-destructive/10 rounded"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Typing indicators */}
             {activeTypers.length > 0 && (
-              <div className="px-4 py-1 text-[10px] text-muted-foreground flex items-center gap-1 bg-background/50 border-t border-t-border/10">
+              <div className="px-6 py-1 text-[10px] text-muted-foreground flex items-center gap-1 bg-background/50 border-t border-t-border/5">
                 <span className="font-semibold">{activeTypers.join(', ')}</span> 
                 <span>{activeTypers.length === 1 ? 'is' : 'are'} typing...</span>
               </div>
@@ -705,7 +732,7 @@ export default function ChatPage() {
 
             {/* Message edit banner */}
             {editingMessageId && (
-              <div className="px-4 py-1 text-[10px] text-primary flex items-center justify-between bg-primary/5 border-t border-t-primary/20">
+              <div className="px-6 py-1.5 text-[10px] text-primary flex items-center justify-between bg-primary/5 border-t border-t-primary/20">
                 <span className="font-medium">Editing message (Press Esc to cancel)</span>
                 <Button 
                   onClick={() => {
@@ -721,24 +748,35 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* Input field */}
-            <div className="p-3 bg-background border-t border-border/30">
-              <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
-                <Input 
+            {/* Input field (Slack/Discord Style) */}
+            <div className="px-6 py-4 bg-background border-t border-border/20">
+              <form onSubmit={handleSendMessage} className="flex flex-col border border-border/40 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 rounded-xl bg-background/50 overflow-hidden shadow-sm transition-all">
+                <textarea 
                   value={inputVal}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
+                  rows={1}
                   placeholder={
                     editingMessageId
                       ? 'Edit message content...'
                       : `Message ${activeRoom.type === 'channel' ? '#' + activeRoom.displayName : activeRoom.displayName}...`
                   }
-                  className="flex-1 h-9 bg-background/50 text-xs shadow-none border-border/40 focus-visible:ring-1 focus-visible:ring-primary"
+                  className="w-full max-h-32 resize-none bg-transparent py-3 px-4 text-xs outline-none border-none placeholder-muted-foreground/50 focus:ring-0 focus:outline-none"
                 />
-                <Button type="submit" size="sm" className="h-9 px-3 rounded shadow-none text-xs gap-1">
-                  <span>{editingMessageId ? 'Save' : 'Send'}</span>
-                  <Send className="h-3 w-3" />
-                </Button>
+                <div className="flex items-center justify-between border-t border-border/10 px-4 py-2 bg-muted/20">
+                  <div className="flex items-center gap-2 text-muted-foreground/50">
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground/60">
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-md hover:bg-muted text-muted-foreground/60">
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button type="submit" size="sm" className="h-7 px-3 rounded-lg shadow-none text-xs gap-1">
+                    <span>{editingMessageId ? 'Save' : 'Send'}</span>
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </form>
             </div>
           </>

@@ -158,7 +158,11 @@ export class ChatService {
         })
       );
     }
-    return room;
+
+    // Return the fully enriched room representation for the creator
+    const userRooms = await this.getUserRooms(creatorId);
+    const enrichedRoom = userRooms.find((r: any) => r.id === room.id);
+    return enrichedRoom || room;
   }
 
   /**
@@ -233,15 +237,14 @@ export class ChatService {
       throw new BadRequestException('Can only remove members from channel rooms');
     }
 
+    const members = await this.chatRepository.getRoomMembers(roomId);
+
     if (employeeId !== requestorId) {
-      const members = await this.chatRepository.getRoomMembers(roomId);
       const requestor = members.find((m) => m.id === requestorId);
       if (!requestor || (requestor.role !== 'owner' && requestor.role !== 'admin')) {
         throw new BadRequestException('Insufficient permissions to remove members');
       }
     }
-
-    const membersBefore = await this.chatRepository.getRoomMembers(roomId);
 
     await this.chatRepository.removeMember(roomId, employeeId);
     
@@ -256,7 +259,7 @@ export class ChatService {
         type: 'ROOM_LEFT',
         roomId,
         leftMemberId: employeeId,
-        members: membersBefore.map((m) => m.id),
+        members: members.map((m) => m.id),
       })
     );
 
@@ -403,9 +406,12 @@ export class ChatService {
     const members = await this.chatRepository.getRoomMembers(roomId);
     const offlineRecipients = [];
 
+    const otherMemberIds = members.filter((m) => m.id !== senderId).map((m) => m.id);
+    const presences = await this.getMultiplePresences(otherMemberIds);
+
     for (const member of members) {
       if (member.id === senderId) continue;
-      const presence = await this.getUserPresence(member.id);
+      const presence = presences[member.id] || 'offline';
       if (presence === 'offline') {
         offlineRecipients.push(member);
       }

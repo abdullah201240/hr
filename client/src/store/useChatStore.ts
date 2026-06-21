@@ -320,9 +320,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   getOrCreateDirectRoom: async (recipientId) => {
     const room = await apiClient.post<ChatRoom>('chat/rooms/direct', { recipientId });
-    await get().fetchRooms();
-    const existing = get().rooms.find((r) => r.id === room.id);
-    return existing || room;
+    get().addIncomingRoom(room);
+    return room;
   },
 
   addMemberToChannel: async (roomId, employeeId) => {
