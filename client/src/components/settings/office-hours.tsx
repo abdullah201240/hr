@@ -22,7 +22,7 @@ import {
   useAttendanceSettingsQuery,
   useUpdateAttendanceSettingsMutation,
 } from "@/hooks/useAttendanceSettings"
-import type { UpdateAttendanceSettingsPayload, LateRule } from "@/types"
+import type { LateRule } from "@/types"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface OfficeSettings {
@@ -74,6 +74,7 @@ function formatTime12(t: string): string {
 
 export function OfficeHours() {
   const [settings, setSettings] = useState<OfficeSettings>(DEFAULT_SETTINGS)
+  const [activeSubTab, setActiveSubTab] = useState<"shifts" | "attendance" | "leave">("shifts")
 
   // ─── API hooks ───────────────────────────────────────────────────────────
   const settingsQuery = useAttendanceSettingsQuery()
@@ -96,46 +97,18 @@ export function OfficeHours() {
     }
   }, [settingsQuery.data])
 
-  // ─── Validation ──────────────────────────────────────────────────────────
-  const validation = useMemo(() => {
+  // ─── Validation & Summary Helpers ────────────────────────────────────────
+  const summaryInfo = useMemo(() => {
     const totalMin = timeToMinutes(settings.endTime) - timeToMinutes(settings.startTime)
     const breakMin = timeToMinutes(settings.breakEnd) - timeToMinutes(settings.breakStart)
     const workMin = totalMin - breakMin
-
-    const errors: string[] = []
-
-    if (totalMin <= 0) {
-      errors.push("End time must be after start time.")
-    }
-
-    if (breakMin <= 0) {
-      errors.push("Break end must be after break start.")
-    }
-
-    // Break must fall within office hours
-    if (
-      timeToMinutes(settings.breakStart) < timeToMinutes(settings.startTime) ||
-      timeToMinutes(settings.breakEnd) > timeToMinutes(settings.endTime)
-    ) {
-      errors.push("Break time must be within office hours.")
-    }
-
-    if (settings.lateThreshold <= 0) {
-      errors.push("Late threshold must be positive.")
-    }
-
-    if (settings.twoStepLeaveThresholdDays <= 0) {
-      errors.push("Two-step threshold days must be positive.")
-    }
 
     return {
       totalMinutes: totalMin,
       breakMinutes: breakMin,
       workMinutes: workMin,
-      errors,
-      isValid: errors.length === 0,
     }
-  }, [settings])
+  }, [settings.startTime, settings.endTime, settings.breakStart, settings.breakEnd])
 
   // ─── Handlers ────────────────────────────────────────────────────────────
   const updateField = <K extends keyof OfficeSettings>(key: K, value: OfficeSettings[K]) => {
@@ -143,34 +116,82 @@ export function OfficeHours() {
     setSettings(updated)
   }
 
-  const handleSave = () => {
-    if (!validation.isValid) {
-      toast.error("Validation Error", {
-        description: validation.errors.join(" "),
-      })
+  const saveShifts = () => {
+    const totalMin = timeToMinutes(settings.endTime) - timeToMinutes(settings.startTime)
+    const breakMin = timeToMinutes(settings.breakEnd) - timeToMinutes(settings.breakStart)
+    
+    if (totalMin <= 0) {
+      toast.error("Validation Error", { description: "End time must be after start time." })
+      return
+    }
+    if (breakMin <= 0) {
+      toast.error("Validation Error", { description: "Break end must be after break start." })
+      return
+    }
+    if (
+      timeToMinutes(settings.breakStart) < timeToMinutes(settings.startTime) ||
+      timeToMinutes(settings.breakEnd) > timeToMinutes(settings.endTime)
+    ) {
+      toast.error("Validation Error", { description: "Break time must be within office hours." })
       return
     }
 
-    const payload: UpdateAttendanceSettingsPayload = {
+    updateSettingsMut.mutate({
       startTime: settings.startTime,
       endTime: settings.endTime,
       breakStart: settings.breakStart,
       breakEnd: settings.breakEnd,
-      lateThreshold: settings.lateThreshold,
-      halfDayThreshold: settings.halfDayThreshold,
-      lateRules: settings.lateRules,
-      twoStepLeaveThresholdDays: settings.twoStepLeaveThresholdDays,
-    }
-
-    updateSettingsMut.mutate(payload, {
+    }, {
       onSuccess: () => {
-        toast.success("Office & Leave settings saved!", {
-          description: `Office hours: ${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)} (${formatDuration(validation.workMinutes)} working)`,
+        toast.success("Shift schedule saved!", {
+          description: `Work hours: ${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)} (${formatDuration(totalMin - breakMin)} net work)`,
         })
       },
       onError: () => {
-        toast.error("Failed to save office settings")
+        toast.error("Failed to save shift schedule")
+      }
+    })
+  }
+
+  const saveAttendancePolicies = () => {
+    if (settings.lateThreshold <= 0) {
+      toast.error("Validation Error", { description: "Late threshold must be positive." })
+      return
+    }
+    if (settings.halfDayThreshold <= 0) {
+      toast.error("Validation Error", { description: "Half day threshold must be positive." })
+      return
+    }
+
+    updateSettingsMut.mutate({
+      lateThreshold: settings.lateThreshold,
+      halfDayThreshold: settings.halfDayThreshold,
+      lateRules: settings.lateRules,
+    }, {
+      onSuccess: () => {
+        toast.success("Attendance policies saved successfully!")
       },
+      onError: () => {
+        toast.error("Failed to save attendance policies")
+      }
+    })
+  }
+
+  const saveLeaveRules = () => {
+    if (settings.twoStepLeaveThresholdDays <= 0) {
+      toast.error("Validation Error", { description: "Threshold days must be positive." })
+      return
+    }
+
+    updateSettingsMut.mutate({
+      twoStepLeaveThresholdDays: settings.twoStepLeaveThresholdDays,
+    }, {
+      onSuccess: () => {
+        toast.success("2-step leave approval rules saved!")
+      },
+      onError: () => {
+        toast.error("Failed to save leave approval rules")
+      }
     })
   }
 
@@ -188,393 +209,408 @@ export function OfficeHours() {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {/* ── Office Hours Card ── */}
-      <Card className="shadow-none border-border/40">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="h-5 w-5 text-primary" />
-            Standard Office Hours
-          </CardTitle>
-          <CardDescription>
-            Configure daily work schedule and break times
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* Office Time Range */}
-          <div className="space-y-3">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Clock className="h-4 w-4 text-primary" />
-              Work Schedule
-            </Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  Start Time
-                </Label>
-                <Input
-                  type="time"
-                  value={settings.startTime}
-                  onChange={(e) => updateField("startTime", e.target.value)}
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  End Time
-                </Label>
-                <Input
-                  type="time"
-                  value={settings.endTime}
-                  onChange={(e) => updateField("endTime", e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-border/30" />
-
-          {/* Break Time */}
-          <div className="space-y-3">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <Coffee className="h-4 w-4 text-primary" />
-              Lunch / Break Time
-            </Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  Break Start
-                </Label>
-                <Input
-                  type="time"
-                  value={settings.breakStart}
-                  onChange={(e) => updateField("breakStart", e.target.value)}
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  Break End
-                </Label>
-                <Input
-                  type="time"
-                  value={settings.breakEnd}
-                  onChange={(e) => updateField("breakEnd", e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator className="bg-border/30" />
-
-          {/* Late Arrival Policy */}
-          <div className="space-y-3">
-            <Label className="text-xs font-semibold flex items-center gap-1.5">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              Late Arrival Policy
-            </Label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  Late Threshold (minutes)
-                </Label>
-                <Input
-                  type="number"
-                  value={settings.lateThreshold}
-                  onChange={(e) => updateField("lateThreshold", parseInt(e.target.value) || 0)}
-                  min={1}
-                  max={120}
-                  className="h-10"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Arriving more than {settings.lateThreshold} min after{" "}
-                  {formatTime12(settings.startTime)} → marked Late
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  Half Day Threshold (minutes)
-                </Label>
-                <Input
-                  type="number"
-                  value={settings.halfDayThreshold}
-                  onChange={(e) => updateField("halfDayThreshold", parseInt(e.target.value) || 0)}
-                  min={60}
-                  max={480}
-                  className="h-10"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Arriving more than {settings.halfDayThreshold} min late → marked Half Day
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Validation Errors */}
-          {validation.errors.length > 0 && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 space-y-1">
-              {validation.errors.map((err, i) => (
-                <p key={i} className="text-xs text-red-500 font-medium flex items-center gap-1.5">
-                  <AlertCircle className="h-3 w-3 shrink-0" />
-                  {err}
-                </p>
-              ))}
-            </div>
+    <div className="space-y-6">
+      {/* ── Sub-tab Switcher ── */}
+      <div className="flex border-b border-border/40 pb-px gap-2">
+        <button
+          onClick={() => setActiveSubTab("shifts")}
+          className={cn(
+            "pb-3 text-sm font-semibold border-b-2 px-4 transition-all -mb-px",
+            activeSubTab === "shifts"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           )}
+        >
+          Shifts & Schedule
+        </button>
+        <button
+          onClick={() => setActiveSubTab("attendance")}
+          className={cn(
+            "pb-3 text-sm font-semibold border-b-2 px-4 transition-all -mb-px",
+            activeSubTab === "attendance"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Attendance Policies
+        </button>
+        <button
+          onClick={() => setActiveSubTab("leave")}
+          className={cn(
+            "pb-3 text-sm font-semibold border-b-2 px-4 transition-all -mb-px",
+            activeSubTab === "leave"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Leave Verification
+        </button>
+      </div>
 
-          <Button
-            onClick={handleSave}
-            disabled={!validation.isValid || isSaving}
-            className="w-full gap-2 h-10"
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : null}
-            Save Office Settings
-          </Button>
-        </CardContent>
-      </Card>
+      {/* ── Shifts & Schedule Sub-tab ── */}
+      {activeSubTab === "shifts" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Card left: Shift & Break settings */}
+          <Card className="shadow-none border-border/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Building2 className="h-5 w-5 text-primary" />
+                Work Shift Schedule
+              </CardTitle>
+              <CardDescription>
+                Configure shifts start/end times and standard break windows.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Clock className="h-4 w-4 text-primary" />
+                  Office Work Schedule
+                </Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Start Time</Label>
+                    <Input
+                      type="time"
+                      value={settings.startTime}
+                      onChange={(e) => updateField("startTime", e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">End Time</Label>
+                    <Input
+                      type="time"
+                      value={settings.endTime}
+                      onChange={(e) => updateField("endTime", e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                </div>
+              </div>
 
-      {/* ── Summary Card ── */}
-      <div className="space-y-6">
-        <Card className="shadow-none border-border/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Timer className="h-5 w-5 text-primary" />
-              Schedule Summary
-            </CardTitle>
-            <CardDescription>Computed from your configured settings</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Summary Rows */}
-            <div className="space-y-2.5">
-              <SummaryRow
-                label="Office Hours"
-                value={`${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)}`}
-                badge={formatDuration(Math.max(0, validation.totalMinutes))}
-              />
-              <SummaryRow
-                label="Break Time"
-                value={`${formatTime12(settings.breakStart)} – ${formatTime12(settings.breakEnd)}`}
-                badge={formatDuration(Math.max(0, validation.breakMinutes))}
-                badgeColor="bg-orange-500/10 text-orange-600 dark:text-orange-400"
-              />
-              <div className="border-t border-border/30 pt-2.5">
+              <Separator className="bg-border/30" />
+
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Coffee className="h-4 w-4 text-primary" />
+                  Lunch / Recess Hour
+                </Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Break Start</Label>
+                    <Input
+                      type="time"
+                      value={settings.breakStart}
+                      onChange={(e) => updateField("breakStart", e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Break End</Label>
+                    <Input
+                      type="time"
+                      value={settings.breakEnd}
+                      onChange={(e) => updateField("breakEnd", e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={saveShifts} disabled={isSaving} className="w-full gap-2 h-10 mt-2">
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Shift Schedule
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Card right: computed shift summary details */}
+          <Card className="shadow-none border-border/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Timer className="h-5 w-5 text-primary" />
+                Schedule Summary
+              </CardTitle>
+              <CardDescription>Computed parameters based on times entered above</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2.5">
                 <SummaryRow
-                  label="Net Working Hours"
-                  value="Per day"
-                  badge={formatDuration(Math.max(0, validation.workMinutes))}
-                  badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  highlight
+                  label="Office Hours"
+                  value={`${formatTime12(settings.startTime)} – ${formatTime12(settings.endTime)}`}
+                  badge={formatDuration(Math.max(0, summaryInfo.totalMinutes))}
                 />
+                <SummaryRow
+                  label="Break Time"
+                  value={`${formatTime12(settings.breakStart)} – ${formatTime12(settings.breakEnd)}`}
+                  badge={formatDuration(Math.max(0, summaryInfo.breakMinutes))}
+                  badgeColor="bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                />
+                <div className="border-t border-border/30 pt-2.5">
+                  <SummaryRow
+                    label="Net Working Hours"
+                    value="Per day"
+                    badge={formatDuration(Math.max(0, summaryInfo.workMinutes))}
+                    badgeColor="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    highlight
+                  />
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-            <Separator className="bg-border/30" />
+      {/* ── Attendance Policies Sub-tab ── */}
+      {activeSubTab === "attendance" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Card left: Threshold settings */}
+          <Card className="shadow-none border-border/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertCircle className="h-5 w-5 text-primary" />
+                Attendance Policy Setup
+              </CardTitle>
+              <CardDescription>
+                Define late arrivals and half-day thresholds
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Late Threshold (mins)</Label>
+                  <Input
+                    type="number"
+                    value={settings.lateThreshold}
+                    onChange={(e) => updateField("lateThreshold", parseInt(e.target.value) || 0)}
+                    min={1}
+                    max={120}
+                    className="h-10"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Arriving more than {settings.lateThreshold} min after shift start marked Late.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Half Day Threshold (mins)</Label>
+                  <Input
+                    type="number"
+                    value={settings.halfDayThreshold}
+                    onChange={(e) => updateField("halfDayThreshold", parseInt(e.target.value) || 0)}
+                    min={60}
+                    max={480}
+                    className="h-10"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Arriving more than {settings.halfDayThreshold} min late marked Half Day.
+                  </p>
+                </div>
+              </div>
 
-            {/* Policy summary */}
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Attendance Policies
-              </h4>
+              <Separator className="bg-border/30" />
+
               <div className="space-y-2">
-                <PolicyRow
-                  label="Late Mark"
-                  description={`After ${settings.lateThreshold} min past ${formatTime12(settings.startTime)}`}
-                  color="amber"
-                />
-                <PolicyRow
-                  label="Half Day"
-                  description={`After ${settings.halfDayThreshold} min past ${formatTime12(settings.startTime)}`}
-                  color="red"
-                />
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Attendance Policies</h4>
+                <div className="space-y-2">
+                  <PolicyRow
+                    label="Late Mark"
+                    description={`After ${settings.lateThreshold} min past ${formatTime12(settings.startTime)}`}
+                    color="amber"
+                  />
+                  <PolicyRow
+                    label="Half Day"
+                    description={`After ${settings.halfDayThreshold} min past ${formatTime12(settings.startTime)}`}
+                    color="red"
+                  />
+                </div>
               </div>
-            </div>
 
-            <Separator className="bg-border/30" />
+              <Button onClick={saveAttendancePolicies} disabled={isSaving} className="w-full gap-2 h-10 mt-2">
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Attendance Policies
+              </Button>
+            </CardContent>
+          </Card>
 
-            {/* Quick reference */}
-            <div className="p-3 rounded-lg bg-muted/20 border border-border/20 space-y-1.5">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Status Rules
-              </p>
-              <StatusRule
-                status="Present"
-                color="emerald"
-                rule={`Clock-in before ${formatTime12(settings.startTime)} + ${settings.lateThreshold} min`}
-              />
-              <StatusRule
-                status="Late"
-                color="amber"
-                rule={`Clock-in ${settings.lateThreshold}–${settings.halfDayThreshold} min after start`}
-              />
-              <StatusRule
-                status="Half Day"
-                color="orange"
-                rule={`Clock-in after ${settings.halfDayThreshold} min past start`}
-              />
-              <StatusRule
-                status="Absent"
-                color="red"
-                rule="No clock-in recorded for the day"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── 2-Step Leave Verification Card ── */}
-        <Card className="shadow-none border-border/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              2-Step Leave Verification
-            </CardTitle>
-            <CardDescription>
-              Configure leave duration that requires double approval
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                Threshold (Days)
-              </Label>
-              <Input
-                type="number"
-                value={settings.twoStepLeaveThresholdDays}
-                onChange={(e) => updateField("twoStepLeaveThresholdDays", parseInt(e.target.value) || 1)}
-                min={1}
-                max={365}
-                className="h-10"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Leaves with a duration of {settings.twoStepLeaveThresholdDays} days or more will require 2nd level of approval (from HR/Admins) after the Line Manager's initial approval.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Late Attendance Penalty Card (Table 10) ── */}
-        <Card className="shadow-none border-border/40">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Timer className="h-5 w-5 text-primary" />
-              Late Attendance Penalty
-            </CardTitle>
-            <CardDescription>Configure basic salary or leave deduction rules based on late duration</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border border-border/30 rounded-xl overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-muted/30 border-b border-border/30 text-muted-foreground font-semibold">
-                    <th className="p-3">Late Duration</th>
-                    <th className="p-3">Penalty / Deduction</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {settings.lateRules && settings.lateRules.length > 0 ? (
-                    settings.lateRules.map((rule, index) => (
-                      <tr key={index} className="border-b border-border/20 hover:bg-muted/10">
-                        <td className="p-3 font-medium text-foreground">
-                          {rule.minMinutes} – {rule.maxMinutes} Min
-                        </td>
-                        <td className="p-3 text-muted-foreground">{rule.penalty}</td>
-                        <td className="p-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const updatedRules = settings.lateRules.filter((_, idx) => idx !== index)
-                              updateField("lateRules", updatedRules)
-                            }}
-                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
+          {/* Card right: Late penalties rules table */}
+          <Card className="shadow-none border-border/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Timer className="h-5 w-5 text-primary" />
+                Late Penalties & Deductions
+              </CardTitle>
+              <CardDescription>Rules assigning salary / leave penalties dynamically</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border border-border/30 rounded-xl overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-muted/30 border-b border-border/30 text-muted-foreground font-semibold">
+                      <th className="p-3">Late Duration</th>
+                      <th className="p-3">Penalty / Deduction</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {settings.lateRules && settings.lateRules.length > 0 ? (
+                      settings.lateRules.map((rule, index) => (
+                        <tr key={index} className="border-b border-border/20 hover:bg-muted/10">
+                          <td className="p-3 font-medium text-foreground">
+                            {rule.minMinutes} – {rule.maxMinutes} Min
+                          </td>
+                          <td className="p-3 text-muted-foreground">{rule.penalty}</td>
+                          <td className="p-3 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const updatedRules = settings.lateRules.filter((_, idx) => idx !== index)
+                                updateField("lateRules", updatedRules)
+                              }}
+                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="p-4 text-center text-muted-foreground italic">
+                          No late penalty rules configured.
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="p-4 text-center text-muted-foreground italic">
-                        No late penalty rules configured.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="p-3 rounded-xl bg-muted/20 border border-border/30 space-y-3">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Add New Penalty Rule
-              </p>
-              <div className="grid gap-2 grid-cols-2">
-                <div className="space-y-1">
-                  <Label className="text-[9px] uppercase">Min Minutes</Label>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 1"
-                    id="new-rule-min"
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[9px] uppercase">Max Minutes</Label>
-                  <Input
-                    type="number"
-                    placeholder="e.g. 30"
-                    id="new-rule-max"
-                    className="h-8 text-xs"
-                  />
-                </div>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <div className="space-y-1">
-                <Label className="text-[9px] uppercase">Penalty Description</Label>
+
+              <div className="p-3 rounded-xl bg-muted/20 border border-border/30 space-y-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Add Penalty Rule</p>
+                <div className="grid gap-2 grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase">Min Minutes</Label>
+                    <Input type="number" placeholder="e.g. 1" id="new-rule-min" className="h-8 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase">Max Minutes</Label>
+                    <Input type="number" placeholder="e.g. 30" id="new-rule-max" className="h-8 text-xs" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[9px] uppercase">Penalty Description</Label>
+                  <Input type="text" placeholder="e.g. 30 Minutes Basic Salary Deduction" id="new-rule-penalty" className="h-8 text-xs" />
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const minEl = document.getElementById("new-rule-min") as HTMLInputElement
+                    const maxEl = document.getElementById("new-rule-max") as HTMLInputElement
+                    const penEl = document.getElementById("new-rule-penalty") as HTMLInputElement
+                    
+                    const min = parseInt(minEl?.value)
+                    const max = parseInt(maxEl?.value)
+                    const penalty = penEl?.value?.trim()
+
+                    if (isNaN(min) || isNaN(max) || !penalty) {
+                      toast.error("Please fill in all rule fields correctly.")
+                      return
+                    }
+
+                    const newRule = { minMinutes: min, maxMinutes: max, penalty }
+                    const updatedRules = [...(settings.lateRules || []), newRule].sort((a, b) => a.minMinutes - b.minMinutes)
+                    updateField("lateRules", updatedRules)
+
+                    if (minEl) minEl.value = ""
+                    if (maxEl) maxEl.value = ""
+                    if (penEl) penEl.value = ""
+                  }}
+                  className="w-full h-8 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Rule to Table
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Leave Verification Sub-tab ── */}
+      {activeSubTab === "leave" && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Card left: Leave threshold configuration */}
+          <Card className="shadow-none border-border/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                2-Step Leave Approvals
+              </CardTitle>
+              <CardDescription>
+                Set rules for double-approval authorizations
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Threshold (Days)</Label>
                 <Input
-                  type="text"
-                  placeholder="e.g. 30 Minutes Basic Salary Deduction"
-                  id="new-rule-penalty"
-                  className="h-8 text-xs"
+                  type="number"
+                  value={settings.twoStepLeaveThresholdDays}
+                  onChange={(e) => updateField("twoStepLeaveThresholdDays", parseInt(e.target.value) || 1)}
+                  min={1}
+                  max={365}
+                  className="h-10"
                 />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Leaves with a duration of {settings.twoStepLeaveThresholdDays} days or more will trigger a two-step approval process.
+                </p>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const minEl = document.getElementById("new-rule-min") as HTMLInputElement
-                  const maxEl = document.getElementById("new-rule-max") as HTMLInputElement
-                  const penEl = document.getElementById("new-rule-penalty") as HTMLInputElement
-                  
-                  const min = parseInt(minEl?.value)
-                  const max = parseInt(maxEl?.value)
-                  const penalty = penEl?.value?.trim()
 
-                  if (isNaN(min) || isNaN(max) || !penalty) {
-                    toast.error("Please fill in all rule fields correctly.")
-                    return
-                  }
-
-                  const newRule = { minMinutes: min, maxMinutes: max, penalty }
-                  const updatedRules = [...(settings.lateRules || []), newRule].sort((a, b) => a.minMinutes - b.minMinutes)
-                  updateField("lateRules", updatedRules)
-
-                  // Clear fields
-                  if (minEl) minEl.value = ""
-                  if (maxEl) maxEl.value = ""
-                  if (penEl) penEl.value = ""
-                }}
-                className="w-full h-8 text-xs"
-              >
-                <Plus className="h-3 w-3 mr-1" /> Add Rule to Table
+              <Button onClick={saveLeaveRules} disabled={isSaving} className="w-full gap-2 h-10 mt-2">
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Save Leave Rules
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+
+          {/* Card right: Step-by-step documentation guide */}
+          <Card className="shadow-none border-border/40 bg-muted/5">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                How 2-Step Verification Works
+              </CardTitle>
+              <CardDescription>Visual workflow overview</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative border-l-2 border-primary/20 pl-4 space-y-4 text-xs">
+                <div className="relative">
+                  <div className="absolute -left-[21px] top-0.5 h-2 w-2 rounded-full bg-primary" />
+                  <p className="font-bold text-foreground">Step 1: Employee Applies</p>
+                  <p className="text-muted-foreground mt-0.5">
+                    If the leave duration is {settings.twoStepLeaveThresholdDays} days or more, 2-step verification is engaged automatically.
+                  </p>
+                </div>
+                <div className="relative">
+                  <div className="absolute -left-[21px] top-0.5 h-2 w-2 rounded-full bg-primary" />
+                  <p className="font-bold text-foreground">Step 2: Line Manager Approval</p>
+                  <p className="text-muted-foreground mt-0.5">
+                    The request goes to the employee's Line Manager for the first step authorization. Status becomes "Pending 2nd Step".
+                  </p>
+                </div>
+                <div className="relative">
+                  <div className="absolute -left-[21px] top-0.5 h-2 w-2 rounded-full bg-primary" />
+                  <p className="font-bold text-foreground">Step 3: Final HR/Admin Approval</p>
+                  <p className="text-muted-foreground mt-0.5">
+                    Once the Line Manager approves, the leave moves to the 2nd approval queue for authorized roles (like Sakib) to fully approve.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
@@ -638,29 +674,3 @@ function PolicyRow({
   )
 }
 
-function StatusRule({
-  status,
-  color,
-  rule,
-}: {
-  status: string
-  color: "emerald" | "amber" | "orange" | "red"
-  rule: string
-}) {
-  const badgeClass = cn(
-    "text-[9px] font-bold uppercase tracking-wider min-w-[52px] justify-center",
-    color === "emerald" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    color === "amber" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    color === "orange" && "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    color === "red" && "bg-red-500/10 text-red-600 dark:text-red-400",
-  )
-
-  return (
-    <div className="flex items-center gap-2">
-      <Badge variant="outline" className={badgeClass}>
-        {status}
-      </Badge>
-      <span className="text-[10px] text-muted-foreground">{rule}</span>
-    </div>
-  )
-}

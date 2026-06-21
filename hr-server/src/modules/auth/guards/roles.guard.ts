@@ -113,6 +113,7 @@ export class RolesGuard implements CanActivate {
     if (resource === 'salary_templates' || resource === 'employee_salaries') resource = 'salary';
     if (resource === 'festival_bonus_rules') resource = 'payroll';
     if (resource === 'attendance_settings') resource = 'attendance';
+    if (resource === 'provident_fund_settings') resource = 'salary';
 
     let action = 'read';
     if (method === 'POST') {

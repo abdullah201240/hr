@@ -31,10 +31,10 @@ export class LeaveApplicationQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['Pending', 'Approved', 'Rejected'], description: 'Filter by status' })
+  @ApiPropertyOptional({ enum: ['Pending', 'Pending_2nd', 'Approved', 'Rejected'], description: 'Filter by status' })
   @IsOptional()
-  @IsEnum(['Pending', 'Approved', 'Rejected'])
-  status?: 'Pending' | 'Approved' | 'Rejected';
+  @IsEnum(['Pending', 'Pending_2nd', 'Approved', 'Rejected'])
+  status?: 'Pending' | 'Pending_2nd' | 'Approved' | 'Rejected';
 
   @ApiPropertyOptional({ description: 'Filter by employee ID' })
   @IsOptional()
