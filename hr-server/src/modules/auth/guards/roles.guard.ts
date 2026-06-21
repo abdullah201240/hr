@@ -79,10 +79,20 @@ export class RolesGuard implements CanActivate {
     }
 
     // ─── Auto-mapped permission check (no decorator) ─────────────────────────
+    const pathWithoutQuery = req.url.split('?')[0];
+    const cleanPath = pathWithoutQuery.replace(/^\/api\//, '/').replace(/\/+$/, '');
+    const segments = cleanPath.split('/').filter(Boolean);
+    const lastSegment = segments[segments.length - 1] || '';
+    
     const { resource, action } = this.mapRequestToPermission(req.method, req.url);
 
     // Bypass checks for self-service endpoints (auth, notifications) when no decorator is present
     if (resource === 'auth' || resource === 'notifications') {
+      return true;
+    }
+
+    // Allow employee dropdown options for task assignment (self-service)
+    if (resource === 'employees' && lastSegment === 'options') {
       return true;
     }
 
