@@ -16,7 +16,14 @@ import { useEmployeesQuery, useUpdateEmployeeMutation } from "@/hooks/useEmploye
 export function AccessControlTab() {
   const { data: permissions = [], isLoading: loadingPerms } = usePermissionsQuery()
   const { data: roles = [], isLoading: loadingRoles } = useRolesQuery()
-  const [selectedRoleId, setSelectedRoleId] = useState<string>("admin")
+  const customRoles = roles.filter(r => !r.isSystem)
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("")
+
+  useEffect(() => {
+    if ((!selectedRoleId || !customRoles.some(r => r.id === selectedRoleId)) && customRoles.length > 0) {
+      setSelectedRoleId(customRoles[0].id)
+    }
+  }, [roles, selectedRoleId])
   
   // Dialog state for adding/editing custom roles
   const [showRoleDialog, setShowRoleDialog] = useState(false)
@@ -213,8 +220,7 @@ export function AccessControlTab() {
     if (!assigningEmployeeId) return
 
     updateEmployeeMutation.mutate({
-      role: assignedRole.role as any,
-      customRoleId: assignedRole.customRoleId === "none" ? null : assignedRole.customRoleId,
+      customRoleId: assignedRole.customRoleId && assignedRole.customRoleId !== "none" ? assignedRole.customRoleId : null,
     }, {
       onSuccess: () => {
         toast.success("Employee role updated successfully")
@@ -248,7 +254,7 @@ export function AccessControlTab() {
             </Button>
           </div>
           <div className="space-y-2">
-            {roles.map((role) => {
+            {customRoles.map((role) => {
               const isActive = role.id === selectedRoleId
               return (
                 <div
@@ -441,8 +447,7 @@ export function AccessControlTab() {
                   <tr>
                     <th className="p-3">Employee</th>
                     <th className="p-3">Email</th>
-                    <th className="p-3">Base System Role</th>
-                    <th className="p-3">Assigned Custom Role</th>
+                    <th className="p-3">Role</th>
                     <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -453,14 +458,13 @@ export function AccessControlTab() {
                       <tr key={emp.id} className="hover:bg-muted/20">
                         <td className="p-3 font-medium">{emp.fullNameEnglish}</td>
                         <td className="p-3 text-muted-foreground">{emp.email}</td>
-                        <td className="p-3 capitalize">{emp.role}</td>
                         <td className="p-3">
                           {customRole ? (
                             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-medium">
                               {customRole.name}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/60 text-[10px]">None (Uses base role)</span>
+                            <span className="text-muted-foreground/60 text-[10px]">No Role Assigned</span>
                           )}
                         </td>
                         <td className="p-3 text-right">
@@ -605,35 +609,17 @@ export function AccessControlTab() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Base System Role</label>
+              <label className="text-xs font-semibold text-muted-foreground">Select Role</label>
               <Select
-                value={assignedRole.role}
-                onValueChange={(val) => setAssignedRole({ ...assignedRole, role: val })}
+                value={assignedRole.customRoleId || "none"}
+                onValueChange={(val) => setAssignedRole({ role: "employee", customRoleId: val })}
               >
                 <SelectTrigger className="text-xs h-9">
-                  <SelectValue placeholder="Select base system role" />
+                  <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="text-xs">
-                  <SelectItem value="admin">Super Admin</SelectItem>
-                  <SelectItem value="hr">HR Manager</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="employee">Employee</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Custom Role Extension (Optional)</label>
-              <Select
-                value={assignedRole.customRoleId}
-                onValueChange={(val) => setAssignedRole({ ...assignedRole, customRoleId: val })}
-              >
-                <SelectTrigger className="text-xs h-9">
-                  <SelectValue placeholder="Select custom role (or none)" />
-                </SelectTrigger>
-                <SelectContent className="text-xs">
-                  <SelectItem value="none">None (Use base system role permissions)</SelectItem>
-                  {roles.filter(r => !r.isSystem).map((role) => (
+                  <SelectItem value="none">No Role Assigned</SelectItem>
+                  {customRoles.map((role) => (
                     <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
                   ))}
                 </SelectContent>

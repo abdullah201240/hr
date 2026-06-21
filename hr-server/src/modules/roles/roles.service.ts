@@ -257,7 +257,21 @@ export class RolesService implements OnModuleInit {
 
   // ─── Permission Checking Helper ───────────────────────────────────────────
   async getUserPermissions(role: string, customRoleId?: string): Promise<Set<string>> {
-    const roleKey = customRoleId || role;
+    // If custom role is assigned, use ONLY custom role permissions (ignore base role)
+    if (customRoleId) {
+      const list = await this.db
+        .select({
+          resource: permissions.resource,
+          action: permissions.action,
+        })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+        .where(eq(rolePermissions.roleKey, customRoleId));
+
+      return new Set(list.map(p => `${p.resource}:${p.action}`));
+    }
+
+    // If no custom role, use base role permissions
     const list = await this.db
       .select({
         resource: permissions.resource,
@@ -265,7 +279,7 @@ export class RolesService implements OnModuleInit {
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleKey, roleKey));
+      .where(eq(rolePermissions.roleKey, role));
 
     return new Set(list.map(p => `${p.resource}:${p.action}`));
   }

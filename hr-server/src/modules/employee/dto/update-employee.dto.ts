@@ -11,3 +11,4 @@ export class UpdateEmployeeDto extends PartialType(
   role?: 'admin' | 'hr' | 'manager' | 'employee';
 }
 
+ 

@@ -15,6 +15,7 @@ import { UserAvatar } from "@/components/common/user-avatar"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useNotificationStore } from "@/store/useNotificationStore"
+import { usePermissions } from "@/hooks/usePermissions"
 
 interface SidebarProps {
   collapsed: boolean
@@ -27,13 +28,15 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
   const location = useLocation()
   const { user } = useAuthStore()
   const unreadCount = useNotificationStore((state) => state.unreadCount)
+  const { canAccessNavItem } = usePermissions()
 
   const mappedUser = useMemo(() => ({
     name: user?.fullNameEnglish || "Employee",
     email: user?.email || "",
     avatar: user?.employeePhotoUrl || "",
     role: (user?.role || "employee") as 'admin' | 'hr' | 'manager' | 'employee',
-  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role])
+    permissions: user?.permissions || [],
+  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.role, user?.permissions])
 
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {
     // Auto-expand menus that contain the current route
@@ -103,7 +106,17 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                     {group.label}
                   </p>
                 )}
-                {group.items.filter(item => !item.roles || item.roles.includes(mappedUser.role)).map((item) => {
+                {group.items.filter(item => {
+                  // First check role restriction
+                  if (item.roles && item.roles.length > 0 && !item.roles.includes(mappedUser.role)) {
+                    return false
+                  }
+                  // Then check permissions if defined
+                  if (item.permissions && item.permissions.length > 0) {
+                    return canAccessNavItem(item)
+                  }
+                  return true
+                }).map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
                   const hasSubItems = item.items && item.items.length > 0
@@ -197,7 +210,17 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         </button>
                         {isExpanded && (
                           <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-sidebar-border/30 pl-2">
-                            {item.items!.filter(subItem => !subItem.roles || subItem.roles.includes(mappedUser.role)).map((subItem) => {
+                            {item.items!.filter(subItem => {
+                              // First check role restriction
+                              if (subItem.roles && subItem.roles.length > 0 && !subItem.roles.includes(mappedUser.role)) {
+                                return false
+                              }
+                              // Then check permissions if defined
+                              if (subItem.permissions && subItem.permissions.length > 0) {
+                                return canAccessNavItem(subItem)
+                              }
+                              return true
+                            }).map((subItem) => {
                               const SubIcon = subItem.icon
                               const subActive = isActive(subItem.href)
                               return (

@@ -54,13 +54,15 @@ export const navGroups: NavGroup[] = [
         title: "Employees",
         href: "/employees",
         icon: Users,
-        roles: ["admin", "hr", "manager"], // Employees cannot browse the directory
+        roles: ["admin", "hr", "manager"],
+        permissions: ["employees:view_all", "employees:view_team", "employees:read"],
       },
       {
         title: "Recruitment",
         href: "/recruitment",
         icon: UserPlus,
-        roles: ["admin", "hr"], // Recruitment is HR-only
+        roles: ["admin", "hr"],
+        permissions: ["recruitment:read", "recruitment:create"],
       },
       {
         title: "Task Management",
@@ -78,7 +80,8 @@ export const navGroups: NavGroup[] = [
         title: "Company Attendance",
         href: "/attendance/company",
         icon: CalendarClock,
-        roles: ["admin", "hr", "manager"], // Team-level view
+        roles: ["admin", "hr", "manager"],
+        permissions: ["employees:view_team", "employees:view_all"],
       },
       {
         title: "Leave Management",
@@ -90,25 +93,29 @@ export const navGroups: NavGroup[] = [
         title: "HR Letters",
         href: "/letters",
         icon: FileText,
-        roles: ["admin", "hr"], // Letters are HR-only
+        roles: ["admin", "hr"],
+        permissions: ["letters:read", "letters:create"],
       },
       {
         title: "Separation",
         href: "/separation",
         icon: UserMinus,
-        roles: ["admin", "hr"], // Separation is HR-only
+        roles: ["admin", "hr"],
+        permissions: ["employees:delete"],
       },
       {
         title: "Disciplinary",
         href: "/disciplinary",
         icon: Scale,
-        roles: ["admin", "hr"], // Disciplinary is HR-only
+        roles: ["admin", "hr"],
+        permissions: ["employees:update"],
       },
       {
         title: "KPI & Performance",
         href: "/performance",
         icon: Target,
-        roles: ["admin", "hr", "manager"], // Managers review team performance
+        roles: ["admin", "hr", "manager"],
+        permissions: ["employees:view_team", "employees:view_all"],
       },
     ],
   },
@@ -119,7 +126,8 @@ export const navGroups: NavGroup[] = [
         title: "Salary & Payroll",
         href: "/payroll",
         icon: Coins,
-        roles: ["admin", "hr"], // Payroll is HR-only
+        roles: ["admin", "hr"],
+        permissions: ["payroll:read", "payroll:view_all", "payroll:create", "payroll:process"],
       },
       {
         title: "Claims & Reimbursement",
@@ -165,13 +173,15 @@ export const navGroups: NavGroup[] = [
         title: "Reports",
         href: "/reports",
         icon: BarChart3,
-        roles: ["admin", "hr", "manager"], // Reports for managers+
+        roles: ["admin", "hr", "manager"],
+        permissions: ["employees:view_team", "employees:view_all", "payroll:read"],
       },
       {
         title: "Settings",
         href: "/settings",
         icon: Settings,
-        roles: ["admin"], // Settings for super admin only
+        roles: ["admin"],
+        permissions: ["settings:read", "settings:update"],
       },
     ],
   },

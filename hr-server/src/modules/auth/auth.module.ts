@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { RolesModule } from '../roles/roles.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TokenBlacklistService } from './token-blacklist.service';
       }),
       inject: [ConfigService],
     }),
+    RolesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TokenBlacklistService],

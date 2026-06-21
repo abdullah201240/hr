@@ -6,6 +6,7 @@ export interface NavItem {
   icon: LucideIcon
   badge?: string
   roles?: string[]
+  permissions?: string[]
   items?: NavItem[]
 }
 
@@ -21,6 +22,7 @@ export interface User {
   role: 'admin' | 'hr' | 'manager' | 'employee'
   customRoleId?: string | null
   departmentId?: string | null
+  permissions?: string[]
 }
 
 export * from "./org"

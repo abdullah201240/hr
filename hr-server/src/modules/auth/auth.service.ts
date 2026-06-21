@@ -15,6 +15,7 @@ import { employees } from '../../db/schema';
 import { TokenBlacklistService } from './token-blacklist.service';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
+import { RolesService } from '../roles/roles.service';
 
 export interface TokenPair {
   accessToken: string;
@@ -33,6 +34,7 @@ export interface LoginResponse {
     employeePhotoUrl: string | null;
     departmentId: string | null;
     customRoleId: string | null;
+    permissions: string[];
   };
 }
 
@@ -56,6 +58,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly tokenBlacklist: TokenBlacklistService,
+    private readonly rolesService: RolesService,
   ) {}
 
   // ─── Login ──────────────────────────────────────────────────────────────
@@ -115,6 +118,8 @@ export class AuthService {
 
     this.logger.log(`User logged in: ${user.email} (${user.id})`);
 
+    const userPermissions = await this.rolesService.getUserPermissions(user.role, user.customRoleId ?? undefined);
+
     return {
       tokens,
       user: {
@@ -125,6 +130,7 @@ export class AuthService {
         employeePhotoUrl: user.employeePhotoUrl,
         departmentId: user.departmentId ?? null,
         customRoleId: user.customRoleId ?? null,
+        permissions: Array.from(userPermissions),
       },
     };
   }
@@ -260,7 +266,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    const userPermissions = await this.rolesService.getUserPermissions(user.role, user.customRoleId ?? undefined);
+
+    return {
+      ...user,
+      permissions: Array.from(userPermissions),
+    };
   }
 
   // ─── Change Password ────────────────────────────────────────────────────
