@@ -142,7 +142,6 @@ export default function LeavePage() {
 
   // Helper to open dialog with leave details
   const handleViewDetails = (req: any) => {
-    console.log("Opening leave details:", req)
     setSelectedLeave(req as LeaveApplicationDetail)
     setIsDialogOpen(true)
   }

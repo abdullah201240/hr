@@ -179,7 +179,7 @@ export function AccessControlTab() {
           onSuccess: () => {
             toast.success("Role deleted successfully")
             if (selectedRoleId === role.id) {
-              setSelectedRoleId("admin")
+              setSelectedRoleId(null)
             }
           },
           onError: (err: any) => {

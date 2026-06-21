@@ -60,6 +60,7 @@ import {
   useCreateKpiMutation,
   useDeleteKpiMutation,
 } from "@/hooks/usePerformance"
+import { useAuthStore } from "@/store/useAuthStore"
 
 const cycleSchema = z.object({
   name: z.string().min(3, "Cycle Name must be at least 3 characters"),
@@ -78,11 +79,17 @@ const kpiSchema = z.object({
 })
 
 export default function PerformancePage() {
+  const { user } = useAuthStore()
   const [activeTab, setActiveTab] = useState("center")
   const [selectedCycleId, setSelectedCycleId] = useState("")
   const [selectedEmpId, setSelectedEmpId] = useState("")
-  const [userRoleSimulation, setUserRoleSimulation] = useState<"employee" | "manager" | "hr">("manager")
   const [mobileDetailView, setMobileDetailView] = useState(false)
+
+  // Permission-based access (replaces old role simulation)
+  const hasPerformanceViewAll = user?.permissions?.includes("performance:view_all") || false
+  const hasPerformanceUpdate = user?.permissions?.includes("performance:update") || false
+  const hasPerformanceCreate = user?.permissions?.includes("performance:create") || false
+  const canManagePerformance = hasPerformanceViewAll || hasPerformanceUpdate || hasPerformanceCreate
 
   // Modals state
   const [isAddCycleOpen, setIsAddCycleOpen] = useState(false)
@@ -454,23 +461,7 @@ export default function PerformancePage() {
             </div>
           )}
 
-          <div className="flex items-center gap-1 bg-primary/5 border border-primary/20 p-1 rounded-lg">
-            <Badge variant="ghost" className="text-[10px] uppercase font-bold text-muted-foreground mr-1">Simulate:</Badge>
-            {(["employee", "manager", "hr"] as const).map(role => (
-              <button
-                key={role}
-                onClick={() => setUserRoleSimulation(role)}
-                className={cn(
-                  "px-2 py-1 rounded text-[10px] font-bold uppercase transition-all",
-                  userRoleSimulation === role
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "hover:bg-muted/40 text-muted-foreground"
-                )}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
+          {/* Role simulation removed - access controlled by permissions */}
         </div>
       </div>
 
@@ -638,7 +629,7 @@ export default function PerformancePage() {
                       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-xs text-amber-600 font-semibold animate-pulse">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
                         <span>Weight Sum is {totalKpiWeight}% (Must equal exactly 100% to save evaluation).</span>
-                        {(userRoleSimulation === "manager" || userRoleSimulation === "hr") && selectedCycle?.status !== "completed" && (
+                        {(hasPerformanceViewAll || hasPerformanceUpdate) && selectedCycle?.status !== "completed" && (
                           <Button variant="outline" size="xs" onClick={() => setIsAddKpiOpen(true)} className="ml-auto text-[10px] bg-background border-amber-500/30 hover:bg-amber-500/5 text-amber-700 font-bold px-2 py-0.5 h-auto">
                             Fix Target weights
                           </Button>
@@ -652,7 +643,7 @@ export default function PerformancePage() {
                         <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                           <Target className="h-4 w-4 text-primary" /> Key Performance Indicators
                         </h4>
-                        {(userRoleSimulation === "manager" || userRoleSimulation === "hr") && selectedCycle?.status !== "completed" && (
+                        {(hasPerformanceViewAll || hasPerformanceUpdate) && selectedCycle?.status !== "completed" && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -677,12 +668,12 @@ export default function PerformancePage() {
                             const managerComment = liveManagerComments[kpi.id] || ""
 
                             const isSelfEditable =
-                              userRoleSimulation === "employee" &&
+                              !hasPerformanceViewAll && !hasPerformanceUpdate &&
                               appraisal?.status === "pending_self" &&
                               selectedCycle?.status === "active"
 
                             const isManagerEditable =
-                              (userRoleSimulation === "manager" || userRoleSimulation === "hr") &&
+                              (hasPerformanceViewAll || hasPerformanceUpdate) &&
                               appraisal?.status === "pending_manager" &&
                               selectedCycle?.status === "active"
 
@@ -698,7 +689,7 @@ export default function PerformancePage() {
                                     </div>
                                     <p className="text-[11px] text-muted-foreground leading-relaxed">{kpi.description}</p>
                                   </div>
-                                  {(userRoleSimulation === "manager" || userRoleSimulation === "hr") && selectedCycle?.status !== "completed" && (
+                                  {(hasPerformanceViewAll || hasPerformanceUpdate) && selectedCycle?.status !== "completed" && (
                                     <Button
                                       variant="ghost"
                                       size="xs"
@@ -837,7 +828,7 @@ export default function PerformancePage() {
                               <CardDescription className="text-xs">Provide a summary statement of your key accomplishments this cycle.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              {userRoleSimulation === "employee" ? (
+                              {canManagePerformance ? (
                                 <>
                                   <Textarea
                                     placeholder="Summarize your performance, core learnings, training milestones, and promotion self-assessment..."
@@ -872,7 +863,7 @@ export default function PerformancePage() {
                               <CardDescription className="text-xs">Agreed score finalization, qualitative feedback, and promotion recommendation stamps.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                              {userRoleSimulation === "manager" || userRoleSimulation === "hr" ? (
+                              {hasPerformanceViewAll || hasPerformanceUpdate ? (
                                 <div className="space-y-4">
                                   {/* Promotion Recommendation fields */}
                                   <div className="p-4 rounded-xl border border-border/40 bg-muted/5 space-y-4">
@@ -1211,7 +1202,7 @@ export default function PerformancePage() {
               <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Performance Cycles</h3>
               <p className="text-xs text-muted-foreground">Admin appraisal setup, active cycle toggling, and review history logs.</p>
             </div>
-            {(userRoleSimulation === "hr" || userRoleSimulation === "manager") && (
+            {(hasPerformanceUpdate || hasPerformanceViewAll) && (
               <Button size="sm" onClick={() => setIsAddCycleOpen(true)} className="gap-1.5 text-xs bg-primary">
                 <Plus className="h-4 w-4" /> Create Appraisal Cycle
               </Button>
@@ -1256,7 +1247,7 @@ export default function PerformancePage() {
                         </Badge>
                       </div>
 
-                      {(userRoleSimulation === "hr" || userRoleSimulation === "manager") && (
+                      {(hasPerformanceUpdate || hasPerformanceViewAll) && (
                         <Button
                           variant="outline"
                           size="xs"
