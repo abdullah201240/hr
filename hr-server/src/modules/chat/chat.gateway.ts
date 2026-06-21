@@ -6,6 +6,7 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
   MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Logger, Inject, UsePipes, ValidationPipe, OnModuleDestroy } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -187,7 +188,7 @@ export class ChatGateway
    */
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('sendMessage')
-  async onSendMessage(client: AuthenticatedWebSocket, @MessageBody() data: WSMessageDto) {
+  async onSendMessage(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSMessageDto) {
     const senderId = client.employeeId;
 
     // Refresh presence TTL on activity
@@ -251,7 +252,7 @@ export class ChatGateway
    */
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('editMessage')
-  async onEditMessage(client: AuthenticatedWebSocket, @MessageBody() data: WSEditMessageDto) {
+  async onEditMessage(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSEditMessageDto) {
     const senderId = client.employeeId;
     await this.chatService.setUserOnline(senderId);
 
@@ -297,7 +298,7 @@ export class ChatGateway
    */
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('deleteMessage')
-  async onDeleteMessage(client: AuthenticatedWebSocket, @MessageBody() data: WSDeleteMessageDto) {
+  async onDeleteMessage(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSDeleteMessageDto) {
     const senderId = client.employeeId;
     await this.chatService.setUserOnline(senderId);
 
@@ -344,7 +345,7 @@ export class ChatGateway
    */
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('typing')
-  async onTyping(client: AuthenticatedWebSocket, @MessageBody() data: WSTypingDto) {
+  async onTyping(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSTypingDto) {
     const employeeId = client.employeeId;
     await this.chatService.setUserOnline(employeeId);
 
@@ -374,7 +375,7 @@ export class ChatGateway
    */
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @SubscribeMessage('readReceipt')
-  async onReadReceipt(client: AuthenticatedWebSocket, @MessageBody() data: WSReadReceiptDto) {
+  async onReadReceipt(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSReadReceiptDto) {
     const employeeId = client.employeeId;
     await this.chatService.setUserOnline(employeeId);
 

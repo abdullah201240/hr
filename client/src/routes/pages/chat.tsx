@@ -15,7 +15,8 @@ import {
   MessageCircle,
   Pencil,
   Trash2,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
 import type { ChatMessage } from '../../store/useChatStore';
@@ -325,10 +326,10 @@ export default function ChatPage() {
   }, [activeRoomId, typingStatus]);
 
   return (
-    <div className="flex h-[calc(100vh-80px)] overflow-hidden rounded-xl border border-border/40 bg-card shadow-lg">
+    <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-80px)] overflow-hidden rounded-xl border border-border/40 bg-card shadow-lg">
       
       {/* ─── SIDEBAR: Rooms & Statuses ─── */}
-      <div className="flex w-64 flex-col border-r border-border/30 bg-sidebar/5 flex-shrink-0">
+      <div className={`w-full md:w-64 flex-col border-r border-border/30 bg-sidebar/5 flex-shrink-0 ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
         
         <div className="p-3 border-b border-border/20 flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -459,11 +460,20 @@ export default function ChatPage() {
       </div>
 
       {/* ─── CHAT VIEWPORT ─── */}
-      <div className="flex flex-1 flex-col bg-background">
+      <div className={`flex-1 flex-col bg-background ${activeRoomId ? 'flex' : 'hidden md:flex'}`}>
         {activeRoom ? (
           <>
             <div className="flex h-14 items-center justify-between border-b border-border/30 px-4">
               <div className="flex items-center gap-3">
+                {/* Back button for mobile */}
+                <Button 
+                  onClick={() => setActiveRoomId(null)} 
+                  variant="ghost" 
+                  size="icon" 
+                  className="md:hidden -ml-2 mr-1 h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground rounded"
+                >
+                  <ArrowLeft className="h-4.5 w-4.5" />
+                </Button>
                 {activeRoom.type === 'channel' ? (
                   <Hash className="h-5 w-5 text-muted-foreground/60" />
                 ) : (
@@ -565,7 +575,7 @@ export default function ChatPage() {
 
                               {/* Message edit/delete hover controls */}
                               {isMe && !msg.isDeleted && (
-                                <div className={`absolute top-2 flex items-center gap-0.5 bg-background border border-border/40 rounded-lg p-0.5 shadow-sm opacity-0 group-hover/message:opacity-100 transition-opacity ${
+                                <div className={`absolute top-2 flex items-center gap-0.5 bg-background border border-border/40 rounded-lg p-0.5 shadow-sm opacity-100 md:opacity-0 md:group-hover/message:opacity-100 transition-opacity ${
                                   isMe ? 'left-4' : 'right-4'
                                 }`}>
                                   <Button

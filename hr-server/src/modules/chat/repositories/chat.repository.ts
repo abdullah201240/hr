@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, and, or, sql, desc, lt, count } from 'drizzle-orm';
+import { eq, and, or, sql, desc, lt, count, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../../db';
 import { chatRooms, chatRoomMembers, chatMessages, employees } from '../../../db/schema';
 
@@ -294,24 +294,36 @@ export class ChatRepository {
       .from(chatRooms)
       .innerJoin(chatRoomMembers, and(eq(chatRoomMembers.roomId, chatRooms.id), eq(chatRoomMembers.employeeId, employeeId)))
       .leftJoin(chatMessages, eq(chatMessages.roomId, chatRooms.id))
-      .where(sql`${chatRooms.id} IN ${roomIds}`)
+      .where(inArray(chatRooms.id, roomIds))
       .groupBy(chatRooms.id, chatRoomMembers.lastReadAt);
 
-    // 3. Fetch Last Messages for each room in bulk using DISTINCT ON (Query #2)
-    const lastMessages = await this.db.execute(sql`
-      SELECT DISTINCT ON (room_id) 
-        room_id as "roomId", 
-        m.id, 
-        m.content, 
-        m.created_at as "createdAt", 
-        e.full_name_english as "senderName"
-      FROM chat_messages m
-      JOIN employees e ON e.id = m.sender_id
-      WHERE room_id IN (${sql.join(roomIds.map(id => sql`${id}`), sql`, `)})
-      ORDER BY room_id, created_at DESC
-    `);
+    // 3. Fetch Last Messages for each room in bulk using a window function subquery (Query #2)
+    const sq = this.db
+      .select({
+        roomId: chatMessages.roomId,
+        id: chatMessages.id,
+        content: chatMessages.content,
+        createdAt: chatMessages.createdAt,
+        senderName: employees.fullNameEnglish,
+        rn: sql<number>`row_number() over (partition by ${chatMessages.roomId} order by ${chatMessages.createdAt} desc)::integer`.as('rn'),
+      })
+      .from(chatMessages)
+      .innerJoin(employees, eq(employees.id, chatMessages.senderId))
+      .where(inArray(chatMessages.roomId, roomIds))
+      .as('sq');
 
-    // Cast the execute rows into a mapping
+    const lastMessages = await this.db
+      .select({
+        roomId: sq.roomId,
+        id: sq.id,
+        content: sq.content,
+        createdAt: sq.createdAt,
+        senderName: sq.senderName,
+      })
+      .from(sq)
+      .where(eq(sq.rn, 1));
+
+    // Cast the retrieved rows into a mapping
     const lastMessageMap: Record<string, any> = {};
     if (Array.isArray(lastMessages)) {
       lastMessages.forEach((row: any) => {
@@ -337,7 +349,7 @@ export class ChatRepository {
       })
       .from(chatRoomMembers)
       .innerJoin(employees, eq(employees.id, chatRoomMembers.employeeId))
-      .where(sql`${chatRoomMembers.roomId} IN ${roomIds}`);
+      .where(inArray(chatRoomMembers.roomId, roomIds));
 
     // Group members by roomId
     const membersMap: Record<string, any[]> = {};
