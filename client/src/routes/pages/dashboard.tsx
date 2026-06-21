@@ -184,7 +184,16 @@ export default function DashboardPage() {
 
   // ── Holiday Settings ───────────────────────────────────────────────────────
   const weeklyHolidays = useMemo(() => settings?.weeklyHolidays || ["Saturday", "Sunday"], [settings])
-  const regularHolidays = useMemo(() => holidaysData, [holidaysData])
+  const regularHolidays = useMemo(() => {
+    return holidaysData.map((h: any) => ({
+      id: h.id,
+      name: h.name,
+      startDate: h.startDate,
+      endDate: h.endDate,
+      startDay: h.startDate ? new Date(h.startDate + "T00:00:00").getDate() : 1,
+      endDay: h.endDate ? new Date(h.endDate + "T00:00:00").getDate() : 1
+    }))
+  }, [holidaysData])
 
   // ── Apply/Cancel Leave Handlers ───────────────────────────────────────────
   const applyLeaveMutation = useApplyLeaveMutation()
@@ -312,13 +321,11 @@ export default function DashboardPage() {
       }
     }
 
-    if (record.status === "upcoming") return record
-
     const matchingRegularHoliday = regularHolidays.find((h: any) => {
       if (h.startDate && h.endDate) {
         const recordDate = new Date(calYear, calMonth, record.day)
-        const start = new Date(h.startDate)
-        const end = new Date(h.endDate)
+        const start = new Date(h.startDate + "T00:00:00")
+        const end = new Date(h.endDate + "T00:00:00")
         recordDate.setHours(0, 0, 0, 0)
         start.setHours(0, 0, 0, 0)
         end.setHours(0, 0, 0, 0)
@@ -335,10 +342,12 @@ export default function DashboardPage() {
       if (!record.checkIn) {
         return { ...record, status: "weekend" as const, checkIn: null, checkOut: null, hours: null }
       }
-    } else {
-      if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
-        return { ...record, status: "absent" as const }
-      }
+    }
+
+    if (record.status === "upcoming") return record
+
+    if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
+      return { ...record, status: "absent" as const }
     }
 
     return record

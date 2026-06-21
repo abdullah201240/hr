@@ -7,7 +7,7 @@ import {
   BadRequestException,
   OnModuleInit,
 } from '@nestjs/common';
-import { eq, and, between, asc, desc, or, gt, lt, like } from 'drizzle-orm';
+import { eq, and, between, asc, desc, or, gt, lt, like, lte, gte } from 'drizzle-orm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { DB_CONNECTION, type Database } from '../../db';
@@ -238,7 +238,15 @@ export class AttendanceService implements OnModuleInit {
         .where(and(eq(attendanceLogs.employeeId, employeeId), between(attendanceLogs.date, startStr, endStr)))
         .orderBy(asc(attendanceLogs.date)),
       this.settingsService.getSettings(),
-      this.db.select().from(holidays).where(between(holidays.startDate, startStr, endStr)),
+      this.db
+        .select()
+        .from(holidays)
+        .where(
+          and(
+            lte(holidays.startDate, endStr),
+            gte(holidays.endDate, startStr),
+          ),
+        ),
     ]);
 
     const weeklyHolidays = settings.weeklyHolidays || ['Saturday', 'Sunday'];
@@ -292,13 +300,13 @@ export class AttendanceService implements OnModuleInit {
       let status: string = 'absent';
       let notes: string | null = null;
 
-      if (isFuture) {
-        status = 'upcoming';
-      } else if (regularHoliday) {
+      if (regularHoliday) {
         status = 'holiday';
         notes = regularHoliday.name;
       } else if (weeklyHolidays.includes(dayName)) {
         status = 'weekend';
+      } else if (isFuture) {
+        status = 'upcoming';
       }
 
       result.push({

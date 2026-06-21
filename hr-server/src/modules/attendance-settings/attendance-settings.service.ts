@@ -128,6 +128,7 @@ export class AttendanceSettingsService {
       .returning();
 
     await this.cache.delByPattern(CacheKeys.holidaysList);
+    await this.cache.delByPattern(CacheKeys.attendanceLogsByMonth);
     this.logger.log(`Holiday created: ${holiday.name}`);
     return holiday;
   }
@@ -155,6 +156,7 @@ export class AttendanceSettingsService {
       .returning();
 
     await this.cache.delByPattern(CacheKeys.holidaysList);
+    await this.cache.delByPattern(CacheKeys.attendanceLogsByMonth);
     this.logger.log(`Holiday updated: ${updated.name}`);
     return updated;
   }
@@ -173,6 +175,7 @@ export class AttendanceSettingsService {
     await this.db.delete(holidays).where(eq(holidays.id, id));
 
     await this.cache.delByPattern(CacheKeys.holidaysList);
+    await this.cache.delByPattern(CacheKeys.attendanceLogsByMonth);
     this.logger.log(`Holiday deleted: ${existing.name}`);
     return { message: `Holiday "${existing.name}" has been deleted` };
   }
@@ -181,5 +184,6 @@ export class AttendanceSettingsService {
 
   private async invalidateCache() {
     await this.cache.delByPattern(CacheKeys.attendanceSettings);
+    await this.cache.delByPattern(CacheKeys.attendanceLogsByMonth);
   }
 }

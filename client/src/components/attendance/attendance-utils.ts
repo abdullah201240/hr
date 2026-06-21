@@ -46,8 +46,8 @@ export function mapRegularHolidays(holidaysData: any[]) {
     name: h.name,
     startDate: h.startDate,
     endDate: h.endDate,
-    startDay: h.startDate ? new Date(h.startDate).getDate() : 1,
-    endDay: h.endDate ? new Date(h.endDate).getDate() : 1
+    startDay: h.startDate ? new Date(h.startDate + "T00:00:00").getDate() : 1,
+    endDay: h.endDate ? new Date(h.endDate + "T00:00:00").getDate() : 1
   }))
 }
 
@@ -111,13 +111,11 @@ export function computeFinalAttendance(
       }
     }
 
-    if (record.status === "upcoming") return { ...record, breakHours: record.breakHours || 0 }
-
     const matchingRegularHoliday = regularHolidays.find((h: any) => {
       if (h.startDate && h.endDate) {
         const recordDate = new Date(calYear, calMonth, record.day)
-        const start = new Date(h.startDate)
-        const end = new Date(h.endDate)
+        const start = new Date(h.startDate + "T00:00:00")
+        const end = new Date(h.endDate + "T00:00:00")
         recordDate.setHours(0, 0, 0, 0)
         start.setHours(0, 0, 0, 0)
         end.setHours(0, 0, 0, 0)
@@ -134,10 +132,12 @@ export function computeFinalAttendance(
       if (!record.checkIn) {
         return { ...record, status: "weekend" as const, checkIn: null, checkOut: null, hours: null, breakHours: record.breakHours || 0 }
       }
-    } else {
-      if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
-        return { ...record, status: "absent" as const, breakHours: record.breakHours || 0 }
-      }
+    }
+
+    if (record.status === "upcoming") return { ...record, breakHours: record.breakHours || 0 }
+
+    if (!record.checkIn && record.status !== "leave" && record.status !== "weekend" && record.status !== "holiday") {
+      return { ...record, status: "absent" as const, breakHours: record.breakHours || 0 }
     }
 
     return { ...record, breakHours: record.breakHours || 0 }
