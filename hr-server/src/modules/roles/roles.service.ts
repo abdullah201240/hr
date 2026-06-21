@@ -162,14 +162,11 @@ export class RolesService implements OnModuleInit {
 
   // ─── Startup Seeding ───────────────────────────────────────────────────────
   private async seedPermissions() {
-    const existing = await this.db.select().from(permissions).limit(1);
-    if (existing.length > 0) return; // Already seeded
-
-    // Insert all permissions
+    // Insert all permissions, skipping duplicates based on (resource, action)
     await this.db
       .insert(permissions)
       .values(SYSTEM_PERMISSIONS)
-      .returning();
+      .onConflictDoNothing({ target: [permissions.resource, permissions.action] });
   }
 
   // ─── Query Endpoints ───────────────────────────────────────────────────────

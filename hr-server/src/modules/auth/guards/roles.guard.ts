@@ -63,6 +63,11 @@ export class RolesGuard implements CanActivate {
     // ─── Auto-mapped permission check (no decorator) ─────────────────────────
     const { resource, action } = this.mapRequestToPermission(req.method, req.url);
 
+    // Bypass checks for self-service endpoints (auth, notifications) when no decorator is present
+    if (resource === 'auth' || resource === 'notifications') {
+      return true;
+    }
+
     // Check direct permission
     if (userPermissions.has(`${resource}:${action}`)) {
       return true;
@@ -83,7 +88,8 @@ export class RolesGuard implements CanActivate {
   }
 
   private mapRequestToPermission(method: string, path: string): { resource: string; action: string } {
-    const cleanPath = path.replace(/^\/api\//, '/').replace(/\/+$/, '');
+    const pathWithoutQuery = path.split('?')[0];
+    const cleanPath = pathWithoutQuery.replace(/^\/api\//, '/').replace(/\/+$/, '');
     const segments = cleanPath.split('/').filter(Boolean);
     let rawResource = segments[0] || 'unknown';
     let lastSegment = segments[segments.length - 1] || '';
