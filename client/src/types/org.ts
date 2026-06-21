@@ -169,6 +169,7 @@ export interface Employee {
   status: string;
   inactiveDate: string | null;
   role: string;
+  customRoleId?: string | null;
   isEmailVerified: boolean;
   lastLoginAt: string | null;
   createdAt: string;
@@ -225,6 +226,8 @@ export interface CreateEmployeePayload {
   employeeType: string;
   joinDate: string;
   lineManagerId?: string;
+  role?: string;
+  customRoleId?: string | null;
   spouses?: Omit<Spouse, 'id' | 'employeeId'>[];
   children?: Omit<Child, 'id' | 'employeeId'>[];
   nominees?: Omit<Nominee, 'id' | 'employeeId'>[];

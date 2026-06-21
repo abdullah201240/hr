@@ -82,6 +82,7 @@ export class EmployeeCreateProcessor extends WorkerHost {
             employeeType: dto.employeeType,
             joinDate: dto.joinDate,
             lineManagerId: dto.lineManagerId || null,
+            customRoleId: dto.customRoleId || null,
             status: 'active',
           })
           .returning({ id: employees.id });
@@ -230,6 +231,7 @@ export class EmployeeUpdateProcessor extends WorkerHost {
           'employeeType',
           'joinDate',
           'lineManagerId',
+          'customRoleId',
         ] as const;
 
         for (const field of directFields) {

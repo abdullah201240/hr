@@ -11,6 +11,7 @@ interface UserProfile {
   gender?: string;
   role: 'admin' | 'hr' | 'manager' | 'employee'; // Typed role union — admin | hr | manager | employee
   departmentId?: string;
+  customRoleId?: string | null;
   designationId?: string;
   employeeType?: string;
   employeePhotoUrl: string | null;

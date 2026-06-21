@@ -24,3 +24,4 @@ export * from './tasks';
 export * from './chat';
 export * from './notifications';
 export * from './audit-logs';
+export * from './roles';

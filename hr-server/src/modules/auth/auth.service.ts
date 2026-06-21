@@ -32,6 +32,7 @@ export interface LoginResponse {
     fullNameEnglish: string;
     employeePhotoUrl: string | null;
     departmentId: string | null;
+    customRoleId: string | null;
   };
 }
 
@@ -68,6 +69,7 @@ export class AuthService {
         fullNameEnglish: employees.fullNameEnglish,
         employeePhotoUrl: employees.employeePhotoUrl,
         departmentId: employees.departmentId,
+        customRoleId: employees.customRoleId,
         status: employees.status,
         passwordHash: employees.passwordHash,
         refreshTokenVersion: employees.refreshTokenVersion,
@@ -102,6 +104,7 @@ export class AuthService {
       user.role,
       user.refreshTokenVersion,
       user.departmentId ?? undefined,
+      user.customRoleId ?? undefined,
     );
 
     // Update last login
@@ -121,6 +124,7 @@ export class AuthService {
         fullNameEnglish: user.fullNameEnglish,
         employeePhotoUrl: user.employeePhotoUrl,
         departmentId: user.departmentId ?? null,
+        customRoleId: user.customRoleId ?? null,
       },
     };
   }
@@ -238,6 +242,7 @@ export class AuthService {
         gender: employees.gender,
         role: employees.role,
         departmentId: employees.departmentId,
+        customRoleId: employees.customRoleId,
         designationId: employees.designationId,
         employeeType: employees.employeeType,
         employeePhotoUrl: employees.employeePhotoUrl,
@@ -311,6 +316,7 @@ export class AuthService {
     role: string,
     version: number,
     departmentId?: string,
+    customRoleId?: string,
   ): Promise<TokenPair> {
     const accessExpiry = this.configService.get<string>(
       'jwt.accessTokenExpiry',
@@ -328,6 +334,7 @@ export class AuthService {
           email,
           role,
           departmentId: departmentId ?? null,
+          customRoleId: customRoleId ?? null,
           ver: version,
           jti: randomUUID(),
         },

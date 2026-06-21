@@ -13,6 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
+import { customRoles } from './roles';
 
 // ─── Departments ────────────────────────────────────────────────────────────
 
@@ -138,6 +139,7 @@ export const employees = pgTable(
 
     // Auth
     role: varchar('role', { length: 20, enum: ['admin', 'hr', 'manager', 'employee'] }).default('employee').notNull(), // admin | hr | manager | employee
+    customRoleId: uuid('custom_role_id').references((): AnyPgColumn => customRoles.id, { onDelete: 'set null' }),
     refreshTokenVersion: integer('refresh_token_version').default(1).notNull(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     isEmailVerified: boolean('is_email_verified').default(false).notNull(),
@@ -276,6 +278,10 @@ export const employeesRelations = relations(employees, ({ many, one }) => ({
     fields: [employees.lineManagerId],
     references: [employees.id],
     relationName: 'lineManager',
+  }),
+  customRole: one(customRoles, {
+    fields: [employees.customRoleId],
+    references: [customRoles.id],
   }),
 }));
 

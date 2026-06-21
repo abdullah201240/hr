@@ -312,6 +312,11 @@ export class CreateEmployeeDto {
   @IsUUID()
   lineManagerId?: string;
 
+  @ApiPropertyOptional({ description: 'UUID of custom role' })
+  @IsOptional()
+  @IsUUID()
+  customRoleId?: string;
+
   // Nested objects
   @ApiPropertyOptional({ type: [SpouseDto] })
   @IsOptional()
