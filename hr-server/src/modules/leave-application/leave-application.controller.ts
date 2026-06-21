@@ -98,8 +98,8 @@ export class LeaveApplicationController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Leave application details' })
   @ApiResponse({ status: 404, description: 'Leave application not found' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.leaveApplicationService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.leaveApplicationService.findOne(id, req.user);
   }
 
   // ─── Edit/Resubmit Leave Application (queued) ─────────────────────────────
@@ -121,7 +121,7 @@ export class LeaveApplicationController {
 
   // ─── Process Leave (Approve/Reject) ───────────────────────────────────────
   @Patch(':id/status')
-  @Roles('admin', 'hr')
+  @Roles('admin', 'hr', 'manager')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve or reject a leave application' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -132,8 +132,7 @@ export class LeaveApplicationController {
     @Req() req: any,
     @Body() dto: UpdateLeaveApplicationStatusDto,
   ) {
-    const approvedById = req.user.id;
-    return this.leaveApplicationService.updateStatus(id, approvedById, dto);
+    return this.leaveApplicationService.updateStatus(id, req.user, dto);
   }
 
   // ─── Cancel Leave ─────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -86,13 +87,16 @@ export class LeaveApplicationService {
   ): Promise<{ jobId: string; status: string; message: string }> {
     // Quick pre-check that the application exists before queuing
     const [app] = await this.db
-      .select({ id: leaveApplications.id, status: leaveApplications.status })
+      .select({ id: leaveApplications.id, status: leaveApplications.status, employeeId: leaveApplications.employeeId })
       .from(leaveApplications)
       .where(eq(leaveApplications.id, id))
       .limit(1);
 
     if (!app) {
       throw new NotFoundException(`Leave application with ID "${id}" not found`);
+    }
+    if (role !== 'admin' && role !== 'hr' && app.employeeId !== employeeId) {
+      throw new ForbiddenException('You are not authorized to update this leave application');
     }
     if (app.status !== 'Pending' && app.status !== 'Rejected') {
       throw new BadRequestException(`Cannot edit a leave application with status "${app.status}"`);
@@ -431,77 +435,106 @@ export class LeaveApplicationService {
   }
 
   // ─── Find One ─────────────────────────────────────────────────────────────
-  async findOne(id: string) {
+  async findOne(id: string, requestingUser?: any) {
     const cached = await this.cache.getByKey<any>(CacheKeys.leaveApplicationById, id);
-    if (cached) return cached;
+    let applicationResult = cached;
 
-    const [application] = await this.db
-      .select({
-        id: leaveApplications.id,
-        employeeId: leaveApplications.employeeId,
-        startDate: leaveApplications.startDate,
-        endDate: leaveApplications.endDate,
-        days: leaveApplications.days,
-        reason: leaveApplications.reason,
-        status: leaveApplications.status,
-        createdAt: leaveApplications.createdAt,
-        employeeName: employees.fullNameEnglish,
-        employeeEmail: employees.email,
-        employeeIdCode: employees.employeeId,
-        employeePhone: employees.phone,
-        employeeEmergencyPhone: employees.emergencyContactNumber,
-        leaveTypeName: leaveTypes.name,
-        leaveTypeId: leaveTypes.id,
-        leaveTypePaid: leaveTypes.paid,
-        leaveTypeColor: leaveTypes.color,
-        rejectionReason: leaveApplications.rejectionReason,
-        approvedByName: approver.fullNameEnglish,
-        approvedAt: leaveApplications.approvedAt,
-        rejectedAt: leaveApplications.rejectedAt,
-      })
-      .from(leaveApplications)
-      .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
-      .innerJoin(leaveTypes, eq(leaveApplications.leaveTypeId, leaveTypes.id))
-      .leftJoin(approver, eq(leaveApplications.approvedById, approver.id))
-      .where(eq(leaveApplications.id, id))
-      .limit(1);
+    if (!applicationResult) {
+      const [application] = await this.db
+        .select({
+          id: leaveApplications.id,
+          employeeId: leaveApplications.employeeId,
+          startDate: leaveApplications.startDate,
+          endDate: leaveApplications.endDate,
+          days: leaveApplications.days,
+          reason: leaveApplications.reason,
+          status: leaveApplications.status,
+          createdAt: leaveApplications.createdAt,
+          employeeName: employees.fullNameEnglish,
+          employeeEmail: employees.email,
+          employeeIdCode: employees.employeeId,
+          employeePhone: employees.phone,
+          employeeEmergencyPhone: employees.emergencyContactNumber,
+          employeeDepartmentId: employees.departmentId,
+          leaveTypeName: leaveTypes.name,
+          leaveTypeId: leaveTypes.id,
+          leaveTypePaid: leaveTypes.paid,
+          leaveTypeColor: leaveTypes.color,
+          rejectionReason: leaveApplications.rejectionReason,
+          approvedByName: approver.fullNameEnglish,
+          approvedAt: leaveApplications.approvedAt,
+          rejectedAt: leaveApplications.rejectedAt,
+        })
+        .from(leaveApplications)
+        .innerJoin(employees, eq(leaveApplications.employeeId, employees.id))
+        .innerJoin(leaveTypes, eq(leaveApplications.leaveTypeId, leaveTypes.id))
+        .leftJoin(approver, eq(leaveApplications.approvedById, approver.id))
+        .where(eq(leaveApplications.id, id))
+        .limit(1);
 
-    if (!application) {
-      throw new NotFoundException(`Leave application with ID "${id}" not found`);
+      if (!application) {
+        throw new NotFoundException(`Leave application with ID "${id}" not found`);
+      }
+
+      const attachments = await this.db
+        .select({
+          id: leaveAttachments.id,
+          title: leaveAttachments.title,
+          fileName: leaveAttachments.fileName,
+          fileUrl: leaveAttachments.fileUrl,
+        })
+        .from(leaveAttachments)
+        .where(eq(leaveAttachments.leaveApplicationId, id));
+
+      applicationResult = {
+        ...application,
+        attachments,
+      };
+
+      await this.cache.setByKey(CacheKeys.leaveApplicationById, applicationResult, id);
     }
 
-    const attachments = await this.db
-      .select({
-        id: leaveAttachments.id,
-        title: leaveAttachments.title,
-        fileName: leaveAttachments.fileName,
-        fileUrl: leaveAttachments.fileUrl,
-      })
-      .from(leaveAttachments)
-      .where(eq(leaveAttachments.leaveApplicationId, id));
+    if (requestingUser) {
+      const { role, id: userId, departmentId: userDeptId } = requestingUser;
+      if (role === 'employee' && applicationResult.employeeId !== userId) {
+        throw new ForbiddenException('You can only access your own leave applications');
+      }
+      if (role === 'manager') {
+        if (applicationResult.employeeDepartmentId !== userDeptId) {
+          throw new ForbiddenException('You can only access leave applications of employees in your department');
+        }
+      }
+    }
 
-    const result = {
-      ...application,
-      attachments,
-    };
-
-    await this.cache.setByKey(CacheKeys.leaveApplicationById, result, id);
-    return result;
+    return applicationResult;
   }
 
   // ─── Update Status (Approve/Reject) ───────────────────────────────────────
-  async updateStatus(id: string, approvedById: string, dto: UpdateLeaveApplicationStatusDto) {
+  async updateStatus(id: string, requestingUser: any, dto: UpdateLeaveApplicationStatusDto) {
+    const approvedById = requestingUser.id;
     const result = await this.db.transaction(async (tx) => {
       const [app] = await tx
         .select()
         .from(leaveApplications)
         .where(eq(leaveApplications.id, id))
         .limit(1);
- 
+
       if (!app) {
         throw new NotFoundException(`Leave application with ID "${id}" not found`);
       }
- 
+
+      if (requestingUser.role === 'manager') {
+        const [applicant] = await tx
+          .select({ departmentId: employees.departmentId })
+          .from(employees)
+          .where(eq(employees.id, app.employeeId))
+          .limit(1);
+
+        if (!applicant || applicant.departmentId !== requestingUser.departmentId) {
+          throw new ForbiddenException('You can only approve or reject leave applications for employees in your department');
+        }
+      }
+
       if (app.status !== 'Pending') {
         throw new BadRequestException(`This application is already processed (Status: ${app.status})`);
       }

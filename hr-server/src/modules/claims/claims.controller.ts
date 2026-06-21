@@ -26,6 +26,7 @@ import {
   ClaimQueryDto,
 } from './dto/claims.dto';
 import { Roles } from '../auth/guards/roles.decorator';
+import { PEOPLE_MANAGERS } from '../../common/enums/role.enum';
 
 @ApiTags('Claims')
 @ApiBearerAuth()
@@ -65,13 +66,13 @@ export class ClaimsController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Claim details' })
   @ApiResponse({ status: 404, description: 'Claim not found' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.claimsService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.claimsService.findOne(id, req.user);
   }
 
   // ─── Update Claim Status (Admin/HR only) ───────────────────────────────────
   @Patch(':id/status')
-  @Roles('admin', 'hr')
+  @Roles(...PEOPLE_MANAGERS)  // admin | hr
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve, reject, or settle a claim' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -93,7 +94,7 @@ export class ClaimsController {
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Claim deleted' })
   @ApiResponse({ status: 404, description: 'Claim not found' })
-  async delete(@Param('id', ParseUUIDPipe) id: string) {
-    return this.claimsService.delete(id);
+  async delete(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.claimsService.delete(id, req.user);
   }
 }

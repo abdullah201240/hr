@@ -150,10 +150,14 @@ function App() {
                 </Route>
               </Route>
 
-              {/* Printable templates (protected but no role restriction) */}
-              <Route path="/recruitment/print/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintJoiningLetterPage /></Suspense>} />
-              <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
-              <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />
+              {/* Printable templates (protected, admin/hr only) */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<RoleGuard allowedRoles={["admin", "hr"]} />}>
+                  <Route path="/recruitment/print/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintJoiningLetterPage /></Suspense>} />
+                  <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
+                  <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />
+                </Route>
+              </Route>
             </Routes>
           </ErrorBoundary>
         </BrowserRouter>

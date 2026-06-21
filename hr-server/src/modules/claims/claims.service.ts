@@ -3,6 +3,7 @@ import {
   Inject,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { eq, and, desc, asc, inArray, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -158,57 +159,72 @@ export class ClaimsService {
 
   // ─── Find One ──────────────────────────────────────────────────────────────
 
-  async findOne(id: string) {
+  async findOne(id: string, requestingUser?: any) {
     const cached = await this.cache.getByKey<any>(CacheKeys.claimById, id);
-    if (cached) return cached;
+    let claimResult = cached;
 
-    const [claim] = await this.db
-      .select({
-        id: claims.id,
-        employeeId: claims.employeeId,
-        claimType: claims.claimType,
-        amount: claims.amount,
-        status: claims.status,
-        description: claims.description,
-        approvedAmount: claims.approvedAmount,
-        details: claims.details,
-        approvedById: claims.approvedById,
-        approvedAt: claims.approvedAt,
-        rejectedAt: claims.rejectedAt,
-        rejectionReason: claims.rejectionReason,
-        settledAt: claims.settledAt,
-        createdAt: claims.createdAt,
-        updatedAt: claims.updatedAt,
-        employeeName: employees.fullNameEnglish,
-        employeeEmail: employees.email,
-        employeeIdCode: employees.employeeId,
-        approvedByName: approver.fullNameEnglish,
-      })
-      .from(claims)
-      .innerJoin(employees, eq(claims.employeeId, employees.id))
-      .leftJoin(approver, eq(claims.approvedById, approver.id))
-      .where(eq(claims.id, id))
-      .limit(1);
+    if (!claimResult) {
+      const [claim] = await this.db
+        .select({
+          id: claims.id,
+          employeeId: claims.employeeId,
+          claimType: claims.claimType,
+          amount: claims.amount,
+          status: claims.status,
+          description: claims.description,
+          approvedAmount: claims.approvedAmount,
+          details: claims.details,
+          approvedById: claims.approvedById,
+          approvedAt: claims.approvedAt,
+          rejectedAt: claims.rejectedAt,
+          rejectionReason: claims.rejectionReason,
+          settledAt: claims.settledAt,
+          createdAt: claims.createdAt,
+          updatedAt: claims.updatedAt,
+          employeeName: employees.fullNameEnglish,
+          employeeEmail: employees.email,
+          employeeIdCode: employees.employeeId,
+          employeeDepartmentId: employees.departmentId,
+          approvedByName: approver.fullNameEnglish,
+        })
+        .from(claims)
+        .innerJoin(employees, eq(claims.employeeId, employees.id))
+        .leftJoin(approver, eq(claims.approvedById, approver.id))
+        .where(eq(claims.id, id))
+        .limit(1);
 
-    if (!claim) {
-      throw new NotFoundException(`Claim with ID "${id}" not found`);
+      if (!claim) {
+        throw new NotFoundException(`Claim with ID "${id}" not found`);
+      }
+
+      // Fetch attachments
+      const attachments = await this.db
+        .select({
+          id: claimAttachments.id,
+          title: claimAttachments.title,
+          fileName: claimAttachments.fileName,
+          fileUrl: claimAttachments.fileUrl,
+        })
+        .from(claimAttachments)
+        .where(eq(claimAttachments.claimId, id));
+
+      claimResult = { ...claim, attachments };
+      await this.cache.setByKey(CacheKeys.claimById, claimResult, id);
     }
 
-    // Fetch attachments
-    const attachments = await this.db
-      .select({
-        id: claimAttachments.id,
-        title: claimAttachments.title,
-        fileName: claimAttachments.fileName,
-        fileUrl: claimAttachments.fileUrl,
-      })
-      .from(claimAttachments)
-      .where(eq(claimAttachments.claimId, id));
+    if (requestingUser) {
+      const { role, id: userId, departmentId: userDeptId } = requestingUser;
+      if (role === 'employee' && claimResult.employeeId !== userId) {
+        throw new ForbiddenException('You can only access your own claims');
+      }
+      if (role === 'manager') {
+        if (claimResult.employeeDepartmentId !== userDeptId) {
+          throw new ForbiddenException('You can only access claims of employees in your department');
+        }
+      }
+    }
 
-    const result = { ...claim, attachments };
-
-    await this.cache.setByKey(CacheKeys.claimById, result, id);
-    return result;
+    return claimResult;
   }
 
   // ─── Create ────────────────────────────────────────────────────────────────
@@ -380,15 +396,33 @@ export class ClaimsService {
 
   // ─── Delete ────────────────────────────────────────────────────────────────
 
-  async delete(id: string) {
+  async delete(id: string, requestingUser?: any) {
     const [claim] = await this.db
-      .select({ id: claims.id, status: claims.status })
+      .select({
+        id: claims.id,
+        status: claims.status,
+        employeeId: claims.employeeId,
+        employeeDepartmentId: employees.departmentId,
+      })
       .from(claims)
+      .innerJoin(employees, eq(claims.employeeId, employees.id))
       .where(eq(claims.id, id))
       .limit(1);
 
     if (!claim) {
       throw new NotFoundException(`Claim with ID "${id}" not found`);
+    }
+
+    if (requestingUser) {
+      const { role, id: userId, departmentId: userDeptId } = requestingUser;
+      if (role === 'employee' && claim.employeeId !== userId) {
+        throw new ForbiddenException('You can only delete your own claims');
+      }
+      if (role === 'manager') {
+        if (claim.employeeDepartmentId !== userDeptId) {
+          throw new ForbiddenException('You can only delete claims of employees in your department');
+        }
+      }
     }
 
     if (claim.status !== 'Pending') {

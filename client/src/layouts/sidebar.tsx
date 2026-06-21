@@ -197,7 +197,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         </button>
                         {isExpanded && (
                           <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-sidebar-border/30 pl-2">
-                            {item.items!.map((subItem) => {
+                            {item.items!.filter(subItem => !subItem.roles || subItem.roles.includes(mappedUser.role)).map((subItem) => {
                               const SubIcon = subItem.icon
                               const subActive = isActive(subItem.href)
                               return (
@@ -278,7 +278,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
         <div className="border-t border-sidebar-border/30 p-2">
           {!collapsed ? (
             <div className="flex items-center gap-2 rounded-md bg-sidebar-accent/30 p-1.5">
-              <Link to="/settings" onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
+              <Link to={mappedUser.role === 'admin' ? "/settings" : "/profile"} onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
                 <UserAvatar user={mappedUser} size="sm" />
                 <div className="flex-1 overflow-hidden">
                   <p className="truncate text-xs font-medium text-sidebar-foreground">
@@ -302,7 +302,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
             <div className="flex flex-col items-center gap-1.5 py-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link to="/settings" onClick={onLinkClick}>
+                  <Link to={mappedUser.role === 'admin' ? "/settings" : "/profile"} onClick={onLinkClick}>
                     <UserAvatar user={mappedUser} size="sm" />
                   </Link>
                 </TooltipTrigger>
