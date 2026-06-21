@@ -82,7 +82,6 @@ export class LeaveApplicationService {
   async updateAsync(
     id: string,
     employeeId: string,
-    _role?: string,
     dto: UpdateLeaveApplicationDto,
   ): Promise<{ jobId: string; status: string; message: string }> {
     // Quick pre-check that the application exists before queuing
@@ -627,7 +626,7 @@ export class LeaveApplicationService {
   }
 
   // ─── Cancel Leave Application ─────────────────────────────────────────────
-  async cancel(id: string, employeeId: string, _role?: string) {
+  async cancel(id: string, employeeId: string) {
     const result = await this.db.transaction(async (tx) => {
       const [app] = await tx
         .select()
@@ -745,7 +744,7 @@ export class LeaveApplicationService {
   }
 
   // ─── Edit & Resubmit Leave Application ─────────────────────────────────────
-  async update(id: string, employeeId: string, _role?: string, dto: UpdateLeaveApplicationDto) {
+  async update(id: string, employeeId: string, dto: UpdateLeaveApplicationDto) {
     return this.db.transaction(async (tx) => {
       // 1. Fetch leave application
       const [app] = await tx

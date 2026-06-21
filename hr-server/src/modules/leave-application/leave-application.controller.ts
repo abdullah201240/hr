@@ -115,7 +115,7 @@ export class LeaveApplicationController {
     @Body() dto: UpdateLeaveApplicationDto,
   ) {
     const employeeId = req.user.id;
-    return this.leaveApplicationService.updateAsync(id, employeeId, '', dto);
+    return this.leaveApplicationService.updateAsync(id, employeeId, dto);
   }
 
   // ─── Process Leave (Approve/Reject) ───────────────────────────────────────
@@ -143,6 +143,6 @@ export class LeaveApplicationController {
   @ApiResponse({ status: 404, description: 'Leave application not found' })
   async cancel(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     const employeeId = req.user.id;
-    return this.leaveApplicationService.cancel(id, employeeId, '');
+    return this.leaveApplicationService.cancel(id, employeeId);
   }
 }
