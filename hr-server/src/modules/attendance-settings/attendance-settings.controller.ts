@@ -23,6 +23,7 @@ import {
   CreateHolidayDto,
   UpdateHolidayDto,
 } from './dto/attendance-settings.dto';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Attendance Settings')
 @ApiBearerAuth()
@@ -35,6 +36,7 @@ export class AttendanceSettingsController {
   // ─── Settings (singleton) ────────────────────────────────────────────────
 
   @Get()
+  @Permissions('attendance:read', 'attendance:create', 'attendance:update', 'attendance:delete')
   @ApiOperation({ summary: 'Get attendance settings (office hours + weekly holidays)' })
   @ApiResponse({ status: 200, description: 'Current attendance settings' })
   async getSettings() {
@@ -42,6 +44,7 @@ export class AttendanceSettingsController {
   }
 
   @Patch()
+  @Permissions('attendance:update')
   @ApiOperation({ summary: 'Update attendance settings' })
   @ApiResponse({ status: 200, description: 'Settings updated' })
   async updateSettings(@Body() dto: UpdateAttendanceSettingsDto) {
@@ -51,6 +54,7 @@ export class AttendanceSettingsController {
   // ─── Holidays CRUD ───────────────────────────────────────────────────────
 
   @Get('holidays')
+  @Permissions('attendance:read', 'attendance:create', 'attendance:update', 'attendance:delete')
   @ApiOperation({ summary: 'List all holidays' })
   @ApiResponse({ status: 200, description: 'Holidays list sorted by start date' })
   async getHolidays() {
@@ -58,6 +62,7 @@ export class AttendanceSettingsController {
   }
 
   @Post('holidays')
+  @Permissions('attendance:create')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new holiday' })
   @ApiResponse({ status: 201, description: 'Holiday created' })
@@ -66,6 +71,7 @@ export class AttendanceSettingsController {
   }
 
   @Patch('holidays/:id')
+  @Permissions('attendance:update')
   @ApiOperation({ summary: 'Update a holiday' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Holiday updated' })
@@ -78,6 +84,7 @@ export class AttendanceSettingsController {
   }
 
   @Delete('holidays/:id')
+  @Permissions('attendance:delete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a holiday' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

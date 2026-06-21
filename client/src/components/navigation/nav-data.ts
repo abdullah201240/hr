@@ -171,7 +171,16 @@ export const navGroups: NavGroup[] = [
         title: "Settings",
         href: "/settings",
         icon: Settings,
-        permissions: ["settings:read", "settings:update"],
+        permissions: [
+          "settings:read",
+          "settings:update",
+          "leave:create",
+          "leave:update",
+          "leave:delete",
+          "attendance:create",
+          "attendance:update",
+          "attendance:delete"
+        ],
       },
     ],
   },

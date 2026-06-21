@@ -25,6 +25,7 @@ import {
   UpdateLeaveTypeDto,
 } from './dto/create-leave-type.dto';
 import { LeaveTypeQueryDto } from './dto/leave-type-query.dto';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Leave Types')
 @ApiBearerAuth()
@@ -35,6 +36,7 @@ export class LeaveTypeController {
   // ─── Create ────────────────────────────────────────────────────────────
 
   @Post()
+  @Permissions('leave:create')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new leave type' })
   @ApiResponse({ status: 201, description: 'Leave type created' })
@@ -46,6 +48,7 @@ export class LeaveTypeController {
   // ─── List ──────────────────────────────────────────────────────────────
 
   @Get()
+  @Permissions('leave:read', 'leave:create', 'leave:update', 'leave:delete')
   @ApiOperation({ summary: 'List leave types with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Paginated leave type list' })
   async findAll(@Query() query: LeaveTypeQueryDto) {
@@ -55,6 +58,7 @@ export class LeaveTypeController {
   // ─── Options (active listing for dropdowns/client) ─────────────────────
 
   @Get('options')
+  @Permissions('leave:read', 'leave:apply', 'leave:view_own')
   @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active leave types as options' })
   @ApiResponse({ status: 200, description: 'Active leave types list' })
@@ -65,6 +69,7 @@ export class LeaveTypeController {
   // ─── Single leave type ──────────────────────────────────────────────────
 
   @Get(':id')
+  @Permissions('leave:read', 'leave:create', 'leave:update')
   @ApiOperation({ summary: 'Get leave type by ID' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Leave type details' })
@@ -76,6 +81,7 @@ export class LeaveTypeController {
   // ─── Update ────────────────────────────────────────────────────────────
 
   @Patch(':id')
+  @Permissions('leave:update')
   @ApiOperation({ summary: 'Update a leave type' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Leave type updated' })
@@ -91,6 +97,7 @@ export class LeaveTypeController {
   // ─── Soft delete (deactivate) ──────────────────────────────────────────
 
   @Delete(':id')
+  @Permissions('leave:delete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a leave type (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

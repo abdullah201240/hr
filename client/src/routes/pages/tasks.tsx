@@ -33,6 +33,7 @@ import {
   type Task,
 } from "@/hooks/useTasks";
 import { useEmployeesQuery } from "@/hooks/useEmployees";
+import { useAuthStore } from "@/store/useAuthStore";
 import { ProjectCreateDialog } from "@/components/tasks/ProjectCreateDialog";
 import { TaskCreateDialog } from "@/components/tasks/TaskCreateDialog";
 import { TaskDetailsSheet } from "@/components/tasks/TaskDetailsSheet";
@@ -127,7 +128,9 @@ export default function TasksPage() {
 
   // API Queries & Mutations
   const { data: projects = [], isLoading: projectsLoading } = useProjectsQuery();
-  const { data: employeesData } = useEmployeesQuery({ limit: 1000 });
+  const { user } = useAuthStore();
+  const hasEmployeePermission = user?.permissions?.includes('employees:view_all') || user?.permissions?.includes('employees:view_team');
+  const { data: employeesData } = useEmployeesQuery({ limit: 1000 }, { enabled: hasEmployeePermission });
   const employees = useMemo(() => employeesData?.data || [], [employeesData]);
 
   // Sync workplaceProjectId state with search param
@@ -561,30 +564,6 @@ export default function TasksPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="file"
-                  accept=".csv"
-                  id="csv-import-file"
-                  className="hidden"
-                  onChange={handleCSVImport}
-                  disabled={isImporting}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById("csv-import-file")?.click()}
-                  className="h-8 text-xs font-semibold gap-1.5"
-                  disabled={isImporting}
-                >
-                  {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
-                  <span>{isImporting ? "Importing..." : "Import CSV"}</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-8 text-xs font-semibold gap-1.5">
-                  <FileSpreadsheet className="w-3.5 h-3.5" /> Export CSV
-                </Button>
-                <Button variant="outline" size="sm" onClick={handlePrintPDF} className="h-8 text-xs font-semibold gap-1.5">
-                  <Printer className="w-3.5 h-3.5" /> Print Summary
-                </Button>
                 <Button size="sm" onClick={() => setIsTaskOpen(true)} className="h-8 text-xs font-semibold gap-1.5 bg-primary">
                   <Plus className="w-3.5 h-3.5" /> Create Task
                 </Button>

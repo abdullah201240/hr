@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarOff, Plus, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "react-router"
 import { LeaveSummaryCards } from "@/components/leave/leave-summary-cards"
 import { LeaveTypesList } from "@/components/leave/leave-types-list"
@@ -20,6 +20,7 @@ import {
 import type { LeaveType } from "@/types"
 import { NotificationPreferences } from "@/components/notifications/notification-preferences"
 import { AccessControlTab } from "@/components/settings/access-control-tab"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export default function SettingsPage() {
   const [editingLeave, setEditingLeave] = useState<LeaveType | null>(null)
@@ -108,12 +109,73 @@ export default function SettingsPage() {
     })
   }
 
+  const { hasAnyPermission } = usePermissions()
+
+  const tabsConfig = [
+    {
+      value: "leave",
+      label: "Leave Management",
+      permissions: ["leave:create", "leave:update", "leave:delete"],
+    },
+    {
+      value: "attendance",
+      label: "Attendance Setup",
+      permissions: ["attendance:create", "attendance:update", "attendance:delete"],
+    },
+    {
+      value: "office",
+      label: "Office Hours",
+      permissions: ["attendance:create", "attendance:update", "attendance:delete"],
+    },
+    {
+      value: "salary",
+      label: "Salary Structure",
+      permissions: ["payroll:create", "payroll:process", "payroll:read"],
+    },
+    {
+      value: "appearance",
+      label: "Theme",
+    },
+    {
+      value: "notifications",
+      label: "Notification Settings",
+    },
+    {
+      value: "access",
+      label: "Access Control",
+      permissions: ["settings:read", "settings:update"],
+    },
+  ]
+
+  const visibleTabs = tabsConfig.filter(
+    (t) => !t.permissions || hasAnyPermission(t.permissions)
+  )
+
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get("tab") || "leave"
+
+  const isTabVisible = visibleTabs.some((t) => t.value === activeTab)
+  const currentTab = isTabVisible ? activeTab : (visibleTabs[0]?.value || "")
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !isTabVisible) {
+      setSearchParams({ tab: visibleTabs[0].value }, { replace: true })
+    }
+  }, [visibleTabs, isTabVisible, setSearchParams])
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value }, { replace: true })
   }
+
+  const gridColsClass = {
+    1: "grid-cols-1",
+    2: "grid-cols-2",
+    3: "grid-cols-3",
+    4: "grid-cols-4",
+    5: "grid-cols-5",
+    6: "grid-cols-6",
+    7: "grid-cols-7",
+  }[visibleTabs.length] || "grid-cols-7"
 
   return (
     <div className="space-y-6">
@@ -122,84 +184,95 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your account and application preferences</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 shadow-none border border-border/40">
-          <TabsTrigger value="leave" className="text-xs">Leave Management</TabsTrigger>
-          <TabsTrigger value="attendance" className="text-xs">Attendance Setup</TabsTrigger>
-          <TabsTrigger value="office" className="text-xs">Office Hours</TabsTrigger>
-          <TabsTrigger value="salary" className="text-xs">Salary Structure</TabsTrigger>
-          <TabsTrigger value="appearance" className="text-xs">Theme</TabsTrigger>
-          <TabsTrigger value="notifications" className="text-xs">Notification Settings</TabsTrigger>
-          <TabsTrigger value="access" className="text-xs">Access Control</TabsTrigger>
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className={`grid w-full ${gridColsClass} shadow-none border border-border/40`}>
+          {visibleTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="leave">
-          <div className="space-y-6">
-            {/* Header with Add Button */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold flex items-center gap-2">
-                  <CalendarOff className="h-5 w-5 text-primary" />
-                  Leave Types & Policies
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Configure international-standard leave types with flexible policies
-                </p>
+        {visibleTabs.some((t) => t.value === "leave") && (
+          <TabsContent value="leave">
+            <div className="space-y-6">
+              {/* Header with Add Button */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <CalendarOff className="h-5 w-5 text-primary" />
+                    Leave Types & Policies
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Configure international-standard leave types with flexible policies
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setEditingLeave(null)
+                    setShowAddLeave(true)
+                  }}
+                  className="gap-2 h-9"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Leave Type
+                </Button>
               </div>
-              <Button
-                onClick={() => {
-                  setEditingLeave(null)
-                  setShowAddLeave(true)
-                }}
-                className="gap-2 h-9"
-              >
-                <Plus className="h-4 w-4" />
-                Add Leave Type
-              </Button>
+
+              {isLoadingLeaveTypes ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  {/* Use Leave Components */}
+                  <LeaveSummaryCards leaveTypes={leaveTypes} />
+                  <LeaveTypesList
+                    leaveTypes={leaveTypes}
+                    onEdit={handleOpenEdit}
+                    onToggleActive={handleToggleActive}
+                  />
+                </>
+              )}
             </div>
+          </TabsContent>
+        )}
 
-            {isLoadingLeaveTypes ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <>
-                {/* Use Leave Components */}
-                <LeaveSummaryCards leaveTypes={leaveTypes} />
-                <LeaveTypesList
-                  leaveTypes={leaveTypes}
-                  onEdit={handleOpenEdit}
-                  onToggleActive={handleToggleActive}
-                />
-              </>
-            )}
+        {visibleTabs.some((t) => t.value === "attendance") && (
+          <TabsContent value="attendance">
+            <AttendanceSetup />
+          </TabsContent>
+        )}
 
-          </div>
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "office") && (
+          <TabsContent value="office">
+            <OfficeHours />
+          </TabsContent>
+        )}
 
-        <TabsContent value="attendance">
-          <AttendanceSetup />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "salary") && (
+          <TabsContent value="salary">
+            <SalarySetup />
+          </TabsContent>
+        )}
 
-        <TabsContent value="office">
-          <OfficeHours />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "appearance") && (
+          <TabsContent value="appearance">
+            <ThemeSettings />
+          </TabsContent>
+        )}
 
-        <TabsContent value="salary">
-          <SalarySetup />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "notifications") && (
+          <TabsContent value="notifications">
+            <NotificationPreferences />
+          </TabsContent>
+        )}
 
-        <TabsContent value="appearance">
-          <ThemeSettings />
-        </TabsContent>
-
-        <TabsContent value="notifications">
-          <NotificationPreferences />
-        </TabsContent>
-
-        <TabsContent value="access">
-          <AccessControlTab />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "access") && (
+          <TabsContent value="access">
+            <AccessControlTab />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Leave Type Dialog */}

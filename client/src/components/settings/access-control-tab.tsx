@@ -66,6 +66,41 @@ const formatActionName = (action: string, resource?: string) => {
     if (leaveMap[actKey]) return leaveMap[actKey];
   }
 
+  // Custom formatting for attendance resource actions to make them clear
+  if (resKey === "attendance") {
+    const attMap: Record<string, string> = {
+      create: "Setup Attendance Rules & Policies (Create)",
+      update: "Edit Attendance Configurations (Update)",
+      delete: "Delete Attendance Configurations",
+      read: "View Own Attendance Logs",
+      view_all: "View All Employee Attendance Logs (HR View)",
+      approve: "Approve Attendance Corrections",
+    };
+    if (attMap[actKey]) return attMap[actKey];
+  }
+
+  // Custom formatting for payroll resource actions to make them clear
+  if (resKey === "payroll") {
+    const payMap: Record<string, string> = {
+      create: "Setup Salary Structures & Payroll Cycles (Create)",
+      read: "View Payroll Reports & Structures",
+      process: "Process & Run Payroll Payouts",
+      disburse: "Disburse Payroll Funds",
+      view_own: "View Own Payslips (Employee View)",
+      view_all: "View Company Payroll Details (Admin / HR View)",
+    };
+    if (payMap[actKey]) return payMap[actKey];
+  }
+
+  // Custom formatting for settings resource actions to make them clear
+  if (resKey === "settings") {
+    const setMap: Record<string, string> = {
+      read: "View Access Control & System Settings (Read)",
+      update: "Modify Access Roles, Permissions, & System Settings (Update)",
+    };
+    if (setMap[actKey]) return setMap[actKey];
+  }
+
   const customMap: Record<string, string> = {
     read: "View / Read",
     create: "Create / Add",

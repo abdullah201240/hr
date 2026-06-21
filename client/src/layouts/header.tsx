@@ -230,13 +230,15 @@ export function Header({ onMobileMenuToggle }: { sidebarCollapsed?: boolean; onM
               <User className="h-3.5 w-3.5" />
               My Profile
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="gap-2 cursor-pointer py-1.5"
-              onClick={() => navigate("/settings")}
-            >
-              <Settings className="h-3.5 w-3.5" />
-              Account Settings
-            </DropdownMenuItem>
+            {user?.permissions?.includes('settings:read') && (
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer py-1.5"
+                onClick={() => navigate("/settings")}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Account Settings
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem 
               className="gap-2 cursor-pointer py-1.5"
               onClick={() => navigate("/profile?tab=security")}
