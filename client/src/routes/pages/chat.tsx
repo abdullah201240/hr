@@ -16,7 +16,10 @@ import {
   Pencil,
   Trash2,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Check,
+  CheckCheck,
+  Clock
 } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
 import type { ChatMessage } from '../../store/useChatStore';
@@ -27,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 
@@ -50,7 +54,8 @@ export default function ChatPage() {
     createChannel, 
     getOrCreateDirectRoom,
     addMemberToChannel,
-    leaveOrRemoveFromChannel
+    leaveOrRemoveFromChannel,
+    addOptimisticMessage
   } = useChatStore();
 
   const { user } = useAuthStore();
@@ -63,6 +68,10 @@ export default function ChatPage() {
   
   // Message edit state
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  
+  // AlertDialog delete and loading states
+  const [messageToDeleteId, setMessageToDeleteId] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Channel creation state
   const [channelName, setChannelName] = useState('');
@@ -145,9 +154,28 @@ export default function ChatPage() {
       }
     } else {
       // Create mode
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
+      if (user) {
+        addOptimisticMessage(activeRoomId, {
+          id: tempId,
+          roomId: activeRoomId,
+          senderId: user.id,
+          content: inputVal.trim(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isEdited: false,
+          isDeleted: false,
+          senderName: user.fullNameEnglish,
+          senderPhotoUrl: user.employeePhotoUrl || null,
+          isPending: true,
+          clientMessageId: tempId,
+        });
+      }
+
       const success = sendWSMessage('sendMessage', {
         roomId: activeRoomId,
         content: inputVal.trim(),
+        clientMessageId: tempId,
       });
       if (success) {
         setInputVal('');
@@ -202,11 +230,30 @@ export default function ChatPage() {
 
   // Delete handler
   const handleDeleteMessage = (msgId: string) => {
-    if (confirm('Are you sure you want to delete this message?')) {
-      const success = sendWSMessage('deleteMessage', { messageId: msgId });
+    setMessageToDeleteId(msgId);
+  };
+
+  const confirmDeleteMessage = () => {
+    if (messageToDeleteId) {
+      const success = sendWSMessage('deleteMessage', { messageId: messageToDeleteId });
       if (!success) {
         toast.error('Failed to delete. WebSocket disconnected.');
       }
+      setMessageToDeleteId(null);
+    }
+  };
+
+  // Load older messages pagination
+  const handleLoadMoreMessages = async () => {
+    if (!activeRoomId || roomMessages.length === 0 || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const oldestMsg = roomMessages[0];
+      await fetchMessages(activeRoomId, oldestMsg.id);
+    } catch {
+      toast.error('Failed to load older messages');
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -513,6 +560,22 @@ export default function ChatPage() {
             <div className="flex-1 p-4 overflow-hidden relative">
               <ScrollArea className="h-full pr-3">
                 <div className="space-y-6">
+                  {roomMessages.length >= 50 && (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        onClick={handleLoadMoreMessages}
+                        variant="ghost"
+                        size="xs"
+                        disabled={loadingMore}
+                        className="text-[10px] text-muted-foreground hover:text-foreground h-7 flex items-center gap-1.5"
+                      >
+                        {loadingMore ? (
+                          <div className="h-3 w-3 animate-spin rounded-full border border-muted-foreground border-t-transparent" />
+                        ) : null}
+                        <span>{loadingMore ? 'Loading older messages...' : 'Load older messages'}</span>
+                      </Button>
+                    </div>
+                  )}
                   {roomMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
                       <MessageCircle className="h-10 w-10 text-muted-foreground/30 mb-2 animate-bounce" />
@@ -555,8 +618,28 @@ export default function ChatPage() {
                               <div className={`flex flex-col max-w-[70%] ${isMe ? 'items-end' : ''}`}>
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                   <span className="text-[11px] font-semibold text-foreground">{msg.senderName}</span>
-                                  <span className="text-[9px] text-muted-foreground">
-                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                    <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    {isMe && !msg.isDeleted && (
+                                      <span className="inline-flex ml-0.5">
+                                        {msg.isPending ? (
+                                          <Clock className="h-2.5 w-2.5 text-muted-foreground/50 animate-pulse" />
+                                        ) : (() => {
+                                          if (!activeRoom) return <Check className="h-2.5 w-2.5 text-muted-foreground/50" />;
+                                          const otherMembers = activeRoom.members.filter((m) => m.id !== user?.id);
+                                          if (otherMembers.length === 0) return <Check className="h-2.5 w-2.5 text-muted-foreground/50" />;
+                                          
+                                          const anyRead = otherMembers.some(
+                                            (m) => m.lastReadAt && new Date(m.lastReadAt).getTime() >= new Date(msg.createdAt).getTime()
+                                          );
+                                          
+                                          if (anyRead) {
+                                            return <CheckCheck className="h-2.5 w-2.5 text-sky-500" />;
+                                          }
+                                          return <CheckCheck className="h-2.5 w-2.5 text-muted-foreground/50" />;
+                                        })()}
+                                      </span>
+                                    )}
                                   </span>
                                   {msg.isEdited && !msg.isDeleted && (
                                     <span className="text-[8px] text-muted-foreground/80 italic">(edited)</span>
@@ -910,6 +993,24 @@ export default function ChatPage() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog: Delete Confirmation */}
+      <AlertDialog open={!!messageToDeleteId} onOpenChange={(open) => !open && setMessageToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the message from the conversation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteMessage} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );

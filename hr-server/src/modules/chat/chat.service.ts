@@ -75,6 +75,13 @@ export class ChatService {
   }
 
   /**
+   * Retrieve all members of a room
+   */
+  async getRoomMembers(roomId: string) {
+    return this.chatRepository.getRoomMembers(roomId);
+  }
+
+  /**
    * Get all conversations a user is in, using Redis caching.
    */
   async getUserRooms(employeeId: string) {
@@ -117,8 +124,12 @@ export class ChatService {
       })),
     }));
 
-    // Cache user room views for 5 minutes
-    await this.redis.setex(cacheKey, 300, JSON.stringify(enriched));
+    // Cache user room views for 5 minutes (strip presence field from cache to save space)
+    const cleanForCache = enriched.map((room) => ({
+      ...room,
+      members: room.members.map(({ presence, ...member }) => member),
+    }));
+    await this.redis.setex(cacheKey, 300, JSON.stringify(cleanForCache));
     return enriched;
   }
 

@@ -40,6 +40,10 @@ export class WSMessageDto {
   @IsNotEmpty()
   @MaxLength(4000)
   content!: string;
+
+  @IsString()
+  @IsOptional()
+  clientMessageId?: string;
 }
 
 export class WSTypingDto {

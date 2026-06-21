@@ -211,9 +211,9 @@ export class ChatGateway
     try {
       const message = await this.chatService.saveMessage(data.roomId, senderId, data.content);
 
-      // Fetch room metadata and list of members to broadcast
-      const rooms = await this.chatService.getUserRooms(senderId);
-      const room = rooms.find((r: any) => r.id === data.roomId);
+      // Fetch list of members to broadcast (optimized: avoids loading all user rooms)
+      const members = await this.chatService.getRoomMembers(data.roomId);
+      const sender = members.find((m: any) => m.id === senderId);
       
       const broadcastPayload = {
         id: message.id,
@@ -223,8 +223,9 @@ export class ChatGateway
         createdAt: message.createdAt,
         isEdited: message.isEdited,
         isDeleted: message.isDeleted,
-        senderName: room?.members.find((m: any) => m.id === senderId)?.fullNameEnglish || 'Unknown',
-        senderPhotoUrl: room?.members.find((m: any) => m.id === senderId)?.employeePhotoUrl || null,
+        senderName: sender?.fullNameEnglish || 'Unknown',
+        senderPhotoUrl: sender?.employeePhotoUrl || null,
+        clientMessageId: data.clientMessageId,
       };
 
       await this.pubClient.publish(
@@ -234,10 +235,9 @@ export class ChatGateway
           roomId: data.roomId,
           message: broadcastPayload,
           senderId,
-          members: room?.members.map((m: any) => m.id) || [],
+          members: members.map((m: any) => m.id),
         })
       );
-
 
       await this.chatService.markAsRead(data.roomId, senderId);
 
@@ -263,8 +263,8 @@ export class ChatGateway
         return;
       }
 
-      const rooms = await this.chatService.getUserRooms(senderId);
-      const room = rooms.find((r: any) => r.id === updated.roomId);
+      const members = await this.chatService.getRoomMembers(updated.roomId);
+      const sender = members.find((m: any) => m.id === senderId);
 
       await this.pubClient.publish(
         'chat_events',
@@ -280,10 +280,10 @@ export class ChatGateway
             updatedAt: updated.updatedAt,
             isEdited: updated.isEdited,
             isDeleted: updated.isDeleted,
-            senderName: room?.members.find((m: any) => m.id === senderId)?.fullNameEnglish || 'Unknown',
-            senderPhotoUrl: room?.members.find((m: any) => m.id === senderId)?.employeePhotoUrl || null,
+            senderName: sender?.fullNameEnglish || 'Unknown',
+            senderPhotoUrl: sender?.employeePhotoUrl || null,
           },
-          members: room?.members.map((m: any) => m.id) || [],
+          members: members.map((m: any) => m.id),
         })
       );
 
@@ -309,8 +309,8 @@ export class ChatGateway
         return;
       }
 
-      const rooms = await this.chatService.getUserRooms(senderId);
-      const room = rooms.find((r: any) => r.id === updated.roomId);
+      const members = await this.chatService.getRoomMembers(updated.roomId);
+      const sender = members.find((m: any) => m.id === senderId);
 
       await this.pubClient.publish(
         'chat_events',
@@ -327,10 +327,10 @@ export class ChatGateway
             updatedAt: updated.updatedAt,
             isEdited: updated.isEdited,
             isDeleted: updated.isDeleted,
-            senderName: room?.members.find((m: any) => m.id === senderId)?.fullNameEnglish || 'Unknown',
-            senderPhotoUrl: room?.members.find((m: any) => m.id === senderId)?.employeePhotoUrl || null,
+            senderName: sender?.fullNameEnglish || 'Unknown',
+            senderPhotoUrl: sender?.employeePhotoUrl || null,
           },
-          members: room?.members.map((m: any) => m.id) || [],
+          members: members.map((m: any) => m.id),
         })
       );
 
@@ -352,9 +352,8 @@ export class ChatGateway
     const isMember = await this.chatService.isMember(data.roomId, employeeId);
     if (!isMember) return;
 
-    const rooms = await this.chatService.getUserRooms(employeeId);
-    const room = rooms.find((r: any) => r.id === data.roomId);
-    if (!room) return;
+    const members = await this.chatService.getRoomMembers(data.roomId);
+    const sender = members.find((m: any) => m.id === employeeId);
 
     await this.pubClient.publish(
       'chat_events',
@@ -362,9 +361,9 @@ export class ChatGateway
         type: 'TYPING',
         roomId: data.roomId,
         employeeId,
-        senderName: room.members.find((m: any) => m.id === employeeId)?.fullNameEnglish || 'Someone',
+        senderName: sender?.fullNameEnglish || 'Someone',
         isTyping: data.isTyping,
-        members: room.members.map((m: any) => m.id),
+        members: members.map((m: any) => m.id),
       })
     );
 
@@ -385,9 +384,7 @@ export class ChatGateway
     try {
       await this.chatService.markAsRead(data.roomId, employeeId);
 
-      const rooms = await this.chatService.getUserRooms(employeeId);
-      const room = rooms.find((r: any) => r.id === data.roomId);
-      if (!room) return;
+      const members = await this.chatService.getRoomMembers(data.roomId);
 
       await this.pubClient.publish(
         'chat_events',
@@ -395,7 +392,7 @@ export class ChatGateway
           type: 'READ_RECEIPT',
           roomId: data.roomId,
           employeeId,
-          members: room.members.map((m: any) => m.id),
+          members: members.map((m: any) => m.id),
         })
       );
 

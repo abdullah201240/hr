@@ -7,8 +7,10 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { useTheme } from "@/hooks/use-theme"
 import { cn } from "@/lib/utils"
 import { PageSkeleton } from "@/components/common/page-skeleton"
+import { useWebSocket } from "@/hooks/useWebSocket"
 
 export function DashboardLayout() {
+  useWebSocket()
   const { sidebarSize, setSidebarSize } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 

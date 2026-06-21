@@ -7,7 +7,6 @@ import { AuthLayout } from "@/layouts/auth-layout"
 import { DashboardLayout } from "@/layouts/dashboard-layout"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { useWebSocket } from "@/hooks/useWebSocket"
 
 
 // Lazy loaded page components
@@ -76,7 +75,6 @@ function LoadingSpinner() {
 }
 
 function App() {
-  useWebSocket();
   return (
 
     <ThemeProvider defaultTheme="system" storageKey="hr-theme">

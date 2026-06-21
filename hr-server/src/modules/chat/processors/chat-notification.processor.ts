@@ -17,6 +17,7 @@ export class ChatNotificationProcessor extends WorkerHost {
     );
 
     // Mock dispatching email/push alerts for offline recipients
+    // TODO: Integrate with an actual email service provider (e.g., SendGrid) or Push Notification service (e.g., Firebase Cloud Messaging)
     for (const recipient of recipients) {
       this.logger.log(
         `[NOTIFICATION DISPATCH] Alerting offline employee ${recipient.name} (${recipient.email}): "New message from teammate: ${content.substring(0, 30)}..."`

@@ -22,6 +22,8 @@ export interface ChatMessage {
   isDeleted: boolean;
   senderName: string;
   senderPhotoUrl: string | null;
+  isPending?: boolean;
+  clientMessageId?: string;
 }
 
 export interface ChatRoom {
@@ -57,6 +59,7 @@ interface ChatState {
   fetchRooms: () => Promise<void>;
   fetchMessages: (roomId: string, cursor?: string) => Promise<void>;
   addIncomingMessage: (message: ChatMessage) => void;
+  addOptimisticMessage: (roomId: string, message: ChatMessage) => void;
   addIncomingMessageEdit: (message: ChatMessage) => void;
   addIncomingMessageDelete: (roomId: string, messageId: string, message: ChatMessage) => void;
   setTyping: (roomId: string, employeeId: string, senderName: string, isTyping: boolean) => void;
@@ -144,7 +147,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return state;
       }
 
-      const updatedMessages = [...roomMessages, message].sort(
+      // Filter out optimistic/pending messages matching clientMessageId
+      const filtered = roomMessages.filter((m) => {
+        if (message.clientMessageId && m.clientMessageId === message.clientMessageId) {
+          return false;
+        }
+        return true;
+      });
+
+      const updatedMessages = [...filtered, message].sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
 
@@ -352,5 +363,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       rooms: state.rooms.filter((r) => r.id !== roomId),
       activeRoomId: state.activeRoomId === roomId ? null : state.activeRoomId,
     }));
+  },
+
+  addOptimisticMessage: (roomId, message) => {
+    set((state) => {
+      const roomMessages = state.messages[roomId] || [];
+      return {
+        messages: {
+          ...state.messages,
+          [roomId]: [...roomMessages, message],
+        },
+      };
+    });
   },
 }));
