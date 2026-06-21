@@ -35,6 +35,9 @@ export class RolesGuard implements CanActivate {
 
     // Fetch user's full permission set from their custom role
     const userPermissions = await this.rolesService.getUserPermissions(user.customRoleId);
+    
+    // Attach permissions to user object on request for downstream usage
+    user.permissions = userPermissions;
 
     // ─── Explicit @Permissions() decorator ──────────────────────────────────
     if (requiredPermissions && requiredPermissions.length > 0) {

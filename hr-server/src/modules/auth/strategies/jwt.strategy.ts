@@ -27,6 +27,7 @@ export interface JwtUser {
   customRoleId: string | null;
   fullNameEnglish: string;
   employeePhotoUrl: string | null;
+  permissions?: Set<string>;
 }
 
 @Injectable()

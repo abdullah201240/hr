@@ -54,7 +54,7 @@ export class AuditLogInterceptor implements NestInterceptor {
 
             await this.db.insert(auditLogs).values({
               userId: req.user?.id ?? null,
-              userRole: req.user?.role ?? null,
+              customRoleId: req.user?.customRoleId ?? null,
               action: `${method} ${routeUrl}`,
               resourceType: routeUrl.split('/')[1] ?? 'unknown',
               resourceId: req.params?.id ?? req.params?.employeeId ?? null,

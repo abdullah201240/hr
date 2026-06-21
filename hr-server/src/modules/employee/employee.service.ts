@@ -214,7 +214,7 @@ export class EmployeeService {
 
   async findAll(
     query: EmployeeQueryDto,
-    requestingUser?: { id: string; role: string; departmentId?: string },
+    requestingUser?: { id: string; departmentId?: string; permissions?: Set<string> },
   ) {
     const {
       page = 1,
@@ -228,10 +228,14 @@ export class EmployeeService {
       sortOrder = 'desc',
     } = query;
 
-    // Role-based scoping: managers can only see employees in their own department
+    // Permission-based scoping: scope to department if user can only view team, not all
     let scopedDepartmentId = departmentId;
-    if (requestingUser?.role === 'manager' && !scopedDepartmentId) {
-      scopedDepartmentId = requestingUser.departmentId;
+    if (requestingUser && !scopedDepartmentId) {
+      const hasViewAll = requestingUser.permissions?.has('employees:view_all');
+      const hasViewTeam = requestingUser.permissions?.has('employees:view_team');
+      if (hasViewTeam && !hasViewAll) {
+        scopedDepartmentId = requestingUser.departmentId;
+      }
     }
 
     // Build a deterministic cache key from query params

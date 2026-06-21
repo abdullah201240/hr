@@ -8,6 +8,7 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { employees } from './employee';
+import { customRoles } from './roles';
 
 /**
  * audit_logs — enterprise compliance trail for all state-changing API operations.
@@ -24,7 +25,7 @@ export const auditLogs = pgTable(
     userId: uuid('user_id').references(() => employees.id, { onDelete: 'set null' }),
 
     /** Role of the user at the time of the action */
-    userRole: varchar('user_role', { length: 20 }),
+    customRoleId: uuid('custom_role_id').references(() => customRoles.id, { onDelete: 'set null' }),
 
     /** HTTP method + route template e.g. "POST /employees" */
     action: varchar('action', { length: 500 }).notNull(),
