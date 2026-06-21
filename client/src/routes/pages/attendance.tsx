@@ -16,25 +16,14 @@ import { format } from "date-fns"
 import {
   useMyAttendanceQuery,
   useSubmitCorrectionMutation,
-  useDailyAttendanceQuery,
-  useApproveCorrectionMutation,
-  useRejectCorrectionMutation,
-  usePendingCorrectionsQuery,
-  useOverrideAttendanceMutation,
   useMyRangeAttendanceQuery,
-  type AttendanceRecord,
-  type DailyAttendanceLog
+  type AttendanceRecord
 } from "@/hooks/useAttendance"
-import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useAuthStore } from "@/store/useAuthStore"
-import { useSearchParams } from "react-router"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
 
 // Import modular components
 import { RequestCorrectionDialog, convert24to12 } from "@/components/attendance/RequestCorrectionDialog"
-import { OverrideAttendanceDialog } from "@/components/attendance/OverrideAttendanceDialog"
 import { MyAttendanceTab } from "@/components/attendance/MyAttendanceTab"
-import { EmployeeAttendanceTab } from "@/components/attendance/EmployeeAttendanceTab"
 import {
   mapBalances,
   mapRegularHolidays,
@@ -44,14 +33,6 @@ import {
 
 export default function AttendancePage() {
   const { user } = useAuthStore()
-  const isAdminOrHR = user?.permissions?.includes("attendance:view_all") || user?.permissions?.includes("attendance:approve")
-
-  const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get("tab") || "my-attendance"
-
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value }, { replace: true })
-  }
 
   const todayDate = new Date()
   const [calMonth, setCalMonth] = useState(todayDate.getMonth())
@@ -313,99 +294,7 @@ export default function AttendancePage() {
     }
   }
 
-  // ─── Employee Attendance (Admin/HR View) State ──────────────────────────────
-  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), "yyyy-MM-dd"))
-  const [adminSearch, setAdminSearch] = useState("")
-  const [adminFilterStatus, setAdminFilterStatus] = useState("all")
-  const [adminSubTab, setAdminSubTab] = useState<"logs" | "corrections">("logs")
 
-  // Pagination states for Daily Workforce Logs
-  const [adminCurrentPage, setAdminCurrentPage] = useState(1)
-  const [adminPageSize, setAdminPageSize] = useState(20)
-
-  // Reset pagination on filter or search changes
-  useEffect(() => {
-    setAdminCurrentPage(1)
-  }, [selectedDate, adminSearch, adminFilterStatus, adminPageSize])
-
-  // Override dialog state
-  const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false)
-  const [overrideRecord, setOverrideRecord] = useState<any>(null)
-
-  // API Queries for Admin
-  const { data: dailyLogs = [], isLoading: isLoadingDaily, refetch: refetchDaily } = useDailyAttendanceQuery(selectedDate)
-  const { data: pendingCorrections = [], isLoading: isLoadingCorrections } = usePendingCorrectionsQuery()
-  const { data: employeesData } = useEmployeesQuery({ page: 1, limit: 100, status: "active" }, { enabled: isAdminOrHR })
-
-  // Mutations
-  const overrideMut = useOverrideAttendanceMutation()
-  const approveCorrectionMut = useApproveCorrectionMutation()
-  const rejectCorrectionMut = useRejectCorrectionMutation()
-
-  const activeEmployees = employeesData?.data || []
-
-  const filteredDailyLogs = useMemo(() => {
-    return dailyLogs.filter((log) => {
-      const matchesStatus = adminFilterStatus === "all" || log.status === adminFilterStatus
-      const matchesSearch =
-        log.employeeName.toLowerCase().includes(adminSearch.toLowerCase()) ||
-        log.employeeIdCode.toLowerCase().includes(adminSearch.toLowerCase())
-      return matchesStatus && matchesSearch
-    })
-  }, [dailyLogs, adminSearch, adminFilterStatus])
-
-  const paginatedDailyLogs = useMemo(() => {
-    const startIndex = (adminCurrentPage - 1) * adminPageSize
-    const endIndex = startIndex + adminPageSize
-    return filteredDailyLogs.slice(startIndex, endIndex)
-  }, [filteredDailyLogs, adminCurrentPage, adminPageSize])
-
-  const dailyCounts = useMemo(() => {
-    const counts = { present: 0, late: 0, absent: 0, leave: 0, holiday: 0, weekend: 0 }
-    for (const log of dailyLogs) {
-      if (log.status in counts) {
-        counts[log.status as keyof typeof counts]++
-      }
-    }
-    return counts
-  }, [dailyLogs])
-
-  const handleOpenOverride = (log?: DailyAttendanceLog) => {
-    setOverrideRecord(log || null)
-    setIsOverrideDialogOpen(true)
-  }
-
-  const handleOverrideSubmit = async (payload: any) => {
-    try {
-      await overrideMut.mutateAsync(payload)
-      toast.success("Attendance entry updated successfully")
-      setIsOverrideDialogOpen(false)
-      refetchDaily()
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || "Failed to update attendance")
-    }
-  }
-
-  const handleApproveCorrection = async (id: string, name: string, date: string) => {
-    try {
-      await approveCorrectionMut.mutateAsync(id)
-      toast.success(`Approved correction for ${name} on ${date}`)
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || "Approval failed")
-    }
-  }
-
-  const handleRejectCorrection = async (id: string, name: string, date: string) => {
-    try {
-      await rejectCorrectionMut.mutateAsync(id)
-      toast.success(`Rejected correction for ${name} on ${date}`)
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || "Rejection failed")
-    }
-  }
 
   const renderMyAttendance = () => (
     <MyAttendanceTab
@@ -449,58 +338,16 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      {isAdminOrHR ? (
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsContent value="my-attendance" className="space-y-6 outline-none">
-            {isLoading ? (
-              <div className="flex h-[400px] items-center justify-center">
-                <Spinner className="h-8 w-8 text-primary animate-spin" />
-              </div>
-            ) : (
-              renderMyAttendance()
-            )}
-          </TabsContent>
-
-          <TabsContent value="employee-attendance" className="space-y-6 outline-none">
-            <EmployeeAttendanceTab
-              dailyCounts={dailyCounts}
-              pendingCorrections={pendingCorrections}
-              adminSubTab={adminSubTab}
-              setAdminSubTab={setAdminSubTab}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              adminFilterStatus={adminFilterStatus}
-              setAdminFilterStatus={setAdminFilterStatus}
-              adminSearch={adminSearch}
-              setAdminSearch={setAdminSearch}
-              handleOpenOverride={handleOpenOverride}
-              filteredDailyLogs={filteredDailyLogs}
-              paginatedDailyLogs={paginatedDailyLogs}
-              isLoadingDaily={isLoadingDaily}
-              isLoadingCorrections={isLoadingCorrections}
-              adminCurrentPage={adminCurrentPage}
-              setAdminCurrentPage={setAdminCurrentPage}
-              adminPageSize={adminPageSize}
-              setAdminPageSize={setAdminPageSize}
-              handleApproveCorrection={handleApproveCorrection}
-              handleRejectCorrection={handleRejectCorrection}
-            />
-          </TabsContent>
-        </Tabs>
+      <div>
+        <h2 className="text-2xl font-bold">Attendance</h2>
+        <p className="text-muted-foreground">Track your daily attendance and schedule</p>
+      </div>
+      {isLoading ? (
+        <div className="flex h-[400px] items-center justify-center">
+          <Spinner className="h-8 w-8 text-primary animate-spin" />
+        </div>
       ) : (
-        <>
-          <div>
-            <h2 className="text-2xl font-bold">Attendance</h2>
-            <p className="text-muted-foreground">Track your daily attendance and schedule</p>
-          </div>
-          {isLoading ? (
-            <div className="flex h-[400px] items-center justify-center">
-              <Spinner className="h-8 w-8 text-primary animate-spin" />
-            </div>
-          ) : (
-            renderMyAttendance()
-          )}
-        </>
+        renderMyAttendance()
       )}
 
       {/* Modular Dialogs */}
@@ -510,16 +357,6 @@ export default function AttendancePage() {
         record={correctionRecord}
         onSubmit={handleCorrectionSubmit}
         isPending={submitCorrectionMut.isPending}
-      />
-
-      <OverrideAttendanceDialog
-        open={isOverrideDialogOpen}
-        onOpenChange={setIsOverrideDialogOpen}
-        activeEmployees={activeEmployees}
-        record={overrideRecord}
-        defaultDate={selectedDate}
-        onSubmit={handleOverrideSubmit}
-        isPending={overrideMut.isPending}
       />
 
       {/* Apply Leave Dialog */}

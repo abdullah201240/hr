@@ -167,9 +167,9 @@ export function LeaveDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[950px] p-6">
-        <DialogHeader className="border-b border-gray-100 pb-3 mb-4">
-          <DialogTitle className="text-xl font-bold text-center text-[#0c624d] uppercase tracking-wide">
+      <DialogContent className="sm:max-w-[950px] p-6 bg-background border-border text-foreground">
+        <DialogHeader className="border-b border-border/40 pb-3 mb-4">
+          <DialogTitle className="text-xl font-bold text-center text-[#0c624d] dark:text-emerald-400 uppercase tracking-wide">
             Leave Request
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -181,57 +181,57 @@ export function LeaveDetailsDialog({
           {/* Two-column Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left Column Box */}
-            <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
-              <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
-                <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
+            <div className="border border-[#badbcc] dark:border-emerald-900/30 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm">
+              <div className="bg-[#f5f9f6] dark:bg-emerald-950/20 px-3 py-2 border-b border-[#badbcc] dark:border-emerald-900/30">
+                <h3 className="text-xs font-bold text-[#0c624d] dark:text-emerald-400 uppercase tracking-wide">Leave Application</h3>
               </div>
               <table className="w-full text-[11px] border-collapse">
                 <tbody>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="w-1/3 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Code :</td>
-                    <td className="p-2 text-gray-700 font-medium">{getLeaveCode(selectedLeave.id)}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="w-1/3 bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Code :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium">{getLeaveCode(selectedLeave.id)}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Subject :</td>
-                    <td className="p-2 text-gray-700 font-medium">Application for {selectedLeave.leaveTypeName}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Subject :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium">Application for {selectedLeave.leaveTypeName}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Employee :</td>
-                    <td className="p-2 font-bold text-gray-800">{selectedLeave.employeeName}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Employee :</td>
+                    <td className="p-2 font-bold text-gray-800 dark:text-foreground">{selectedLeave.employeeName}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Apply Date :</td>
-                    <td className="p-2 font-bold text-gray-800">{formatDateDMY(selectedLeave.createdAt)}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Apply Date :</td>
+                    <td className="p-2 font-bold text-gray-800 dark:text-foreground">{formatDateDMY(selectedLeave.createdAt)}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Date Range :</td>
-                    <td className="p-2 font-bold text-[#0c624d]">{formatDateDMY(selectedLeave.startDate)} - {formatDateDMY(selectedLeave.endDate)}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Date Range :</td>
+                    <td className="p-2 font-bold text-[#0c624d] dark:text-emerald-300">{formatDateDMY(selectedLeave.startDate)} - {formatDateDMY(selectedLeave.endDate)}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Contact No :</td>
-                    <td className="p-2 text-gray-700 font-medium">{selectedLeave.employeePhone || "01791545892"}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Contact No :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium">{selectedLeave.employeePhone || "01791545892"}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Emergency Contact :</td>
-                    <td className="p-2 text-gray-700 font-medium">{selectedLeave.employeeEmergencyPhone || "01791545892"}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Emergency Contact :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium">{selectedLeave.employeeEmergencyPhone || "01791545892"}</td>
                   </tr>
                   <tr>
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Logs :</td>
-                    <td className="p-2 text-gray-700 font-medium"></td>
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Logs :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium"></td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Right Column Box */}
-            <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
-              <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
-                <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
+            <div className="border border-[#badbcc] dark:border-emerald-900/30 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm">
+              <div className="bg-[#f5f9f6] dark:bg-emerald-950/20 px-3 py-2 border-b border-[#badbcc] dark:border-emerald-900/30">
+                <h3 className="text-xs font-bold text-[#0c624d] dark:text-emerald-400 uppercase tracking-wide">Leave Application</h3>
               </div>
               <table className="w-full text-[11px] border-collapse">
                 <tbody>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="w-2/5 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Leave Name :</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="w-2/5 bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Leave Name :</td>
                     <td className="p-2">
                       {(() => {
                         const c = getLeaveBadgeClasses(selectedLeave.leaveTypeColor)
@@ -243,34 +243,34 @@ export function LeaveDetailsDialog({
                       })()}
                     </td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Pay Type :</td>
-                    <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypePaid ? "Paid Leave" : "Unpaid Leave"}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Pay Type :</td>
+                    <td className="p-2 font-bold text-gray-800 dark:text-foreground">{selectedLeave.leaveTypePaid ? "Paid Leave" : "Unpaid Leave"}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Assigned By/ Supporting Person :</td>
-                    <td className="p-2 text-gray-700 font-medium"></td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Assigned By/ Supporting Person :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium"></td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Full Address :</td>
-                    <td className="p-2 text-gray-700 font-medium"></td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Full Address :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium"></td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Description :</td>
-                    <td className="p-2 text-gray-700 font-medium">{selectedLeave.reason || "—"}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Description :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium">{selectedLeave.reason || "—"}</td>
                   </tr>
-                  <tr className="border-b border-[#dee2e6]">
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Approval Remark :</td>
-                    <td className="p-2 text-gray-700 font-medium">{selectedLeave.rejectionReason || "—"}</td>
+                  <tr className="border-b border-[#dee2e6] dark:border-border/40">
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Approval Remark :</td>
+                    <td className="p-2 text-gray-700 dark:text-foreground font-medium">{selectedLeave.rejectionReason || "—"}</td>
                   </tr>
                   <tr>
-                    <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Approval Status :</td>
+                    <td className="bg-[#fdfdfd] dark:bg-muted/10 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/40">Approval Status :</td>
                     <td className="p-2">
                       <span className={
-                        selectedLeave.status === "Approved" ? "font-bold text-emerald-700" :
-                        selectedLeave.status === "Pending" ? "font-bold text-amber-600" :
-                        selectedLeave.status === "Pending_2nd" ? "font-bold text-sky-600" :
-                        "font-bold text-rose-600"
+                        selectedLeave.status === "Approved" ? "font-bold text-emerald-700 dark:text-emerald-400" :
+                        selectedLeave.status === "Pending" ? "font-bold text-amber-600 dark:text-amber-400" :
+                        selectedLeave.status === "Pending_2nd" ? "font-bold text-sky-600 dark:text-sky-400" :
+                        "font-bold text-rose-600 dark:text-rose-400"
                       }>
                         {selectedLeave.status === "Pending_2nd" ? "Pending 2nd Step" : selectedLeave.status}
                       </span>
@@ -283,17 +283,17 @@ export function LeaveDetailsDialog({
 
           {/* Application Documents Section */}
           <div className="space-y-2">
-            <div className="flex items-center gap-1 text-[13px] font-bold text-rose-800">
+            <div className="flex items-center gap-1 text-[13px] font-bold text-rose-800 dark:text-rose-400">
               <span>Application Documents</span>
               <span className="text-[10px] select-none">▼</span>
             </div>
-            <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm">
+            <div className="border border-[#dee2e6] dark:border-border/40 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm">
               <table className="w-full text-[11px] border-collapse">
                 <thead>
-                  <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
-                    <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
-                    <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Name</th>
-                    <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Document Extension</th>
+                  <tr className="bg-[#f8f9fa] dark:bg-muted/30 text-gray-700 dark:text-foreground border-b border-[#dee2e6] dark:border-border/40">
+                    <th className="w-12 p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-center">SL</th>
+                    <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-left">Name</th>
+                    <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-left">Document Extension</th>
                     <th className="w-24 p-2.5 font-bold text-center">Action</th>
                   </tr>
                 </thead>
@@ -302,16 +302,16 @@ export function LeaveDetailsDialog({
                     selectedLeave.attachments.map((att, idx) => {
                       const extension = att.fileName.split(".").pop() || "unknown";
                       return (
-                        <tr key={att.id || idx} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
-                          <td className="p-2 border-r border-[#dee2e6] text-center">{idx + 1}</td>
-                          <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{att.title || att.fileName}</td>
-                          <td className="p-2 border-r border-[#dee2e6] text-left">{extension}</td>
+                        <tr key={att.id || idx} className="border-b border-[#dee2e6] dark:border-border/20 hover:bg-muted/10 transition-colors">
+                          <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-center">{idx + 1}</td>
+                          <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-left font-medium">{att.title || att.fileName}</td>
+                          <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-left">{extension}</td>
                           <td className="p-2 text-center">
                             <a
                               href={att.fileUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center justify-center p-1 rounded hover:bg-rose-50 text-rose-600 transition-colors"
+                              className="inline-flex items-center justify-center p-1 rounded hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 transition-colors"
                             >
                               <ImageIcon className="h-4 w-4" />
                             </a>
@@ -321,7 +321,7 @@ export function LeaveDetailsDialog({
                     })
                   ) : (
                     <tr>
-                      <td colSpan={4} className="p-4 text-center text-gray-400 italic">No documents uploaded</td>
+                      <td colSpan={4} className="p-4 text-center text-muted-foreground italic">No documents uploaded</td>
                     </tr>
                   )}
                 </tbody>
@@ -331,29 +331,29 @@ export function LeaveDetailsDialog({
 
           {/* Application Approval History Section */}
           <div className="space-y-2">
-            <div className="flex items-center gap-1 text-[13px] font-bold text-rose-800">
+            <div className="flex items-center gap-1 text-[13px] font-bold text-rose-800 dark:text-rose-400">
               <span>Application Approval History</span>
               <span className="text-[10px] select-none">▼</span>
             </div>
-            <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm">
+            <div className="border border-[#dee2e6] dark:border-border/40 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm">
               <table className="w-full text-[11px] border-collapse">
                 <thead>
-                  <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
-                    <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
-                    <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Activity by</th>
-                    <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Time</th>
-                    <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Type</th>
+                  <tr className="bg-[#f8f9fa] dark:bg-muted/30 text-gray-700 dark:text-foreground border-b border-[#dee2e6] dark:border-border/40">
+                    <th className="w-12 p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-center">SL</th>
+                    <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-left">Activity by</th>
+                    <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-left">Time</th>
+                    <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/40 font-bold text-left">Type</th>
                     <th className="p-2.5 font-bold text-left">Remark</th>
                   </tr>
                 </thead>
                 <tbody>
                   {getApprovalHistory().map((row) => (
-                    <tr key={row.sl} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
-                      <td className="p-2 border-r border-[#dee2e6] text-center">{row.sl}</td>
-                      <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.activityBy}</td>
-                      <td className="p-2 border-r border-[#dee2e6] text-left">{row.time}</td>
-                      <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.type}</td>
-                      <td className="p-2 text-left text-gray-500">{row.remark || "—"}</td>
+                    <tr key={row.sl} className="border-b border-[#dee2e6] dark:border-border/20 hover:bg-muted/10 transition-colors">
+                      <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-center">{row.sl}</td>
+                      <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-left font-medium">{row.activityBy}</td>
+                      <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-left">{row.time}</td>
+                      <td className="p-2 border-r border-[#dee2e6] dark:border-border/20 text-left font-medium">{row.type}</td>
+                      <td className="p-2 text-left text-muted-foreground">{row.remark || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -362,7 +362,7 @@ export function LeaveDetailsDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 mt-4">
+        <div className="flex justify-end gap-2 pt-3 border-t border-border/40 mt-4">
           {selectedLeave && (
             (() => {
               const isPending1st = selectedLeave.status === "Pending";
@@ -384,7 +384,7 @@ export function LeaveDetailsDialog({
                       onApprove(selectedLeave.id)
                       onClose()
                     }}
-                    className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-sm transition-colors"
+                    className="h-8 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white border-none shadow-sm transition-colors"
                   >
                     {isPending2nd ? "Approve (2nd Step)" : "Approve"}
                   </Button>
@@ -395,7 +395,7 @@ export function LeaveDetailsDialog({
                       onReject(selectedLeave.id)
                       onClose()
                     }}
-                    className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 hover:bg-rose-500/10 shadow-sm transition-colors"
+                    className="h-8 text-xs font-semibold border-rose-500/20 text-rose-500 dark:text-rose-400 hover:bg-rose-500/10 shadow-sm transition-colors"
                   >
                     Reject
                   </Button>
@@ -408,7 +408,7 @@ export function LeaveDetailsDialog({
             variant="outline"
             size="sm"
             onClick={onClose}
-            className="h-8 text-xs bg-[#f0ad4e] hover:bg-[#ec971f] hover:text-white text-white border-none px-6 rounded-md shadow-sm transition-colors font-semibold"
+            className="h-8 text-xs bg-[#f0ad4e] hover:bg-[#ec971f] dark:bg-amber-600 dark:hover:bg-amber-700 hover:text-white text-white border-none px-6 rounded-md shadow-sm transition-colors font-semibold"
           >
             Cancel
           </Button>
