@@ -26,7 +26,9 @@ export function useWebSocket() {
     addIncomingMessageDelete,
     setTyping, 
     updateMemberPresence, 
-    updateMemberReadReceipt 
+    updateMemberReadReceipt,
+    addIncomingRoom,
+    removeIncomingRoom
   } = useChatStore();
 
 
@@ -160,6 +162,14 @@ export function useWebSocket() {
 
       case 'readReceipt':
         updateMemberReadReceipt(data.roomId, data.employeeId);
+        break;
+
+      case 'room_created':
+        addIncomingRoom(data);
+        break;
+
+      case 'room_deleted':
+        removeIncomingRoom(data.roomId);
         break;
 
       case 'error':

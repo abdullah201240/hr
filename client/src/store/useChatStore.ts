@@ -66,6 +66,8 @@ interface ChatState {
   getOrCreateDirectRoom: (recipientId: string) => Promise<ChatRoom>;
   addMemberToChannel: (roomId: string, employeeId: string) => Promise<void>;
   leaveOrRemoveFromChannel: (roomId: string, employeeId: string) => Promise<void>;
+  addIncomingRoom: (room: ChatRoom) => void;
+  removeIncomingRoom: (roomId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -320,5 +322,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
   leaveOrRemoveFromChannel: async (roomId, employeeId) => {
     await apiClient.delete(`chat/rooms/${roomId}/members/${employeeId}`);
     await get().fetchRooms();
+  },
+
+  addIncomingRoom: (room) => {
+    set((state) => {
+      const exists = state.rooms.some((r) => r.id === room.id);
+      let updatedRooms;
+      if (exists) {
+        // Merge/update the existing room in-place to avoid state conflicts
+        updatedRooms = state.rooms.map((r) => r.id === room.id ? { ...r, ...room } : r);
+      } else {
+        // Prepend new room
+        updatedRooms = [room, ...state.rooms];
+      }
+
+      // Re-sort the room list by last message date, or creation date
+      updatedRooms.sort((a, b) => {
+        const dateA = a.lastMessage?.createdAt || a.createdAt;
+        const dateB = b.lastMessage?.createdAt || b.createdAt;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
+
+      return { rooms: updatedRooms };
+    });
+  },
+
+  removeIncomingRoom: (roomId) => {
+    set((state) => ({
+      rooms: state.rooms.filter((r) => r.id !== roomId),
+      activeRoomId: state.activeRoomId === roomId ? null : state.activeRoomId,
+    }));
   },
 }));

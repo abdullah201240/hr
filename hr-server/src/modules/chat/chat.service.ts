@@ -136,6 +136,16 @@ export class ChatService {
       // Invalidate room lists cache for both participants
       await this.redis.del(`chat:rooms:user:${creatorId}`);
       await this.redis.del(`chat:rooms:user:${recipientId}`);
+
+      // Publish event to Redis for real-time room sync
+      await this.redis.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'ROOM_CREATED',
+          roomId: room.id,
+          members: [creatorId, recipientId],
+        })
+      );
     }
     return room;
   }
@@ -150,6 +160,17 @@ export class ChatService {
     const room = await this.chatRepository.createChannelRoom(creatorId, name.trim(), description, isPrivate);
     // Invalidate rooms list for the owner/creator
     await this.redis.del(`chat:rooms:user:${creatorId}`);
+
+    // Publish event to Redis for real-time room sync
+    await this.redis.publish(
+      'chat_events',
+      JSON.stringify({
+        type: 'ROOM_CREATED',
+        roomId: room.id,
+        members: [creatorId],
+      })
+    );
+
     return room;
   }
 
@@ -173,6 +194,19 @@ export class ChatService {
     const member = await this.chatRepository.addMember(roomId, employeeId);
     // Invalidate room lists cache for the added member
     await this.invalidateRoomsCacheForRoom(roomId);
+
+    // Publish event to Redis for real-time member join sync
+    const members = await this.chatRepository.getRoomMembers(roomId);
+    await this.redis.publish(
+      'chat_events',
+      JSON.stringify({
+        type: 'ROOM_JOINED',
+        roomId,
+        joinedMemberId: employeeId,
+        members: members.map((m) => m.id),
+      })
+    );
+
     return member;
   }
 
@@ -196,11 +230,25 @@ export class ChatService {
       }
     }
 
+    const membersBefore = await this.chatRepository.getRoomMembers(roomId);
+
     await this.chatRepository.removeMember(roomId, employeeId);
     
     // Invalidate rooms list for the leaving user and all other room members
     await this.redis.del(`chat:rooms:user:${employeeId}`);
     await this.invalidateRoomsCacheForRoom(roomId);
+
+    // Publish event to Redis for real-time member leave sync
+    await this.redis.publish(
+      'chat_events',
+      JSON.stringify({
+        type: 'ROOM_LEFT',
+        roomId,
+        leftMemberId: employeeId,
+        members: membersBefore.map((m) => m.id),
+      })
+    );
+
     return { success: true };
   }
 

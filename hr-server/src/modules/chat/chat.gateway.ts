@@ -409,36 +409,68 @@ export class ChatGateway
   /**
    * Process event packets received from Redis Pub/Sub cluster
    */
-  private handleRedisSyncEvent(payload: any) {
+  private async handleRedisSyncEvent(payload: any) {
     const { type, roomId, members } = payload;
 
     if (members && Array.isArray(members)) {
-      members.forEach((memberId) => {
+      for (const memberId of members) {
         const userSockets = this.localClients.get(memberId);
         if (userSockets && userSockets.length > 0) {
-          userSockets.forEach((ws) => {
-            if (type === 'NEW_MESSAGE') {
-              this.sendToClient(ws, 'message', payload.message);
-            } else if (type === 'MESSAGE_EDIT') {
-              this.sendToClient(ws, 'message_edit', payload.message);
-            } else if (type === 'MESSAGE_DELETE') {
-              this.sendToClient(ws, 'message_delete', { roomId, messageId: payload.messageId, message: payload.message });
-            } else if (type === 'TYPING' && payload.employeeId !== memberId) {
-              this.sendToClient(ws, 'typing', {
-                roomId,
-                employeeId: payload.employeeId,
-                senderName: payload.senderName,
-                isTyping: payload.isTyping,
-              });
-            } else if (type === 'READ_RECEIPT') {
-              this.sendToClient(ws, 'readReceipt', {
-                roomId,
-                employeeId: payload.employeeId,
-              });
+          if (type === 'ROOM_CREATED' || type === 'ROOM_JOINED') {
+            try {
+              const rooms = await this.chatService.getUserRooms(memberId);
+              const room = rooms.find((r: any) => r.id === roomId);
+              if (room) {
+                userSockets.forEach((ws) => {
+                  this.sendToClient(ws, 'room_created', room);
+                });
+              }
+            } catch (err) {
+              this.logger.error(`Failed to fetch and send room details for member ${memberId}`, err);
             }
-          });
+          } else if (type === 'ROOM_LEFT') {
+            if (memberId === payload.leftMemberId) {
+              userSockets.forEach((ws) => {
+                this.sendToClient(ws, 'room_deleted', { roomId });
+              });
+            } else {
+              try {
+                const rooms = await this.chatService.getUserRooms(memberId);
+                const room = rooms.find((r: any) => r.id === roomId);
+                if (room) {
+                  userSockets.forEach((ws) => {
+                    this.sendToClient(ws, 'room_created', room);
+                  });
+                }
+              } catch (err) {
+                this.logger.error(`Failed to update room details after member departure for ${memberId}`, err);
+              }
+            }
+          } else {
+            userSockets.forEach((ws) => {
+              if (type === 'NEW_MESSAGE') {
+                this.sendToClient(ws, 'message', payload.message);
+              } else if (type === 'MESSAGE_EDIT') {
+                this.sendToClient(ws, 'message_edit', payload.message);
+              } else if (type === 'MESSAGE_DELETE') {
+                this.sendToClient(ws, 'message_delete', { roomId, messageId: payload.messageId, message: payload.message });
+              } else if (type === 'TYPING' && payload.employeeId !== memberId) {
+                this.sendToClient(ws, 'typing', {
+                  roomId,
+                  employeeId: payload.employeeId,
+                  senderName: payload.senderName,
+                  isTyping: payload.isTyping,
+                });
+              } else if (type === 'READ_RECEIPT') {
+                this.sendToClient(ws, 'readReceipt', {
+                  roomId,
+                  employeeId: payload.employeeId,
+                });
+              }
+            });
+          }
         }
-      });
+      }
     }
 
     if (type === 'PRESENCE') {
