@@ -21,3 +21,5 @@ export * from './disciplinary';
 export * from './separation';
 export * from './org-chart';
 export * from './tasks';
+export * from './chat';
+

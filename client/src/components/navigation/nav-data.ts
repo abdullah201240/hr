@@ -17,7 +17,9 @@ import {
   Scale,
   Target,
   CheckSquare,
+  MessageSquare,
 } from "lucide-react"
+
 import type { NavGroup } from "@/types"
 
 export const navGroups: NavGroup[] = [
@@ -29,7 +31,13 @@ export const navGroups: NavGroup[] = [
         href: "/",
         icon: LayoutDashboard,
       },
+      {
+        title: "Chats & Channels",
+        href: "/chat",
+        icon: MessageSquare,
+      },
     ],
+
   },
   {
     label: "Workforce",

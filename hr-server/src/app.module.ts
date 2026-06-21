@@ -34,8 +34,10 @@ import { DisciplinaryModule } from './modules/disciplinary/disciplinary.module';
 import { SeparationModule } from './modules/separation/separation.module';
 import { OrgChartModule } from './modules/org-chart/org-chart.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+
 
 
 @Module({
@@ -102,7 +104,9 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
     SeparationModule,
     OrgChartModule,
     TasksModule,
+    ChatModule,
   ],
+
   providers: [
     {
       provide: APP_GUARD,

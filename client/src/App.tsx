@@ -7,6 +7,8 @@ import { AuthLayout } from "@/layouts/auth-layout"
 import { DashboardLayout } from "@/layouts/dashboard-layout"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { useWebSocket } from "@/hooks/useWebSocket"
+
 
 // Lazy loaded page components
 const LoginPage = lazy(() => import("@/routes/pages/login"))
@@ -44,6 +46,8 @@ const PrintOfferLetterPage = lazy(() => import("@/routes/pages/print/offer-lette
 const PrintHRLetterPage = lazy(() => import("@/routes/pages/print/hr-letter"))
 const ProfilePage = lazy(() => import("@/routes/pages/profile"))
 const TasksPage = lazy(() => import("@/routes/pages/tasks"))
+const ChatPage = lazy(() => import("@/routes/pages/chat"))
+
 
 function NotFoundPage() {
   return (
@@ -72,7 +76,9 @@ function LoadingSpinner() {
 }
 
 function App() {
+  useWebSocket();
   return (
+
     <ThemeProvider defaultTheme="system" storageKey="hr-theme">
       <TooltipProvider>
         <BrowserRouter>
@@ -119,7 +125,9 @@ function App() {
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
+                  <Route path="chat" element={<ChatPage />} />
                   <Route path="*" element={<NotFoundPage />} />
+
                 </Route>
               </Route>
 
