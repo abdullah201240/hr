@@ -2,6 +2,45 @@ import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNest
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
+export class CrossMonthAdjustmentMetadataDto {
+  @IsNumber()
+  @IsOptional()
+  startDay?: number;
+
+  @IsNumber()
+  @IsOptional()
+  endDay?: number;
+
+  @IsString()
+  @IsOptional()
+  startDate?: string;
+
+  @IsString()
+  @IsOptional()
+  endDate?: string;
+
+  @IsNumber()
+  @IsOptional()
+  paidDays?: number;
+
+  @IsNumber()
+  @IsOptional()
+  totalDaysInMonth?: number;
+
+  @IsNumber()
+  @IsOptional()
+  unpaidDays?: number;
+
+  @IsNumber()
+  @IsOptional()
+  originalNetPay?: number;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['dayRange', 'dateRange', 'paidDays'])
+  prorationMode?: 'dayRange' | 'dateRange' | 'paidDays';
+}
+
 export class CreateSalaryAdjustmentDto {
   @ApiProperty({ description: 'Employee ID to apply adjustment for' })
   @IsUUID()
@@ -41,30 +80,12 @@ export class CreateSalaryAdjustmentDto {
   @ApiProperty({
     description: 'Metadata for partial salary calculations',
     required: false,
-    example: {
-      startDay: 1,
-      endDay: 15,
-      paidDays: 15,
-      totalDaysInMonth: 30,
-      unpaidDays: 15,
-      originalNetPay: 50000,
-      prorationMode: 'dayRange',
-    },
+    type: CrossMonthAdjustmentMetadataDto,
   })
   @IsOptional()
   @ValidateNested()
-  @Type(() => Object)
-  metadata?: {
-    startDay?: number;
-    endDay?: number;
-    startDate?: string;
-    endDate?: string;
-    paidDays?: number;
-    totalDaysInMonth?: number;
-    unpaidDays?: number;
-    originalNetPay?: number;
-    prorationMode?: 'dayRange' | 'dateRange' | 'paidDays';
-  };
+  @Type(() => CrossMonthAdjustmentMetadataDto)
+  metadata?: CrossMonthAdjustmentMetadataDto;
 }
 
 export class UpdateAdjustmentStatusDto {

@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Calendar, AlertCircle, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react"
+import { Plus, Trash2, AlertCircle, CheckCircle, Clock, XCircle, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { cn } from "@/lib/utils"
 
 interface CrossMonthAdjustmentProps {
   employees: any[]
+  salaries?: any[]
   selectedMonth: string
+  cycleStatus?: string
   formatCurrency: (amount: number) => string
   onCreateAdjustment: (data: any) => void
   onDeleteAdjustment: (id: string) => void
@@ -26,7 +28,9 @@ interface CrossMonthAdjustmentProps {
 
 export function CrossMonthAdjustments({
   employees,
+  salaries = [],
   selectedMonth,
+  cycleStatus = "Draft",
   formatCurrency,
   onCreateAdjustment,
   onDeleteAdjustment,
@@ -50,7 +54,8 @@ export function CrossMonthAdjustments({
   const [paidDays, setPaidDays] = useState("15")
 
   const selectedEmployee = employees.find((e) => e.id === employeeId)
-  const employeeBasicSalary = selectedEmployee?.salary?.basicSalary || 0
+  const salaryRecord = salaries.find((s) => s.employeeId === employeeId)
+  const employeeBasicSalary = selectedEmployee?.salary?.basicSalary || salaryRecord?.basicSalary || 0
 
   const getDaysInMonth = (monthKey: string) => {
     const [year, month] = monthKey.split("-").map(Number)
@@ -201,14 +206,20 @@ export function CrossMonthAdjustments({
                 Cross-Month Salary Adjustments
               </CardTitle>
               <CardDescription className="text-xs mt-1">
-                Adjust previous months' salaries in current payroll cycle
+                {cycleStatus !== "Draft" ? (
+                  <span className="text-amber-600 font-medium">
+                    Adjustments can only be created or applied when the current cycle is in Draft.
+                  </span>
+                ) : (
+                  "Adjust previous months' salaries in current payroll cycle"
+                )}
               </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 onClick={handleApplyAll}
-                disabled={pendingAdjustments.length === 0 || isApplying}
+                disabled={pendingAdjustments.length === 0 || isApplying || cycleStatus !== "Draft"}
                 className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isApplying ? (
@@ -221,6 +232,7 @@ export function CrossMonthAdjustments({
               <Button
                 size="sm"
                 onClick={() => setIsOpen(true)}
+                disabled={cycleStatus !== "Draft"}
                 className="gap-2 text-xs"
               >
                 <Plus className="h-3.5 w-3.5" />

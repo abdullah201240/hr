@@ -38,6 +38,12 @@ export class PayrollController {
     return this.payrollService.processCycle(monthKey);
   }
 
+  @Post('cycles/:monthKey/unlock')
+  @ApiOperation({ summary: 'Unlock a processed payroll cycle and revert to Draft status' })
+  async unlockCycle(@Param('monthKey') monthKey: string) {
+    return this.payrollService.unlockCycle(monthKey);
+  }
+
   @Post('cycles/:monthKey/distribute')
   @ApiOperation({ summary: 'Distribute payslips for a processed payroll cycle' })
   async distributeCycle(@Param('monthKey') monthKey: string) {

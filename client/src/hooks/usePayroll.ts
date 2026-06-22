@@ -57,6 +57,17 @@ export function useProcessPayrollMutation() {
   });
 }
 
+export function useUnlockPayrollMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<PayrollCycle, Error, string>({
+    mutationFn: (monthKey) =>
+      apiClient.post<PayrollCycle>(`payroll/cycles/${monthKey}/unlock`, {}),
+    onSuccess: (_, monthKey) => {
+      queryClient.invalidateQueries({ queryKey: ["payrollCycle", monthKey] });
+    },
+  });
+}
+
 export function useSyncPayrollMutation() {
   const queryClient = useQueryClient();
   return useMutation<PayrollCycle, Error, string>({

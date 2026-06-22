@@ -714,6 +714,31 @@ export class PayrollService implements OnModuleInit {
     return this.getOrCreateCycle(monthKey);
   }
 
+  // Unlock and revert payroll cycle to draft
+  async unlockCycle(monthKey: string) {
+    const [cycle] = await this.db
+      .select()
+      .from(payrollCycles)
+      .where(eq(payrollCycles.monthKey, monthKey))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Payroll cycle not found`);
+    }
+
+    if (cycle.status !== 'Processed') {
+      throw new BadRequestException(`Only processed cycles can be unlocked`);
+    }
+
+    await this.db
+      .update(payrollCycles)
+      .set({ status: 'Draft' })
+      .where(eq(payrollCycles.id, cycle.id));
+
+    await this.invalidateCache(monthKey);
+    return this.getOrCreateCycle(monthKey);
+  }
+
   // Distribute payslips
   async distributeCycle(monthKey: string) {
     const [cycle] = await this.db

@@ -17,6 +17,7 @@ import Swal from "sweetalert2"
 import {
   usePayrollCycleQuery,
   useProcessPayrollMutation,
+  useUnlockPayrollMutation,
   useDistributePayrollMutation,
   useDisburseMutation,
   useDisbursementsQuery,
@@ -103,6 +104,7 @@ export default function PayrollPage() {
   const { data: allSalariesData } = useEmployeeSalariesQuery({ limit: 1000, status: "active" })
 
   const processPayrollMutation = useProcessPayrollMutation()
+  const unlockPayrollMutation = useUnlockPayrollMutation()
   const distributePayrollMutation = useDistributePayrollMutation()
   const disburseMutation = useDisburseMutation()
   const syncPayrollMutation = useSyncPayrollMutation()
@@ -187,6 +189,39 @@ export default function PayrollPage() {
             Swal.fire({
               title: "Payroll Processed!",
               text: `The payroll registers for ${selectedMonth} have been successfully calculated. You can now distribute salaries.`,
+              icon: "success",
+              confirmButtonText: "Done",
+              buttonsStyling: false,
+              customClass: {
+                confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2",
+              },
+            })
+          },
+        })
+      }
+    })
+  }
+
+  const handleUnlockPayroll = () => {
+    Swal.fire({
+      title: "Unlock Payroll?",
+      text: `Are you sure you want to unlock the payroll ledger for ${selectedMonth} and revert it back to Draft status?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Unlock",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal2-confirm swal2-styled bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        unlockPayrollMutation.mutate(selectedMonth, {
+          onSuccess: () => {
+            Swal.fire({
+              title: "Payroll Unlocked!",
+              text: `The payroll registers for ${selectedMonth} have been successfully reverted to Draft status.`,
               icon: "success",
               confirmButtonText: "Done",
               buttonsStyling: false,
@@ -399,6 +434,16 @@ export default function PayrollPage() {
             </div>
           ) : cycleStatus === "Processed" ? (
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-xs border-amber-500/30 text-amber-600 hover:bg-amber-500/5 hover:text-amber-700"
+                onClick={handleUnlockPayroll}
+                disabled={unlockPayrollMutation.isPending}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", unlockPayrollMutation.isPending && "animate-spin")} />
+                Unlock to Draft
+              </Button>
               <Button size="sm" className="gap-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleDistributePayslips}>
                 Distribute Payslips
               </Button>
@@ -516,7 +561,9 @@ export default function PayrollPage() {
           {/* Cross-Month Adjustments */}
           <CrossMonthAdjustments
             employees={employees}
+            salaries={allSalariesData?.data || []}
             selectedMonth={selectedMonth}
+            cycleStatus={cycleStatus}
             formatCurrency={formatCurrency}
             onCreateAdjustment={(data) => {
               createAdjustmentMutation.mutate(data, {
