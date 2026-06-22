@@ -126,6 +126,11 @@ export interface Payslip {
   joinDate?: string;
   allowances: Record<string, number>;
   deductions: Record<string, number>;
+  totalWorkingDays?: number;
+  presentDays?: number;
+  absentDays?: number;
+  leaveDays?: number;
+  lateDays?: number;
 }
 
 export interface PayrollCycle {

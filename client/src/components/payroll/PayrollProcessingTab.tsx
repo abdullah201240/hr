@@ -58,6 +58,11 @@ export function PayrollProcessingTab({
       "Employee Name",
       "Role",
       "Basic Salary",
+      "Total Working Days",
+      "Present Days",
+      "Absent Days",
+      "Leave Days",
+      "Late Days",
       "Bonus",
       "Bonus Description",
       "Allowances",
@@ -69,6 +74,11 @@ export function PayrollProcessingTab({
       p.name,
       p.designationName,
       p.basicSalary,
+      p.totalWorkingDays ?? 0,
+      p.presentDays ?? 0,
+      p.absentDays ?? 0,
+      p.leaveDays ?? 0,
+      p.lateDays ?? 0,
       p.bonusAmount,
       p.bonusDescription,
       getPayslipAllowancesSum(p),
@@ -161,6 +171,9 @@ export function PayrollProcessingTab({
                   Basic Salary
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
+                  Attendance Metrics
+                </TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
                   Allowances
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
@@ -180,7 +193,7 @@ export function PayrollProcessingTab({
             <TableBody>
               {payslipsList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-xs">
                     No compensation logs generated for this month. Sync the ledger or create a cycle to get started.
                   </TableCell>
                 </TableRow>
@@ -195,6 +208,33 @@ export function PayrollProcessingTab({
                     </TableCell>
                     <TableCell className="py-3 text-xs font-semibold text-muted-foreground">
                       {formatCurrency(payslip.basicSalary)}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-muted-foreground">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[10px] text-muted-foreground font-medium">
+                          Working Days: <span className="text-foreground font-semibold">{payslip.totalWorkingDays ?? 0}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 items-center">
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-medium">
+                            {payslip.presentDays ?? 0} P
+                          </Badge>
+                          {(payslip.absentDays ?? 0) > 0 && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-rose-500/10 text-rose-600 border-rose-500/20 font-medium">
+                              {payslip.absentDays} A
+                            </Badge>
+                          )}
+                          {(payslip.leaveDays ?? 0) > 0 && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-blue-500/10 text-blue-600 border-blue-500/20 font-medium">
+                              {payslip.leaveDays} Lv
+                            </Badge>
+                          )}
+                          {(payslip.lateDays ?? 0) > 0 && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/20 font-medium">
+                              {payslip.lateDays} Lt
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="py-3 text-xs text-emerald-600 font-semibold">
                       +{formatCurrency(getPayslipAllowancesSum(payslip))}

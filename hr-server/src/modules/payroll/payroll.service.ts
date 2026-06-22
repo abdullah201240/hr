@@ -562,6 +562,11 @@ export class PayrollService implements OnModuleInit {
         paymentReference: employeePayslips.paymentReference,
         allowances: employeePayslips.allowances,
         deductions: employeePayslips.deductions,
+        totalWorkingDays: employeePayslips.totalWorkingDays,
+        presentDays: employeePayslips.presentDays,
+        absentDays: employeePayslips.absentDays,
+        leaveDays: employeePayslips.leaveDays,
+        lateDays: employeePayslips.lateDays,
         name: employees.fullNameEnglish,
         email: employees.email,
         department: employees.departmentId,
@@ -1128,6 +1133,11 @@ export class PayrollService implements OnModuleInit {
             festivalBonusAmount: festivalBonus,
             netPay,
             paymentStatus: 'Unpaid',
+            totalWorkingDays,
+            presentDays,
+            absentDays,
+            leaveDays,
+            lateDays,
           });
         }
       }

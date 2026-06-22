@@ -67,6 +67,33 @@ export function DetailedPayslipDialog({
             </div>
           </div>
 
+          {/* Attendance & Leave Summary in detailed view */}
+          <div className="p-3 bg-muted/20 border border-border/30 rounded-lg space-y-2">
+            <p className="font-bold text-[10px] uppercase text-muted-foreground tracking-wide">Attendance & Leave Details</p>
+            <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
+              <div className="bg-background p-1.5 rounded border border-border/40">
+                <p className="text-muted-foreground">Working</p>
+                <p className="font-bold text-xs mt-0.5">{viewPayslip.totalWorkingDays ?? 0} d</p>
+              </div>
+              <div className="bg-emerald-500/5 text-emerald-600 p-1.5 rounded border border-emerald-500/10">
+                <p className="text-emerald-600/80">Present</p>
+                <p className="font-bold text-xs mt-0.5">{viewPayslip.presentDays ?? 0} d</p>
+              </div>
+              <div className="bg-rose-500/5 text-rose-600 p-1.5 rounded border border-rose-500/10">
+                <p className="text-rose-600/80">Absent</p>
+                <p className="font-bold text-xs mt-0.5">{viewPayslip.absentDays ?? 0} d</p>
+              </div>
+              <div className="bg-blue-500/5 text-blue-600 p-1.5 rounded border border-blue-500/10">
+                <p className="text-blue-600/80">Leaves</p>
+                <p className="font-bold text-xs mt-0.5">{viewPayslip.leaveDays ?? 0} d</p>
+              </div>
+              <div className="bg-amber-500/5 text-amber-600 p-1.5 rounded border border-amber-500/10">
+                <p className="text-amber-600/80">Late</p>
+                <p className="font-bold text-xs mt-0.5">{viewPayslip.lateDays ?? 0} d</p>
+              </div>
+            </div>
+          </div>
+
           {/* Earnings and deductions lists */}
           <div className="grid grid-cols-2 gap-6 pt-2">
             {/* Earnings */}
