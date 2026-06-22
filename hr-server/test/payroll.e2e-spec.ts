@@ -230,7 +230,6 @@ describe('Payroll Module - Attendance Deductions (e2e)', () => {
       basicSalary: 30000,
       effectiveDate: '2026-06-01',
       pfApplicable: false,
-      festivalBonusApplicable: false,
       status: 'active',
     });
 

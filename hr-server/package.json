@@ -42,7 +42,6 @@
     "test:e2e:claims": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Claims' --forceExit",
     "test:e2e:dashboard": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Dashboard' --forceExit",
     "test:e2e:disciplinary": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Disciplinary' --forceExit",
-    "test:e2e:festival-bonus": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Festival Bonus' --forceExit",
     "test:e2e:letters": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Letters' --forceExit",
     "test:e2e:org-chart": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Org Chart' --forceExit",
     "test:e2e:performance": "jest --config ./test/jest-e2e.json --runInBand --verbose -t 'Performance' --forceExit",
