@@ -236,7 +236,7 @@ export class LeaveApplicationProcessor extends WorkerHost {
         `Leave application created: ${created.id} for employee ${dto.employeeId} (${days} days)`,
       );
 
-      // Emit Notification to line manager or admins
+      // Emit Notification to line manager or admins (only leave:approve holders)
       const recipientIds = employee.lineManagerId
         ? [employee.lineManagerId]
         : (
@@ -245,7 +245,7 @@ export class LeaveApplicationProcessor extends WorkerHost {
               .from(employees)
               .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
               .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-              .where(eq(permissions.resource, 'leave'))
+              .where(and(eq(permissions.resource, 'leave'), eq(permissions.action, 'approve')))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {
@@ -407,7 +407,7 @@ export class LeaveApplicationProcessor extends WorkerHost {
       await this.invalidateCache(updated.employeeId, startYear, dto.id);
       this.logger.log(`Leave application updated/resubmitted: ${dto.id} by ${dto.employeeId}`);
 
-      // Emit Notification to line manager or admins
+      // Emit Notification to line manager or admins (only leave:approve holders)
       const recipientIds = employee.lineManagerId
         ? [employee.lineManagerId]
         : (
@@ -416,7 +416,7 @@ export class LeaveApplicationProcessor extends WorkerHost {
               .from(employees)
               .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
               .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-              .where(eq(permissions.resource, 'leave'))
+              .where(and(eq(permissions.resource, 'leave'), eq(permissions.action, 'approve')))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

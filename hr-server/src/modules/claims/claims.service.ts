@@ -421,7 +421,7 @@ export class ClaimsService {
           .from(employees)
           .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
           .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-          .where(eq(permissions.resource, 'claims'));
+          .where(and(eq(permissions.resource, 'claims'), eq(permissions.action, 'approve')));
 
         const recipientIds = adminApprovers.map((r) => r.id);
         if (recipientIds.length > 0) {
@@ -482,7 +482,7 @@ export class ClaimsService {
               .from(employees)
               .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
               .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-              .where(eq(permissions.resource, 'claims'))
+              .where(and(eq(permissions.resource, 'claims'), eq(permissions.action, 'approve')))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

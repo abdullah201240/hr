@@ -539,7 +539,7 @@ export class PerformanceService {
               .from(employees)
               .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
               .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-              .where(eq(permissions.resource, 'performance'))
+              .where(and(eq(permissions.resource, 'performance'), eq(permissions.action, 'update')))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

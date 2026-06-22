@@ -681,13 +681,13 @@ export class LeaveApplicationService {
         actionUrl: `/leave-applications`,
       });
 
-      // Notify authorized role users (who have leave:approve)
+      // Notify only users with leave:approve permission (2nd step approvers)
       const adminRecipients = await this.db
         .select({ id: employees.id })
         .from(employees)
         .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
         .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-        .where(eq(permissions.resource, 'leave'));
+        .where(and(eq(permissions.resource, 'leave'), eq(permissions.action, 'approve')));
 
       if (adminRecipients.length > 0) {
         await this.notificationService.emitBulk(
@@ -811,7 +811,7 @@ export class LeaveApplicationService {
 
     const { updated, app, applicant, leaveType } = result;
 
-    // Emit Notification
+    // Emit Notification to line manager or leave:approve holders only
     const recipientIds = applicant.lineManagerId
       ? [applicant.lineManagerId]
       : (
@@ -820,7 +820,7 @@ export class LeaveApplicationService {
             .from(employees)
             .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
             .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-            .where(eq(permissions.resource, 'leave'))
+            .where(and(eq(permissions.resource, 'leave'), eq(permissions.action, 'approve')))
         ).map((r) => r.id);
 
     if (recipientIds.length > 0) {

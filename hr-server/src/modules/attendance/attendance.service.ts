@@ -855,7 +855,7 @@ export class AttendanceService implements OnModuleInit {
               .from(employees)
               .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
               .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-              .where(eq(permissions.resource, 'attendance'))
+              .where(and(eq(permissions.resource, 'attendance'), eq(permissions.action, 'approve')))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {

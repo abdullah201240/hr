@@ -146,7 +146,7 @@ export class SeparationService {
               .from(employees)
               .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
               .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
-              .where(eq(permissions.resource, 'separation'))
+              .where(and(eq(permissions.resource, 'separation'), eq(permissions.action, 'read')))
           ).map((r) => r.id);
 
       if (recipientIds.length > 0) {
