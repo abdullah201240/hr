@@ -11,6 +11,7 @@ import { UserAvatar } from "@/components/common/user-avatar"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useDepartmentQuery } from "@/hooks/useDepartments"
 import { useDesignationQuery } from "@/hooks/useDesignations"
+import { useEmployeeQuery, useEmployeeOptionsQuery } from "@/hooks/useEmployees"
 import { apiClient } from "@/lib/api"
 import { useMyPayslipsQuery } from "@/hooks/usePayroll"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
@@ -29,6 +30,11 @@ import {
   Loader2,
   Printer,
   FileText,
+  Heart,
+  Landmark,
+  Shield,
+  Baby,
+  FileUser,
 } from "lucide-react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -42,29 +48,50 @@ const changePasswordSchema = z.object({
   path: ["confirmPassword"],
 })
 
+function InfoField({ label, value, icon: Icon }: { label: string; value?: string | null; icon?: React.ElementType }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+        {Icon && <Icon className="h-3 w-3" />}
+        {label}
+      </p>
+      <p className="text-xs font-semibold">{value || "—"}</p>
+    </div>
+  )
+}
+
 export default function ProfilePage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get("tab") || "info"
+  const activeTab = searchParams.get("tab") || "personal"
 
   const { user } = useAuthStore()
 
-  // Fetch department and designation names dynamically
+  const { data: employee, isLoading: isEmployeeLoading } = useEmployeeQuery(user?.id || "")
   const { data: department } = useDepartmentQuery(user?.departmentId || "")
   const { data: designation } = useDesignationQuery(user?.designationId || "")
+  const { data: employeeOptions } = useEmployeeOptionsQuery()
+
+  const lineManagerName = employee?.lineManagerId
+    ? employeeOptions?.find((e) => e.id === employee.lineManagerId)?.fullNameEnglish || "Assigned"
+    : null
 
   const [selectedPayslip, setSelectedPayslip] = useState<any | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { data: payslips, isLoading: isPayslipsLoading } = useMyPayslipsQuery()
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(val)
-  }
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(val)
 
   const formatMonthKey = (monthKey?: string) => {
     if (!monthKey) return "—"
     const [year, month] = monthKey.split("-")
     const date = new Date(Number(year), Number(month) - 1)
     return date.toLocaleDateString("en-US", { year: "numeric", month: "long" })
+  }
+
+  const formatDate = (d?: string | null) => {
+    if (!d) return "—"
+    return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
   }
 
   const [currentPassword, setCurrentPassword] = useState("")
@@ -84,34 +111,20 @@ export default function ProfilePage() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
-
     const result = changePasswordSchema.safeParse({ currentPassword, newPassword, confirmPassword })
-
     if (!result.success) {
       const fieldErrors: { [key: string]: string } = {}
       result.error.issues.forEach((err: any) => {
-        if (err.path[0]) {
-          fieldErrors[err.path[0].toString()] = err.message
-        }
+        if (err.path[0]) fieldErrors[err.path[0].toString()] = err.message
       })
       setErrors(fieldErrors)
       return
     }
-
     setIsUpdatingPassword(true)
     try {
-      await apiClient.patch("auth/change-password", {
-        currentPassword,
-        newPassword,
-      })
-
-      toast.success("Password updated successfully!", {
-        description: "Your credentials have been refreshed."
-      })
-
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
+      await apiClient.patch("auth/change-password", { currentPassword, newPassword })
+      toast.success("Password updated successfully!", { description: "Your credentials have been refreshed." })
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("")
     } catch (err: any) {
       toast.error(err.message || "Failed to update password. Please check your current password.")
     } finally {
@@ -119,7 +132,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user) {
+  if (!user || isEmployeeLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -127,25 +140,12 @@ export default function ProfilePage() {
     )
   }
 
-  const mappedUser = {
-    name: user.fullNameEnglish,
-    email: user.email,
-    avatar: user.employeePhotoUrl || "",
-  }
-
-  const formattedBirthday = user.dateOfBirth 
-    ? new Date(user.dateOfBirth).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-    : "—"
-
-  const formattedJoiningDate = user.joinDate
-    ? new Date(user.joinDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-    : "—"
-
-  const statusText = user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : "Active"
+  const mappedUser = { name: user.fullNameEnglish, email: user.email, avatar: user.employeePhotoUrl || "" }
+  const statusText = employee?.status ? employee.status.charAt(0).toUpperCase() + employee.status.slice(1) : "Active"
 
   return (
     <div className="space-y-6">
-      {/* Overview Card without gradient color banner */}
+      {/* Overview Card */}
       <Card className="overflow-hidden bg-card/40 border-none relative">
         <CardContent className="p-6 flex flex-col md:flex-row items-center md:items-end justify-between gap-4">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
@@ -154,7 +154,7 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1 pb-1">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                <h2 className="text-xl font-bold">{user.fullNameEnglish}</h2>
+                <h2 className="text-xl font-bold">{employee?.fullNameEnglish || user.fullNameEnglish}</h2>
                 <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 font-bold border-none text-[10px] h-5">
                   {statusText}
                 </Badge>
@@ -163,136 +163,300 @@ export default function ProfilePage() {
                 <Building className="h-3.5 w-3.5 text-indigo-500" />
                 {designation?.name || "Employee"} • {department?.name || "Human Resources"}
               </p>
+              {employee?.fullNameBangla && (
+                <p className="text-[10px] text-muted-foreground">{employee.fullNameBangla}</p>
+              )}
             </div>
           </div>
           <div className="text-center md:text-right space-y-1">
-            <p className="text-[10px] text-muted-foreground font-mono">Employee ID: {user.employeeId}</p>
-            <p className="text-[10px] text-muted-foreground">Joined: {formattedJoiningDate}</p>
+            <p className="text-[10px] text-muted-foreground font-mono">Employee ID: {employee?.employeeId || user.employeeId}</p>
+            <p className="text-[10px] text-muted-foreground">Joined: {formatDate(employee?.joinDate || user.joinDate)}</p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabs Layout */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 shadow-none border border-border/40 bg-muted/20 max-w-[550px]">
-          <TabsTrigger value="info" className="text-xs">Personal Info</TabsTrigger>
-          <TabsTrigger value="job" className="text-xs">Job Profile</TabsTrigger>
-          <TabsTrigger value="security" className="text-xs">Security & Password</TabsTrigger>
-          <TabsTrigger value="payslips" className="text-xs">Payslips</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-8 shadow-none border border-border/40 bg-muted/20 max-w-[900px]">
+          <TabsTrigger value="personal" className="text-[11px]">Personal</TabsTrigger>
+          <TabsTrigger value="employment" className="text-[11px]">Employment</TabsTrigger>
+          <TabsTrigger value="family" className="text-[11px]">Family</TabsTrigger>
+          <TabsTrigger value="nominee" className="text-[11px]">Nominee</TabsTrigger>
+          <TabsTrigger value="banking" className="text-[11px]">Banking</TabsTrigger>
+          <TabsTrigger value="documents" className="text-[11px]">Documents</TabsTrigger>
+          <TabsTrigger value="payslips" className="text-[11px]">Payslips</TabsTrigger>
+          <TabsTrigger value="security" className="text-[11px]">Security</TabsTrigger>
         </TabsList>
 
-        {/* Personal Details */}
-        <TabsContent value="info" className="space-y-6">
+        {/* ─── Personal Info ─── */}
+        <TabsContent value="personal" className="space-y-6">
           <Card className="bg-card/30 border-none">
             <CardHeader>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <User className="h-4 w-4 text-indigo-500" />
-                Personal Details
+                Personal Information
               </CardTitle>
-              <CardDescription>Your personal profile contact and identity records</CardDescription>
+              <CardDescription>Identification and contact details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <InfoField label="Full Name (English)" value={employee?.fullNameEnglish} icon={User} />
+                <InfoField label="Full Name (Bangla)" value={employee?.fullNameBangla} />
+                <InfoField label="Work Email" value={employee?.email} icon={Mail} />
+                <InfoField label="Personal Email" value={employee?.personalEmail} icon={Mail} />
+                <InfoField label="Phone" value={employee?.phone} icon={Phone} />
+                <InfoField label="Personal Mobile" value={employee?.personalMobileNumber} icon={Phone} />
+                <InfoField label="Date of Birth" value={formatDate(employee?.dateOfBirth)} icon={Calendar} />
+                <InfoField label="Gender" value={employee?.gender} />
+                <InfoField label="Religion" value={employee?.religion} />
+                <InfoField label="Blood Group" value={employee?.bloodGroup} />
+                <InfoField label="Marital Status" value={employee?.maritalStatus} icon={Heart} />
+                <InfoField label="NID Number" value={employee?.nidNumber} icon={Shield} />
+                <InfoField label="TIN Number" value={employee?.tinNumber} />
+              </div>
+
+              {employee?.nidPdfUrl && (
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground font-medium">NID Document</p>
+                  <a href={employee.nidPdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline font-semibold">View NID PDF</a>
+                </div>
+              )}
+
+              {employee?.employeePhotoUrl && (
+                <div className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground font-medium">Employee Photo</p>
+                  <img src={employee.employeePhotoUrl} alt="Employee" className="h-24 w-24 rounded-lg object-cover border" />
+                </div>
+              )}
+
+              <Separator className="bg-border/20" />
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <InfoField label="Father's Name (English)" value={employee?.fatherNameEnglish} />
+                <InfoField label="Father's Name (Bangla)" value={employee?.fatherNameBangla} />
+                <InfoField label="Mother's Name (English)" value={employee?.motherNameEnglish} />
+                <InfoField label="Mother's Name (Bangla)" value={employee?.motherNameBangla} />
+              </div>
+
+              <Separator className="bg-border/20" />
+
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                    <Mail className="h-3 w-3" /> Work Email
-                  </p>
-                  <p className="text-xs font-semibold">{user.email}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1"><MapPin className="h-3 w-3" /> Current Address</p>
+                  <p className="text-xs font-semibold">{employee?.currentAddress || "—"}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                    <Mail className="h-3 w-3" /> Personal Email
-                  </p>
-                  <p className="text-xs font-semibold">{user.personalEmail || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                    <Phone className="h-3 w-3" /> Phone Number
-                  </p>
-                  <p className="text-xs font-semibold">{user.phone || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> Date of Birth
-                  </p>
-                  <p className="text-xs font-semibold">{formattedBirthday}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Blood Group</p>
-                  <p className="text-xs font-semibold">{user.bloodGroup || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> Primary Office Location
-                  </p>
-                  <p className="text-xs font-semibold">{user.currentAddress ? "Dhaka Office" : "—"}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1"><MapPin className="h-3 w-3" /> Permanent Address</p>
+                  <p className="text-xs font-semibold">{employee?.permanentAddress || "—"}</p>
                 </div>
               </div>
 
               <Separator className="bg-border/20" />
 
-              <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground font-medium">Home Address</p>
-                <p className="text-xs font-semibold">{user.currentAddress || "No address specified"}</p>
-              </div>
-
-              <Separator className="bg-border/20" />
-
-              <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground font-medium">Emergency Contact</p>
-                <p className="text-xs font-semibold">
-                  {user.emergencyContactName 
-                    ? `${user.emergencyContactName} (${user.emergencyContactRelation || "Relation"}) - ${user.emergencyContactNumber || ""}`
-                    : "—"
-                  }
-                </p>
+              <div className="grid gap-6 sm:grid-cols-3">
+                <InfoField label="Emergency Contact Name" value={employee?.emergencyContactName} />
+                <InfoField label="Emergency Contact Relation" value={employee?.emergencyContactRelation} />
+                <InfoField label="Emergency Contact Number" value={employee?.emergencyContactNumber} icon={Phone} />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Job details */}
-        <TabsContent value="job" className="space-y-6">
+        {/* ─── Employment ─── */}
+        <TabsContent value="employment" className="space-y-6">
           <Card className="bg-card/30 border-none">
             <CardHeader>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <UserCheck className="h-4 w-4 text-emerald-500" />
                 Employment Information
               </CardTitle>
-              <CardDescription>Company position details and alignment</CardDescription>
+              <CardDescription>Company position and work details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Department</p>
-                  <p className="text-xs font-semibold">{department?.name || "—"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Designation</p>
-                  <p className="text-xs font-semibold">{designation?.name || "Employee"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Employment Status</p>
-                  <p className="text-xs font-semibold">{user.employeeType || "Full-time"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Direct Report Manager</p>
-                  <p className="text-xs font-semibold">{user.lineManagerId ? "Line Manager Assigned" : "Direct Report"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Date of Joining</p>
-                  <p className="text-xs font-semibold">{formattedJoiningDate}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground font-medium">Work Shift Type</p>
-                  <p className="text-xs font-semibold">Standard Day Shift (9:00 AM - 6:00 PM)</p>
-                </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <InfoField label="Employee ID" value={employee?.employeeId} icon={Shield} />
+                <InfoField label="Department" value={department?.name} icon={Building} />
+                <InfoField label="Designation" value={designation?.name} />
+                <InfoField label="Employment Type" value={employee?.employeeType} />
+                <InfoField label="Date of Joining" value={formatDate(employee?.joinDate)} icon={Calendar} />
+                <InfoField label="Line Manager" value={lineManagerName || "None"} icon={UserCheck} />
+                <InfoField label="Status" value={statusText} />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Security & Password */}
+        {/* ─── Family ─── */}
+        <TabsContent value="family" className="space-y-6">
+          <Card className="bg-card/30 border-none">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Heart className="h-4 w-4 text-rose-500" />
+                Spouse Information
+              </CardTitle>
+              <CardDescription>Marital and spouse details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {employee?.spouses && employee.spouses.length > 0 ? (
+                <div className="space-y-4">
+                  {employee.spouses.map((spouse, idx) => (
+                    <div key={idx} className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3">
+                      <p className="text-xs font-bold text-muted-foreground">Spouse {idx + 1}</p>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <InfoField label="Name" value={spouse.name} />
+                        <InfoField label="NID" value={spouse.nid} />
+                        <InfoField label="Phone" value={spouse.phone} icon={Phone} />
+                        <InfoField label="Occupation" value={spouse.occupation} />
+                        <InfoField label="Marriage Date" value={formatDate(spouse.marriageDate)} icon={Calendar} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No spouse information recorded.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/30 border-none">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Baby className="h-4 w-4 text-sky-500" />
+                Children Information
+              </CardTitle>
+              <CardDescription>Details of children</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {employee?.children && employee.children.length > 0 ? (
+                <div className="space-y-4">
+                  {employee.children.map((child, idx) => (
+                    <div key={idx} className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3">
+                      <p className="text-xs font-bold text-muted-foreground">Child {idx + 1}</p>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <InfoField label="Name" value={child.name} />
+                        <InfoField label="Date of Birth" value={formatDate(child.dateOfBirth)} icon={Calendar} />
+                        <InfoField label="Gender" value={child.gender} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No children information recorded.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Nominee ─── */}
+        <TabsContent value="nominee" className="space-y-6">
+          <Card className="bg-card/30 border-none">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <FileUser className="h-4 w-4 text-amber-500" />
+                Nominee Information
+              </CardTitle>
+              <CardDescription>Nominated beneficiaries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {employee?.nominees && employee.nominees.length > 0 ? (
+                <div className="space-y-4">
+                  {employee.nominees.map((nominee, idx) => (
+                    <div key={idx} className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-3">
+                      <p className="text-xs font-bold text-muted-foreground">Nominee {idx + 1}</p>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <InfoField label="Name" value={nominee.name} />
+                        <InfoField label="Relation" value={nominee.relation} />
+                        <InfoField label="NID Number" value={nominee.nidNumber} />
+                      </div>
+                      <div className="flex gap-4">
+                        {nominee.nidPdfUrl && (
+                          <a href={nominee.nidPdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">View NID PDF</a>
+                        )}
+                        {nominee.photoUrl && (
+                          <a href={nominee.photoUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">View Photo</a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No nominee information recorded.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Banking ─── */}
+        <TabsContent value="banking" className="space-y-6">
+          <Card className="bg-card/30 border-none">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Landmark className="h-4 w-4 text-blue-500" />
+                Bank Details
+              </CardTitle>
+              <CardDescription>Salary account and banking information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {employee?.bankDetails ? (
+                <>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <InfoField label="Bank Name" value={employee.bankDetails.bankName} icon={Landmark} />
+                    <InfoField label="Branch" value={employee.bankDetails.branch} />
+                    <InfoField label="Account Number" value={employee.bankDetails.accountNumber} />
+                    <InfoField label="Account Type" value={employee.bankDetails.accountType} />
+                    <InfoField label="Routing Number" value={employee.bankDetails.routingNumber} />
+                    <InfoField label="SWIFT Code" value={employee.bankDetails.swiftCode} />
+                    <InfoField label="IBAN" value={employee.bankDetails.ibanNumber} />
+                  </div>
+                  {employee.bankDetails.bankStatementPdfUrl && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-muted-foreground font-medium">Bank Statement</p>
+                      <a href={employee.bankDetails.bankStatementPdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline font-semibold">View Bank Statement PDF</a>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">No banking information recorded.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Documents ─── */}
+        <TabsContent value="documents" className="space-y-6">
+          <Card className="bg-card/30 border-none">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="h-4 w-4 text-violet-500" />
+                Documents
+              </CardTitle>
+              <CardDescription>Uploaded employee documents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {employee?.documents && employee.documents.length > 0 ? (
+                <div className="space-y-4">
+                  {employee.documents.map((doc, idx) => (
+                    <div key={idx} className="p-4 rounded-lg bg-muted/30 border border-border/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold">{doc.title}</p>
+                        {doc.fileUrl && (
+                          <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline flex items-center gap-1">
+                            <Eye className="h-3 w-3" /> View File
+                          </a>
+                        )}
+                      </div>
+                      {doc.description && <p className="text-[11px] text-muted-foreground">{doc.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No documents uploaded.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Security ─── */}
         <TabsContent value="security" className="space-y-6">
           <Card className="bg-card/30 border-none max-w-lg">
             <CardHeader>
@@ -307,90 +471,44 @@ export default function ProfilePage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Current Password</Label>
                   <div className="relative">
-                    <Input
-                      type={showCurrent ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => {
-                        setCurrentPassword(e.target.value)
-                        if (errors.currentPassword) setErrors(prev => ({ ...prev, currentPassword: "" }))
-                      }}
-                      placeholder="Enter current password"
-                      className="pr-10 text-xs h-9 bg-secondary"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrent(!showCurrent)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
+                    <Input type={showCurrent ? "text" : "password"} value={currentPassword}
+                      onChange={(e) => { setCurrentPassword(e.target.value); if (errors.currentPassword) setErrors(prev => ({ ...prev, currentPassword: "" })) }}
+                      placeholder="Enter current password" className="pr-10 text-xs h-9 bg-secondary" required />
+                    <button type="button" onClick={() => setShowCurrent(!showCurrent)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {errors.currentPassword && (
-                    <p className="text-[10px] text-destructive mt-0.5">{errors.currentPassword}</p>
-                  )}
+                  {errors.currentPassword && <p className="text-[10px] text-destructive mt-0.5">{errors.currentPassword}</p>}
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">New Password</Label>
                   <div className="relative">
-                    <Input
-                      type={showNew ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value)
-                        if (errors.newPassword) setErrors(prev => ({ ...prev, newPassword: "" }))
-                      }}
-                      placeholder="Min. 6 characters"
-                      className="pr-10 text-xs h-9 bg-secondary"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNew(!showNew)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
+                    <Input type={showNew ? "text" : "password"} value={newPassword}
+                      onChange={(e) => { setNewPassword(e.target.value); if (errors.newPassword) setErrors(prev => ({ ...prev, newPassword: "" })) }}
+                      placeholder="Min. 6 characters" className="pr-10 text-xs h-9 bg-secondary" required />
+                    <button type="button" onClick={() => setShowNew(!showNew)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {errors.newPassword && (
-                    <p className="text-[10px] text-destructive mt-0.5">{errors.newPassword}</p>
-                  )}
+                  {errors.newPassword && <p className="text-[10px] text-destructive mt-0.5">{errors.newPassword}</p>}
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Confirm New Password</Label>
                   <div className="relative">
-                    <Input
-                      type={showConfirm ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value)
-                        if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: "" }))
-                      }}
-                      placeholder="Repeat new password"
-                      className="pr-10 text-xs h-9 bg-secondary"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirm(!showConfirm)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
+                    <Input type={showConfirm ? "text" : "password"} value={confirmPassword}
+                      onChange={(e) => { setConfirmPassword(e.target.value); if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: "" })) }}
+                      placeholder="Repeat new password" className="pr-10 text-xs h-9 bg-secondary" required />
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {errors.confirmPassword && (
-                    <p className="text-[10px] text-destructive mt-0.5">{errors.confirmPassword}</p>
-                  )}
+                  {errors.confirmPassword && <p className="text-[10px] text-destructive mt-0.5">{errors.confirmPassword}</p>}
                 </div>
-
                 <Button type="submit" className="w-full gap-2 text-xs h-9" disabled={isUpdatingPassword}>
-                  {isUpdatingPassword ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <KeyRound className="h-4 w-4" />
-                  )}
+                  {isUpdatingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                   Update Password
                 </Button>
               </form>
@@ -398,7 +516,7 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
 
-        {/* Payslips */}
+        {/* ─── Payslips ─── */}
         <TabsContent value="payslips" className="space-y-6">
           <Card className="bg-card/30 border-none">
             <CardHeader>
@@ -432,38 +550,21 @@ export default function ProfilePage() {
                           <td className="py-3 font-semibold">{formatCurrency(slip.basicSalary)}</td>
                           <td className="py-3 font-bold text-primary">{formatCurrency(slip.netPay)}</td>
                           <td className="py-3">
-                            <Badge
-                              variant="secondary"
-                              className={
-                                slip.paymentStatus === "Paid"
-                                  ? "bg-emerald-500/10 text-emerald-600 border-none font-bold text-[10px]"
-                                  : "bg-amber-500/10 text-amber-600 border-none font-bold text-[10px]"
-                              }
-                            >
+                            <Badge variant="secondary"
+                              className={slip.paymentStatus === "Paid"
+                                ? "bg-emerald-500/10 text-emerald-600 border-none font-bold text-[10px]"
+                                : "bg-amber-500/10 text-amber-600 border-none font-bold text-[10px]"}>
                               {slip.paymentStatus}
                             </Badge>
                           </td>
                           <td className="py-3 text-right space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
-                              onClick={() => {
-                                setSelectedPayslip(slip)
-                                setIsDialogOpen(true)
-                              }}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              Details
+                            <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
+                              onClick={() => { setSelectedPayslip(slip); setIsDialogOpen(true) }}>
+                              <Eye className="h-3.5 w-3.5" /> Details
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
-                              onClick={() => window.open(`/payroll/print/${slip.monthKey}/${slip.id}`, "_blank")}
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                              Print
+                            <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
+                              onClick={() => window.open(`/payroll/print/${slip.monthKey}/${slip.id}`, "_blank")}>
+                              <Printer className="h-3.5 w-3.5" /> Print
                             </Button>
                           </td>
                         </tr>
@@ -486,10 +587,7 @@ export default function ProfilePage() {
       {selectedPayslip && (
         <DetailedPayslipDialog
           isOpen={isDialogOpen}
-          onClose={() => {
-            setIsDialogOpen(false)
-            setSelectedPayslip(null)
-          }}
+          onClose={() => { setIsDialogOpen(false); setSelectedPayslip(null) }}
           viewPayslip={selectedPayslip}
           empPfRate={10}
           selectedMonth={selectedPayslip.monthKey}

@@ -31,11 +31,18 @@ import {
   useSalaryTemplatesQuery,
   useAssignEmployeeSalaryMutation,
 } from "@/hooks/useSalary"
+import {
+  useSalaryAdjustments,
+  useCreateSalaryAdjustment,
+  useDeleteSalaryAdjustment,
+  useApplyPendingAdjustments,
+} from "@/hooks/useSalaryAdjustments"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import EmployeeSalaryTab from "@/components/payroll/EmployeeSalaryTab"
 import { ProvidentFundTab } from "@/components/payroll/ProvidentFundTab"
 import { DisbursementLogsTab } from "@/components/payroll/DisbursementLogsTab"
 import { PayrollProcessingTab } from "@/components/payroll/PayrollProcessingTab"
+import { CrossMonthAdjustments } from "@/components/payroll/CrossMonthAdjustments"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
 import {
   SalaryDisbursementDialog,
@@ -101,6 +108,17 @@ export default function PayrollPage() {
   const syncPayrollMutation = useSyncPayrollMutation()
   const updatePfSettingsMutation = useUpdateProvidentFundSettingsMutation()
   const assignSalaryMutation = useAssignEmployeeSalaryMutation()
+
+  // Cross-month salary adjustments
+  const { data: adjustmentsData } = useSalaryAdjustments({
+    appliedMonthKey: selectedMonth,
+    status: "Pending",
+  })
+  const createAdjustmentMutation = useCreateSalaryAdjustment()
+  const deleteAdjustmentMutation = useDeleteSalaryAdjustment()
+  const applyAdjustmentsMutation = useApplyPendingAdjustments()
+
+  const pendingAdjustments = adjustmentsData?.data || []
 
   const employees = employeesData?.data || []
 
@@ -495,6 +513,52 @@ export default function PayrollPage() {
 
         {/* TAB 1: PAYROLL PROCESSING */}
         <TabsContent value="processing" className="space-y-4 outline-none">
+          {/* Cross-Month Adjustments */}
+          <CrossMonthAdjustments
+            employees={employees}
+            selectedMonth={selectedMonth}
+            formatCurrency={formatCurrency}
+            onCreateAdjustment={(data) => {
+              createAdjustmentMutation.mutate(data, {
+                onSuccess: () => {
+                  Swal.fire({
+                    title: "Adjustment Created",
+                    text: `The adjustment will be applied to ${selectedMonth} payroll cycle.`,
+                    icon: "success",
+                    confirmButtonText: "Done",
+                    buttonsStyling: false,
+                    customClass: {
+                      confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2",
+                    },
+                  })
+                },
+              })
+            }}
+            onDeleteAdjustment={(id) => {
+              deleteAdjustmentMutation.mutate(id)
+            }}
+            onApplyAdjustments={(monthKey) => {
+              applyAdjustmentsMutation.mutate(monthKey, {
+                onSuccess: (response) => {
+                  Swal.fire({
+                    title: "Adjustments Applied",
+                    text: response.message || `${response.appliedCount || 0} adjustment(s) applied to ${monthKey}`,
+                    icon: "success",
+                    confirmButtonText: "Done",
+                    buttonsStyling: false,
+                    customClass: {
+                      confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2",
+                    },
+                  })
+                },
+              })
+            }}
+            pendingAdjustments={pendingAdjustments}
+            isCreating={createAdjustmentMutation.isPending}
+            isDeleting={deleteAdjustmentMutation.isPending}
+            isApplying={applyAdjustmentsMutation.isPending}
+          />
+
           <PayrollProcessingTab
             selectedMonth={selectedMonth}
             setSelectedMonth={handleMonthChange}

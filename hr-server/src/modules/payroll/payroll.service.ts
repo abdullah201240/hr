@@ -16,10 +16,12 @@ import {
   holidays,
   leaveApplications,
   leaveTypes,
+  salaryAdjustments,
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
 import { DisburseDto, UpdatePayslipAdjustmentsDto } from './dto/payroll.dto';
+import { CreateSalaryAdjustmentDto, UpdateAdjustmentStatusDto, ApplyAdjustmentsToCycleDto } from './dto/salary-adjustment.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { NotificationService } from '../notifications/notifications.service';
@@ -1338,4 +1340,343 @@ export class PayrollService implements OnModuleInit {
   private async invalidateCache(monthKey: string) {
     await this.cache.delByKey(CacheKeys.payrollDisbursements);
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // Cross-Month Salary Adjustments
+  // ─────────────────────────────────────────────────────────────
+
+  // Create a new salary adjustment (retroactive correction)
+  async createSalaryAdjustment(dto: CreateSalaryAdjustmentDto) {
+    // Validate employee exists
+    const [employee] = await this.db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(eq(employees.id, dto.employeeId))
+      .limit(1);
+
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    // Validate target month is in the past (can't adjust future months)
+    const targetDate = new Date(dto.targetMonthKey + '-01');
+    const appliedDate = new Date(dto.appliedMonthKey + '-01');
+    const now = new Date();
+
+    if (targetDate >= appliedDate) {
+      throw new BadRequestException('Target month must be before the applied month');
+    }
+
+    // If originalPayslipId provided, validate it exists
+    if (dto.originalPayslipId) {
+      const [payslip] = await this.db
+        .select({ id: employeePayslips.id })
+        .from(employeePayslips)
+        .where(eq(employeePayslips.id, dto.originalPayslipId))
+        .limit(1);
+
+      if (!payslip) {
+        throw new NotFoundException('Original payslip not found');
+      }
+    }
+
+    // Create the adjustment
+    const [adjustment] = await this.db
+      .insert(salaryAdjustments)
+      .values({
+        employeeId: dto.employeeId,
+        targetMonthKey: dto.targetMonthKey,
+        appliedMonthKey: dto.appliedMonthKey,
+        adjustmentType: dto.adjustmentType,
+        amount: dto.amount,
+        reason: dto.reason,
+        originalPayslipId: dto.originalPayslipId || null,
+        metadata: dto.metadata || {},
+        status: 'Pending',
+      })
+      .returning();
+
+    await this.invalidateCache(dto.appliedMonthKey);
+
+    return {
+      success: true,
+      data: adjustment,
+    };
+  }
+
+  // Get all salary adjustments with filters
+  async getSalaryAdjustments(filters?: {
+    employeeId?: string;
+    targetMonthKey?: string;
+    appliedMonthKey?: string;
+    status?: string;
+  }) {
+    let query = this.db
+      .select({
+        id: salaryAdjustments.id,
+        employeeId: salaryAdjustments.employeeId,
+        targetMonthKey: salaryAdjustments.targetMonthKey,
+        appliedMonthKey: salaryAdjustments.appliedMonthKey,
+        adjustmentType: salaryAdjustments.adjustmentType,
+        amount: salaryAdjustments.amount,
+        reason: salaryAdjustments.reason,
+        status: salaryAdjustments.status,
+        metadata: salaryAdjustments.metadata,
+        createdAt: salaryAdjustments.createdAt,
+        employeeName: employees.fullNameEnglish,
+        employeeEmail: employees.email,
+      })
+      .from(salaryAdjustments)
+      .innerJoin(employees, eq(salaryAdjustments.employeeId, employees.id));
+
+    const conditions = [];
+
+    if (filters?.employeeId) {
+      conditions.push(eq(salaryAdjustments.employeeId, filters.employeeId));
+    }
+    if (filters?.targetMonthKey) {
+      conditions.push(eq(salaryAdjustments.targetMonthKey, filters.targetMonthKey));
+    }
+    if (filters?.appliedMonthKey) {
+      conditions.push(eq(salaryAdjustments.appliedMonthKey, filters.appliedMonthKey));
+    }
+    if (filters?.status) {
+      conditions.push(eq(salaryAdjustments.status, filters.status));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const adjustments = await query.orderBy(sql`${salaryAdjustments.createdAt} DESC`);
+
+    return {
+      success: true,
+      data: adjustments,
+    };
+  }
+
+  // Update adjustment status
+  async updateAdjustmentStatus(adjustmentId: string, dto: UpdateAdjustmentStatusDto) {
+    const [adjustment] = await this.db
+      .select()
+      .from(salaryAdjustments)
+      .where(eq(salaryAdjustments.id, adjustmentId))
+      .limit(1);
+
+    if (!adjustment) {
+      throw new NotFoundException('Salary adjustment not found');
+    }
+
+    if (adjustment.status === 'Applied') {
+      throw new BadRequestException('Cannot update status of already applied adjustment');
+    }
+
+    const [updated] = await this.db
+      .update(salaryAdjustments)
+      .set({ status: dto.status })
+      .where(eq(salaryAdjustments.id, adjustmentId))
+      .returning();
+
+    await this.invalidateCache(adjustment.appliedMonthKey);
+
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
+  // Delete an adjustment (only if pending)
+  async deleteAdjustment(adjustmentId: string) {
+    const [adjustment] = await this.db
+      .select()
+      .from(salaryAdjustments)
+      .where(eq(salaryAdjustments.id, adjustmentId))
+      .limit(1);
+
+    if (!adjustment) {
+      throw new NotFoundException('Salary adjustment not found');
+    }
+
+    if (adjustment.status !== 'Pending') {
+      throw new BadRequestException('Can only delete pending adjustments');
+    }
+
+    await this.db
+      .delete(salaryAdjustments)
+      .where(eq(salaryAdjustments.id, adjustmentId));
+
+    await this.invalidateCache(adjustment.appliedMonthKey);
+
+    return {
+      success: true,
+      message: 'Adjustment deleted successfully',
+    };
+  }
+
+  // Apply all pending adjustments to current month's payroll cycle
+  async applyPendingAdjustmentsToCycle(appliedMonthKey: string) {
+    // Get the payroll cycle
+    const [cycle] = await this.db
+      .select()
+      .from(payrollCycles)
+      .where(eq(payrollCycles.monthKey, appliedMonthKey))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Payroll cycle not found for ${appliedMonthKey}`);
+    }
+
+    if (cycle.status !== 'Draft') {
+      throw new BadRequestException('Can only apply adjustments to draft payroll cycles');
+    }
+
+    // Get all pending adjustments for this month
+    const pendingAdjustments = await this.db
+      .select()
+      .from(salaryAdjustments)
+      .where(
+        and(
+          eq(salaryAdjustments.appliedMonthKey, appliedMonthKey),
+          eq(salaryAdjustments.status, 'Pending'),
+        ),
+      );
+
+    if (pendingAdjustments.length === 0) {
+      return {
+        success: true,
+        message: 'No pending adjustments to apply',
+        appliedCount: 0,
+      };
+    }
+
+    // Group adjustments by employee
+    const adjustmentsByEmployee = pendingAdjustments.reduce((acc, adj) => {
+      if (!acc[adj.employeeId]) {
+        acc[adj.employeeId] = [];
+      }
+      acc[adj.employeeId].push(adj);
+      return acc;
+    }, {} as Record<string, typeof pendingAdjustments>);
+
+    // Apply adjustments to each employee's payslip
+    let appliedCount = 0;
+
+    for (const [employeeId, adjustments] of Object.entries(adjustmentsByEmployee)) {
+      // Find the employee's payslip in this cycle
+      const [payslip] = await this.db
+        .select()
+        .from(employeePayslips)
+        .where(
+          and(
+            eq(employeePayslips.payrollCycleId, cycle.id),
+            eq(employeePayslips.employeeId, employeeId),
+          ),
+        )
+        .limit(1);
+
+      if (!payslip) {
+        this.logger.warn(`No payslip found for employee ${employeeId} in cycle ${appliedMonthKey}`);
+        continue;
+      }
+
+      // Calculate total additions and deductions
+      let totalAdditions = 0;
+      let totalDeductions = 0;
+
+      for (const adjustment of adjustments) {
+        if (adjustment.adjustmentType === 'addition' || adjustment.adjustmentType === 'partial_salary') {
+          totalAdditions += adjustment.amount;
+        } else if (adjustment.adjustmentType === 'deduction') {
+          totalDeductions += adjustment.amount;
+        }
+      }
+
+      // Update payslip with adjustments
+      const allowances = { ...(payslip.allowances as Record<string, number> || {}) };
+      const deductions = { ...(payslip.deductions as Record<string, number> || {}) };
+
+      // Add adjustments to allowances/deductions
+      for (const adjustment of adjustments) {
+        const label = `Adjustment: ${adjustment.reason}`;
+        if (adjustment.adjustmentType === 'addition' || adjustment.adjustmentType === 'partial_salary') {
+          allowances[label] = (allowances[label] || 0) + adjustment.amount;
+        } else {
+          deductions[label] = (deductions[label] || 0) + adjustment.amount;
+        }
+
+        // Mark adjustment as applied
+        await this.db
+          .update(salaryAdjustments)
+          .set({ status: 'Applied' })
+          .where(eq(salaryAdjustments.id, adjustment.id));
+      }
+
+      // Recalculate net pay
+      const basic = payslip.basicSalary;
+      const allowancesSum = Object.values(allowances).reduce((sum, val) => sum + (Number(val) || 0), 0);
+      const deductionsSum = Object.values(deductions).reduce((sum, val) => sum + (Number(val) || 0), 0);
+      const newNetPay = basic + allowancesSum - deductionsSum;
+
+      await this.db
+        .update(employeePayslips)
+        .set({
+          allowances,
+          deductions,
+          netPay: newNetPay,
+        })
+        .where(eq(employeePayslips.id, payslip.id));
+
+      appliedCount += adjustments.length;
+    }
+
+    await this.invalidateCache(appliedMonthKey);
+
+    return {
+      success: true,
+      message: `Applied ${appliedCount} adjustment(s) to ${appliedMonthKey} payroll cycle`,
+      appliedCount,
+    };
+  }
+
+  // Get pending adjustments summary for a month
+  async getPendingAdjustmentsSummary(appliedMonthKey: string) {
+    const pendingAdjustments = await this.db
+      .select({
+        employeeId: salaryAdjustments.employeeId,
+        employeeName: employees.fullNameEnglish,
+        adjustmentType: salaryAdjustments.adjustmentType,
+        amount: salaryAdjustments.amount,
+        reason: salaryAdjustments.reason,
+        targetMonthKey: salaryAdjustments.targetMonthKey,
+      })
+      .from(salaryAdjustments)
+      .innerJoin(employees, eq(salaryAdjustments.employeeId, employees.id))
+      .where(
+        and(
+          eq(salaryAdjustments.appliedMonthKey, appliedMonthKey),
+          eq(salaryAdjustments.status, 'Pending'),
+        ),
+      );
+
+    const summary = {
+      totalAdditions: 0,
+      totalDeductions: 0,
+      adjustments: pendingAdjustments,
+    };
+
+    for (const adj of pendingAdjustments) {
+      if (adj.adjustmentType === 'addition' || adj.adjustmentType === 'partial_salary') {
+        summary.totalAdditions += adj.amount;
+      } else {
+        summary.totalDeductions += adj.amount;
+      }
+    }
+
+    return {
+      success: true,
+      data: summary,
+    };
+  }
 }
+

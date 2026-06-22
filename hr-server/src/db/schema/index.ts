@@ -14,6 +14,7 @@ export * from './salary';
 export * from './claims';
 export * from './recruitment';
 export * from './payroll';
+export * from './salary-adjustments';
 export * from './letters';
 export * from './performance';
 export * from './disciplinary';
