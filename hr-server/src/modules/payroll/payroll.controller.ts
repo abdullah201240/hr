@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PayrollService } from './payroll.service';
-import { DisburseDto, UpdatePayslipAdjustmentsDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
+import { DisburseDto, UpdatePayslipAdjustmentsDto } from './dto/payroll.dto';
 
 @ApiTags('Payroll')
 @ApiBearerAuth()
@@ -19,16 +19,6 @@ export class PayrollController {
   @ApiOperation({ summary: 'Synchronize and recalculate active draft cycle' })
   async syncDraftCycle(@Param('monthKey') monthKey: string) {
     return this.payrollService.syncDraftCycle(monthKey);
-  }
-
-  @Post('cycles/:monthKey/bonus/:payslipId')
-  @ApiOperation({ summary: 'Update a specific employee payslip bonus' })
-  async updatePayslipBonus(
-    @Param('monthKey') monthKey: string,
-    @Param('payslipId') payslipId: string,
-    @Body() dto: UpdatePayslipBonusDto,
-  ) {
-    return this.payrollService.updatePayslipBonus(monthKey, payslipId, dto);
   }
 
   @Post('cycles/:monthKey/adjustments/:payslipId')

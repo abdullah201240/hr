@@ -8,7 +8,6 @@ export * from './employee';
 export * from './leave-type';
 export * from './attendance';
 export * from './announcement';
-export * from './festival-bonus';
 export * from './provident-fund';
 export * from './leave-application';
 export * from './salary';

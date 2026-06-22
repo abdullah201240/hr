@@ -143,18 +143,6 @@ export default function PrintPayslipPage() {
                     <div className="flex justify-between"><span>Medical Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceMedical)}</span></div>
                   </>
                 )}
-                {viewPayslip.bonusAmount > 0 && (
-                  <div className="flex justify-between">
-                    <span>Bonus ({viewPayslip.bonusDescription || "Performance"}):</span>
-                    <span className="font-semibold">{formatCurrency(viewPayslip.bonusAmount)}</span>
-                  </div>
-                )}
-                {viewPayslip.festivalBonusAmount > 0 && (
-                  <div className="flex justify-between">
-                    <span>Festival Bonus:</span>
-                    <span className="font-semibold">{formatCurrency(viewPayslip.festivalBonusAmount)}</span>
-                  </div>
-                )}
               </div>
             </div>
 

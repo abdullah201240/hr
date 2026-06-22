@@ -31,10 +31,8 @@ import {
   useSalaryTemplatesQuery,
   useAssignEmployeeSalaryMutation,
 } from "@/hooks/useSalary"
-import { useFestivalBonusRulesQuery } from "@/hooks/useFestivalBonus"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import EmployeeSalaryTab from "@/components/payroll/EmployeeSalaryTab"
-import BonusTab from "@/components/payroll/BonusTab"
 import { ProvidentFundTab } from "@/components/payroll/ProvidentFundTab"
 import { DisbursementLogsTab } from "@/components/payroll/DisbursementLogsTab"
 import { PayrollProcessingTab } from "@/components/payroll/PayrollProcessingTab"
@@ -74,7 +72,6 @@ export default function PayrollPage() {
   const { data: employeesData, isLoading: employeesLoading } = useEmployeesQuery({ status: "active", limit: 100 })
   const { data: disbursements = [], isLoading: isDisbursementsLoading } = useDisbursementsQuery()
   const { data: templates = [] } = useSalaryTemplatesQuery()
-  const { data: festivalBonusRules = [] } = useFestivalBonusRulesQuery()
   const { data: departmentOptions = [] } = useDepartmentOptionsQuery()
   const { data: pfBalances = [], isLoading: isPfBalancesLoading } = usePfBalancesQuery()
 
@@ -237,7 +234,7 @@ export default function PayrollPage() {
   const handleSyncLedger = () => {
     Swal.fire({
       title: "Recalculate and Sync Ledger?",
-      text: "This will reset all payslips for this draft cycle to their base templates, discarding any custom manual bonuses. Are you sure?",
+      text: "This will reset all payslips for this draft cycle to their base templates, discarding any manual adjustments. Are you sure?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, Sync",
@@ -303,7 +300,7 @@ export default function PayrollPage() {
       const allowancesSum = p.allowances && Object.keys(p.allowances).length > 0
         ? Object.values(p.allowances).reduce((s, val) => s + (Number(val) || 0), 0)
         : p.allowanceHra + p.allowanceTransport + p.allowanceMedical;
-      return sum + allowancesSum + p.bonusAmount + p.festivalBonusAmount;
+      return sum + allowancesSum;
     },
     0
   )
@@ -351,7 +348,7 @@ export default function PayrollPage() {
             <Coins className="h-6 w-6 text-primary" />
             Payroll & Benefits
           </h2>
-          <p className="text-muted-foreground">Process monthly employee compensation, allocate bonuses, and disburse payments</p>
+          <p className="text-muted-foreground">Process monthly employee compensation, adjust salary entries, and disburse payments</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -405,7 +402,7 @@ export default function PayrollPage() {
           </Badge>
           <div>
             <p className="font-semibold">Draft Register</p>
-            <p className="text-[10px] text-muted-foreground">Adjust bonuses & sync</p>
+            <p className="text-[10px] text-muted-foreground">Adjust entries & sync</p>
           </div>
         </div>
         <div className="h-[1px] w-12 bg-border" />
@@ -461,13 +458,13 @@ export default function PayrollPage() {
         <Card className="p-4 shadow-none border-border/40 bg-muted/20">
           <CardContent className="p-0 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Allowances + Bonuses</p>
+              <p className="text-xs text-muted-foreground">Allowances / Deductions</p>
               <div className="text-sm font-semibold mt-1">
                 <span className="text-emerald-600">+{formatCurrency(totalAllowancesSum)}</span>
                 <span className="text-muted-foreground mx-1">/</span>
                 <span className="text-rose-500">-{formatCurrency(totalDeductionsSum)}</span>
               </div>
-              <span className="text-[10px] text-muted-foreground font-semibold">Taxes, medical, bonuses, HRA</span>
+              <span className="text-[10px] text-muted-foreground font-semibold">Taxes, PF, medical, HRA</span>
             </div>
             <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <FileSpreadsheet className="h-5 w-5 text-amber-500" />
@@ -478,10 +475,9 @@ export default function PayrollPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full max-w-[800px] grid-cols-5 shadow-none border border-border/40 bg-muted/20">
+        <TabsList className="grid w-full max-w-[720px] grid-cols-4 shadow-none border border-border/40 bg-muted/20">
           <TabsTrigger value="overview" className="text-xs">Employee Salary</TabsTrigger>
           <TabsTrigger value="processing" className="text-xs">Payroll Processing</TabsTrigger>
-          <TabsTrigger value="bonus" className="text-xs">Bonus Setup</TabsTrigger>
           <TabsTrigger value="pf" className="text-xs">Provident Fund (PF)</TabsTrigger>
           <TabsTrigger value="logs" className="text-xs">Disbursement Logs</TabsTrigger>
         </TabsList>
@@ -550,16 +546,6 @@ export default function PayrollPage() {
           />
         </TabsContent>
 
-        {/* TAB 5: BONUS SETUP */}
-        <TabsContent value="bonus" className="outline-none">
-          <BonusTab
-            festivalBonusRules={festivalBonusRules}
-            employees={employees}
-            employeeSalaries={allSalariesData?.data || []}
-            formatCurrency={formatCurrency}
-            monthsOptions={monthsOptions}
-          />
-        </TabsContent>
       </Tabs>
 
 

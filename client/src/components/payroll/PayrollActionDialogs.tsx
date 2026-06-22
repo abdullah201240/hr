@@ -10,67 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-// --- 1. ConfigureSpecialBonusDialog ---
-interface ConfigureSpecialBonusDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  bonusVal: number
-  setBonusVal: (val: number) => void
-  bonusReason: string
-  setBonusReason: (val: string) => void
-  onSave: () => void
-  isPending: boolean
-}
-
-export function ConfigureSpecialBonusDialog({
-  isOpen,
-  onClose,
-  bonusVal,
-  setBonusVal,
-  bonusReason,
-  setBonusReason,
-  onSave,
-  isPending,
-}: ConfigureSpecialBonusDialogProps) {
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[400px] text-xs">
-        <DialogHeader>
-          <DialogTitle className="text-base font-bold">Configure Special Bonus</DialogTitle>
-          <DialogDescription className="text-xs">Allocate performance or festival incentives for this employee's draft payslip.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Bonus Amount (৳)</Label>
-            <Input
-              type="number"
-              value={bonusVal}
-              onChange={(e) => setBonusVal(Number(e.target.value))}
-              className="text-xs"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Reason / Description</Label>
-            <Input
-              placeholder="e.g. Q2 Performance Bonus, Festival Incentive"
-              value={bonusReason}
-              onChange={(e) => setBonusReason(e.target.value)}
-              className="text-xs"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose} className="text-xs">Cancel</Button>
-          <Button size="sm" onClick={onSave} className="text-xs" disabled={isPending}>
-            {isPending ? "Saving..." : "Save Allocation"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// --- 2. SalaryDisbursementDialog ---
+// --- 1. SalaryDisbursementDialog ---
 interface SalaryDisbursementDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -147,7 +87,7 @@ export function SalaryDisbursementDialog({
   )
 }
 
-// --- 3. GlobalPfSetupDialog ---
+// --- 2. GlobalPfSetupDialog ---
 interface GlobalPfSetupDialogProps {
   isOpen: boolean
   onClose: () => void

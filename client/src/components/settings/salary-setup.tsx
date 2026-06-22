@@ -6,14 +6,6 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -35,19 +27,12 @@ import {
   Edit3,
   Save,
   TrendingUp,
-  Gift,
   Calculator,
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
-import {
-  useFestivalBonusRulesQuery,
-  useCreateFestivalBonusRuleMutation,
-  useUpdateFestivalBonusRuleMutation,
-  useDeleteFestivalBonusRuleMutation,
-} from "@/hooks/useFestivalBonus"
 import {
   useProvidentFundSettingsQuery,
   useUpdateProvidentFundSettingsMutation,
@@ -58,7 +43,7 @@ import {
   useUpdateSalaryTemplateMutation,
   useDeleteSalaryTemplateMutation,
 } from "@/hooks/useSalary"
-import type { FestivalBonusRule, SalaryTemplate } from "@/types"
+import type { SalaryTemplate } from "@/types"
 
 export function SalarySetup() {
   const { data: templates = [], isLoading: isLoadingTemplates } = useSalaryTemplatesQuery()
@@ -70,45 +55,11 @@ export function SalarySetup() {
   const [editingTemplate, setEditingTemplate] = useState<SalaryTemplate | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<string>("")
 
-  // Festival Bonus Rules (Clause 7.6.1) from Database
-  const { data: rules = [], isLoading: isLoadingRules } = useFestivalBonusRulesQuery()
-  const createRuleMutation = useCreateFestivalBonusRuleMutation()
-  const updateRuleMutation = useUpdateFestivalBonusRuleMutation()
-  const deleteRuleMutation = useDeleteFestivalBonusRuleMutation()
-
-  // Rule dialog / form state
-  const [ruleDialogOpen, setRuleDialogOpen] = useState(false)
-  const [editingRule, setEditingRule] = useState<FestivalBonusRule | null>(null)
-  const [ruleMinMonths, setRuleMinMonths] = useState<number>(0)
-  const [ruleMaxMonths, setRuleMaxMonths] = useState<number>(12)
-  const [rulePercentage, setRulePercentage] = useState<number>(100)
-  const [ruleIsProRata, setRuleIsProRata] = useState<boolean>(false)
-  const [ruleDescription, setRuleDescription] = useState<string>("")
-
   // Simulation Calculator State
-  const [simBasic, setSimBasic] = useState(50000)
-  const [simDays, setSimDays] = useState(180)
+  const simBasic = 50000
+  const simDays = 180
 
   const simMonths = simDays / 30
-
-  // Match rule from database
-  const matchedRule = rules.find(r => simMonths >= r.minServiceMonths && simMonths <= r.maxServiceMonths)
-
-  let simBonus = 0
-  let isEligible = false
-  let simFormulaLabel = ""
-
-  if (matchedRule) {
-    isEligible = matchedRule.bonusPercentage > 0 || matchedRule.isProRata
-    if (matchedRule.isProRata) {
-      const effectivePercentage = matchedRule.bonusPercentage || 100
-      simBonus = simBasic * (simMonths / 12) * (effectivePercentage / 100)
-      simFormulaLabel = `৳${simBasic.toLocaleString()} × (${simDays} Days ÷ 30) ÷ 12 Months × ${effectivePercentage}%`
-    } else {
-      simBonus = simBasic * (matchedRule.bonusPercentage / 100)
-      simFormulaLabel = `৳${simBasic.toLocaleString()} × ${matchedRule.bonusPercentage}%`
-    }
-  }
 
   // Initialize selectedTemplate automatically
   useEffect(() => {
@@ -118,67 +69,6 @@ export function SalarySetup() {
   }, [templates, selectedTemplate])
 
   const currentTemplate = templates.find(t => t.id === selectedTemplate) || templates[0]
-
-  const handleOpenAddRule = () => {
-    setEditingRule(null)
-    setRuleMinMonths(0)
-    setRuleMaxMonths(12)
-    setRulePercentage(100)
-    setRuleIsProRata(false)
-    setRuleDescription("")
-    setRuleDialogOpen(true)
-  }
-
-  const handleOpenEditRule = (rule: FestivalBonusRule) => {
-    setEditingRule(rule)
-    setRuleMinMonths(rule.minServiceMonths)
-    setRuleMaxMonths(rule.maxServiceMonths)
-    setRulePercentage(rule.bonusPercentage)
-    setRuleIsProRata(rule.isProRata)
-    setRuleDescription(rule.description || "")
-    setRuleDialogOpen(true)
-  }
-
-  const handleSaveRule = async () => {
-    try {
-      if (editingRule) {
-        await updateRuleMutation.mutateAsync({
-          id: editingRule.id,
-          payload: {
-            minServiceMonths: ruleMinMonths,
-            maxServiceMonths: ruleMaxMonths,
-            bonusPercentage: rulePercentage,
-            isProRata: ruleIsProRata,
-            description: ruleDescription,
-          }
-        })
-        toast.success("Festival bonus rule updated successfully!")
-      } else {
-        await createRuleMutation.mutateAsync({
-          minServiceMonths: ruleMinMonths,
-          maxServiceMonths: ruleMaxMonths,
-          bonusPercentage: rulePercentage,
-          isProRata: ruleIsProRata,
-          description: ruleDescription,
-        })
-        toast.success("Festival bonus rule created successfully!")
-      }
-      setRuleDialogOpen(false)
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to save rule")
-    }
-  }
-
-  const handleDeleteRule = async (id: string) => {
-    if (confirm("Are you sure you want to delete this rule?")) {
-      try {
-        await deleteRuleMutation.mutateAsync(id)
-        toast.success("Rule deleted successfully")
-      } catch (error: any) {
-        toast.error(error?.message || "Failed to delete rule")
-      }
-    }
-  }
 
   // Provident Fund Settings Hooks
   const { data: pfSettings, isLoading: isLoadingPF } = useProvidentFundSettingsQuery()
@@ -290,7 +180,7 @@ export function SalarySetup() {
             Salary Structure & Policies
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Configure salary components, festival bonus rules, and provident fund settings
+            Configure salary components and provident fund settings
           </p>
         </div>
 
@@ -503,156 +393,8 @@ export function SalarySetup() {
           </CardContent>
         </Card>
 
-        {/* Bottom Row: Festival Bonus & PF (Two Column) */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="shadow-none border border-border/40">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Gift className="h-5 w-5 text-primary" />
-                Festival Bonus Policy
-              </CardTitle>
-              <CardDescription>Configure bonus entitlement rules (Clause 7.6.1)</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/* Dynamic Rules Table */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold">Active Rules</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3 text-xs gap-1.5"
-                    onClick={handleOpenAddRule}
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add Rule
-                  </Button>
-                </div>
-
-                {isLoadingRules ? (
-                  <div className="text-center py-6 text-xs text-muted-foreground">Loading rules...</div>
-                ) : rules.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-muted-foreground border border-dashed border-border rounded-lg">
-                    No rules configured yet
-                  </div>
-                ) : (
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-muted/40">
-                        <TableRow>
-                          <TableHead className="h-9 text-[10px] uppercase font-bold px-3">Service Range</TableHead>
-                          <TableHead className="h-9 text-[10px] uppercase font-bold px-3">Payout</TableHead>
-                          <TableHead className="h-9 text-[10px] uppercase font-bold px-3 text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {rules.map((rule) => (
-                          <TableRow key={rule.id} className="hover:bg-muted/20">
-                            <TableCell className="py-2.5 px-3 text-xs">
-                              <div className="font-semibold">{rule.minServiceMonths}–{rule.maxServiceMonths >= 999 ? '∞' : `${rule.maxServiceMonths}`} Months</div>
-                              {rule.description && (
-                                <div className="text-[10px] text-muted-foreground mt-0.5">{rule.description}</div>
-                              )}
-                            </TableCell>
-                            <TableCell className="py-2.5 px-3 text-xs">
-                              <div className="font-semibold text-emerald-600">{rule.bonusPercentage}%</div>
-                              {rule.isProRata && (
-                                <Badge variant="secondary" className="text-[9px] h-4 px-1.5 py-0 bg-blue-500/10 text-blue-600 border-blue-500/20 font-bold mt-1">Pro-rata</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="py-2.5 px-3 text-right">
-                              <div className="flex gap-1 justify-end">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 w-7 p-0"
-                                  onClick={() => handleOpenEditRule(rule)}
-                                >
-                                  <Edit3 className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 w-7 p-0 hover:text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleDeleteRule(rule.id)}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-
-              <Separator className="bg-border/30" />
-
-              {/* Calculator Simulation */}
-              <div className="space-y-3">
-                <Label className="text-xs font-semibold flex items-center gap-1.5">
-                  <Calculator className="h-4 w-4 text-primary" />
-                  Pro-rata Calculator
-                </Label>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/40 space-y-3.5">
-                  <div className="grid gap-3 grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wide">Basic Salary (৳)</Label>
-                      <Input
-                        type="number"
-                        value={simBasic}
-                        onChange={(e) => setSimBasic(parseInt(e.target.value) || 0)}
-                        className="h-9 text-xs"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wide">Service Days</Label>
-                      <Input
-                        type="number"
-                        value={simDays}
-                        onChange={(e) => setSimDays(parseInt(e.target.value) || 0)}
-                        className="h-9 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-border/40 space-y-2.5 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Service Months:</span>
-                      <span className="font-mono font-medium">{simDays} Days ÷ 30 = {simMonths.toFixed(2)} Months</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Eligibility:</span>
-                      <span>
-                        {isEligible ? (
-                          matchedRule?.isProRata ? (
-                            <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px] font-bold">Pro-rata (Pending)</Badge>
-                          ) : (
-                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold">Eligible (Full)</Badge>
-                          )
-                        ) : (
-                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] font-bold">Not Eligible</Badge>
-                        )}
-                      </span>
-                    </div>
-                    {simFormulaLabel && (
-                      <div className="flex justify-between text-[10px] text-muted-foreground italic">
-                        <span>Formula:</span>
-                        <span className="font-mono">{simFormulaLabel}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between pt-3 border-t border-border/40 text-sm font-semibold">
-                      <span className="text-foreground">Calculated Bonus:</span>
-                      <span className="text-blue-600 text-base">৳{simBonus.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Provident Fund (PF) Settings Card */}
+        {/* Provident Fund (PF) Settings Card */}
+        <div className="grid gap-6">
           <Card className="shadow-none border border-border/40">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -800,77 +542,6 @@ export function SalarySetup() {
           </Card>
         </div>
       </div>
-
-      {/* Festival Bonus Rule Dialog Form */}
-      <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingRule ? "Edit" : "Add"} Festival Bonus Rule</DialogTitle>
-            <DialogDescription>
-              Configure the service duration threshold and bonus payout percentage.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="minMonths">Min Service (Months)</Label>
-                <Input
-                  id="minMonths"
-                  type="number"
-                  value={ruleMinMonths}
-                  onChange={(e) => setRuleMinMonths(parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="maxMonths">Max Service (Months)</Label>
-                <Input
-                  id="maxMonths"
-                  type="number"
-                  value={ruleMaxMonths}
-                  onChange={(e) => setRuleMaxMonths(parseInt(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="percentage">Bonus Percentage of Basic (%)</Label>
-              <Input
-                id="percentage"
-                type="number"
-                value={rulePercentage}
-                onChange={(e) => setRulePercentage(parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="flex items-center space-x-2 pt-2">
-              <input
-                type="checkbox"
-                id="isProRata"
-                checked={ruleIsProRata}
-                onChange={(e) => setRuleIsProRata(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <Label htmlFor="isProRata" className="cursor-pointer">Enable Pro-rata calculation based on service months</Label>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={ruleDescription}
-                onChange={(e) => setRuleDescription(e.target.value)}
-                placeholder="e.g. One Month Basic Salary"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveRule} className="gap-2">
-              <Save className="h-4 w-4" />
-              Save Rule
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

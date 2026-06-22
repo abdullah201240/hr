@@ -37,7 +37,6 @@ export const finalSettlements = pgTable('final_settlements', {
   salaryPayable: numeric('salary_payable').notNull(),
   separationBenefit: numeric('separation_benefit').notNull(),
   leaveEncashment: numeric('leave_encashment').notNull(),
-  festivalBonusAdjustment: numeric('festival_bonus_adjustment').notNull(),
   employeePfBalance: numeric('employee_pf_balance').notNull(),
   employerPfBalance: numeric('employer_pf_balance').notNull(),
   pfInterest: numeric('pf_interest').notNull(),

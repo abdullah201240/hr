@@ -243,7 +243,6 @@ export class SalaryService {
           basicSalary: employeeSalaries.basicSalary,
           effectiveDate: employeeSalaries.effectiveDate,
           pfApplicable: employeeSalaries.pfApplicable,
-          festivalBonusApplicable: employeeSalaries.festivalBonusApplicable,
           status: employeeSalaries.status,
           notes: employeeSalaries.notes,
           createdAt: employeeSalaries.createdAt,
@@ -306,7 +305,6 @@ export class SalaryService {
         basicSalary: employeeSalaries.basicSalary,
         effectiveDate: employeeSalaries.effectiveDate,
         pfApplicable: employeeSalaries.pfApplicable,
-        festivalBonusApplicable: employeeSalaries.festivalBonusApplicable,
         status: employeeSalaries.status,
         notes: employeeSalaries.notes,
         createdAt: employeeSalaries.createdAt,
@@ -372,7 +370,6 @@ export class SalaryService {
         basicSalary: dto.basicSalary,
         effectiveDate: dto.effectiveDate,
         pfApplicable: dto.pfApplicable ?? true,
-        festivalBonusApplicable: dto.festivalBonusApplicable ?? true,
         status: 'active',
         notes: dto.notes || '',
       })
@@ -403,8 +400,6 @@ export class SalaryService {
       updateData.effectiveDate = dto.effectiveDate;
     if (dto.pfApplicable !== undefined)
       updateData.pfApplicable = dto.pfApplicable;
-    if (dto.festivalBonusApplicable !== undefined)
-      updateData.festivalBonusApplicable = dto.festivalBonusApplicable;
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.notes !== undefined) updateData.notes = dto.notes;
 
@@ -480,7 +475,6 @@ export class SalaryService {
         basicSalary: employeeSalaries.basicSalary,
         effectiveDate: employeeSalaries.effectiveDate,
         pfApplicable: employeeSalaries.pfApplicable,
-        festivalBonusApplicable: employeeSalaries.festivalBonusApplicable,
         status: employeeSalaries.status,
         notes: employeeSalaries.notes,
         createdAt: employeeSalaries.createdAt,
@@ -518,7 +512,6 @@ export class SalaryService {
         templateId: employeeSalaries.templateId,
         basicSalary: employeeSalaries.basicSalary,
         pfApplicable: employeeSalaries.pfApplicable,
-        festivalBonusApplicable: employeeSalaries.festivalBonusApplicable,
       })
       .from(employeeSalaries)
       .innerJoin(employees, eq(employeeSalaries.employeeId, employees.id))
@@ -545,7 +538,6 @@ export class SalaryService {
           basicSalary: newBasic,
           effectiveDate: dto.effectiveDate,
           pfApplicable: sal.pfApplicable,
-          festivalBonusApplicable: sal.festivalBonusApplicable,
           status: 'active',
           notes: dto.notes || `Bulk revision (${dto.percentageIncrease}% raise)`,
         });

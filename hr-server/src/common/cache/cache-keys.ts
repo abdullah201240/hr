@@ -230,20 +230,6 @@ export const CacheKeys = {
     description: 'Pending attendance correction requests',
   },
 
-  /** Festival bonus rules list */
-  festivalBonusRules: {
-    key: key('festival-bonus:rules'),
-    ttl: 1800, // 30 min
-    description: 'Festival bonus configuration rules',
-  },
-
-  /** Single festival bonus rule by ID */
-  festivalBonusRuleById: {
-    key: key('festival-bonus:rules:id:*'),
-    ttl: 1800, // 30 min
-    description: 'Festival bonus rule by ID',
-  },
-
   /** Provident fund settings (singleton) */
   providentFundSettings: {
     key: key('provident-fund:settings'),

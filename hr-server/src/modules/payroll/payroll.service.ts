@@ -7,7 +7,6 @@ import {
   disbursements,
   employees,
   employeeSalaries,
-  festivalBonusRules,
   providentFundSettings,
   salaryTemplateComponents,
   departments,
@@ -20,7 +19,7 @@ import {
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
-import { DisburseDto, UpdatePayslipAdjustmentsDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
+import { DisburseDto, UpdatePayslipAdjustmentsDto } from './dto/payroll.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { NotificationService } from '../notifications/notifications.service';
@@ -291,8 +290,6 @@ export class PayrollService implements OnModuleInit {
 
       const [pfSettings] = await this.db.select().from(providentFundSettings).limit(1);
       const pfRate = pfSettings?.employeeContributionRate ?? 10;
-      const fRules = await this.db.select().from(festivalBonusRules).orderBy(asc(festivalBonusRules.minServiceMonths));
-
       const [settings] = await this.db.select().from(attendanceSettings).where(eq(attendanceSettings.id, 'default')).limit(1);
       const [year, month] = monthKey.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
@@ -352,8 +349,6 @@ export class PayrollService implements OnModuleInit {
 
         const basic = salAssignment.basicSalary;
         const pfApplicable = salAssignment.pfApplicable;
-        const festivalBonusApplicable = salAssignment.festivalBonusApplicable;
-
         let components: any[] = [];
         if (salAssignment.templateId) {
           components = await this.db
@@ -509,11 +504,8 @@ export class PayrollService implements OnModuleInit {
           calc.deductions['Proration Cut'] = prorationDeduction;
         }
 
-        // Festival Bonus (Disabled in monthly salary calculation)
-        const festivalBonus = 0;
-
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
-        const netPay = basic + allowancesSum + festivalBonus - deductionsSum;
+        const netPay = basic + allowancesSum - deductionsSum;
 
         await this.db.insert(employeePayslips).values({
           payrollCycleId: cycleId,
@@ -526,9 +518,6 @@ export class PayrollService implements OnModuleInit {
           deductionPf: calc.pf,
           allowances: calc.allowances,
           deductions: calc.deductions,
-          bonusAmount: 0,
-          bonusDescription: '',
-          festivalBonusAmount: festivalBonus,
           netPay,
           paymentStatus: 'Unpaid',
           totalWorkingDays,
@@ -562,9 +551,6 @@ export class PayrollService implements OnModuleInit {
         allowanceMedical: employeePayslips.allowanceMedical,
         deductionTax: employeePayslips.deductionTax,
         deductionPf: employeePayslips.deductionPf,
-        bonusAmount: employeePayslips.bonusAmount,
-        bonusDescription: employeePayslips.bonusDescription,
-        festivalBonusAmount: employeePayslips.festivalBonusAmount,
         netPay: employeePayslips.netPay,
         paymentStatus: employeePayslips.paymentStatus,
         paymentMethod: employeePayslips.paymentMethod,
@@ -590,11 +576,6 @@ export class PayrollService implements OnModuleInit {
       .leftJoin(departments, eq(employees.departmentId, departments.id))
       .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(employeePayslips.payrollCycleId, cycleId));
-  }
-
-  // Update a specific payslip's bonus
-  async updatePayslipBonus(monthKey: string, payslipId: string, dto: UpdatePayslipBonusDto) {
-    return this.updatePayslipAdjustments(monthKey, payslipId, dto);
   }
 
   // Update draft-only manual additions/deductions for a specific payslip.
@@ -631,8 +612,6 @@ export class PayrollService implements OnModuleInit {
     const additionalAmount = Math.max(0, Number(dto.additionalAmount || 0));
     const deductionReductionAmount = Math.max(0, Number(dto.deductionReductionAmount || 0));
     const extraDeductionAmount = Math.max(0, Number(dto.extraDeductionAmount || 0));
-    const newBonus = Math.max(0, Number(dto.bonusAmount || 0));
-
     const cleanManualEntries = (entries: Record<string, number> | null | undefined) => {
       const cleaned: Record<string, number> = {};
       for (const [key, value] of Object.entries(entries || {})) {
@@ -669,15 +648,12 @@ export class PayrollService implements OnModuleInit {
     const basic = payslip.basicSalary;
     const allowancesSum = Object.values(allowances).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const deductionsSum = Object.values(deductions).reduce((sum, val) => sum + (Number(val) || 0), 0);
-    const festivalBonus = payslip.festivalBonusAmount || 0;
 
-    const netPay = basic + allowancesSum + festivalBonus + newBonus - deductionsSum;
+    const netPay = basic + allowancesSum - deductionsSum;
 
     await this.db
       .update(employeePayslips)
       .set({
-        bonusAmount: newBonus,
-        bonusDescription: dto.bonusDescription || '',
         allowances,
         deductions,
         netPay,
@@ -930,8 +906,6 @@ export class PayrollService implements OnModuleInit {
 
       const [pfSettings] = await this.db.select().from(providentFundSettings).limit(1);
       const pfRate = pfSettings?.employeeContributionRate ?? 10;
-      const fRules = await this.db.select().from(festivalBonusRules).orderBy(asc(festivalBonusRules.minServiceMonths));
-
       const [settings] = await this.db.select().from(attendanceSettings).where(eq(attendanceSettings.id, 'default')).limit(1);
       const [year, month] = monthKey.split('-').map(Number);
       const daysInMonth = new Date(year, month, 0).getDate();
@@ -991,8 +965,6 @@ export class PayrollService implements OnModuleInit {
 
         const basic = salAssignment.basicSalary;
         const pfApplicable = salAssignment.pfApplicable;
-        const festivalBonusApplicable = salAssignment.festivalBonusApplicable;
-
         let components: any[] = [];
         if (salAssignment.templateId) {
           components = await this.db
@@ -1148,9 +1120,6 @@ export class PayrollService implements OnModuleInit {
           calc.deductions['Proration Cut'] = prorationDeduction;
         }
 
-        // Festival Bonus (Disabled in monthly salary calculation)
-        const festivalBonus = 0;
-
         const [existingPayslip] = await this.db
           .select()
           .from(employeePayslips)
@@ -1165,7 +1134,7 @@ export class PayrollService implements OnModuleInit {
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
         if (existingPayslip) {
-          const netPay = basic + allowancesSum + festivalBonus + existingPayslip.bonusAmount - deductionsSum;
+          const netPay = basic + allowancesSum - deductionsSum;
 
           await this.db
             .update(employeePayslips)
@@ -1178,7 +1147,6 @@ export class PayrollService implements OnModuleInit {
               deductionPf: calc.pf,
               allowances: calc.allowances,
               deductions: calc.deductions,
-              festivalBonusAmount: festivalBonus,
               netPay,
               totalWorkingDays,
               presentDays,
@@ -1188,7 +1156,7 @@ export class PayrollService implements OnModuleInit {
             })
             .where(eq(employeePayslips.id, existingPayslip.id));
         } else {
-          const netPay = basic + allowancesSum + festivalBonus - deductionsSum;
+          const netPay = basic + allowancesSum - deductionsSum;
 
           await this.db.insert(employeePayslips).values({
             payrollCycleId: cycleId,
@@ -1201,9 +1169,6 @@ export class PayrollService implements OnModuleInit {
             deductionPf: calc.pf,
             allowances: calc.allowances,
             deductions: calc.deductions,
-            bonusAmount: 0,
-            bonusDescription: '',
-            festivalBonusAmount: festivalBonus,
             netPay,
             paymentStatus: 'Unpaid',
             totalWorkingDays,

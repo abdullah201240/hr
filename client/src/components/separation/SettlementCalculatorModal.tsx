@@ -107,7 +107,6 @@ export function SettlementCalculatorModal({
   const serviceYears = settlement.serviceYears || 0
   const employeePfBalance = settlement.employeePfBalance || 0
   const employerPfBalance = settlement.employerPfBalance || 0
-  const festivalBonusAdjustment = settlement.festivalBonusAdjustment || 0
 
   // 1. Salary Payable
   const salaryPayable = Number(((grossSalary / 30) * payableDays).toFixed(2))
@@ -135,7 +134,6 @@ export function SettlementCalculatorModal({
     salaryPayable +
     separationBenefit +
     leaveEncashment +
-    festivalBonusAdjustment +
     employeePfBalance +
     employerPfBalance +
     pfInterest +
@@ -344,10 +342,6 @@ export function SettlementCalculatorModal({
                   <div className="flex justify-between items-center py-1 border-b border-border/10">
                     <span className="text-muted-foreground print:text-foreground">Leave Encashment</span>
                     <span className="font-semibold text-foreground">৳{leaveEncashment.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border/10">
-                    <span className="text-muted-foreground print:text-foreground">Festival Bonus Adj.</span>
-                    <span className="font-semibold text-foreground">৳{festivalBonusAdjustment.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-border/10">
                     <span className="text-muted-foreground print:text-foreground">Provident Fund Balance (Emp+Empr)</span>

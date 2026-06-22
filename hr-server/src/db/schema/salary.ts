@@ -93,11 +93,6 @@ export const employeeSalaries = pgTable(
     /** Whether Provident Fund deduction applies */
     pfApplicable: boolean('pf_applicable').default(true).notNull(),
 
-    /** Whether festival bonus rules apply */
-    festivalBonusApplicable: boolean('festival_bonus_applicable')
-      .default(true)
-      .notNull(),
-
     /** active | superseded */
     status: varchar('status', { length: 20 }).default('active').notNull(),
 

@@ -47,10 +47,6 @@ export const employeePayslips = pgTable(
     deductionTax: doublePrecision('deduction_tax').default(0).notNull(),
     deductionPf: doublePrecision('deduction_pf').default(0).notNull(),
     
-    bonusAmount: doublePrecision('bonus_amount').default(0).notNull(),
-    bonusDescription: varchar('bonus_description', { length: 255 }).default('').notNull(),
-    festivalBonusAmount: doublePrecision('festival_bonus_amount').default(0).notNull(),
-    
     netPay: doublePrecision('net_pay').notNull(),
     paymentStatus: varchar('payment_status', { length: 20 }).default('Unpaid').notNull(), // 'Unpaid' | 'Paid'
     paymentMethod: varchar('payment_method', { length: 50 }),

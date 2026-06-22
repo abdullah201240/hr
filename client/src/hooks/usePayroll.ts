@@ -19,29 +19,9 @@ export function usePayrollCycleQuery(monthKey: string) {
   });
 }
 
-export function useUpdatePayslipBonusMutation() {
-  const queryClient = useQueryClient();
-  return useMutation<
-    PayrollCycle,
-    Error,
-    { monthKey: string; payslipId: string; bonusAmount: number; bonusDescription?: string }
-  >({
-    mutationFn: ({ monthKey, payslipId, bonusAmount, bonusDescription }) =>
-      apiClient.post<PayrollCycle>(`payroll/cycles/${monthKey}/bonus/${payslipId}`, {
-        bonusAmount,
-        bonusDescription,
-      }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["payrollCycle", variables.monthKey] });
-    },
-  });
-}
-
 export type PayslipAdjustmentPayload = {
   monthKey: string;
   payslipId: string;
-  bonusAmount?: number;
-  bonusDescription?: string;
   additionalAmount?: number;
   additionalDescription?: string;
   deductionReductionAmount?: number;

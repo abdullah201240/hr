@@ -1,29 +1,7 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdatePayslipBonusDto {
-  @ApiProperty({ description: 'Bonus amount' })
-  @IsNumber()
-  @IsNotEmpty()
-  bonusAmount!: number;
-
-  @ApiProperty({ description: 'Bonus description/reason' })
-  @IsString()
-  @IsOptional()
-  bonusDescription?: string;
-}
-
 export class UpdatePayslipAdjustmentsDto {
-  @ApiProperty({ description: 'Manual bonus amount', required: false })
-  @IsNumber()
-  @IsOptional()
-  bonusAmount?: number;
-
-  @ApiProperty({ description: 'Manual bonus description/reason', required: false })
-  @IsString()
-  @IsOptional()
-  bonusDescription?: string;
-
   @ApiProperty({ description: 'Additional earning amount for this payroll cycle', required: false })
   @IsNumber()
   @IsOptional()

@@ -98,7 +98,6 @@ export default function EmployeeSalaryTab({
   const [assignBasicSalary, setAssignBasicSalary] = useState(0)
   const [assignTemplateId, setAssignTemplateId] = useState("")
   const [assignPfApplicable, setAssignPfApplicable] = useState(true)
-  const [assignFestivalBonus, setAssignFestivalBonus] = useState(true)
   const [assignEffectiveDate, setAssignEffectiveDate] = useState(
     new Date().toISOString().split("T")[0]
   )
@@ -157,7 +156,6 @@ export default function EmployeeSalaryTab({
     setAssignBasicSalary(salaryRecord?.basicSalary || 0)
     setAssignTemplateId(salaryRecord?.templateId || "")
     setAssignPfApplicable(salaryRecord?.pfApplicable ?? true)
-    setAssignFestivalBonus(salaryRecord?.festivalBonusApplicable ?? true)
     setAssignEffectiveDate(
       salaryRecord?.effectiveDate || new Date().toISOString().split("T")[0]
     )
@@ -187,7 +185,6 @@ export default function EmployeeSalaryTab({
         basicSalary: assignBasicSalary,
         effectiveDate: assignEffectiveDate,
         pfApplicable: assignPfApplicable,
-        festivalBonusApplicable: assignFestivalBonus,
         notes: assignNotes,
       },
       {
@@ -221,7 +218,6 @@ export default function EmployeeSalaryTab({
       "Basic Salary",
       "Template Name",
       "PF Applicable",
-      "Festival Bonus Applicable",
       "Effective Date",
       "Status"
     ]
@@ -233,7 +229,6 @@ export default function EmployeeSalaryTab({
       s.basicSalary,
       s.templateName || "No Template",
       s.pfApplicable ? "Yes" : "No",
-      s.festivalBonusApplicable ? "Yes" : "No",
       s.effectiveDate,
       s.status
     ])
@@ -256,8 +251,7 @@ export default function EmployeeSalaryTab({
                 Employee Salary Directory
               </CardTitle>
               <CardDescription className="text-xs">
-                Assign basic salaries, select templates, configure PF &amp;
-                festival bonus, and set effective dates.
+                Assign basic salaries, select templates, configure PF, and set effective dates.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -375,9 +369,6 @@ export default function EmployeeSalaryTab({
                   PF
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">
-                  Festival Bonus
-                </TableHead>
-                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">
                   Effective Date
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0">
@@ -391,7 +382,7 @@ export default function EmployeeSalaryTab({
             <TableBody>
               {salariesLoading || employeesDataLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-48 text-center border-b-0">
+	                  <TableCell colSpan={8} className="h-48 text-center border-b-0">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                       <p className="text-xs text-muted-foreground">
@@ -402,7 +393,7 @@ export default function EmployeeSalaryTab({
                 </TableRow>
               ) : employeeSalaries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-32 text-center border-b-0">
+	                  <TableCell colSpan={8} className="h-32 text-center border-b-0">
                     <p className="text-sm text-muted-foreground">
                       No configured employee salaries found matching these filters.
                     </p>
@@ -471,20 +462,7 @@ export default function EmployeeSalaryTab({
                           {salary.pfApplicable ? "Yes" : "No"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3">
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[9px] font-bold py-0.5 px-2",
-                            salary.festivalBonusApplicable
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                              : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                          )}
-                        >
-                          {salary.festivalBonusApplicable ? "Yes" : "No"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="py-3 text-xs text-muted-foreground">
+	                      <TableCell className="py-3 text-xs text-muted-foreground">
                         {salary.effectiveDate}
                       </TableCell>
                       <TableCell className="py-3">
@@ -568,8 +546,7 @@ export default function EmployeeSalaryTab({
               {assignEmployeeId ? "Edit Employee Salary" : "Assign Employee Salary"}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Configure the salary structure, PF deductions, and festival bonus
-              eligibility.
+	              Configure the salary structure, PF deductions, and effective date.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -604,7 +581,7 @@ export default function EmployeeSalaryTab({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+	            <div className="grid grid-cols-1 gap-4">
               {/* Basic Salary */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">
@@ -701,22 +678,7 @@ export default function EmployeeSalaryTab({
                   PF Applicable
                 </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="festival-bonus"
-                  checked={assignFestivalBonus}
-                  onCheckedChange={(checked) =>
-                    setAssignFestivalBonus(checked === true)
-                  }
-                />
-                <Label
-                  htmlFor="festival-bonus"
-                  className="text-xs font-medium cursor-pointer"
-                >
-                  Festival Bonus Applicable
-                </Label>
-              </div>
-            </div>
+	            </div>
 
             {/* Effective Date */}
             <div className="space-y-1.5">

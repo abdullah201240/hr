@@ -332,28 +332,11 @@ export class SeparationService {
     const encashableAlDays = dto.encashableAlDays;
     const leaveEncashment = Number(((basicSalary / 30) * encashableAlDays).toFixed(2));
 
-    // 6. Festival Bonus Adjustment
+    // 6. Current-year service days
     const startOfYearDate = new Date(year, 0, 1);
-    const startDateForBonus = joinDate > startOfYearDate ? joinDate : startOfYearDate;
-    const diffTimeYear = Math.max(0, lastWorkingDate.getTime() - startDateForBonus.getTime());
+    const startDateForYear = joinDate > startOfYearDate ? joinDate : startOfYearDate;
+    const diffTimeYear = Math.max(0, lastWorkingDate.getTime() - startDateForYear.getTime());
     const serviceDaysCurrentYear = Math.ceil(diffTimeYear / (1000 * 60 * 60 * 24)) + 1;
-    const earnedBonus = (basicSalary * 2) * (serviceDaysCurrentYear / 365);
-
-    const paidPayslips = await this.db
-      .select({
-        festivalBonusAmount: employeePayslips.festivalBonusAmount,
-      })
-      .from(employeePayslips)
-      .innerJoin(payrollCycles, eq(employeePayslips.payrollCycleId, payrollCycles.id))
-      .where(
-        and(
-          eq(employeePayslips.employeeId, employee.id),
-          like(payrollCycles.monthKey, `${year}-%`)
-        )
-      );
-
-    const disbursedBonus = paidPayslips.reduce((sum, item) => sum + (item.festivalBonusAmount || 0), 0);
-    const festivalBonusAdjustment = Number((earnedBonus - disbursedBonus).toFixed(2));
 
     // 7. PF Balance
     const pfHistory = await this.db
@@ -387,7 +370,6 @@ export class SeparationService {
       salaryPayable + 
       separationBenefit + 
       leaveEncashment + 
-      festivalBonusAdjustment + 
       employeePfBalance + 
       employerPfBalance + 
       pfInterest + 
@@ -415,7 +397,6 @@ export class SeparationService {
       salaryPayable,
       separationBenefit,
       leaveEncashment,
-      festivalBonusAdjustment,
       employeePfBalance,
       employerPfBalance,
       pfInterest,
@@ -516,7 +497,6 @@ export class SeparationService {
         salaryPayable: Number(existing.salaryPayable),
         separationBenefit: Number(existing.separationBenefit),
         leaveEncashment: Number(existing.leaveEncashment),
-        festivalBonusAdjustment: Number(existing.festivalBonusAdjustment),
         employeePfBalance: Number(existing.employeePfBalance),
         employerPfBalance: Number(existing.employerPfBalance),
         pfInterest: Number(existing.pfInterest),
@@ -621,7 +601,6 @@ export class SeparationService {
           salaryPayable: String(draft.salaryPayable),
           separationBenefit: String(draft.separationBenefit),
           leaveEncashment: String(draft.leaveEncashment),
-          festivalBonusAdjustment: String(draft.festivalBonusAdjustment),
           employeePfBalance: String(draft.employeePfBalance),
           employerPfBalance: String(draft.employerPfBalance),
           pfInterest: String(draft.pfInterest),
@@ -646,7 +625,6 @@ export class SeparationService {
         salaryPayable: Number(updated.salaryPayable),
         separationBenefit: Number(updated.separationBenefit),
         leaveEncashment: Number(updated.leaveEncashment),
-        festivalBonusAdjustment: Number(updated.festivalBonusAdjustment),
         employeePfBalance: Number(updated.employeePfBalance),
         employerPfBalance: Number(updated.employerPfBalance),
         pfInterest: Number(updated.pfInterest),
@@ -678,7 +656,6 @@ export class SeparationService {
           salaryPayable: String(draft.salaryPayable),
           separationBenefit: String(draft.separationBenefit),
           leaveEncashment: String(draft.leaveEncashment),
-          festivalBonusAdjustment: String(draft.festivalBonusAdjustment),
           employeePfBalance: String(draft.employeePfBalance),
           employerPfBalance: String(draft.employerPfBalance),
           pfInterest: String(draft.pfInterest),
@@ -704,7 +681,6 @@ export class SeparationService {
         salaryPayable: Number(created.salaryPayable),
         separationBenefit: Number(created.separationBenefit),
         leaveEncashment: Number(created.leaveEncashment),
-        festivalBonusAdjustment: Number(created.festivalBonusAdjustment),
         employeePfBalance: Number(created.employeePfBalance),
         employerPfBalance: Number(created.employerPfBalance),
         pfInterest: Number(created.pfInterest),
@@ -744,7 +720,6 @@ export class SeparationService {
       salaryPayable: Number(updated.salaryPayable),
       separationBenefit: Number(updated.separationBenefit),
       leaveEncashment: Number(updated.leaveEncashment),
-      festivalBonusAdjustment: Number(updated.festivalBonusAdjustment),
       employeePfBalance: Number(updated.employeePfBalance),
       employerPfBalance: Number(updated.employerPfBalance),
       pfInterest: Number(updated.pfInterest),
@@ -761,4 +736,3 @@ export class SeparationService {
     };
   }
 }
-

@@ -22,7 +22,6 @@ import { LeaveApplicationModule } from './modules/leave-application/leave-applic
 import { AttendanceSettingsModule } from './modules/attendance-settings/attendance-settings.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
-import { FestivalBonusModule } from './modules/festival-bonus/festival-bonus.module';
 import { ProvidentFundModule } from './modules/provident-fund/provident-fund.module';
 import { SalaryModule } from './modules/salary/salary.module';
 import { ClaimsModule } from './modules/claims/claims.module';
@@ -98,7 +97,6 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     AttendanceSettingsModule,
     AttendanceModule,
     AnnouncementsModule,
-    FestivalBonusModule,
     ProvidentFundModule,
     SalaryModule,
     ClaimsModule,

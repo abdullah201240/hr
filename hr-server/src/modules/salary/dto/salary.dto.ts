@@ -156,11 +156,6 @@ export class AssignEmployeeSalaryDto {
   @IsBoolean()
   pfApplicable?: boolean;
 
-  @ApiPropertyOptional({ example: true })
-  @IsOptional()
-  @IsBoolean()
-  festivalBonusApplicable?: boolean;
-
   @ApiPropertyOptional({ example: 'Initial salary assignment' })
   @IsOptional()
   @IsString()
@@ -188,11 +183,6 @@ export class UpdateEmployeeSalaryDto {
   @IsOptional()
   @IsBoolean()
   pfApplicable?: boolean;
-
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  @IsBoolean()
-  festivalBonusApplicable?: boolean;
 
   @ApiPropertyOptional({ example: 'active', enum: ['active', 'superseded'] })
   @IsOptional()

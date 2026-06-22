@@ -39,8 +39,6 @@ export function PayrollProcessingTab({
 }: PayrollProcessingTabProps) {
   const updateAdjustmentsMutation = useUpdatePayslipAdjustmentsMutation()
   const [adjustingPayslip, setAdjustingPayslip] = useState<Payslip | null>(null)
-  const [bonusAmount, setBonusAmount] = useState("")
-  const [bonusDescription, setBonusDescription] = useState("")
   const [additionalAmount, setAdditionalAmount] = useState("")
   const [additionalDescription, setAdditionalDescription] = useState("")
   const [deductionReductionAmount, setDeductionReductionAmount] = useState("")
@@ -77,8 +75,6 @@ export function PayrollProcessingTab({
     const extraDeduction = getManualEntry(payslip.deductions, "Extra Deduction")
 
     setAdjustingPayslip(payslip)
-    setBonusAmount(String(payslip.bonusAmount || ""))
-    setBonusDescription(payslip.bonusDescription || "")
     setAdditionalAmount(manualAddition.amount ? String(manualAddition.amount) : "")
     setAdditionalDescription(manualAddition.description)
     setDeductionReductionAmount(deductionReduction.amount ? String(deductionReduction.amount) : "")
@@ -98,8 +94,6 @@ export function PayrollProcessingTab({
       {
         monthKey: selectedMonth,
         payslipId: adjustingPayslip.id,
-        bonusAmount: parseMoneyInput(bonusAmount),
-        bonusDescription,
         additionalAmount: parseMoneyInput(additionalAmount),
         additionalDescription,
         deductionReductionAmount: parseMoneyInput(deductionReductionAmount),
@@ -141,8 +135,6 @@ export function PayrollProcessingTab({
       "Absent Days",
       "Leave Days",
       "Late Days",
-      "Bonus",
-      "Bonus Description",
       "Allowances",
       "Deductions",
       "Net Payable",
@@ -157,8 +149,6 @@ export function PayrollProcessingTab({
       p.absentDays ?? 0,
       p.leaveDays ?? 0,
       p.lateDays ?? 0,
-      p.bonusAmount,
-      p.bonusDescription,
       getPayslipAllowancesSum(p),
       getPayslipDeductionsSum(p),
       p.netPay,
@@ -174,7 +164,7 @@ export function PayrollProcessingTab({
         <div>
           <CardTitle className="text-sm font-bold">Monthly Compensation Ledger</CardTitle>
           <CardDescription className="text-xs">
-            Configure bonuses during draft status and view disbursement statuses.
+            Adjust draft salary entries and view disbursement statuses.
           </CardDescription>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -374,18 +364,7 @@ export function PayrollProcessingTab({
           </DialogHeader>
 
           <div className="grid gap-4 text-xs">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="bonus-amount" className="text-xs">Bonus Amount</Label>
-                <Input
-                  id="bonus-amount"
-                  type="number"
-                  min="0"
-                  value={bonusAmount}
-                  onChange={(event) => setBonusAmount(event.target.value)}
-                  placeholder="0"
-                />
-              </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label htmlFor="additional-amount" className="text-xs">Other Addition</Label>
                 <Input
@@ -397,9 +376,6 @@ export function PayrollProcessingTab({
                   placeholder="0"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="deduction-reduction" className="text-xs">Reduce Deductions By</Label>
                 <Input
@@ -426,15 +402,12 @@ export function PayrollProcessingTab({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="bonus-description" className="text-xs">Bonus / Addition Note</Label>
+                <Label htmlFor="addition-description" className="text-xs">Addition Note</Label>
                 <Textarea
-                  id="bonus-description"
-                  value={bonusDescription || additionalDescription}
-                  onChange={(event) => {
-                    setBonusDescription(event.target.value)
-                    setAdditionalDescription(event.target.value)
-                  }}
-                  placeholder="Performance bonus, arrear, allowance correction"
+                  id="addition-description"
+                  value={additionalDescription}
+                  onChange={(event) => setAdditionalDescription(event.target.value)}
+                  placeholder="Arrear, allowance correction, other payable"
                   className="min-h-20 text-xs"
                 />
               </div>

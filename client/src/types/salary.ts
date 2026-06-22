@@ -54,7 +54,6 @@ export interface EmployeeSalary {
   basicSalary: number;
   effectiveDate: string;
   pfApplicable: boolean;
-  festivalBonusApplicable: boolean;
   status: 'active' | 'superseded';
   notes: string;
   createdAt?: string;
@@ -78,7 +77,6 @@ export interface AssignEmployeeSalaryPayload {
   basicSalary: number;
   effectiveDate: string;
   pfApplicable?: boolean;
-  festivalBonusApplicable?: boolean;
   notes?: string;
 }
 
@@ -87,7 +85,6 @@ export interface UpdateEmployeeSalaryPayload {
   basicSalary?: number;
   effectiveDate?: string;
   pfApplicable?: boolean;
-  festivalBonusApplicable?: boolean;
   status?: 'active' | 'superseded';
   notes?: string;
 }
@@ -109,9 +106,6 @@ export interface Payslip {
   allowanceMedical: number;
   deductionTax: number;
   deductionPf: number;
-  bonusAmount: number;
-  bonusDescription: string;
-  festivalBonusAmount: number;
   netPay: number;
   paymentStatus: "Unpaid" | "Paid";
   paymentMethod?: string;
@@ -150,4 +144,3 @@ export interface DisbursementRecord {
   totalDisbursed: number;
   employeeCount: number;
 }
-

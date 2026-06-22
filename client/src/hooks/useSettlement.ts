@@ -18,7 +18,6 @@ export interface FinalSettlement {
   salaryPayable: number;
   separationBenefit: number;
   leaveEncashment: number;
-  festivalBonusAdjustment: number;
   employeePfBalance: number;
   employerPfBalance: number;
   pfInterest: number;
