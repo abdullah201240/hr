@@ -1,7 +1,29 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+export class PayslipAdjustmentItemDto {
+  @ApiProperty({ description: 'Adjustment title shown in the payslip summary' })
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @ApiProperty({ description: 'Adjustment amount' })
+  @IsNumber()
+  amount!: number;
+
+  @ApiProperty({ description: 'Adjustment type', enum: ['addition', 'deduction'] })
+  @IsString()
+  @IsIn(['addition', 'deduction'])
+  type!: 'addition' | 'deduction';
+}
+
 export class UpdatePayslipAdjustmentsDto {
+  @ApiProperty({ description: 'Manual adjustment items for this draft payslip', required: false, type: [PayslipAdjustmentItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  adjustments?: PayslipAdjustmentItemDto[];
+
   @ApiProperty({ description: 'Additional earning amount for this payroll cycle', required: false })
   @IsNumber()
   @IsOptional()

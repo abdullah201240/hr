@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Eye, FileSpreadsheet, Loader2, AlertTriangle, Pencil, Save } from "lucide-react"
+import { Eye, FileSpreadsheet, Loader2, AlertTriangle, Pencil, Save, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Payslip } from "@/types/salary"
 import { exportToCsv } from "@/lib/export"
@@ -26,6 +25,15 @@ interface PayrollProcessingTabProps {
   employees?: any[]
 }
 
+type AdjustmentType = "addition" | "deduction"
+
+interface AdjustmentItem {
+  id: string
+  title: string
+  amount: number
+  type: AdjustmentType
+}
+
 export function PayrollProcessingTab({
   selectedMonth,
   setSelectedMonth,
@@ -39,11 +47,12 @@ export function PayrollProcessingTab({
 }: PayrollProcessingTabProps) {
   const updateAdjustmentsMutation = useUpdatePayslipAdjustmentsMutation()
   const [adjustingPayslip, setAdjustingPayslip] = useState<Payslip | null>(null)
-  const [additionalAmount, setAdditionalAmount] = useState("")
-  const [additionalDescription, setAdditionalDescription] = useState("")
-  const [deductionReductionAmount, setDeductionReductionAmount] = useState("")
-  const [extraDeductionAmount, setExtraDeductionAmount] = useState("")
-  const [deductionDescription, setDeductionDescription] = useState("")
+  const [adjustmentTitle, setAdjustmentTitle] = useState("")
+  const [adjustmentAmount, setAdjustmentAmount] = useState("")
+  const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>("addition")
+  const [adjustmentItems, setAdjustmentItems] = useState<AdjustmentItem[]>([])
+  const [partialStartDay, setPartialStartDay] = useState("1")
+  const [partialEndDay, setPartialEndDay] = useState("15")
 
   const getPayslipAllowancesSum = (p: Payslip) => {
     if (p.allowances && Object.keys(p.allowances).length > 0) {
@@ -59,33 +68,138 @@ export function PayrollProcessingTab({
     return p.deductionTax + p.deductionPf
   }
 
-  const getManualEntry = (entries: Record<string, number> | undefined, prefix: string) => {
-    const entry = Object.entries(entries || {}).find(([key]) => key.startsWith(prefix))
-    if (!entry) return { amount: 0, description: "" }
-    const [label, amount] = entry
-    return {
-      amount: Math.abs(Number(amount) || 0),
-      description: label.includes(":") ? label.split(":").slice(1).join(":").trim() : "",
-    }
+  const getAdjustmentTitle = (label: string) => {
+    if (label.startsWith("Adjustment:")) return label.replace("Adjustment:", "").trim()
+    if (label.includes(":")) return label.split(":").slice(1).join(":").trim()
+    return label
+  }
+
+  const getExistingAdjustmentItems = (payslip: Payslip) => {
+    const items: AdjustmentItem[] = []
+    Object.entries(payslip.allowances || {}).forEach(([label, amount], index) => {
+      if (!label.startsWith("Adjustment:") && !label.startsWith("Manual Addition")) return
+      const value = Number(amount) || 0
+      if (value <= 0) return
+      items.push({
+        id: `allowance-${index}-${label}`,
+        title: getAdjustmentTitle(label),
+        amount: value,
+        type: "addition",
+      })
+    })
+    Object.entries(payslip.deductions || {}).forEach(([label, amount], index) => {
+      const isManual = label.startsWith("Adjustment:") || label.startsWith("Deduction Reduction") || label.startsWith("Extra Deduction")
+      if (!isManual) return
+      const value = Number(amount) || 0
+      if (value === 0) return
+      items.push({
+        id: `deduction-${index}-${label}`,
+        title: getAdjustmentTitle(label),
+        amount: Math.abs(value),
+        type: value < 0 ? "addition" : "deduction",
+      })
+    })
+    return items
   }
 
   const openAdjustmentDialog = (payslip: Payslip) => {
-    const manualAddition = getManualEntry(payslip.allowances, "Manual Addition")
-    const deductionReduction = getManualEntry(payslip.deductions, "Deduction Reduction")
-    const extraDeduction = getManualEntry(payslip.deductions, "Extra Deduction")
-
     setAdjustingPayslip(payslip)
-    setAdditionalAmount(manualAddition.amount ? String(manualAddition.amount) : "")
-    setAdditionalDescription(manualAddition.description)
-    setDeductionReductionAmount(deductionReduction.amount ? String(deductionReduction.amount) : "")
-    setExtraDeductionAmount(extraDeduction.amount ? String(extraDeduction.amount) : "")
-    setDeductionDescription(deductionReduction.description || extraDeduction.description)
+    setAdjustmentTitle("")
+    setAdjustmentAmount("")
+    setAdjustmentType("addition")
+    setAdjustmentItems(getExistingAdjustmentItems(payslip))
+    setPartialStartDay("1")
+    setPartialEndDay("15")
   }
 
   const parseMoneyInput = (value: string) => {
     const parsed = Number(value || 0)
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0
   }
+
+  const getDaysInSelectedMonth = () => {
+    const [year, month] = selectedMonth.split("-").map(Number)
+    if (!year || !month) return 30
+    return new Date(year, month, 0).getDate()
+  }
+
+  const parseDayInput = (value: string) => {
+    const daysInMonth = getDaysInSelectedMonth()
+    const parsed = Math.trunc(Number(value || 0))
+    if (!Number.isFinite(parsed)) return 1
+    return Math.min(daysInMonth, Math.max(1, parsed))
+  }
+
+  const handleAddAdjustmentItem = () => {
+    const title = adjustmentTitle.trim()
+    const amount = parseMoneyInput(adjustmentAmount)
+    if (!title || amount <= 0) return
+
+    setAdjustmentItems((items) => [
+      ...items,
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        title,
+        amount,
+        type: adjustmentType,
+      },
+    ])
+    setAdjustmentTitle("")
+    setAdjustmentAmount("")
+    setAdjustmentType("addition")
+  }
+
+  const handleApplyPartialPayPeriod = () => {
+    if (!adjustingPayslip) return
+
+    const daysInMonth = getDaysInSelectedMonth()
+    const startDay = parseDayInput(partialStartDay)
+    const endDay = parseDayInput(partialEndDay)
+    if (startDay > endDay) return
+
+    const paidDays = endDay - startDay + 1
+    const unpaidDays = daysInMonth - paidDays
+    const baseNetPay = Math.max(0, adjustingPayslip.netPay - existingManualImpact)
+    const deductionAmount = Math.round((baseNetPay / daysInMonth) * unpaidDays)
+    const title = `Partial salary period (${startDay}-${endDay})`
+
+    setAdjustmentItems((items) => {
+      const withoutPreviousPartial = items.filter((item) => !item.title.startsWith("Partial salary period"))
+      if (deductionAmount <= 0) return withoutPreviousPartial
+      return [
+        ...withoutPreviousPartial,
+        {
+          id: `partial-${Date.now()}`,
+          title,
+          amount: deductionAmount,
+          type: "deduction",
+        },
+      ]
+    })
+  }
+
+  const handleRemoveAdjustmentItem = (id: string) => {
+    setAdjustmentItems((items) => items.filter((item) => item.id !== id))
+  }
+
+  const existingManualImpact = useMemo(() => {
+    if (!adjustingPayslip) return 0
+    return getExistingAdjustmentItems(adjustingPayslip).reduce((sum, item) => {
+      return sum + (item.type === "addition" ? item.amount : -item.amount)
+    }, 0)
+  }, [adjustingPayslip])
+
+  const adjustmentSummary = useMemo(() => {
+    const additions = adjustmentItems
+      .filter((item) => item.type === "addition")
+      .reduce((sum, item) => sum + item.amount, 0)
+    const deductions = adjustmentItems
+      .filter((item) => item.type === "deduction")
+      .reduce((sum, item) => sum + item.amount, 0)
+    const netChange = additions - deductions
+    const projectedNet = adjustingPayslip ? adjustingPayslip.netPay - existingManualImpact + netChange : 0
+    return { additions, deductions, netChange, projectedNet }
+  }, [adjustingPayslip, adjustmentItems, existingManualImpact])
 
   const handleSaveAdjustments = () => {
     if (!adjustingPayslip) return
@@ -94,11 +208,7 @@ export function PayrollProcessingTab({
       {
         monthKey: selectedMonth,
         payslipId: adjustingPayslip.id,
-        additionalAmount: parseMoneyInput(additionalAmount),
-        additionalDescription,
-        deductionReductionAmount: parseMoneyInput(deductionReductionAmount),
-        extraDeductionAmount: parseMoneyInput(extraDeductionAmount),
-        deductionDescription,
+        adjustments: adjustmentItems.map(({ title, amount, type }) => ({ title, amount, type })),
       },
       {
         onSuccess: () => {
@@ -355,7 +465,7 @@ export function PayrollProcessingTab({
 	      </CardContent>
 	    </Card>
       <Dialog open={!!adjustingPayslip} onOpenChange={(open) => !open && setAdjustingPayslip(null)}>
-        <DialogContent className="sm:max-w-[560px]">
+        <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle className="text-base">Adjust Draft Payslip</DialogTitle>
             <DialogDescription className="text-xs">
@@ -364,67 +474,197 @@ export function PayrollProcessingTab({
           </DialogHeader>
 
           <div className="grid gap-4 text-xs">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="additional-amount" className="text-xs">Other Addition</Label>
-                <Input
-                  id="additional-amount"
-                  type="number"
-                  min="0"
-                  value={additionalAmount}
-                  onChange={(event) => setAdditionalAmount(event.target.value)}
-                  placeholder="0"
-                />
+            <div className="rounded-lg border border-border/40 bg-muted/10 p-3">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-foreground">Partial Pay Period</p>
+                  <p className="text-[11px] text-muted-foreground">Use this for half-month or custom date-range salary payment.</p>
+                </div>
+                <Badge variant="outline" className="text-[10px]">
+                  {getDaysInSelectedMonth()} days
+                </Badge>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="deduction-reduction" className="text-xs">Reduce Deductions By</Label>
-                <Input
-                  id="deduction-reduction"
-                  type="number"
-                  min="0"
-                  value={deductionReductionAmount}
-                  onChange={(event) => setDeductionReductionAmount(event.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="extra-deduction" className="text-xs">Next Month / Advance Deduction</Label>
-                <Input
-                  id="extra-deduction"
-                  type="number"
-                  min="0"
-                  value={extraDeductionAmount}
-                  onChange={(event) => setExtraDeductionAmount(event.target.value)}
-                  placeholder="0"
-                />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[120px_120px_1fr_auto] sm:items-end">
+                <div className="space-y-1.5">
+                  <Label htmlFor="partial-start-day" className="text-xs">Start Day</Label>
+                  <Input
+                    id="partial-start-day"
+                    type="number"
+                    min="1"
+                    max={getDaysInSelectedMonth()}
+                    value={partialStartDay}
+                    onChange={(event) => setPartialStartDay(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="partial-end-day" className="text-xs">End Day</Label>
+                  <Input
+                    id="partial-end-day"
+                    type="number"
+                    min="1"
+                    max={getDaysInSelectedMonth()}
+                    value={partialEndDay}
+                    onChange={(event) => setPartialEndDay(event.target.value)}
+                  />
+                </div>
+                <div className="rounded-md bg-background px-3 py-2 text-[11px] text-muted-foreground">
+                  {(() => {
+                    const startDay = parseDayInput(partialStartDay)
+                    const endDay = parseDayInput(partialEndDay)
+                    if (startDay > endDay) return "End day must be after start day."
+                    const paidDays = endDay - startDay + 1
+                    const unpaidDays = getDaysInSelectedMonth() - paidDays
+                    const baseNetPay = adjustingPayslip ? Math.max(0, adjustingPayslip.netPay - existingManualImpact) : 0
+                    const deductionAmount = Math.round((baseNetPay / getDaysInSelectedMonth()) * unpaidDays)
+                    return `${paidDays} paid day(s), ${unpaidDays} unpaid day(s), deduction ${formatCurrency(deductionAmount)}`
+                  })()}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleApplyPartialPayPeriod}
+                  disabled={parseDayInput(partialStartDay) > parseDayInput(partialEndDay)}
+                  className="gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Apply
+                </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="addition-description" className="text-xs">Addition Note</Label>
-                <Textarea
-                  id="addition-description"
-                  value={additionalDescription}
-                  onChange={(event) => setAdditionalDescription(event.target.value)}
-                  placeholder="Arrear, allowance correction, other payable"
-                  className="min-h-20 text-xs"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="deduction-description" className="text-xs">Deduction Note</Label>
-                <Textarea
-                  id="deduction-description"
-                  value={deductionDescription}
-                  onChange={(event) => setDeductionDescription(event.target.value)}
-                  placeholder="Waive late penalty, salary advance, next month adjustment"
-                  className="min-h-20 text-xs"
-                />
+            <div className="rounded-lg border border-border/40 p-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_130px_130px_auto] sm:items-end">
+                <div className="space-y-1.5">
+                  <Label htmlFor="adjustment-title" className="text-xs">Title</Label>
+                  <Input
+                    id="adjustment-title"
+                    value={adjustmentTitle}
+                    onChange={(event) => setAdjustmentTitle(event.target.value)}
+                    placeholder="Arrear, allowance correction, salary advance"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        handleAddAdjustmentItem()
+                      }
+                    }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adjustment-amount" className="text-xs">Amount</Label>
+                  <Input
+                    id="adjustment-amount"
+                    type="number"
+                    min="0"
+                    value={adjustmentAmount}
+                    onChange={(event) => setAdjustmentAmount(event.target.value)}
+                    placeholder="0"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        handleAddAdjustmentItem()
+                      }
+                    }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="adjustment-type" className="text-xs">Type</Label>
+                  <select
+                    id="adjustment-type"
+                    value={adjustmentType}
+                    onChange={(event) => setAdjustmentType(event.target.value as AdjustmentType)}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-xs"
+                  >
+                    <option value="addition">Add</option>
+                    <option value="deduction">Deduction</option>
+                  </select>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleAddAdjustmentItem}
+                  disabled={!adjustmentTitle.trim() || parseMoneyInput(adjustmentAmount) <= 0}
+                  className="gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add
+                </Button>
               </div>
             </div>
 
-            <div className="rounded-md border border-border/40 bg-muted/20 p-3 text-[11px] text-muted-foreground">
-              Current net payable: <span className="font-semibold text-foreground">{adjustingPayslip ? formatCurrency(adjustingPayslip.netPay) : "—"}</span>
+            <div className="rounded-lg border border-border/40">
+              <div className="flex items-center justify-between border-b border-border/30 px-3 py-2">
+                <p className="font-semibold text-foreground">Adjustment Summary</p>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-[10px]",
+                    adjustmentSummary.netChange >= 0
+                      ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                  )}
+                >
+                  {adjustmentSummary.netChange >= 0 ? "+" : "-"}{formatCurrency(Math.abs(adjustmentSummary.netChange))}
+                </Badge>
+              </div>
+
+              {adjustmentItems.length === 0 ? (
+                <div className="px-3 py-8 text-center text-muted-foreground">
+                  Add one or more adjustment rows before saving.
+                </div>
+              ) : (
+                <div className="divide-y divide-border/30">
+                  {adjustmentItems.map((item) => (
+                    <div key={item.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{item.title}</p>
+                        <p
+                          className={cn(
+                            "text-[10px] font-semibold uppercase",
+                            item.type === "addition" ? "text-emerald-600" : "text-rose-600"
+                          )}
+                        >
+                          {item.type === "addition" ? "Addition" : "Deduction"}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          item.type === "addition" ? "text-emerald-600" : "text-rose-600"
+                        )}
+                      >
+                        {item.type === "addition" ? "+" : "-"}{formatCurrency(item.amount)}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveAdjustmentItem(item.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-2 rounded-md border border-border/40 bg-muted/20 p-3 text-[11px] text-muted-foreground sm:grid-cols-4">
+              <div>
+                <p className="font-medium">Current Net</p>
+                <p className="font-semibold text-foreground">{adjustingPayslip ? formatCurrency(adjustingPayslip.netPay) : "—"}</p>
+              </div>
+              <div>
+                <p className="font-medium">Total Add</p>
+                <p className="font-semibold text-emerald-600">+{formatCurrency(adjustmentSummary.additions)}</p>
+              </div>
+              <div>
+                <p className="font-medium">Total Deduction</p>
+                <p className="font-semibold text-rose-600">-{formatCurrency(adjustmentSummary.deductions)}</p>
+              </div>
+              <div>
+                <p className="font-medium">Adjusted Net</p>
+                <p className="font-semibold text-foreground">{adjustingPayslip ? formatCurrency(adjustmentSummary.projectedNet) : "—"}</p>
+              </div>
             </div>
           </div>
 

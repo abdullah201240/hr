@@ -22,6 +22,11 @@ export function usePayrollCycleQuery(monthKey: string) {
 export type PayslipAdjustmentPayload = {
   monthKey: string;
   payslipId: string;
+  adjustments?: Array<{
+    title: string;
+    amount: number;
+    type: "addition" | "deduction";
+  }>;
   additionalAmount?: number;
   additionalDescription?: string;
   deductionReductionAmount?: number;
@@ -95,3 +100,11 @@ export function useDisbursementsQuery() {
     queryFn: () => apiClient.get<DisbursementRecord[]>("payroll/disbursements"),
   });
 }
+
+export function useMyPayslipsQuery() {
+  return useQuery<Payslip[]>({
+    queryKey: ["my-payslips"],
+    queryFn: () => apiClient.get<Payslip[]>("payroll/my-payslips"),
+  });
+}
+

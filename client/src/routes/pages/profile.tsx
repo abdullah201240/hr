@@ -12,6 +12,8 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { useDepartmentQuery } from "@/hooks/useDepartments"
 import { useDesignationQuery } from "@/hooks/useDesignations"
 import { apiClient } from "@/lib/api"
+import { useMyPayslipsQuery } from "@/hooks/usePayroll"
+import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
 import {
   User,
   Mail,
@@ -25,6 +27,8 @@ import {
   EyeOff,
   UserCheck,
   Loader2,
+  Printer,
+  FileText,
 } from "lucide-react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -47,6 +51,21 @@ export default function ProfilePage() {
   // Fetch department and designation names dynamically
   const { data: department } = useDepartmentQuery(user?.departmentId || "")
   const { data: designation } = useDesignationQuery(user?.designationId || "")
+
+  const [selectedPayslip, setSelectedPayslip] = useState<any | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const { data: payslips, isLoading: isPayslipsLoading } = useMyPayslipsQuery()
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "BDT", maximumFractionDigits: 0 }).format(val)
+  }
+
+  const formatMonthKey = (monthKey?: string) => {
+    if (!monthKey) return "—"
+    const [year, month] = monthKey.split("-")
+    const date = new Date(Number(year), Number(month) - 1)
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" })
+  }
 
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -155,10 +174,11 @@ export default function ProfilePage() {
 
       {/* Tabs Layout */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 shadow-none border border-border/40 bg-muted/20 max-w-[450px]">
+        <TabsList className="grid w-full grid-cols-4 shadow-none border border-border/40 bg-muted/20 max-w-[550px]">
           <TabsTrigger value="info" className="text-xs">Personal Info</TabsTrigger>
           <TabsTrigger value="job" className="text-xs">Job Profile</TabsTrigger>
           <TabsTrigger value="security" className="text-xs">Security & Password</TabsTrigger>
+          <TabsTrigger value="payslips" className="text-xs">Payslips</TabsTrigger>
         </TabsList>
 
         {/* Personal Details */}
@@ -377,7 +397,105 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Payslips */}
+        <TabsContent value="payslips" className="space-y-6">
+          <Card className="bg-card/30 border-none">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="h-4 w-4 text-indigo-500" />
+                My Payslips
+              </CardTitle>
+              <CardDescription>View and print your published salary statements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isPayslipsLoading ? (
+                <div className="flex h-32 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : payslips && payslips.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-border/40 text-muted-foreground font-semibold">
+                        <th className="pb-3 pt-2">Salary Period</th>
+                        <th className="pb-3 pt-2">Basic Salary</th>
+                        <th className="pb-3 pt-2">Net Pay</th>
+                        <th className="pb-3 pt-2">Payment Status</th>
+                        <th className="pb-3 pt-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                      {payslips.map((slip) => (
+                        <tr key={slip.id} className="hover:bg-muted/10 transition-colors">
+                          <td className="py-3 font-medium font-mono">{formatMonthKey(slip.monthKey)}</td>
+                          <td className="py-3 font-semibold">{formatCurrency(slip.basicSalary)}</td>
+                          <td className="py-3 font-bold text-primary">{formatCurrency(slip.netPay)}</td>
+                          <td className="py-3">
+                            <Badge
+                              variant="secondary"
+                              className={
+                                slip.paymentStatus === "Paid"
+                                  ? "bg-emerald-500/10 text-emerald-600 border-none font-bold text-[10px]"
+                                  : "bg-amber-500/10 text-amber-600 border-none font-bold text-[10px]"
+                              }
+                            >
+                              {slip.paymentStatus}
+                            </Badge>
+                          </td>
+                          <td className="py-3 text-right space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
+                              onClick={() => {
+                                setSelectedPayslip(slip)
+                                setIsDialogOpen(true)
+                              }}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Details
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
+                              onClick={() => window.open(`/payroll/print/${slip.monthKey}/${slip.id}`, "_blank")}
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                              Print
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <FileText className="h-10 w-10 text-muted-foreground/30 mb-2" />
+                  <p className="text-sm font-semibold text-muted-foreground">No Payslips Found</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Your monthly statements will appear here after payroll distribution.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {selectedPayslip && (
+        <DetailedPayslipDialog
+          isOpen={isDialogOpen}
+          onClose={() => {
+            setIsDialogOpen(false)
+            setSelectedPayslip(null)
+          }}
+          viewPayslip={selectedPayslip}
+          empPfRate={10}
+          selectedMonth={selectedPayslip.monthKey}
+          formatCurrency={formatCurrency}
+        />
+      )}
     </div>
   )
 }

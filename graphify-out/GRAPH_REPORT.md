@@ -1,13 +1,18 @@
-# Graph Report - /Users/abdullahalsakib/Documents/my/hr/client/src + /Users/abdullahalsakib/Documents/my/hr/hr-server/src  (2026-06-22)
+# Graph Report - hr  (2026-06-22)
 
 ## Corpus Check
-- 459 files · ~239,622 words
+- 487 files · ~256,391 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2036 nodes · 2797 edges · 264 communities (138 shown, 126 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 93 edges (avg confidence: 0.8)
+- 2111 nodes · 3042 edges · 271 communities (147 shown, 124 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 94 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `47721292`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Use Tasks Frontend Pages|Use Tasks Frontend Pages]]
@@ -80,6 +85,8 @@
 - [[_COMMUNITY_Employee.processor|Employee.processor]]
 - [[_COMMUNITY_Office Hours Frontend Hooks|Office Hours Frontend Hooks]]
 - [[_COMMUNITY_Item UI Components|Item UI Components]]
+- [[_COMMUNITY_Drawer UI Components|Drawer UI Components]]
+- [[_COMMUNITY_Menubar UI Components|Menubar UI Components]]
 - [[_COMMUNITY_Use Disciplinary Frontend Pages|Use Disciplinary Frontend Pages]]
 - [[_COMMUNITY_Letters.service|Letters.service]]
 - [[_COMMUNITY_Create Room.dto|Create Room.dto]]
@@ -88,8 +95,7 @@
 - [[_COMMUNITY_Salary.dto|Salary.dto]]
 - [[_COMMUNITY_Designation.controller|Designation.controller]]
 - [[_COMMUNITY_Department.controller|Department.controller]]
-- [[_COMMUNITY_Attendance Settings.controller|Attendance Settings.controller]]
-- [[_COMMUNITY_Leave Type.controller|Leave Type.controller]]
+- [[_COMMUNITY_Pagination UI Components|Pagination UI Components]]
 - [[_COMMUNITY_Types|Types]]
 - [[_COMMUNITY_Profile Frontend Pages|Profile Frontend Pages]]
 - [[_COMMUNITY_Logging.interceptor|Logging.interceptor]]
@@ -101,18 +107,19 @@
 - [[_COMMUNITY_Disciplinary.service|Disciplinary.service]]
 - [[_COMMUNITY_Preferences.service Backend Services|Preferences.service Backend Services]]
 - [[_COMMUNITY_Claims.controller|Claims.controller]]
-- [[_COMMUNITY_Use Settlement Frontend Hooks|Use Settlement Frontend Hooks]]
+- [[_COMMUNITY_Combobox UI Components|Combobox UI Components]]
 - [[_COMMUNITY_Attendance.processor|Attendance.processor]]
-- [[_COMMUNITY_Provident Fund.service|Provident Fund.service]]
 - [[_COMMUNITY_Festival Bonus.controller|Festival Bonus.controller]]
 - [[_COMMUNITY_Disciplinary.controller|Disciplinary.controller]]
 - [[_COMMUNITY_Create Employee.dto|Create Employee.dto]]
 - [[_COMMUNITY_Task Board|Task Board]]
+- [[_COMMUNITY_Task Comments|Task Comments]]
+- [[_COMMUNITY_Context Menu UI Components|Context Menu UI Components]]
 - [[_COMMUNITY_Leave Details Dialog|Leave Details Dialog]]
 - [[_COMMUNITY_Realtime.gateway|Realtime.gateway]]
 - [[_COMMUNITY_Health.controller|Health.controller]]
 - [[_COMMUNITY_Notifications.processor|Notifications.processor]]
-- [[_COMMUNITY_Deduplication.guard|Deduplication.guard]]
+- [[_COMMUNITY_Breadcrumb UI Components|Breadcrumb UI Components]]
 - [[_COMMUNITY_Carousel UI Components|Carousel UI Components]]
 - [[_COMMUNITY_Nominee Step|Nominee Step]]
 - [[_COMMUNITY_Pagination.dto|Pagination.dto]]
@@ -120,9 +127,13 @@
 - [[_COMMUNITY_Provident Fund.controller|Provident Fund.controller]]
 - [[_COMMUNITY_Roles.guard|Roles.guard]]
 - [[_COMMUNITY_Jwt Auth.guard|Jwt Auth.guard]]
-- [[_COMMUNITY_Claims.dto|Claims.dto]]
 - [[_COMMUNITY_Task Workload View Frontend Hooks|Task Workload View Frontend Hooks]]
-- [[_COMMUNITY_Payroll Action Dialogs|Payroll Action Dialogs]]
+- [[_COMMUNITY_Dialog UI Components|Dialog UI Components]]
+- [[_COMMUNITY_Popover UI Components|Popover UI Components]]
+- [[_COMMUNITY_Command UI Components|Command UI Components]]
+- [[_COMMUNITY_Toggle Group UI Components|Toggle Group UI Components]]
+- [[_COMMUNITY_Native Select UI Components|Native Select UI Components]]
+- [[_COMMUNITY_Documents Step|Documents Step]]
 - [[_COMMUNITY_Audit Log.interceptor|Audit Log.interceptor]]
 - [[_COMMUNITY_Redis.module|Redis.module]]
 - [[_COMMUNITY_Tasks.processor|Tasks.processor]]
@@ -132,24 +143,19 @@
 - [[_COMMUNITY_Ownership.guard|Ownership.guard]]
 - [[_COMMUNITY_Announcement.dto|Announcement.dto]]
 - [[_COMMUNITY_Attendance Settings.dto|Attendance Settings.dto]]
-- [[_COMMUNITY_Dashboard.controller|Dashboard.controller]]
-- [[_COMMUNITY_Separation.dto|Separation.dto]]
-- [[_COMMUNITY_Disciplinary.dto|Disciplinary.dto]]
-- [[_COMMUNITY_Performance.processor|Performance.processor]]
-- [[_COMMUNITY_Rate Limiter.guard|Rate Limiter.guard]]
 - [[_COMMUNITY_Payslip Frontend Pages|Payslip Frontend Pages]]
 - [[_COMMUNITY_Use Provident Fund Frontend Hooks|Use Provident Fund Frontend Hooks]]
-- [[_COMMUNITY_Response.interceptor|Response.interceptor]]
-- [[_COMMUNITY_Chat Notification.processor|Chat Notification.processor]]
-- [[_COMMUNITY_Festival Bonus.dto|Festival Bonus.dto]]
-- [[_COMMUNITY_Create Designation.dto|Create Designation.dto]]
-- [[_COMMUNITY_Create Department.dto|Create Department.dto]]
-- [[_COMMUNITY_Org Chart.dto|Org Chart.dto]]
-- [[_COMMUNITY_Settlement.dto|Settlement.dto]]
-- [[_COMMUNITY_Payroll.dto|Payroll.dto]]
-- [[_COMMUNITY_Create Leave Type.dto|Create Leave Type.dto]]
+- [[_COMMUNITY_Card UI Components|Card UI Components]]
+- [[_COMMUNITY_Alert UI Components|Alert UI Components]]
+- [[_COMMUNITY_Navigation Menu UI Components|Navigation Menu UI Components]]
+- [[_COMMUNITY_Chart UI Components|Chart UI Components]]
+- [[_COMMUNITY_Avatar UI Components|Avatar UI Components]]
+- [[_COMMUNITY_Resizable UI Components|Resizable UI Components]]
 - [[_COMMUNITY_Emit Notification.dto|Emit Notification.dto]]
-- [[_COMMUNITY_Detailed Payslip Dialog|Detailed Payslip Dialog]]
+- [[_COMMUNITY_Authorized|Authorized]]
+- [[_COMMUNITY_Api Client Utilities|Api Client Utilities]]
+- [[_COMMUNITY_Use Auth Store Client State|Use Auth Store Client State]]
+- [[_COMMUNITY_Main|Main]]
 - [[_COMMUNITY_App.module|App.module]]
 - [[_COMMUNITY_Source Module Database Layer|Source Module Database Layer]]
 - [[_COMMUNITY_Attendance.module|Attendance.module]]
@@ -158,10 +164,10 @@
 - [[_COMMUNITY_Leave Application.module|Leave Application.module]]
 - [[_COMMUNITY_Leave Application Query.dto|Leave Application Query.dto]]
 - [[_COMMUNITY_Chat.module|Chat.module]]
-- [[_COMMUNITY_Provident Fund.module|Provident Fund.module]]
-- [[_COMMUNITY_Provident Fund.dto|Provident Fund.dto]]
-- [[_COMMUNITY_Auth.module|Auth.module]]
 - [[_COMMUNITY_Login.dto|Login.dto]]
+- [[_COMMUNITY_Owner.decorator|Owner.decorator]]
+- [[_COMMUNITY_Roles.decorator|Roles.decorator]]
+- [[_COMMUNITY_Public.decorator|Public.decorator]]
 - [[_COMMUNITY_Salary.module|Salary.module]]
 - [[_COMMUNITY_Festival Bonus.module|Festival Bonus.module]]
 - [[_COMMUNITY_Health.module|Health.module]]
@@ -186,22 +192,18 @@
 - [[_COMMUNITY_Change Status.dto|Change Status.dto]]
 - [[_COMMUNITY_Update Employee.dto|Update Employee.dto]]
 - [[_COMMUNITY_Employee Query.dto|Employee Query.dto]]
-- [[_COMMUNITY_Notifications.module|Notifications.module]]
-- [[_COMMUNITY_Notification Query.dto|Notification Query.dto]]
-- [[_COMMUNITY_Preferences.dto|Preferences.dto]]
-- [[_COMMUNITY_Upload.module|Upload.module]]
-- [[_COMMUNITY_Claims.module|Claims.module]]
+- [[_COMMUNITY_Salary|Salary]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 102 edges
-2. `Input()` - 60 edges
+2. `Input()` - 61 edges
 3. `Badge()` - 44 edges
-4. `Select()` - 38 edges
-5. `SelectValue()` - 38 edges
-6. `SelectTrigger()` - 38 edges
-7. `SelectContent()` - 38 edges
-8. `TasksService` - 38 edges
-9. `Label()` - 37 edges
+4. `TasksService` - 38 edges
+5. `Label()` - 38 edges
+6. `Select()` - 38 edges
+7. `SelectValue()` - 38 edges
+8. `SelectTrigger()` - 38 edges
+9. `SelectContent()` - 38 edges
 10. `TasksController` - 33 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -209,254 +211,250 @@
   client/src/components/attendance/OverrideAttendanceDialog.tsx → client/src/routes/pages/login.tsx
 - `openEditDialog()` --calls--> `String()`  [INFERRED]
   client/src/components/organization/org-chart.tsx → client/src/routes/pages/company-attendance.tsx
-- `formatDateDMY()` --calls--> `String()`  [INFERRED]
-  client/src/components/leave/leave-details-dialog.tsx → client/src/routes/pages/company-attendance.tsx
 - `getCards()` --calls--> `String()`  [INFERRED]
   client/src/components/ceo-dashboard/kpi-metric-cards.tsx → client/src/routes/pages/company-attendance.tsx
 - `handleFormSubmit()` --calls--> `onSubmit()`  [INFERRED]
   client/src/components/tasks/TaskCreateDialog.tsx → client/src/routes/pages/login.tsx
+- `handleFormSubmit()` --calls--> `onSubmit()`  [INFERRED]
+  client/src/components/tasks/ProjectCreateDialog.tsx → client/src/routes/pages/login.tsx
 
-## Communities (264 total, 126 thin omitted)
+## Communities (271 total, 124 thin omitted)
 
 ### Community 0 - "Use Tasks Frontend Pages"
 Cohesion: 0.05
-Nodes (34): useAddChecklistItemMutation(), useAddCommentMutation(), useBulkDeleteTasksMutation(), useCreateAttachmentMutation(), useCreateDependencyMutation(), useCreateMilestoneMutation(), useCreateProjectMutation(), useCreateTimeEntryMutation() (+26 more)
-
-### Community 1 - "Leave Application.service"
-Cohesion: 0.05
 Nodes (7): patternOf(), resolveKey(), CacheService, EmployeeService, LoginThrottleGuard, LeaveApplicationProcessor, LeaveApplicationService
 
-### Community 2 - "Use Recruitment Frontend Pages"
+### Community 1 - "Leave Application.service"
 Cohesion: 0.06
 Nodes (38): goToStep(), handleValidationFailure(), markComplete(), nextStep(), prevStep(), useAddOnboardingTaskMutation(), useCandidateQuery(), useCandidatesQuery() (+30 more)
 
+### Community 2 - "Use Recruitment Frontend Pages"
+Cohesion: 0.09
+Nodes (13): useLeaveTypeOptionsQuery(), exportToCsv(), exportEligibilityLedger(), exportPolicyRules(), handleExport(), handleExport(), handleExport(), handleExport() (+5 more)
+
 ### Community 3 - "Announcements Frontend Pages"
-Cohesion: 0.07
-Nodes (14): useApproveLeaveMutation(), useRejectLeaveMutation(), exportToCsv(), exportEligibilityLedger(), exportPolicyRules(), handleExport(), handleExport(), handleExport() (+6 more)
+Cohesion: 0.23
+Nodes (16): authDelete(), authGet(), authHeaders(), authPatch(), authPost(), authUpload(), bootstrapApp(), clearRateLimitKeys() (+8 more)
 
 ### Community 4 - "Chat.service Frontend Pages"
-Cohesion: 0.07
-Nodes (10): ChatService, sendWSMessage(), confirmDeleteMessage(), handleInputChange(), handleKeyDown(), handleSendMessage(), handleStartDM(), handleStopTyping() (+2 more)
-
-### Community 5 - "Sheet Frontend Pages"
 Cohesion: 0.05
 Nodes (18): formatCurrency(), getCards(), PerformanceOverview(), QuickActions(), PageSkeleton(), useIsMobile(), useExecutiveDashboardQuery(), useNotificationSocket() (+10 more)
 
-### Community 8 - "Select Frontend Pages"
-Cohesion: 0.15
-Nodes (5): Input(), Select(), SelectContent(), SelectTrigger(), SelectValue()
+### Community 5 - "Sheet Frontend Pages"
+Cohesion: 0.08
+Nodes (10): ChatService, sendWSMessage(), confirmDeleteMessage(), handleInputChange(), handleKeyDown(), handleSendMessage(), handleStartDM(), handleStopTyping() (+2 more)
 
-### Community 9 - "Access Control Tab Frontend Pages"
+### Community 7 - "Calendar UI Components"
+Cohesion: 0.15
+Nodes (10): handleNidPdfChange(), handlePhotoChange(), updateFile(), getLetterTypeConfig(), handleTypeSelect(), Input(), Select(), SelectContent() (+2 more)
+
+### Community 8 - "Select Frontend Pages"
+Cohesion: 0.07
+Nodes (12): useCreateDepartmentMutation(), useDeleteDepartmentMutation(), useDepartmentQuery(), useDepartmentsQuery(), useUpdateDepartmentMutation(), useEmployeeOptionsQuery(), useCreateLetterMutation(), useDeleteLetterMutation() (+4 more)
+
+### Community 10 - "Use Claims Frontend Pages"
 Cohesion: 0.07
 Nodes (12): useChangeEmployeeStatusMutation(), useCreateEmployeeMutation(), useEmployeeQuery(), useUpdateEmployeeMutation(), useCreateRoleMutation(), useDeleteRoleMutation(), usePermissionsQuery(), useRolesQuery() (+4 more)
 
-### Community 10 - "Use Claims Frontend Pages"
-Cohesion: 0.09
-Nodes (14): handleSubmit(), convert12to24(), convert24to12(), RequestCorrectionDialog(), useClaimsQuery(), useCreateClaimMutation(), useUpdateClaimStatusMutation(), handleReset() (+6 more)
+### Community 11 - "Tasks.controller"
+Cohesion: 0.08
+Nodes (25): useAddChecklistItemMutation(), useBulkDeleteTasksMutation(), useCreateAttachmentMutation(), useCreateDependencyMutation(), useCreateMilestoneMutation(), useCreateProjectMutation(), useCreateTimeEntryMutation(), useDeleteAttachmentMutation() (+17 more)
 
 ### Community 12 - "Use Notifications Frontend Pages"
-Cohesion: 0.08
-Nodes (14): useTheme(), useArchiveAllReadMutation(), useArchiveMutation(), useDeleteNotificationMutation(), useExecuteActionMutation(), useMarkAllAsReadMutation(), useMarkAsReadMutation(), useNotificationsInfiniteQuery() (+6 more)
+Cohesion: 0.09
+Nodes (12): useTheme(), useArchiveAllReadMutation(), useArchiveMutation(), useDeleteNotificationMutation(), useExecuteActionMutation(), useMarkAllAsReadMutation(), useMarkAsReadMutation(), useNotificationsInfiniteQuery() (+4 more)
 
 ### Community 15 - "Use Performance Frontend Pages"
 Cohesion: 0.12
-Nodes (9): useAppraisalCyclesQuery(), useCreateCycleMutation(), useCreateKpiMutation(), useCycleAppraisalsQuery(), useDeleteKpiMutation(), useEmployeeAppraisalQuery(), useSubmitManagerAppraisalMutation(), useSubmitSelfAppraisalMutation() (+1 more)
+Nodes (10): handleSubmit(), convert12to24(), convert24to12(), RequestCorrectionDialog(), useClaimsQuery(), useCreateClaimMutation(), useUpdateClaimStatusMutation(), Dialog() (+2 more)
 
 ### Community 16 - "Org Chart Frontend Hooks"
+Cohesion: 0.08
+Nodes (13): exportAttendanceCSV(), AttendanceKPIs(), useDepartmentOptionsQuery(), useCreateDesignationMutation(), useDeleteDesignationMutation(), useDesignationOptionsQuery(), useDesignationsQuery(), useUpdateDesignationMutation() (+5 more)
+
+### Community 18 - "Attendance.service"
+Cohesion: 0.1
+Nodes (9): useAddCommentMutation(), useDeleteChecklistItemMutation(), useDeleteTimeEntryMutation(), handleAddWatcher(), handleDescSave(), handleMetaUpdate(), handleRemoveWatcher(), handleStartTimer() (+1 more)
+
+### Community 19 - "Recruitment.controller"
+Cohesion: 0.1
+Nodes (9): computeFinalAttendance(), mapBalances(), mapLeaveApplications(), mapRegularHolidays(), resolveLeaveIcon(), useMyRangeAttendanceQuery(), useOverrideAttendanceMutation(), useRangeAttendanceQuery() (+1 more)
+
+### Community 20 - "Payroll Frontend Pages"
+Cohesion: 0.12
+Nodes (9): useAppraisalCyclesQuery(), useCreateCycleMutation(), useCreateKpiMutation(), useCycleAppraisalsQuery(), useDeleteKpiMutation(), useEmployeeAppraisalQuery(), useSubmitManagerAppraisalMutation(), useSubmitSelfAppraisalMutation() (+1 more)
+
+### Community 23 - "Performance.service"
 Cohesion: 0.11
 Nodes (8): useCreateOrgNodeMutation(), useDeleteOrgNodeMutation(), useOrgChartQuery(), useResetOrgChartMutation(), useUpdateOrgNodeMutation(), gradeInfo(), openEditDialog(), OrgCard()
 
-### Community 17 - "Letters Frontend Pages"
-Cohesion: 0.11
-Nodes (5): useCreateLetterMutation(), useDeleteLetterMutation(), useLetterQuery(), useLettersQuery(), useUpdateLetterStatusMutation()
-
-### Community 20 - "Payroll Frontend Pages"
-Cohesion: 0.13
-Nodes (8): useDisbursementsQuery(), useDisburseMutation(), useDistributePayrollMutation(), usePfBalancesQuery(), useProcessPayrollMutation(), useSyncPayrollMutation(), getLastDayOfMonth(), handleMonthChange()
-
-### Community 21 - "Company Attendance Frontend Pages"
-Cohesion: 0.12
-Nodes (6): exportAttendanceCSV(), AttendanceKPIs(), useDepartmentOptionsQuery(), useEmployeesQuery(), handleExportCSV(), ReportsPage()
-
-### Community 22 - "Tasks.dto"
+### Community 24 - "Apply Leave Dialog Frontend Pages"
 Cohesion: 0.1
 Nodes (19): BulkDeleteDto, BulkTaskImportDto, BulkTimeLogDto, BulkTimeLogEntryDto, CreateAttachmentDto, CreateChecklistItemDto, CreateCommentDto, CreateDependencyDto (+11 more)
 
-### Community 24 - "Apply Leave Dialog Frontend Pages"
+### Community 25 - "Chat.repository"
 Cohesion: 0.12
-Nodes (8): handleSubmit(), getLetterTypeConfig(), handleSubmitForm(), handleTypeSelect(), resetForm(), onSubmit(), handleFormSubmit(), handleFormSubmit()
+Nodes (6): useCreateFestivalBonusRuleMutation(), useDeleteFestivalBonusRuleMutation(), useFestivalBonusRulesQuery(), useUpdateFestivalBonusRuleMutation(), useProvidentFundSettingsQuery(), useUpdateProvidentFundSettingsMutation()
 
 ### Community 27 - "Salary Setup Frontend Hooks"
-Cohesion: 0.14
-Nodes (4): useCreateFestivalBonusRuleMutation(), useDeleteFestivalBonusRuleMutation(), useFestivalBonusRulesQuery(), useUpdateFestivalBonusRuleMutation()
-
-### Community 29 - "Use Leave Applications Frontend Pages"
-Cohesion: 0.25
-Nodes (12): useAnnouncementsPaginated(), useMyAttendanceQuery(), useApplyLeaveMutation(), useCancelLeaveMutation(), useLeaveApplicationsQuery(), useLeaveBalancesQuery(), useUpdateLeaveMutation(), useCreateTaskMutation() (+4 more)
+Cohesion: 0.2
+Nodes (15): useAnnouncementsPaginated(), useMyAttendanceQuery(), useHolidaysQuery(), useApplyLeaveMutation(), useApproveLeaveMutation(), useCancelLeaveMutation(), useLeaveApplicationsQuery(), useLeaveBalancesQuery() (+7 more)
 
 ### Community 34 - "Use Leave Types Frontend Pages"
-Cohesion: 0.16
-Nodes (5): useCreateLeaveTypeMutation(), useLeaveTypeOptionsQuery(), useLeaveTypesQuery(), useUpdateLeaveTypeMutation(), LeaveSummaryCards()
+Cohesion: 0.15
+Nodes (7): formatDateDMY(), formatDateTimeDMY(), GlobalExceptionFilter, formatDateDMY(), formatDateTimeDMY(), getApprovalHistory(), String()
 
-### Community 38 - "Upload.controller"
+### Community 35 - "Attendance.controller"
+Cohesion: 0.14
+Nodes (4): getLastDayOfMonth(), handleMonthChange(), GlobalPfSetupDialog(), SalaryDisbursementDialog()
+
+### Community 36 - "Roles.service"
+Cohesion: 0.16
+Nodes (6): useAttendanceSettingsQuery(), useCreateHolidayMutation(), useUpdateAttendanceSettingsMutation(), useUpdateHolidayMutation(), calculateCapacity(), parseTimeToMinutes()
+
+### Community 42 - "Separation.service"
 Cohesion: 0.15
 Nodes (3): DeleteByPrefixQueryDto, UploadController, UploadQueryDto
 
-### Community 39 - "Attendance Frontend Pages"
-Cohesion: 0.19
-Nodes (5): computeFinalAttendance(), mapBalances(), mapLeaveApplications(), mapRegularHolidays(), resolveLeaveIcon()
+### Community 43 - "Day Detail Dialog Frontend Pages"
+Cohesion: 0.14
+Nodes (6): handleSubmit(), handleSubmitForm(), resetForm(), onSubmit(), handleFormSubmit(), handleFormSubmit()
 
-### Community 40 - "Use Salary Frontend Hooks"
+### Community 46 - "Attendance Setup Frontend Hooks"
+Cohesion: 0.18
+Nodes (4): useCreateLeaveTypeMutation(), useLeaveTypesQuery(), useUpdateLeaveTypeMutation(), LeaveSummaryCards()
+
+### Community 47 - "Notifications.gateway"
 Cohesion: 0.15
-Nodes (8): useAssignEmployeeSalaryMutation(), useBulkSalaryRevisionMutation(), useCreateSalaryTemplateMutation(), useDeleteSalaryTemplateMutation(), useEmployeeSalariesQuery(), useEmployeeSalaryHistoryQuery(), useSalaryTemplatesQuery(), useUpdateSalaryTemplateMutation()
+Nodes (4): ProtectedRoute(), PermissionGuard(), ThemeProvider(), AuthLayout()
 
-### Community 41 - "Scroll Area UI Components"
+### Community 48 - "Leave Application.controller"
 Cohesion: 0.15
 Nodes (4): UserAvatar(), usePermissions(), ScrollArea(), TooltipContent()
 
-### Community 43 - "Day Detail Dialog Frontend Pages"
-Cohesion: 0.17
-Nodes (5): formatDateDMY(), formatDateTimeDMY(), GlobalExceptionFilter, String(), PayrollProcessor
+### Community 49 - "Payroll.controller"
+Cohesion: 0.15
+Nodes (8): useAssignEmployeeSalaryMutation(), useBulkSalaryRevisionMutation(), useCreateSalaryTemplateMutation(), useDeleteSalaryTemplateMutation(), useEmployeeSalariesQuery(), useEmployeeSalaryHistoryQuery(), useSalaryTemplatesQuery(), useUpdateSalaryTemplateMutation()
 
-### Community 45 - "App"
-Cohesion: 0.17
-Nodes (4): ProtectedRoute(), PermissionGuard(), ThemeProvider(), AuthLayout()
-
-### Community 46 - "Attendance Setup Frontend Hooks"
-Cohesion: 0.2
-Nodes (3): useCreateHolidayMutation(), useHolidaysQuery(), useUpdateHolidayMutation()
-
-### Community 51 - "Use Attendance Frontend Hooks"
-Cohesion: 0.18
-Nodes (4): useMyRangeAttendanceQuery(), useOverrideAttendanceMutation(), useRangeAttendanceQuery(), useSubmitCorrectionMutation()
-
-### Community 52 - "Separation Frontend Pages"
+### Community 50 - "Employee.controller"
 Cohesion: 0.22
-Nodes (3): useCreateSeparationMutation(), useSeparationRecordsQuery(), useUpdateSeparationMutation()
-
-### Community 53 - "Use Designations Frontend Pages"
-Cohesion: 0.2
-Nodes (7): useCreateDesignationMutation(), useDeleteDesignationMutation(), useDesignationOptionsQuery(), useDesignationsQuery(), useUpdateDesignationMutation(), CreateDesignationPage(), EditDesignationPage()
+Nodes (7): getDaysInSelectedMonth(), getExistingAdjustmentItems(), handleAddAdjustmentItem(), handleApplyPartialPayPeriod(), openAdjustmentDialog(), parseDayInput(), parseMoneyInput()
 
 ### Community 56 - "Org Chart.service"
 Cohesion: 0.27
 Nodes (3): buildTree(), flattenNodes(), OrgChartService
 
 ### Community 57 - "Use Announcements Frontend Hooks"
-Cohesion: 0.2
-Nodes (3): useCreateAnnouncement(), useDeleteAnnouncement(), useUpdateAnnouncement()
+Cohesion: 0.24
+Nodes (6): useDesignationQuery(), useMyPayslipsQuery(), usePayrollCycleQuery(), ProfilePage(), ViewDesignationPage(), DetailedPayslipDialog()
+
+### Community 58 - "Claims.service"
+Cohesion: 0.22
+Nodes (3): useCreateSeparationMutation(), useSeparationRecordsQuery(), useUpdateSeparationMutation()
 
 ### Community 59 - "Use Departments Frontend Pages"
-Cohesion: 0.22
-Nodes (5): useCreateDepartmentMutation(), useDeleteDepartmentMutation(), useDepartmentsQuery(), useUpdateDepartmentMutation(), useEmployeeOptionsQuery()
+Cohesion: 0.2
+Nodes (5): usePreferencesQuery(), useUpdatePreferencesMutation(), handleReset(), handleSave(), Switch()
 
-### Community 65 - "Performance.dto"
+### Community 64 - "Separation.controller"
 Cohesion: 0.2
 Nodes (9): CreateCycleDto, CreateKpiDto, KpiScoreItemDto, ManagerKpiScoreItemDto, SelfKpiScoreItemDto, SubmitManagerAppraisalDto, SubmitSelfAppraisalDto, UpdateCycleStatusDto (+1 more)
 
-### Community 67 - "Employee.processor"
+### Community 66 - "Leave Type.service"
 Cohesion: 0.2
 Nodes (3): EmployeeCreateProcessor, EmployeeStatusProcessor, EmployeeUpdateProcessor
 
-### Community 68 - "Office Hours Frontend Hooks"
-Cohesion: 0.25
-Nodes (3): useUpdateAttendanceSettingsMutation(), saveShifts(), timeToMinutes()
+### Community 69 - "Item UI Components"
+Cohesion: 0.2
+Nodes (3): useCreateAnnouncement(), useDeleteAnnouncement(), useUpdateAnnouncement()
 
 ### Community 72 - "Use Disciplinary Frontend Pages"
-Cohesion: 0.28
-Nodes (3): useCreateDisciplinaryCaseMutation(), useDisciplinaryCasesQuery(), useUpdateDisciplinaryCaseMutation()
-
-### Community 74 - "Create Room.dto"
 Cohesion: 0.22
 Nodes (8): AddMemberDto, CreateChannelDto, CreateDirectRoomDto, WSDeleteMessageDto, WSEditMessageDto, WSMessageDto, WSReadReceiptDto, WSTypingDto
 
-### Community 77 - "Salary.dto"
+### Community 75 - "Auth.controller"
 Cohesion: 0.22
 Nodes (8): AssignEmployeeSalaryDto, BulkSalaryRevisionDto, CreateSalaryTemplateComponentDto, CreateSalaryTemplateDto, EmployeeSalaryQueryDto, UpdateEmployeeSalaryDto, UpdateSalaryTemplateComponentDto, UpdateSalaryTemplateDto
 
 ### Community 83 - "Types"
-Cohesion: 0.29
-Nodes (4): LeaveBalanceChips(), formatDateStr(), formatFullDate(), formatMonthYear()
+Cohesion: 0.22
+Nodes (7): useDisbursementsQuery(), useDisburseMutation(), useDistributePayrollMutation(), usePfBalancesQuery(), useProcessPayrollMutation(), useSyncPayrollMutation(), useUpdatePayslipAdjustmentsMutation()
 
 ### Community 84 - "Profile Frontend Pages"
-Cohesion: 0.39
-Nodes (5): useDepartmentQuery(), useDesignationQuery(), ProfilePage(), ViewDepartmentPage(), ViewDesignationPage()
+Cohesion: 0.28
+Nodes (3): useCreateDisciplinaryCaseMutation(), useDisciplinaryCasesQuery(), useUpdateDisciplinaryCaseMutation()
 
 ### Community 87 - "Recruitment.dto"
 Cohesion: 0.25
 Nodes (7): CreateCandidateDto, CreateJobOpeningDto, GenerateJoiningLetterDto, GenerateOfferLetterDto, ScheduleInterviewDto, UpdateCandidateDto, UpdateJobOpeningDto
 
-### Community 95 - "Use Settlement Frontend Hooks"
-Cohesion: 0.38
-Nodes (3): useSaveSettlementMutation(), useSettlementQuery(), useUpdateSettlementStatusMutation()
+### Community 94 - "Combobox UI Components"
+Cohesion: 0.29
+Nodes (4): LeaveBalanceChips(), formatDateStr(), formatFullDate(), formatMonthYear()
 
-### Community 100 - "Create Employee.dto"
+### Community 101 - "Task Board"
 Cohesion: 0.29
 Nodes (6): BankDetailsDto, ChildDto, CreateEmployeeDto, DocumentDto, NomineeDto, SpouseDto
 
-### Community 105 - "Leave Details Dialog"
-Cohesion: 0.4
-Nodes (3): formatDateDMY(), formatDateTimeDMY(), getApprovalHistory()
+### Community 103 - "Task Comments"
+Cohesion: 0.38
+Nodes (3): useSaveSettlementMutation(), useSettlementQuery(), useUpdateSettlementStatusMutation()
 
 ### Community 113 - "Nominee Step"
-Cohesion: 0.6
-Nodes (3): handleNidPdfChange(), handlePhotoChange(), updateFile()
-
-### Community 115 - "Attendance.dto"
 Cohesion: 0.4
 Nodes (4): AdminLogOverrideDto, CheckInDto, CheckOutDto, SubmitCorrectionDto
 
-### Community 119 - "Claims.dto"
+### Community 117 - "Roles.guard"
+Cohesion: 0.4
+Nodes (4): DisburseDto, PayslipAdjustmentItemDto, UpdatePayslipAdjustmentsDto, UpdatePayslipBonusDto
+
+### Community 118 - "Jwt Auth.guard"
 Cohesion: 0.4
 Nodes (4): ClaimAttachmentDto, ClaimQueryDto, CreateClaimDto, UpdateClaimStatusDto
 
-### Community 120 - "Task Workload View Frontend Hooks"
-Cohesion: 0.67
-Nodes (3): useAttendanceSettingsQuery(), calculateCapacity(), parseTimeToMinutes()
-
-### Community 131 - "Letters.dto"
+### Community 125 - "Toggle Group UI Components"
 Cohesion: 0.5
 Nodes (3): CreateLetterDto, LetterQueryDto, UpdateLetterStatusDto
 
-### Community 132 - "Create Leave Application.dto"
+### Community 126 - "Native Select UI Components"
 Cohesion: 0.5
 Nodes (3): CreateLeaveApplicationDto, UpdateLeaveApplicationDto, UpdateLeaveApplicationStatusDto
 
-### Community 135 - "Announcement.dto"
+### Community 129 - "Redis.module"
 Cohesion: 0.5
 Nodes (3): AnnouncementQueryDto, CreateAnnouncementDto, UpdateAnnouncementDto
 
-### Community 136 - "Attendance Settings.dto"
+### Community 130 - "Tasks.processor"
 Cohesion: 0.5
 Nodes (3): CreateHolidayDto, UpdateAttendanceSettingsDto, UpdateHolidayDto
 
-### Community 138 - "Separation.dto"
+### Community 132 - "Create Leave Application.dto"
 Cohesion: 0.5
 Nodes (3): CreateSeparationDto, SeparationQueryDto, UpdateSeparationDto
 
-### Community 139 - "Disciplinary.dto"
+### Community 133 - "Jwt.strategy"
 Cohesion: 0.5
 Nodes (3): CreateDisciplinaryCaseDto, DisciplinaryQueryDto, UpdateDisciplinaryCaseDto
 
 ## Knowledge Gaps
-- **142 isolated node(s):** `AppModule`, `DatabaseModule`, `AttendanceModule`, `CheckInDto`, `CheckOutDto` (+137 more)
+- **144 isolated node(s):** `AppModule`, `DatabaseModule`, `AttendanceModule`, `CheckInDto`, `CheckOutDto` (+139 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **126 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **124 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Calendar UI Components` to `Use Tasks Frontend Pages`, `Use Recruitment Frontend Pages`, `Announcements Frontend Pages`, `Chat.service Frontend Pages`, `Sheet Frontend Pages`, `Select Frontend Pages`, `Use Claims Frontend Pages`, `Use Notifications Frontend Pages`, `Use Performance Frontend Pages`, `Org Chart Frontend Hooks`, `Card UI Components`, `Alert UI Components`, `Navigation Menu UI Components`, `Chart UI Components`, `Avatar UI Components`, `Resizable UI Components`, `Company Attendance Frontend Pages`, `Apply Leave Dialog Frontend Pages`, `Payroll Frontend Pages`, `Letters Frontend Pages`, `Salary Setup Frontend Hooks`, `Scroll Area UI Components`, `Day Detail Dialog Frontend Pages`, `Attendance Setup Frontend Hooks`, `Separation Frontend Pages`, `Office Hours Frontend Hooks`, `Item UI Components`, `Drawer UI Components`, `Menubar UI Components`, `Use Disciplinary Frontend Pages`, `Pagination UI Components`, `Types`, `Combobox UI Components`, `Use Settlement Frontend Hooks`, `Task Board`, `Task List View`, `Task Comments`, `Context Menu UI Components`, `Breadcrumb UI Components`, `Accordion UI Components`, `Carousel UI Components`, `Nominee Step`, `Task Workload View Frontend Hooks`, `Dialog UI Components`, `Popover UI Components`, `Command UI Components`, `Toggle Group UI Components`, `Native Select UI Components`, `Documents Step`?**
-  _High betweenness centrality (0.139) - this node is a cross-community bridge._
-- **Why does `String()` connect `Day Detail Dialog Frontend Pages` to `Leave Application.service`, `Sheet Frontend Pages`, `Use Claims Frontend Pages`, `Payroll.service`, `Org Chart Frontend Hooks`, `Letters Frontend Pages`, `Attendance.service`, `Payroll Frontend Pages`, `Company Attendance Frontend Pages`, `Notifications.service`, `Use Leave Applications Frontend Pages`, `Chat.gateway`, `Use Leave Types Frontend Pages`, `Separation.service`, `Notifications.gateway`, `Use Designations Frontend Pages`, `Claims.service`, `Use Departments Frontend Pages`, `Leave Details Dialog`?**
-  _High betweenness centrality (0.086) - this node is a cross-community bridge._
-- **Why does `Input()` connect `Select Frontend Pages` to `Use Tasks Frontend Pages`, `Announcements Frontend Pages`, `Chat.service Frontend Pages`, `Sheet Frontend Pages`, `Calendar UI Components`, `Access Control Tab Frontend Pages`, `Use Claims Frontend Pages`, `Use Notifications Frontend Pages`, `Use Performance Frontend Pages`, `Org Chart Frontend Hooks`, `Letters Frontend Pages`, `Company Attendance Frontend Pages`, `Apply Leave Dialog Frontend Pages`, `Salary Setup Frontend Hooks`, `Attendance Setup Frontend Hooks`, `Separation Frontend Pages`, `Use Designations Frontend Pages`, `Use Departments Frontend Pages`, `Office Hours Frontend Hooks`, `Use Disciplinary Frontend Pages`, `Profile Frontend Pages`, `Use Settlement Frontend Hooks`, `Nominee Step`, `Payroll Action Dialogs`, `Documents Step`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
+- **Why does `cn()` connect `Payroll.service` to `Leave Application.service`, `Use Recruitment Frontend Pages`, `Chat.service Frontend Pages`, `Sheet Frontend Pages`, `Calendar UI Components`, `Select Frontend Pages`, `Dashboard.controller`, `Separation.dto`, `Disciplinary.dto`, `Performance.processor`, `Rate Limiter.guard`, `Error Boundary`, `Use Notifications Frontend Pages`, `Use Performance Frontend Pages`, `Org Chart Frontend Hooks`, `Attendance.service`, `Tasks.controller`, `Payroll Frontend Pages`, `Performance.service`, `Chat Notification.processor`, `Festival Bonus.dto`, `Create Designation.dto`, `Create Department.dto`, `Org Chart.dto`, `Settlement.dto`, `Payroll.dto`, `Create Leave Type.dto`, `Chat.repository`, `Use Leave Types Frontend Pages`, `Attendance.controller`, `Roles.service`, `Day Detail Dialog Frontend Pages`, `Leave Application.controller`, `Employee.controller`, `Claims.service`, `Use Departments Frontend Pages`, `Office Hours Frontend Hooks`, `Attendance Settings.controller`, `Leave Type.controller`, `Pagination UI Components`, `Profile Frontend Pages`, `Combobox UI Components`, `Use Settlement Frontend Hooks`, `Attendance.processor`, `Provident Fund.service`, `Task List View`, `Task Comments`, `Deduplication.guard`, `Breadcrumb UI Components`, `Accordion UI Components`, `Claims.dto`, `Task Workload View Frontend Hooks`, `Payroll Action Dialogs`?**
+  _High betweenness centrality (0.092) - this node is a cross-community bridge._
+- **Why does `String()` connect `Use Leave Types Frontend Pages` to `Use Tasks Frontend Pages`, `Employee.processor`, `Chat.service Frontend Pages`, `Attendance.controller`, `Attendance Settings.dto`, `Select Frontend Pages`, `App`, `Recruitment.service`, `Use Performance Frontend Pages`, `Org Chart Frontend Hooks`, `Attendance Setup Frontend Hooks`, `Company Attendance Frontend Pages`, `Use Designations Frontend Pages`, `Performance.service`, `Salary Setup Frontend Hooks`, `Chat.gateway`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+- **Why does `Input()` connect `Calendar UI Components` to `Use Recruitment Frontend Pages`, `Chat.service Frontend Pages`, `Sheet Frontend Pages`, `Select Frontend Pages`, `Use Claims Frontend Pages`, `Separation.dto`, `Use Notifications Frontend Pages`, `Payroll.service`, `Tasks.controller`, `Use Performance Frontend Pages`, `Org Chart Frontend Hooks`, `Attendance.service`, `Payroll Frontend Pages`, `Performance.service`, `Chat.repository`, `Settlement.dto`, `Attendance.controller`, `Roles.service`, `Day Detail Dialog Frontend Pages`, `Employee.controller`, `Use Announcements Frontend Hooks`, `Claims.service`, `Use Departments Frontend Pages`, `Office Hours Frontend Hooks`, `Profile Frontend Pages`, `Attendance.processor`, `Provident Fund.service`, `Task Comments`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **What connects `AppModule`, `DatabaseModule`, `AttendanceModule` to the rest of the system?**
-  _142 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _144 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Use Tasks Frontend Pages` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
 - **Should `Leave Application.service` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
-- **Should `Use Recruitment Frontend Pages` be split into smaller, more focused modules?**
   _Cohesion score 0.06 - nodes in this community are weakly interconnected._
+- **Should `Use Recruitment Frontend Pages` be split into smaller, more focused modules?**
+  _Cohesion score 0.09 - nodes in this community are weakly interconnected._

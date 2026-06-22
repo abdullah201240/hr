@@ -125,6 +125,7 @@ export interface Payslip {
   absentDays?: number;
   leaveDays?: number;
   lateDays?: number;
+  monthKey?: string;
 }
 
 export interface PayrollCycle {

@@ -2,14 +2,30 @@ import { useParams, useNavigate } from "react-router"
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Printer, Loader2 } from "lucide-react"
-import { usePayrollCycleQuery } from "@/hooks/usePayroll"
+import { usePayrollCycleQuery, useMyPayslipsQuery } from "@/hooks/usePayroll"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export default function PrintPayslipPage() {
   const { monthKey, payslipId } = useParams<{ monthKey: string; payslipId: string }>()
   const navigate = useNavigate()
-  const { data: cycle, isLoading, isError } = usePayrollCycleQuery(monthKey || "")
+  const { hasPermission } = usePermissions()
+  const canReadFullPayroll = hasPermission("payroll:read")
 
-  const viewPayslip = cycle?.payslips?.find((p) => p.id === payslipId)
+  // Query full cycle if user has payroll:read permission
+  const { data: cycle, isLoading: isCycleLoading, isError: isCycleError } = usePayrollCycleQuery(
+    canReadFullPayroll ? (monthKey || "") : ""
+  )
+
+  // Query my own payslips if user does NOT have payroll:read permission
+  const { data: myPayslips, isLoading: isMyPayslipsLoading, isError: isMyPayslipsError } = useMyPayslipsQuery()
+
+  const viewPayslip = canReadFullPayroll
+    ? cycle?.payslips?.find((p) => p.id === payslipId)
+    : myPayslips?.find((p) => p.id === payslipId)
+
+  const isLoading = canReadFullPayroll ? isCycleLoading : isMyPayslipsLoading
+  const isError = canReadFullPayroll ? isCycleError : isMyPayslipsError
+
 
   // Auto-trigger printing when loading is done and data is present
   useEffect(() => {

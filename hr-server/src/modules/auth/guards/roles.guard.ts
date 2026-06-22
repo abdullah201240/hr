@@ -96,6 +96,11 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
+    // Allow employees to fetch their own payslips (self-service)
+    if (resource === 'payroll' && lastSegment === 'my-payslips') {
+      return true;
+    }
+
     // Check direct permission
     if (userPermissions.has(`${resource}:${action}`)) {
       return true;

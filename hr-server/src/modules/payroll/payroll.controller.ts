@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PayrollService } from './payroll.service';
 import { DisburseDto, UpdatePayslipAdjustmentsDto } from './dto/payroll.dto';
@@ -53,6 +53,13 @@ export class PayrollController {
   @ApiOperation({ summary: 'Get all historical disbursements records' })
   async getDisbursements() {
     return this.payrollService.getDisbursements();
+  }
+
+  @Get('my-payslips')
+  @ApiOperation({ summary: 'Get all finalized/distributed payslips for the logged-in employee' })
+  async getMyPayslips(@Req() req: any) {
+    const employeeId = req.user.id;
+    return this.payrollService.getMyPayslips(employeeId);
   }
 
   @Get('pf-balances')

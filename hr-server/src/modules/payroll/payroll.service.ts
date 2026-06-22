@@ -618,7 +618,8 @@ export class PayrollService implements OnModuleInit {
         if (
           key.startsWith('Manual Addition') ||
           key.startsWith('Deduction Reduction') ||
-          key.startsWith('Extra Deduction')
+          key.startsWith('Extra Deduction') ||
+          key.startsWith('Adjustment:')
         ) {
           continue;
         }
@@ -635,14 +636,35 @@ export class PayrollService implements OnModuleInit {
     const allowances = cleanManualEntries(payslip.allowances);
     const deductions = cleanManualEntries(payslip.deductions);
 
-    if (additionalAmount > 0) {
-      allowances[makeLabel('Manual Addition', dto.additionalDescription)] = additionalAmount;
-    }
-    if (deductionReductionAmount > 0) {
-      deductions[makeLabel('Deduction Reduction', dto.deductionDescription)] = -deductionReductionAmount;
-    }
-    if (extraDeductionAmount > 0) {
-      deductions[makeLabel('Extra Deduction', dto.deductionDescription)] = extraDeductionAmount;
+    const adjustmentItems = Array.isArray(dto.adjustments)
+      ? dto.adjustments
+          .map((item) => ({
+            title: item.title?.trim(),
+            amount: Math.max(0, Number(item.amount || 0)),
+            type: item.type,
+          }))
+          .filter((item) => item.title && item.amount > 0 && ['addition', 'deduction'].includes(item.type))
+      : [];
+
+    if (adjustmentItems.length > 0) {
+      for (const item of adjustmentItems) {
+        const label = `Adjustment: ${item.title}`;
+        if (item.type === 'addition') {
+          allowances[label] = (allowances[label] || 0) + item.amount;
+        } else {
+          deductions[label] = (deductions[label] || 0) + item.amount;
+        }
+      }
+    } else {
+      if (additionalAmount > 0) {
+        allowances[makeLabel('Manual Addition', dto.additionalDescription)] = additionalAmount;
+      }
+      if (deductionReductionAmount > 0) {
+        deductions[makeLabel('Deduction Reduction', dto.deductionDescription)] = -deductionReductionAmount;
+      }
+      if (extraDeductionAmount > 0) {
+        deductions[makeLabel('Extra Deduction', dto.deductionDescription)] = extraDeductionAmount;
+      }
     }
 
     const basic = payslip.basicSalary;
@@ -1236,6 +1258,51 @@ export class PayrollService implements OnModuleInit {
     const diffMonths = targetMonth - joinMonth;
 
     return Math.max(0, diffYears * 12 + diffMonths);
+  }
+
+  // Get all finalized/distributed payslips for a specific employee
+  async getMyPayslips(employeeId: string) {
+    return this.db
+      .select({
+        id: employeePayslips.id,
+        employeeId: employeePayslips.employeeId,
+        basicSalary: employeePayslips.basicSalary,
+        allowanceHra: employeePayslips.allowanceHra,
+        allowanceTransport: employeePayslips.allowanceTransport,
+        allowanceMedical: employeePayslips.allowanceMedical,
+        deductionTax: employeePayslips.deductionTax,
+        deductionPf: employeePayslips.deductionPf,
+        netPay: employeePayslips.netPay,
+        paymentStatus: employeePayslips.paymentStatus,
+        paymentMethod: employeePayslips.paymentMethod,
+        paymentDate: employeePayslips.paymentDate,
+        paymentReference: employeePayslips.paymentReference,
+        allowances: employeePayslips.allowances,
+        deductions: employeePayslips.deductions,
+        totalWorkingDays: employeePayslips.totalWorkingDays,
+        presentDays: employeePayslips.presentDays,
+        absentDays: employeePayslips.absentDays,
+        leaveDays: employeePayslips.leaveDays,
+        lateDays: employeePayslips.lateDays,
+        monthKey: payrollCycles.monthKey,
+        name: employees.fullNameEnglish,
+        email: employees.email,
+        employeeDisplayId: employees.employeeId,
+        joinDate: employees.joinDate,
+        designationName: designations.name,
+        departmentName: departments.name,
+      })
+      .from(employeePayslips)
+      .innerJoin(employees, eq(employeePayslips.employeeId, employees.id))
+      .innerJoin(payrollCycles, eq(employeePayslips.payrollCycleId, payrollCycles.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .where(
+        and(
+          eq(employeePayslips.employeeId, employeeId),
+          eq(payrollCycles.status, 'Distributed'),
+        ),
+      );
   }
 
   async processEmailDistribution(cycleId: string, monthKey: string) {

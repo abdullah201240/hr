@@ -167,9 +167,8 @@ function App() {
                   <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
                   <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />
                 </Route>
-                <Route element={<PermissionGuard requires={["payroll:read"]} />}>
-                  <Route path="/payroll/print/:monthKey/:payslipId" element={<Suspense fallback={<LoadingSpinner />}><PrintPayslipPage /></Suspense>} />
-                </Route>
+                {/* Print payslip route is accessible to all logged-in users; authorization check is done inside the page */}
+                <Route path="/payroll/print/:monthKey/:payslipId" element={<Suspense fallback={<LoadingSpinner />}><PrintPayslipPage /></Suspense>} />
               </Route>
             </Routes>
           </ErrorBoundary>
