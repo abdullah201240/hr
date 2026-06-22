@@ -334,14 +334,9 @@ describe('Payroll Module - Attendance Deductions (e2e)', () => {
       status: 'absent',
     });
 
-    // Populate present logs for all other working days in June 2026 up to today,
+    // Populate present logs for all working days in June 2026,
     // to prevent them from being counted as absent days.
-    const todayObj = new Date();
-    const todayYear = todayObj.getFullYear();
-    const todayMonth = todayObj.getMonth() + 1;
-    const maxDay = (todayYear === 2026 && todayMonth === 6) ? todayObj.getDate() : 30;
-
-    for (let d = 1; d <= maxDay; d++) {
+    for (let d = 1; d <= 30; d++) {
       const dateStr = `2026-06-${String(d).padStart(2, '0')}`;
       const dayOfWeek = new Date(2026, 5, d).getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
