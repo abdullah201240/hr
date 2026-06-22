@@ -16,6 +16,7 @@ import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import cookie from '@fastify/cookie';
 import { AppModule } from '../src/app.module';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 
@@ -84,6 +85,7 @@ export async function bootstrapApp(): Promise<TestContext> {
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   // Clear rate-limit keys in Redis before each bootstrap to avoid 429 errors
   await clearRateLimitKeys();

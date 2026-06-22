@@ -86,8 +86,8 @@ export class RolesGuard implements CanActivate {
     
     const { resource, action } = this.mapRequestToPermission(req.method, req.url);
 
-    // Bypass checks for self-service endpoints (auth, notifications) when no decorator is present
-    if (resource === 'auth' || resource === 'notifications') {
+    // Bypass checks for self-service endpoints (auth, notifications, chat) when no decorator is present
+    if (resource === 'auth' || resource === 'notifications' || resource === 'chat') {
       return true;
     }
 
