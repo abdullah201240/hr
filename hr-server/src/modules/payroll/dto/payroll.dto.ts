@@ -13,6 +13,43 @@ export class UpdatePayslipBonusDto {
   bonusDescription?: string;
 }
 
+export class UpdatePayslipAdjustmentsDto {
+  @ApiProperty({ description: 'Manual bonus amount', required: false })
+  @IsNumber()
+  @IsOptional()
+  bonusAmount?: number;
+
+  @ApiProperty({ description: 'Manual bonus description/reason', required: false })
+  @IsString()
+  @IsOptional()
+  bonusDescription?: string;
+
+  @ApiProperty({ description: 'Additional earning amount for this payroll cycle', required: false })
+  @IsNumber()
+  @IsOptional()
+  additionalAmount?: number;
+
+  @ApiProperty({ description: 'Additional earning description', required: false })
+  @IsString()
+  @IsOptional()
+  additionalDescription?: string;
+
+  @ApiProperty({ description: 'Amount to reduce/waive from generated deductions', required: false })
+  @IsNumber()
+  @IsOptional()
+  deductionReductionAmount?: number;
+
+  @ApiProperty({ description: 'Extra deduction amount, such as advance recovery or next-month adjustment', required: false })
+  @IsNumber()
+  @IsOptional()
+  extraDeductionAmount?: number;
+
+  @ApiProperty({ description: 'Deduction adjustment description', required: false })
+  @IsString()
+  @IsOptional()
+  deductionDescription?: string;
+}
+
 export class DisburseDto {
   @ApiProperty({ description: 'Month key (e.g. 2026-06)' })
   @IsString()

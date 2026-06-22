@@ -20,7 +20,7 @@ import {
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
-import { DisburseDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
+import { DisburseDto, UpdatePayslipAdjustmentsDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { NotificationService } from '../notifications/notifications.service';
@@ -594,21 +594,82 @@ export class PayrollService implements OnModuleInit {
 
   // Update a specific payslip's bonus
   async updatePayslipBonus(monthKey: string, payslipId: string, dto: UpdatePayslipBonusDto) {
+    return this.updatePayslipAdjustments(monthKey, payslipId, dto);
+  }
+
+  // Update draft-only manual additions/deductions for a specific payslip.
+  async updatePayslipAdjustments(monthKey: string, payslipId: string, dto: UpdatePayslipAdjustmentsDto) {
+    const [cycle] = await this.db
+      .select()
+      .from(payrollCycles)
+      .where(eq(payrollCycles.monthKey, monthKey))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Payroll cycle not found`);
+    }
+
+    if (cycle.status !== 'Draft') {
+      throw new BadRequestException(`Only draft payroll cycles can be adjusted`);
+    }
+
     const [payslip] = await this.db
       .select()
       .from(employeePayslips)
-      .where(eq(employeePayslips.id, payslipId))
+      .where(
+        and(
+          eq(employeePayslips.id, payslipId),
+          eq(employeePayslips.payrollCycleId, cycle.id),
+        ),
+      )
       .limit(1);
 
     if (!payslip) {
       throw new NotFoundException(`Payslip not found`);
     }
 
+    const additionalAmount = Math.max(0, Number(dto.additionalAmount || 0));
+    const deductionReductionAmount = Math.max(0, Number(dto.deductionReductionAmount || 0));
+    const extraDeductionAmount = Math.max(0, Number(dto.extraDeductionAmount || 0));
+    const newBonus = Math.max(0, Number(dto.bonusAmount || 0));
+
+    const cleanManualEntries = (entries: Record<string, number> | null | undefined) => {
+      const cleaned: Record<string, number> = {};
+      for (const [key, value] of Object.entries(entries || {})) {
+        if (
+          key.startsWith('Manual Addition') ||
+          key.startsWith('Deduction Reduction') ||
+          key.startsWith('Extra Deduction')
+        ) {
+          continue;
+        }
+        cleaned[key] = Number(value) || 0;
+      }
+      return cleaned;
+    };
+
+    const makeLabel = (prefix: string, description?: string) => {
+      const suffix = description?.trim();
+      return suffix ? `${prefix}: ${suffix}` : prefix;
+    };
+
+    const allowances = cleanManualEntries(payslip.allowances);
+    const deductions = cleanManualEntries(payslip.deductions);
+
+    if (additionalAmount > 0) {
+      allowances[makeLabel('Manual Addition', dto.additionalDescription)] = additionalAmount;
+    }
+    if (deductionReductionAmount > 0) {
+      deductions[makeLabel('Deduction Reduction', dto.deductionDescription)] = -deductionReductionAmount;
+    }
+    if (extraDeductionAmount > 0) {
+      deductions[makeLabel('Extra Deduction', dto.deductionDescription)] = extraDeductionAmount;
+    }
+
     const basic = payslip.basicSalary;
-    const allowancesSum = Object.values(payslip.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
-    const deductionsSum = Object.values(payslip.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const allowancesSum = Object.values(allowances).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const deductionsSum = Object.values(deductions).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const festivalBonus = payslip.festivalBonusAmount || 0;
-    const newBonus = dto.bonusAmount || 0;
 
     const netPay = basic + allowancesSum + festivalBonus + newBonus - deductionsSum;
 
@@ -617,6 +678,8 @@ export class PayrollService implements OnModuleInit {
       .set({
         bonusAmount: newBonus,
         bonusDescription: dto.bonusDescription || '',
+        allowances,
+        deductions,
         netPay,
       })
       .where(eq(employeePayslips.id, payslipId));

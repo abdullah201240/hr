@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PayrollService } from './payroll.service';
-import { DisburseDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
+import { DisburseDto, UpdatePayslipAdjustmentsDto, UpdatePayslipBonusDto } from './dto/payroll.dto';
 
 @ApiTags('Payroll')
 @ApiBearerAuth()
@@ -29,6 +29,16 @@ export class PayrollController {
     @Body() dto: UpdatePayslipBonusDto,
   ) {
     return this.payrollService.updatePayslipBonus(monthKey, payslipId, dto);
+  }
+
+  @Post('cycles/:monthKey/adjustments/:payslipId')
+  @ApiOperation({ summary: 'Update draft payslip manual additions and deductions' })
+  async updatePayslipAdjustments(
+    @Param('monthKey') monthKey: string,
+    @Param('payslipId') payslipId: string,
+    @Body() dto: UpdatePayslipAdjustmentsDto,
+  ) {
+    return this.payrollService.updatePayslipAdjustments(monthKey, payslipId, dto);
   }
 
   @Post('cycles/:monthKey/process')

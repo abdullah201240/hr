@@ -130,7 +130,7 @@ export function DayDetailDialog({
         {showLeaveMode ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-center text-base font-bold text-[#0c624d]">
+              <DialogTitle className="text-center text-base font-bold text-[#0c624d] dark:text-emerald-400">
                 Leave Request Details
               </DialogTitle>
               <DialogDescription className="text-center text-xs">
@@ -142,51 +142,51 @@ export function DayDetailDialog({
               {/* Two-column Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Left Column Box */}
-                <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
-                  <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
-                    <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
+                <div className="border border-[#badbcc] dark:border-emerald-800/30 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm">
+                  <div className="bg-[#f5f9f6] dark:bg-emerald-950/20 px-3 py-2 border-b border-[#badbcc] dark:border-emerald-800/30">
+                    <h3 className="text-xs font-bold text-[#0c624d] dark:text-emerald-400 uppercase tracking-wide">Leave Application</h3>
                   </div>
                   <table className="w-full text-[11px] border-collapse">
                     <tbody>
-                      <tr className="border-b border-[#dee2e6]">
-                        <td className="w-1/3 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Employee :</td>
-                        <td className="p-2 font-bold text-gray-800">{selectedLeave.employeeName || user?.fullNameEnglish || "—"}</td>
+                      <tr className="border-b border-[#dee2e6] dark:border-border/30">
+                        <td className="w-1/3 bg-[#fdfdfd] dark:bg-muted/30 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/30">Employee :</td>
+                        <td className="p-2 font-bold text-foreground">{selectedLeave.employeeName || user?.fullNameEnglish || "—"}</td>
                       </tr>
-                      <tr className="border-b border-[#dee2e6]">
-                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Apply Date :</td>
-                        <td className="p-2 font-bold text-gray-800">{formatDateDMY(selectedLeave.createdAt)}</td>
+                      <tr className="border-b border-[#dee2e6] dark:border-border/30">
+                        <td className="bg-[#fdfdfd] dark:bg-muted/30 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/30">Apply Date :</td>
+                        <td className="p-2 font-bold text-foreground">{formatDateDMY(selectedLeave.createdAt)}</td>
                       </tr>
                       <tr>
-                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Date Range :</td>
-                        <td className="p-2 font-bold text-[#0c624d]">{formatDateDMY(selectedLeave.startDate)} - {formatDateDMY(selectedLeave.endDate)}</td>
+                        <td className="bg-[#fdfdfd] dark:bg-muted/30 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/30">Date Range :</td>
+                        <td className="p-2 font-bold text-[#0c624d] dark:text-emerald-400">{formatDateDMY(selectedLeave.startDate)} - {formatDateDMY(selectedLeave.endDate)}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {/* Right Column Box */}
-                <div className="border border-[#badbcc] rounded-md overflow-hidden bg-white shadow-sm">
-                  <div className="bg-[#f5f9f6] px-3 py-2 border-b border-[#badbcc]">
-                    <h3 className="text-xs font-bold text-[#0c624d] uppercase tracking-wide">Leave Application</h3>
+                <div className="border border-[#badbcc] dark:border-emerald-800/30 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm">
+                  <div className="bg-[#f5f9f6] dark:bg-emerald-950/20 px-3 py-2 border-b border-[#badbcc] dark:border-emerald-800/30">
+                    <h3 className="text-xs font-bold text-[#0c624d] dark:text-emerald-400 uppercase tracking-wide">Leave Application</h3>
                   </div>
                   <table className="w-full text-[11px] border-collapse">
                     <tbody>
-                      <tr className="border-b border-[#dee2e6]">
-                        <td className="w-2/5 bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Leave Name :</td>
-                        <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypeName || "Leave"}</td>
+                      <tr className="border-b border-[#dee2e6] dark:border-border/30">
+                        <td className="w-2/5 bg-[#fdfdfd] dark:bg-muted/30 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/30">Leave Name :</td>
+                        <td className="p-2 font-bold text-foreground">{selectedLeave.leaveTypeName || "Leave"}</td>
                       </tr>
-                      <tr className="border-b border-[#dee2e6]">
-                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Pay Type :</td>
-                        <td className="p-2 font-bold text-gray-800">{selectedLeave.leaveTypePaid ? "Paid Leave" : "Unpaid Leave"}</td>
+                      <tr className="border-b border-[#dee2e6] dark:border-border/30">
+                        <td className="bg-[#fdfdfd] dark:bg-muted/30 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/30">Pay Type :</td>
+                        <td className="p-2 font-bold text-foreground">{selectedLeave.leaveTypePaid ? "Paid Leave" : "Unpaid Leave"}</td>
                       </tr>
                       <tr>
-                        <td className="bg-[#fdfdfd] p-2 font-bold text-[#0c624d] border-r border-[#dee2e6]">Approval Status :</td>
+                        <td className="bg-[#fdfdfd] dark:bg-muted/30 p-2 font-bold text-[#0c624d] dark:text-emerald-400 border-r border-[#dee2e6] dark:border-border/30">Approval Status :</td>
                         <td className="p-2">
                           <span className={cn(
                             "font-bold",
-                            selectedLeave.status === "Approved" && "text-emerald-700",
-                            selectedLeave.status === "Pending" && "text-amber-600",
-                            selectedLeave.status === "Rejected" && "text-rose-600"
+                            selectedLeave.status === "Approved" && "text-emerald-600 dark:text-emerald-400",
+                            selectedLeave.status === "Pending" && "text-amber-500 dark:text-amber-400",
+                            selectedLeave.status === "Rejected" && "text-rose-500 dark:text-rose-400"
                           )}>
                             {selectedLeave.status}
                           </span>
@@ -200,20 +200,20 @@ export function DayDetailDialog({
               {/* Application Documents Section */}
               <div className="space-y-2">
                 <div
-                  className="flex items-center justify-between gap-1 text-[13px] font-bold text-[#0c624d] hover:text-[#0c624d]/80 transition-colors cursor-pointer select-none bg-[#f5f9f6] border border-[#badbcc] rounded-md px-3 py-2"
+                  className="flex items-center justify-between gap-1 text-[13px] font-bold text-[#0c624d] dark:text-emerald-400 hover:text-[#0c624d]/80 dark:hover:text-emerald-300 transition-colors cursor-pointer select-none bg-[#f5f9f6] dark:bg-emerald-950/20 border border-[#badbcc] dark:border-emerald-800/30 rounded-md px-3 py-2"
                   onClick={() => setDocsOpen(!docsOpen)}
                 >
                   <span>Application Documents</span>
                   {docsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
                 {docsOpen && (
-                  <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm transition-all duration-200">
+                  <div className="border border-[#dee2e6] dark:border-border/30 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm transition-all duration-200">
                     <table className="w-full text-[11px] border-collapse">
                       <thead>
-                        <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
-                          <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
-                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Name</th>
-                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Document Extension</th>
+                        <tr className="bg-[#f8f9fa] dark:bg-muted/40 text-foreground border-b border-[#dee2e6] dark:border-border/30">
+                          <th className="w-12 p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-center">SL</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-left">Name</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-left">Document Extension</th>
                           <th className="w-24 p-2.5 font-bold text-center">Action</th>
                         </tr>
                       </thead>
@@ -222,16 +222,16 @@ export function DayDetailDialog({
                           selectedLeave.attachments.map((att: any, idx: number) => {
                             const extension = att.fileName.split(".").pop() || "unknown";
                             return (
-                              <tr key={att.id || idx} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
-                                <td className="p-2 border-r border-[#dee2e6] text-center">{idx + 1}</td>
-                                <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{att.title || att.fileName}</td>
-                                <td className="p-2 border-r border-[#dee2e6] text-left">{extension}</td>
+                              <tr key={att.id || idx} className="border-b border-[#dee2e6] dark:border-border/30 hover:bg-muted/50">
+                                <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-center">{idx + 1}</td>
+                                <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-left font-medium">{att.title || att.fileName}</td>
+                                <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-left">{extension}</td>
                                 <td className="p-2 text-center">
                                   <a
                                     href={att.fileUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="inline-flex items-center justify-center p-1 rounded hover:bg-rose-50 text-rose-600 transition-colors"
+                                    className="inline-flex items-center justify-center p-1 rounded hover:bg-rose-500/10 text-rose-500 transition-colors"
                                   >
                                     <ImageIcon className="h-4 w-4" />
                                   </a>
@@ -241,7 +241,7 @@ export function DayDetailDialog({
                           })
                         ) : (
                           <tr>
-                            <td colSpan={4} className="p-4 text-center text-gray-400 italic">No documents uploaded</td>
+                            <td colSpan={4} className="p-4 text-center text-muted-foreground italic">No documents uploaded</td>
                           </tr>
                         )}
                       </tbody>
@@ -253,21 +253,21 @@ export function DayDetailDialog({
               {/* Application Approval History Section */}
               <div className="space-y-2">
                 <div
-                  className="flex items-center justify-between gap-1 text-[13px] font-bold text-[#0c624d] hover:text-[#0c624d]/80 transition-colors cursor-pointer select-none bg-[#f5f9f6] border border-[#badbcc] rounded-md px-3 py-2"
+                  className="flex items-center justify-between gap-1 text-[13px] font-bold text-[#0c624d] dark:text-emerald-400 hover:text-[#0c624d]/80 dark:hover:text-emerald-300 transition-colors cursor-pointer select-none bg-[#f5f9f6] dark:bg-emerald-950/20 border border-[#badbcc] dark:border-emerald-800/30 rounded-md px-3 py-2"
                   onClick={() => setHistoryOpen(!historyOpen)}
                 >
                   <span>Application Approval History</span>
                   {historyOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
                 {historyOpen && (
-                  <div className="border border-[#dee2e6] rounded-md overflow-hidden bg-white shadow-sm transition-all duration-200">
+                  <div className="border border-[#dee2e6] dark:border-border/30 rounded-md overflow-hidden bg-white dark:bg-card shadow-sm transition-all duration-200">
                     <table className="w-full text-[11px] border-collapse">
                       <thead>
-                        <tr className="bg-[#f8f9fa] text-gray-700 border-b border-[#dee2e6]">
-                          <th className="w-12 p-2.5 border-r border-[#dee2e6] font-bold text-center">SL</th>
-                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Activity by</th>
-                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Time</th>
-                          <th className="p-2.5 border-r border-[#dee2e6] font-bold text-left">Type</th>
+                        <tr className="bg-[#f8f9fa] dark:bg-muted/40 text-foreground border-b border-[#dee2e6] dark:border-border/30">
+                          <th className="w-12 p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-center">SL</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-left">Activity by</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-left">Time</th>
+                          <th className="p-2.5 border-r border-[#dee2e6] dark:border-border/30 font-bold text-left">Type</th>
                           <th className="p-2.5 font-bold text-left">Remark</th>
                         </tr>
                       </thead>
@@ -310,12 +310,12 @@ export function DayDetailDialog({
                           }
                           return history;
                         })().map((row) => (
-                          <tr key={row.sl} className="border-b border-[#dee2e6] hover:bg-gray-50/50">
-                            <td className="p-2 border-r border-[#dee2e6] text-center">{row.sl}</td>
-                            <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.activityBy}</td>
-                            <td className="p-2 border-r border-[#dee2e6] text-left">{row.time}</td>
-                            <td className="p-2 border-r border-[#dee2e6] text-left font-medium">{row.type}</td>
-                            <td className="p-2 text-left text-gray-500">{row.remark || "—"}</td>
+                          <tr key={row.sl} className="border-b border-[#dee2e6] dark:border-border/30 hover:bg-muted/50">
+                            <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-center">{row.sl}</td>
+                            <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-left font-medium">{row.activityBy}</td>
+                            <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-left">{row.time}</td>
+                            <td className="p-2 border-r border-[#dee2e6] dark:border-border/30 text-left font-medium">{row.type}</td>
+                            <td className="p-2 text-left text-muted-foreground">{row.remark || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -330,7 +330,7 @@ export function DayDetailDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => onOpenChange(false)}
-                className="h-8 border-[#f08135] text-[#f08135] hover:bg-[#f08135]/10 text-[11px] font-bold"
+                className="h-8 border-[#f08135] text-[#f08135] hover:bg-[#f08135]/10 dark:border-orange-500 dark:text-orange-400 dark:hover:bg-orange-500/10 text-[11px] font-bold"
               >
                 Cancel
               </Button>
