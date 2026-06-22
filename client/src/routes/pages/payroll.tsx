@@ -294,6 +294,10 @@ export default function PayrollPage() {
 
   // Calculate total monthly analytics
   const payslipsList = cycle?.payslips || []
+  const isDisbursed = useMemo(() => {
+    return payslipsList.length > 0 && payslipsList.every((p) => p.paymentStatus === "Paid")
+  }, [payslipsList])
+
   const totalNetPay = payslipsList.reduce((sum, p) => sum + p.netPay, 0)
   const totalAllowancesSum = payslipsList.reduce(
     (sum, p) => {
@@ -385,6 +389,13 @@ export default function PayrollPage() {
                 Disburse Salaries
               </Button>
             </div>
+          ) : cycleStatus === "Distributed" && !isDisbursed ? (
+            <div className="flex gap-2">
+              <Button size="sm" className="gap-2 text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setIsDisburseOpen(true)}>
+                <CreditCard className="h-4 w-4" />
+                Disburse Salaries
+              </Button>
+            </div>
           ) : (
             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-3 py-1 font-semibold flex items-center gap-1 text-xs">
               <CheckCircle className="h-3.5 w-3.5" />
@@ -407,8 +418,8 @@ export default function PayrollPage() {
         </div>
         <div className="h-[1px] w-12 bg-border" />
         <div className="flex items-center gap-2">
-          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", cycleStatus === "Processed" ? "bg-primary text-primary-foreground" : cycleStatus === "Distributed" ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
-            {cycleStatus === "Distributed" ? "✓" : "2"}
+          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", cycleStatus === "Processed" ? "bg-primary text-primary-foreground" : (cycleStatus === "Distributed" || isDisbursed) ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground")}>
+            {(cycleStatus === "Distributed" || isDisbursed) ? "✓" : "2"}
           </Badge>
           <div>
             <p className="font-semibold">Locked & Processed</p>
@@ -417,8 +428,8 @@ export default function PayrollPage() {
         </div>
         <div className="h-[1px] w-12 bg-border" />
         <div className="flex items-center gap-2">
-          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", cycleStatus === "Distributed" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-            3
+          <Badge className={cn("h-6 w-6 rounded-full p-0 flex items-center justify-center font-bold text-xs", isDisbursed ? "bg-emerald-500 text-white" : (cycleStatus === "Distributed" && !isDisbursed) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+            {isDisbursed ? "✓" : "3"}
           </Badge>
           <div>
             <p className="font-semibold">Disbursed Payout</p>

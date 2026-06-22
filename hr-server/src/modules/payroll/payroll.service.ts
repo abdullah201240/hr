@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
-import { eq, and, sql, asc, not, inArray, between, lte, gte } from 'drizzle-orm';
+import { eq, and, or, sql, asc, not, inArray, between, lte, gte } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   payrollCycles,
@@ -1223,7 +1223,7 @@ export class PayrollService implements OnModuleInit {
     return list;
   }
 
-  // Get accumulated PF balances based on Paid payslips
+  // Get accumulated PF balances based on Paid or Distributed payslips
   async getPfBalances() {
     return this.db
       .select({
@@ -1232,7 +1232,13 @@ export class PayrollService implements OnModuleInit {
         monthsContributed: sql<number>`COUNT(DISTINCT ${employeePayslips.payrollCycleId})`,
       })
       .from(employeePayslips)
-      .where(eq(employeePayslips.paymentStatus, 'Paid'))
+      .innerJoin(payrollCycles, eq(employeePayslips.payrollCycleId, payrollCycles.id))
+      .where(
+        or(
+          eq(employeePayslips.paymentStatus, 'Paid'),
+          eq(payrollCycles.status, 'Distributed'),
+        ),
+      )
       .groupBy(employeePayslips.employeeId);
   }
 

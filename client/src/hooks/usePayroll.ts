@@ -52,6 +52,7 @@ export function useProcessPayrollMutation() {
       apiClient.post<PayrollCycle>(`payroll/cycles/${monthKey}/process`, {}),
     onSuccess: (_, monthKey) => {
       queryClient.invalidateQueries({ queryKey: ["payrollCycle", monthKey] });
+      queryClient.invalidateQueries({ queryKey: ["pfBalances"] });
     },
   });
 }
@@ -74,6 +75,7 @@ export function useDistributePayrollMutation() {
       apiClient.post<PayrollCycle>(`payroll/cycles/${monthKey}/distribute`, {}),
     onSuccess: (_, monthKey) => {
       queryClient.invalidateQueries({ queryKey: ["payrollCycle", monthKey] });
+      queryClient.invalidateQueries({ queryKey: ["pfBalances"] });
     },
   });
 }
@@ -90,6 +92,7 @@ export function useDisburseMutation() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["payrollCycle", variables.monthKey] });
       queryClient.invalidateQueries({ queryKey: ["disbursements"] });
+      queryClient.invalidateQueries({ queryKey: ["pfBalances"] });
     },
   });
 }
