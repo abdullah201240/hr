@@ -824,7 +824,7 @@ export class PayrollService implements OnModuleInit {
           category: NotificationCategory.SYSTEM,
           title: 'Payslip Published',
           message: `Your payslip for ${monthKey} has been published. Net Pay: ${slip.netPay} BDT.`,
-          actionUrl: '/payroll',
+          actionUrl: '/profile?tab=payslips',
           entityType: 'payroll_cycle',
           entityId: cycleId,
         })),
@@ -843,7 +843,7 @@ export class PayrollService implements OnModuleInit {
           category: NotificationCategory.SYSTEM,
           title: 'Salary Disbursed',
           message: `Your salary for ${dto.monthKey} has been disbursed via ${dto.paymentMethod}. Net Pay: ${slip.netPay} BDT.`,
-          actionUrl: '/payroll',
+          actionUrl: '/profile?tab=payslips',
           entityType: 'disbursement',
         })),
       );

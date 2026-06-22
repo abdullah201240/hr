@@ -53,6 +53,10 @@ export function PayrollProcessingTab({
   const [adjustmentItems, setAdjustmentItems] = useState<AdjustmentItem[]>([])
   const [partialStartDay, setPartialStartDay] = useState("1")
   const [partialEndDay, setPartialEndDay] = useState("15")
+  const [prorationMode, setProrationMode] = useState<"dayRange" | "dateRange" | "paidDays">("dayRange")
+  const [partialStartDate, setPartialStartDate] = useState("")
+  const [partialEndDate, setPartialEndDate] = useState("")
+  const [customPaidDays, setCustomPaidDays] = useState("10")
 
   const getPayslipAllowancesSum = (p: Payslip) => {
     if (p.allowances && Object.keys(p.allowances).length > 0) {
@@ -110,6 +114,12 @@ export function PayrollProcessingTab({
     setAdjustmentItems(getExistingAdjustmentItems(payslip))
     setPartialStartDay("1")
     setPartialEndDay("15")
+    setProrationMode("dayRange")
+    setCustomPaidDays("10")
+    if (selectedMonth) {
+      setPartialStartDate(`${selectedMonth}-01`)
+      setPartialEndDate(`${selectedMonth}-15`)
+    }
   }
 
   const parseMoneyInput = (value: string) => {
@@ -153,15 +163,34 @@ export function PayrollProcessingTab({
     if (!adjustingPayslip) return
 
     const daysInMonth = getDaysInSelectedMonth()
-    const startDay = parseDayInput(partialStartDay)
-    const endDay = parseDayInput(partialEndDay)
-    if (startDay > endDay) return
+    let paidDays = 0
+    let title = ""
 
-    const paidDays = endDay - startDay + 1
+    if (prorationMode === "dayRange") {
+      const startDay = parseDayInput(partialStartDay)
+      const endDay = parseDayInput(partialEndDay)
+      if (startDay > endDay) return
+      paidDays = endDay - startDay + 1
+      title = `Partial salary period (${startDay}-${endDay})`
+    } else if (prorationMode === "dateRange") {
+      if (!partialStartDate || !partialEndDate) return
+      const start = new Date(partialStartDate)
+      const end = new Date(partialEndDate)
+      if (start > end) return
+      const startDay = start.getDate()
+      const endDay = end.getDate()
+      paidDays = endDay - startDay + 1
+      title = `Partial salary period (${startDay}-${endDay})`
+    } else if (prorationMode === "paidDays") {
+      const days = Math.trunc(Number(customPaidDays || 0))
+      if (days <= 0 || days > daysInMonth) return
+      paidDays = days
+      title = `Partial salary period (${paidDays} days)`
+    }
+
     const unpaidDays = daysInMonth - paidDays
     const baseNetPay = Math.max(0, adjustingPayslip.netPay - existingManualImpact)
     const deductionAmount = Math.round((baseNetPay / daysInMonth) * unpaidDays)
-    const title = `Partial salary period (${startDay}-${endDay})`
 
     setAdjustmentItems((items) => {
       const withoutPreviousPartial = items.filter((item) => !item.title.startsWith("Partial salary period"))
@@ -484,46 +513,177 @@ export function PayrollProcessingTab({
                   {getDaysInSelectedMonth()} days
                 </Badge>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[120px_120px_1fr_auto] sm:items-end">
-                <div className="space-y-1.5">
-                  <Label htmlFor="partial-start-day" className="text-xs">Start Day</Label>
-                  <Input
-                    id="partial-start-day"
-                    type="number"
-                    min="1"
-                    max={getDaysInSelectedMonth()}
-                    value={partialStartDay}
-                    onChange={(event) => setPartialStartDay(event.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="partial-end-day" className="text-xs">End Day</Label>
-                  <Input
-                    id="partial-end-day"
-                    type="number"
-                    min="1"
-                    max={getDaysInSelectedMonth()}
-                    value={partialEndDay}
-                    onChange={(event) => setPartialEndDay(event.target.value)}
-                  />
-                </div>
-                <div className="rounded-md bg-background px-3 py-2 text-[11px] text-muted-foreground">
+
+              {/* Mode Selector */}
+              <div className="flex gap-2 mb-3 border-b border-border/40 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setProrationMode("dayRange")}
+                  className={cn(
+                    "text-xs px-3 py-1.5 rounded-md transition-colors",
+                    prorationMode === "dayRange"
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  By Day Range
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProrationMode("dateRange")}
+                  className={cn(
+                    "text-xs px-3 py-1.5 rounded-md transition-colors",
+                    prorationMode === "dateRange"
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  By Calendar Dates
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProrationMode("paidDays")}
+                  className={cn(
+                    "text-xs px-3 py-1.5 rounded-md transition-colors",
+                    prorationMode === "paidDays"
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "hover:bg-muted text-muted-foreground"
+                  )}
+                >
+                  Exact Paid Days
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                {prorationMode === "dayRange" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="partial-start-day" className="text-xs">Start Day</Label>
+                      <Input
+                        id="partial-start-day"
+                        type="number"
+                        min="1"
+                        max={getDaysInSelectedMonth()}
+                        value={partialStartDay}
+                        onChange={(event) => setPartialStartDay(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="partial-end-day" className="text-xs">End Day</Label>
+                      <Input
+                        id="partial-end-day"
+                        type="number"
+                        min="1"
+                        max={getDaysInSelectedMonth()}
+                        value={partialEndDay}
+                        onChange={(event) => setPartialEndDay(event.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {prorationMode === "dateRange" && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="partial-start-date" className="text-xs">Start Date</Label>
+                      <Input
+                        id="partial-start-date"
+                        type="date"
+                        min={`${selectedMonth}-01`}
+                        max={`${selectedMonth}-${getDaysInSelectedMonth()}`}
+                        value={partialStartDate}
+                        onChange={(event) => setPartialStartDate(event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="partial-end-date" className="text-xs">End Date</Label>
+                      <Input
+                        id="partial-end-date"
+                        type="date"
+                        min={`${selectedMonth}-01`}
+                        max={`${selectedMonth}-${getDaysInSelectedMonth()}`}
+                        value={partialEndDate}
+                        onChange={(event) => setPartialEndDate(event.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {prorationMode === "paidDays" && (
+                  <div className="space-y-1.5 col-span-2">
+                    <Label htmlFor="custom-paid-days" className="text-xs">Number of Paid Days</Label>
+                    <Input
+                      id="custom-paid-days"
+                      type="number"
+                      min="1"
+                      max={getDaysInSelectedMonth()}
+                      value={customPaidDays}
+                      onChange={(event) => setCustomPaidDays(event.target.value)}
+                      placeholder="e.g. 10"
+                    />
+                  </div>
+                )}
+
+                <div className="rounded-md bg-background px-3 py-2 text-[11px] text-muted-foreground col-span-full sm:col-span-1 flex items-center">
                   {(() => {
-                    const startDay = parseDayInput(partialStartDay)
-                    const endDay = parseDayInput(partialEndDay)
-                    if (startDay > endDay) return "End day must be after start day."
-                    const paidDays = endDay - startDay + 1
-                    const unpaidDays = getDaysInSelectedMonth() - paidDays
+                    const daysInMonth = getDaysInSelectedMonth()
+                    let paidDays = 0
+                    let errorMsg = ""
+
+                    if (prorationMode === "dayRange") {
+                      const startDay = parseDayInput(partialStartDay)
+                      const endDay = parseDayInput(partialEndDay)
+                      if (startDay > endDay) errorMsg = "End day must be after start day."
+                      else paidDays = endDay - startDay + 1
+                    } else if (prorationMode === "dateRange") {
+                      if (!partialStartDate || !partialEndDate) {
+                        errorMsg = "Please select start and end dates."
+                      } else {
+                        const start = new Date(partialStartDate)
+                        const end = new Date(partialEndDate)
+                        if (start > end) {
+                          errorMsg = "End date must be after start date."
+                        } else {
+                          paidDays = end.getDate() - start.getDate() + 1
+                        }
+                      }
+                    } else if (prorationMode === "paidDays") {
+                      const days = Math.trunc(Number(customPaidDays || 0))
+                      if (isNaN(days) || days <= 0) {
+                        errorMsg = "Please enter valid number of days."
+                      } else if (days > daysInMonth) {
+                        errorMsg = `Days cannot exceed ${daysInMonth}.`
+                      } else {
+                        paidDays = days
+                      }
+                    }
+
+                    if (errorMsg) return <span className="text-rose-500">{errorMsg}</span>
+
+                    const unpaidDays = daysInMonth - paidDays
                     const baseNetPay = adjustingPayslip ? Math.max(0, adjustingPayslip.netPay - existingManualImpact) : 0
-                    const deductionAmount = Math.round((baseNetPay / getDaysInSelectedMonth()) * unpaidDays)
+                    const deductionAmount = Math.round((baseNetPay / daysInMonth) * unpaidDays)
                     return `${paidDays} paid day(s), ${unpaidDays} unpaid day(s), deduction ${formatCurrency(deductionAmount)}`
                   })()}
                 </div>
+
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleApplyPartialPayPeriod}
-                  disabled={parseDayInput(partialStartDay) > parseDayInput(partialEndDay)}
+                  disabled={(() => {
+                    const daysInMonth = getDaysInSelectedMonth()
+                    if (prorationMode === "dayRange") {
+                      return parseDayInput(partialStartDay) > parseDayInput(partialEndDay)
+                    } else if (prorationMode === "dateRange") {
+                      if (!partialStartDate || !partialEndDate) return true
+                      return new Date(partialStartDate) > new Date(partialEndDate)
+                    } else if (prorationMode === "paidDays") {
+                      const days = Number(customPaidDays)
+                      return isNaN(days) || days <= 0 || days > daysInMonth
+                    }
+                    return true
+                  })()}
                   className="gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
