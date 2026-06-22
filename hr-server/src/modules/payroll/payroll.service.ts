@@ -1411,7 +1411,22 @@ export class PayrollService implements OnModuleInit {
     appliedMonthKey?: string;
     status?: string;
   }) {
-    let query = this.db
+    const whereConditions = [];
+
+    if (filters?.employeeId) {
+      whereConditions.push(eq(salaryAdjustments.employeeId, filters.employeeId));
+    }
+    if (filters?.targetMonthKey) {
+      whereConditions.push(eq(salaryAdjustments.targetMonthKey, filters.targetMonthKey));
+    }
+    if (filters?.appliedMonthKey) {
+      whereConditions.push(eq(salaryAdjustments.appliedMonthKey, filters.appliedMonthKey));
+    }
+    if (filters?.status) {
+      whereConditions.push(eq(salaryAdjustments.status, filters.status));
+    }
+
+    const adjustments = await this.db
       .select({
         id: salaryAdjustments.id,
         employeeId: salaryAdjustments.employeeId,
@@ -1427,28 +1442,9 @@ export class PayrollService implements OnModuleInit {
         employeeEmail: employees.email,
       })
       .from(salaryAdjustments)
-      .innerJoin(employees, eq(salaryAdjustments.employeeId, employees.id));
-
-    const conditions = [];
-
-    if (filters?.employeeId) {
-      conditions.push(eq(salaryAdjustments.employeeId, filters.employeeId));
-    }
-    if (filters?.targetMonthKey) {
-      conditions.push(eq(salaryAdjustments.targetMonthKey, filters.targetMonthKey));
-    }
-    if (filters?.appliedMonthKey) {
-      conditions.push(eq(salaryAdjustments.appliedMonthKey, filters.appliedMonthKey));
-    }
-    if (filters?.status) {
-      conditions.push(eq(salaryAdjustments.status, filters.status));
-    }
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const adjustments = await query.orderBy(sql`${salaryAdjustments.createdAt} DESC`);
+      .innerJoin(employees, eq(salaryAdjustments.employeeId, employees.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(sql`${salaryAdjustments.createdAt} DESC`);
 
     return {
       success: true,
