@@ -118,16 +118,26 @@ export class PayrollService implements OnModuleInit {
 
     let payslips = await this.getPayslipsForCycle(cycle.id);
 
-    // Self-healing: if cycle exists as Draft but has 0 payslips, generate them synchronously!
-    if (cycle.status === 'Draft' && payslips.length === 0) {
-      this.logger.log(`Draft cycle ${monthKey} has 0 payslips. Triggering synchronous auto-generation.`);
+    const hasLegacyAttendanceMetrics = payslips.some((p) => (p.totalWorkingDays ?? 0) === 0);
+
+    // Self-healing: if cycle exists as Draft but has missing/legacy data, regenerate synchronously.
+    if (cycle.status === 'Draft' && (payslips.length === 0 || hasLegacyAttendanceMetrics)) {
+      this.logger.log(
+        payslips.length === 0
+          ? `Draft cycle ${monthKey} has 0 payslips. Triggering synchronous auto-generation.`
+          : `Draft cycle ${monthKey} has payslips with missing attendance metrics. Triggering synchronous sync.`,
+      );
       try {
         await this.db
           .update(payrollCycles)
           .set({ isProcessing: true })
           .where(eq(payrollCycles.id, cycle.id));
         
-        await this.processGeneratePayroll(cycle.id, monthKey);
+        if (payslips.length === 0) {
+          await this.processGeneratePayroll(cycle.id, monthKey);
+        } else {
+          await this.processSyncPayroll(cycle.id, monthKey);
+        }
         
         const [updatedCycle] = await this.db
           .select()
