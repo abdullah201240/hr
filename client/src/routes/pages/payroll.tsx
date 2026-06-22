@@ -529,6 +529,7 @@ export default function PayrollPage() {
             setViewPayslip={setViewPayslip}
             monthsOptions={monthsOptions}
             isLoading={isCycleLoading}
+            employees={employees}
           />
         </TabsContent>
 

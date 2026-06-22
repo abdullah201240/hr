@@ -90,8 +90,25 @@ export class PayrollService implements OnModuleInit {
         .returning();
       cycle = newCycle;
 
-      // Queue background payroll generation
-      await this.payrollQueue.add('generate-payroll', { cycleId: cycle.id, monthKey });
+      // Generate payroll synchronously to avoid BullMQ/Redis queue issues
+      try {
+        await this.processGeneratePayroll(cycle.id, monthKey);
+        const [updatedCycle] = await this.db
+          .select()
+          .from(payrollCycles)
+          .where(eq(payrollCycles.id, cycle.id))
+          .limit(1);
+        if (updatedCycle) {
+          cycle = updatedCycle;
+        }
+      } catch (err: any) {
+        this.logger.error(`Failed to generate payroll synchronously: ${err.message}`, err.stack);
+        await this.db
+          .update(payrollCycles)
+          .set({ isProcessing: false })
+          .where(eq(payrollCycles.id, cycle.id));
+        cycle.isProcessing = false;
+      }
     }
 
     const payslips = await this.getPayslipsForCycle(cycle.id);
@@ -213,9 +230,10 @@ export class PayrollService implements OnModuleInit {
           .limit(1);
 
         if (!salAssignment) {
-          throw new BadRequestException(
-            `Salary assignment is missing for active employee ${emp.fullNameEnglish} (${emp.employeeId}). Please assign a salary first.`
+          this.logger.warn(
+            `Salary assignment is missing for active employee ${emp.fullNameEnglish} (${emp.employeeId}). Skipping from payroll generation.`
           );
+          continue;
         }
 
         const basic = salAssignment.basicSalary;
@@ -397,8 +415,12 @@ export class PayrollService implements OnModuleInit {
       .set({ status: 'Distributed' })
       .where(eq(payrollCycles.id, cycle.id));
 
-    // Queue background email distribution
-    await this.payrollQueue.add('distribute-emails', { monthKey, cycleId: cycle.id });
+    // Run email distribution synchronously to avoid BullMQ/Redis dependencies
+    try {
+      await this.processEmailDistribution(cycle.id, monthKey);
+    } catch (err: any) {
+      this.logger.error(`Failed to distribute emails synchronously: ${err.message}`, err.stack);
+    }
 
     // Trigger Notification
     await this.triggerPayrollDistributionNotifications(cycle.id, monthKey);
@@ -514,7 +536,7 @@ export class PayrollService implements OnModuleInit {
 
   // Sync / Recalculate Draft Cycle
   async syncDraftCycle(monthKey: string) {
-    const [cycle] = await this.db
+    let [cycle] = await this.db
       .select()
       .from(payrollCycles)
       .where(eq(payrollCycles.monthKey, monthKey))
@@ -534,13 +556,29 @@ export class PayrollService implements OnModuleInit {
       .set({ isProcessing: true })
       .where(eq(payrollCycles.id, cycle.id));
 
-    // Queue sync background job
-    await this.payrollQueue.add('sync-payroll', { cycleId: cycle.id, monthKey });
+    // Run synchronously to avoid BullMQ/Redis setup dependencies
+    try {
+      await this.processSyncPayroll(cycle.id, monthKey);
+      const [updatedCycle] = await this.db
+        .select()
+        .from(payrollCycles)
+        .where(eq(payrollCycles.id, cycle.id))
+        .limit(1);
+      if (updatedCycle) {
+        cycle = updatedCycle;
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to sync payroll synchronously: ${err.message}`, err.stack);
+      await this.db
+        .update(payrollCycles)
+        .set({ isProcessing: false })
+        .where(eq(payrollCycles.id, cycle.id));
+      cycle.isProcessing = false;
+    }
 
     const payslips = await this.getPayslipsForCycle(cycle.id);
     return {
       ...cycle,
-      isProcessing: true,
       payslips,
     };
   }
@@ -588,9 +626,10 @@ export class PayrollService implements OnModuleInit {
           .limit(1);
 
         if (!salAssignment) {
-          throw new BadRequestException(
-            `Salary assignment is missing for active employee ${emp.fullNameEnglish} (${emp.employeeId}). Please assign a salary first.`
+          this.logger.warn(
+            `Salary assignment is missing for active employee ${emp.fullNameEnglish} (${emp.employeeId}). Skipping from payroll sync.`
           );
+          continue;
         }
 
         const basic = salAssignment.basicSalary;

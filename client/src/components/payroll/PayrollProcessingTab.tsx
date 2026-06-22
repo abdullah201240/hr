@@ -1,8 +1,9 @@
+import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Gift, Eye, FileSpreadsheet, Loader2 } from "lucide-react"
+import { Gift, Eye, FileSpreadsheet, Loader2, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Payslip } from "@/types/salary"
 import { exportToCsv } from "@/lib/export"
@@ -17,6 +18,7 @@ interface PayrollProcessingTabProps {
   setViewPayslip: (payslip: Payslip | null) => void
   monthsOptions: Array<{ key: string; label: string }>
   isLoading?: boolean
+  employees?: any[]
 }
 
 export function PayrollProcessingTab({
@@ -29,7 +31,15 @@ export function PayrollProcessingTab({
   setViewPayslip,
   monthsOptions,
   isLoading,
+  employees = [],
 }: PayrollProcessingTabProps) {
+
+  const missingSalaries = useMemo(() => {
+    if (!employees || !payslipsList) return []
+    return employees.filter(
+      (emp) => !payslipsList.some((p) => p.employeeId === emp.id)
+    )
+  }, [employees, payslipsList])
 
   const handleExport = () => {
     const headers = [
@@ -112,7 +122,26 @@ export function PayrollProcessingTab({
             <span className="text-xs text-muted-foreground">Loading payslips...</span>
           </div>
         ) : (
-          <Table>
+          <>
+            {cycleStatus === "Draft" && missingSalaries.length > 0 && (
+              <div className="mx-6 my-4 p-4 border border-amber-500/20 bg-amber-500/5 text-amber-600 rounded-lg flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
+                <div className="space-y-1 text-xs">
+                  <p className="font-semibold text-amber-700">Missing Salary Configurations</p>
+                  <p className="text-[11px] text-amber-600/90">
+                    The following {missingSalaries.length} active employee(s) were skipped because they do not have an active salary configuration. Assign their salary in the Employee Salary tab to include them in the payroll cycle:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {missingSalaries.map((emp) => (
+                      <Badge key={emp.id} variant="outline" className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 border-amber-500/20 font-medium py-0.5 px-2">
+                        {emp.fullNameEnglish} ({emp.employeeId})
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <Table>
             <TableHeader className="bg-muted/10 border-b border-border/30">
               <TableRow className="border-b-0 hover:bg-transparent">
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
@@ -229,6 +258,7 @@ export function PayrollProcessingTab({
               )}
             </TableBody>
           </Table>
+          </>
         )}
       </CardContent>
     </Card>

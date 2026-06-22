@@ -49,6 +49,7 @@ const ProfilePage = lazy(() => import("@/routes/pages/profile"))
 const TasksPage = lazy(() => import("@/routes/pages/tasks"))
 const ChatPage = lazy(() => import("@/routes/pages/chat"))
 const NotificationsPage = lazy(() => import("@/routes/pages/notifications"))
+const LeaveApplicationsPage = lazy(() => import("@/routes/pages/leave-applications"))
 
 
 function NotFoundPage() {
@@ -107,6 +108,7 @@ function App() {
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="chat" element={<ChatPage />} />
                   <Route path="notifications" element={<NotificationsPage />} />
+                  <Route path="leave-applications" element={<LeaveApplicationsPage />} />
 
                   {/* Departments & designations: read-only view for all */}
                   <Route path="departments" element={<DepartmentsPage />} />
