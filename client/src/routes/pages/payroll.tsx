@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
 import {
   usePayrollCycleQuery,
-  useUpdatePayslipBonusMutation,
   useProcessPayrollMutation,
   useDistributePayrollMutation,
   useDisburseMutation,
@@ -41,7 +40,6 @@ import { DisbursementLogsTab } from "@/components/payroll/DisbursementLogsTab"
 import { PayrollProcessingTab } from "@/components/payroll/PayrollProcessingTab"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
 import {
-  ConfigureSpecialBonusDialog,
   SalaryDisbursementDialog,
   GlobalPfSetupDialog,
 } from "@/components/payroll/PayrollActionDialogs"
@@ -100,7 +98,6 @@ export default function PayrollPage() {
   // Full lookup for Provident Fund calculation details
   const { data: allSalariesData } = useEmployeeSalariesQuery({ limit: 1000, status: "active" })
 
-  const updateBonusMutation = useUpdatePayslipBonusMutation()
   const processPayrollMutation = useProcessPayrollMutation()
   const distributePayrollMutation = useDistributePayrollMutation()
   const disburseMutation = useDisburseMutation()
@@ -127,13 +124,7 @@ export default function PayrollPage() {
   // Modal states
   const [viewPayslip, setViewPayslip] = useState<Payslip | null>(null)
   const [isPfConfigOpen, setIsPfConfigOpen] = useState(false)
-  const [editingPayslipId, setEditingPayslipId] = useState("")
-  const [isBonusOpen, setIsBonusOpen] = useState(false)
   const [isDisburseOpen, setIsDisburseOpen] = useState(false)
-
-  // Edit bonus states
-  const [bonusVal, setBonusVal] = useState(0)
-  const [bonusReason, setBonusReason] = useState("")
 
   // Payout states
   const [payoutMethod, setPayoutMethod] = useState("Bank Transfer")
@@ -159,38 +150,7 @@ export default function PayrollPage() {
     setPayoutDate(getLastDayOfMonth(month))
   }
 
-  const handleOpenBonus = (payslip: Payslip) => {
-    setBonusVal(payslip.bonusAmount || 0)
-    setBonusReason(payslip.bonusDescription || "")
-    setEditingPayslipId(payslip.id)
-    setIsBonusOpen(true)
-  }
 
-  const handleSaveBonus = () => {
-    updateBonusMutation.mutate(
-      {
-        monthKey: selectedMonth,
-        payslipId: editingPayslipId,
-        bonusAmount: bonusVal,
-        bonusDescription: bonusReason,
-      },
-      {
-        onSuccess: () => {
-          setIsBonusOpen(false)
-          Swal.fire({
-            title: "Bonus Saved!",
-            text: "Bonus allocations and net payable amounts updated.",
-            icon: "success",
-            confirmButtonText: "Done",
-            buttonsStyling: false,
-            customClass: {
-              confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md",
-            },
-          })
-        },
-      }
-    )
-  }
 
   const handleRunPayroll = () => {
     Swal.fire({
@@ -339,11 +299,20 @@ export default function PayrollPage() {
   const payslipsList = cycle?.payslips || []
   const totalNetPay = payslipsList.reduce((sum, p) => sum + p.netPay, 0)
   const totalAllowancesSum = payslipsList.reduce(
-    (sum, p) =>
-      sum + p.allowanceHra + p.allowanceTransport + p.allowanceMedical + p.bonusAmount + p.festivalBonusAmount,
+    (sum, p) => {
+      const allowancesSum = p.allowances && Object.keys(p.allowances).length > 0
+        ? Object.values(p.allowances).reduce((s, val) => s + (Number(val) || 0), 0)
+        : p.allowanceHra + p.allowanceTransport + p.allowanceMedical;
+      return sum + allowancesSum + p.bonusAmount + p.festivalBonusAmount;
+    },
     0
   )
-  const totalDeductionsSum = payslipsList.reduce((sum, p) => sum + p.deductionTax + p.deductionPf, 0)
+  const totalDeductionsSum = payslipsList.reduce((sum, p) => {
+    const deductionsSum = p.deductions && Object.keys(p.deductions).length > 0
+      ? Object.values(p.deductions).reduce((s, val) => s + (Number(val) || 0), 0)
+      : p.deductionTax + p.deductionPf;
+    return sum + deductionsSum;
+  }, 0)
 
   // Accrued PF calculation from actual paid payslips via API
   const activeEmployees = employeesData?.data || []
@@ -525,7 +494,6 @@ export default function PayrollPage() {
             cycleStatus={cycleStatus}
             payslipsList={payslipsList}
             formatCurrency={formatCurrency}
-            handleOpenBonus={handleOpenBonus}
             setViewPayslip={setViewPayslip}
             monthsOptions={monthsOptions}
             isLoading={isCycleLoading}
@@ -594,16 +562,6 @@ export default function PayrollPage() {
         </TabsContent>
       </Tabs>
 
-      <ConfigureSpecialBonusDialog
-        isOpen={isBonusOpen}
-        onClose={() => setIsBonusOpen(false)}
-        bonusVal={bonusVal}
-        setBonusVal={setBonusVal}
-        bonusReason={bonusReason}
-        setBonusReason={setBonusReason}
-        onSave={handleSaveBonus}
-        isPending={updateBonusMutation.isPending}
-      />
 
       <SalaryDisbursementDialog
         isOpen={isDisburseOpen}

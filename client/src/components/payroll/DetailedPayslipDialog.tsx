@@ -87,18 +87,6 @@ export function DetailedPayslipDialog({
                     <div className="flex justify-between"><span>Medical Allowance:</span><span className="font-semibold">{formatCurrency(viewPayslip.allowanceMedical)}</span></div>
                   </>
                 )}
-                {viewPayslip.festivalBonusAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-semibold">
-                    <span>Tenure Bonus:</span>
-                    <span>{formatCurrency(viewPayslip.festivalBonusAmount)}</span>
-                  </div>
-                )}
-                {viewPayslip.bonusAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-bold">
-                    <span>Bonus ({viewPayslip.bonusDescription}):</span>
-                    <span>{formatCurrency(viewPayslip.bonusAmount)}</span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -130,7 +118,6 @@ export function DetailedPayslipDialog({
             </div>
             <div className="text-[10px] text-muted-foreground space-y-1">
               <p>• Basic Salary calculated dynamically from assigned employee profile template component policies.</p>
-              <p>• Festival Bonus computed against Tenure rules based on Join Date ({viewPayslip.joinDate || "N/A"}).</p>
               <p>• PF matching rate calculated at standard matching ({empPfRate}% employee share).</p>
             </div>
           </div>
@@ -165,7 +152,7 @@ export function DetailedPayslipDialog({
 
         <DialogFooter className="print:hidden">
           <Button variant="outline" size="sm" onClick={onClose} className="text-xs">Close</Button>
-          <Button size="sm" className="gap-2 text-xs" onClick={() => window.print()}>
+          <Button size="sm" className="gap-2 text-xs cursor-pointer" onClick={() => window.open(`/payroll/print/${selectedMonth}/${viewPayslip.id}`, "_blank")}>
             <Printer className="h-4 w-4" />
             Print Payslip
           </Button>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Gift, Eye, FileSpreadsheet, Loader2, AlertTriangle } from "lucide-react"
+import { Eye, FileSpreadsheet, Loader2, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Payslip } from "@/types/salary"
 import { exportToCsv } from "@/lib/export"
@@ -14,7 +14,6 @@ interface PayrollProcessingTabProps {
   cycleStatus: string
   payslipsList: Payslip[]
   formatCurrency: (amount: number) => string
-  handleOpenBonus: (payslip: Payslip) => void
   setViewPayslip: (payslip: Payslip | null) => void
   monthsOptions: Array<{ key: string; label: string }>
   isLoading?: boolean
@@ -27,12 +26,25 @@ export function PayrollProcessingTab({
   cycleStatus,
   payslipsList,
   formatCurrency,
-  handleOpenBonus,
   setViewPayslip,
   monthsOptions,
   isLoading,
   employees = [],
 }: PayrollProcessingTabProps) {
+
+  const getPayslipAllowancesSum = (p: Payslip) => {
+    if (p.allowances && Object.keys(p.allowances).length > 0) {
+      return Object.values(p.allowances).reduce((sum, val) => sum + (Number(val) || 0), 0)
+    }
+    return p.allowanceHra + p.allowanceTransport + p.allowanceMedical
+  }
+
+  const getPayslipDeductionsSum = (p: Payslip) => {
+    if (p.deductions && Object.keys(p.deductions).length > 0) {
+      return Object.values(p.deductions).reduce((sum, val) => sum + (Number(val) || 0), 0)
+    }
+    return p.deductionTax + p.deductionPf
+  }
 
   const missingSalaries = useMemo(() => {
     if (!employees || !payslipsList) return []
@@ -46,7 +58,6 @@ export function PayrollProcessingTab({
       "Employee Name",
       "Role",
       "Basic Salary",
-      "Tenure Bonus",
       "Bonus",
       "Bonus Description",
       "Allowances",
@@ -58,11 +69,10 @@ export function PayrollProcessingTab({
       p.name,
       p.designationName,
       p.basicSalary,
-      p.festivalBonusAmount,
       p.bonusAmount,
       p.bonusDescription,
-      p.allowanceHra + p.allowanceTransport + p.allowanceMedical,
-      p.deductionTax + p.deductionPf,
+      getPayslipAllowancesSum(p),
+      getPayslipDeductionsSum(p),
       p.netPay,
       p.paymentStatus
     ])
@@ -151,12 +161,6 @@ export function PayrollProcessingTab({
                   Basic Salary
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
-                  Tenure Bonus
-                </TableHead>
-                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
-                  Bonus
-                </TableHead>
-                <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
                   Allowances
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">
@@ -176,7 +180,7 @@ export function PayrollProcessingTab({
             <TableBody>
               {payslipsList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground text-xs">
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
                     No compensation logs generated for this month. Sync the ledger or create a cycle to get started.
                   </TableCell>
                 </TableRow>
@@ -193,25 +197,10 @@ export function PayrollProcessingTab({
                       {formatCurrency(payslip.basicSalary)}
                     </TableCell>
                     <TableCell className="py-3 text-xs text-emerald-600 font-semibold">
-                      {payslip.festivalBonusAmount > 0 ? `+${formatCurrency(payslip.festivalBonusAmount)}` : "—"}
-                    </TableCell>
-                    <TableCell className="py-3 text-xs">
-                      {payslip.bonusAmount > 0 ? (
-                        <div className="space-y-0.5">
-                          <span className="text-emerald-600 font-bold">+{formatCurrency(payslip.bonusAmount)}</span>
-                          <p className="text-[9px] text-muted-foreground truncate max-w-[120px]">
-                            {payslip.bonusDescription}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-3 text-xs text-emerald-600 font-semibold">
-                      +{formatCurrency(payslip.allowanceHra + payslip.allowanceTransport + payslip.allowanceMedical)}
+                      +{formatCurrency(getPayslipAllowancesSum(payslip))}
                     </TableCell>
                     <TableCell className="py-3 text-xs text-rose-500 font-semibold">
-                      -{formatCurrency(payslip.deductionTax + payslip.deductionPf)}
+                      -{formatCurrency(getPayslipDeductionsSum(payslip))}
                     </TableCell>
                     <TableCell className="py-3 text-xs font-bold text-foreground">
                       {formatCurrency(payslip.netPay)}
@@ -231,17 +220,6 @@ export function PayrollProcessingTab({
                     </TableCell>
                     <TableCell className="py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {cycleStatus === "Draft" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-[10px] gap-1"
-                            onClick={() => handleOpenBonus(payslip)}
-                          >
-                            <Gift className="h-3 w-3" />
-                            Configure Bonus
-                          </Button>
-                        )}
                         <Button
                           variant="ghost"
                           size="sm"

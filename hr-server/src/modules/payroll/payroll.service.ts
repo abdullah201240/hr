@@ -111,7 +111,38 @@ export class PayrollService implements OnModuleInit {
       }
     }
 
-    const payslips = await this.getPayslipsForCycle(cycle.id);
+    let payslips = await this.getPayslipsForCycle(cycle.id);
+
+    // Self-healing: if cycle exists as Draft but has 0 payslips, generate them synchronously!
+    if (cycle.status === 'Draft' && payslips.length === 0) {
+      this.logger.log(`Draft cycle ${monthKey} has 0 payslips. Triggering synchronous auto-generation.`);
+      try {
+        await this.db
+          .update(payrollCycles)
+          .set({ isProcessing: true })
+          .where(eq(payrollCycles.id, cycle.id));
+        
+        await this.processGeneratePayroll(cycle.id, monthKey);
+        
+        const [updatedCycle] = await this.db
+          .select()
+          .from(payrollCycles)
+          .where(eq(payrollCycles.id, cycle.id))
+          .limit(1);
+        if (updatedCycle) {
+          cycle = updatedCycle;
+        }
+        payslips = await this.getPayslipsForCycle(cycle.id);
+      } catch (err: any) {
+        this.logger.error(`Failed to auto-heal draft payroll cycle: ${err.message}`, err.stack);
+        await this.db
+          .update(payrollCycles)
+          .set({ isProcessing: false })
+          .where(eq(payrollCycles.id, cycle.id));
+        cycle.isProcessing = false;
+      }
+    }
+
     return {
       ...cycle,
       payslips,
@@ -251,19 +282,12 @@ export class PayrollService implements OnModuleInit {
 
         const calc = this.calculateSalaryBreakdown(basic, pfApplicable, pfRate, components);
 
-        // Festival Bonus
-        let festivalBonus = 0;
-        if (festivalBonusApplicable && emp.joinDate) {
-          const tenureMonths = this.calculateServiceMonths(emp.joinDate, monthKey);
-          const matchingRule = fRules.find(
-            (r) => tenureMonths >= r.minServiceMonths && tenureMonths <= r.maxServiceMonths,
-          );
-          if (matchingRule) {
-            festivalBonus = Math.round(basic * (matchingRule.bonusPercentage / 100));
-          }
-        }
+        // Festival Bonus (Disabled in monthly salary calculation)
+        const festivalBonus = 0;
 
-        const netPay = basic + calc.hra + calc.transport + calc.medical + festivalBonus - (calc.tax + calc.pf);
+        const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const netPay = basic + allowancesSum + festivalBonus - deductionsSum;
 
         await this.db.insert(employeePayslips).values({
           payrollCycleId: cycleId,
@@ -345,15 +369,12 @@ export class PayrollService implements OnModuleInit {
     }
 
     const basic = payslip.basicSalary;
-    const hra = payslip.allowanceHra;
-    const transport = payslip.allowanceTransport;
-    const medical = payslip.allowanceMedical;
-    const tax = payslip.deductionTax;
-    const pf = payslip.deductionPf;
-    const festivalBonus = payslip.festivalBonusAmount;
-    const newBonus = dto.bonusAmount;
+    const allowancesSum = Object.values(payslip.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const deductionsSum = Object.values(payslip.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const festivalBonus = payslip.festivalBonusAmount || 0;
+    const newBonus = dto.bonusAmount || 0;
 
-    const netPay = basic + hra + transport + medical + festivalBonus + newBonus - (tax + pf);
+    const netPay = basic + allowancesSum + festivalBonus + newBonus - deductionsSum;
 
     await this.db
       .update(employeePayslips)
@@ -647,17 +668,8 @@ export class PayrollService implements OnModuleInit {
 
         const calc = this.calculateSalaryBreakdown(basic, pfApplicable, pfRate, components);
 
-        // Festival Bonus
-        let festivalBonus = 0;
-        if (festivalBonusApplicable && emp.joinDate) {
-          const tenureMonths = this.calculateServiceMonths(emp.joinDate, monthKey);
-          const matchingRule = fRules.find(
-            (r) => tenureMonths >= r.minServiceMonths && tenureMonths <= r.maxServiceMonths,
-          );
-          if (matchingRule) {
-            festivalBonus = Math.round(basic * (matchingRule.bonusPercentage / 100));
-          }
-        }
+        // Festival Bonus (Disabled in monthly salary calculation)
+        const festivalBonus = 0;
 
         const [existingPayslip] = await this.db
           .select()
@@ -670,8 +682,11 @@ export class PayrollService implements OnModuleInit {
           )
           .limit(1);
 
+        const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+
         if (existingPayslip) {
-          const netPay = basic + calc.hra + calc.transport + calc.medical + festivalBonus + existingPayslip.bonusAmount - (calc.tax + calc.pf);
+          const netPay = basic + allowancesSum + festivalBonus + existingPayslip.bonusAmount - deductionsSum;
 
           await this.db
             .update(employeePayslips)
@@ -689,7 +704,7 @@ export class PayrollService implements OnModuleInit {
             })
             .where(eq(employeePayslips.id, existingPayslip.id));
         } else {
-          const netPay = basic + calc.hra + calc.transport + calc.medical + festivalBonus - (calc.tax + calc.pf);
+          const netPay = basic + allowancesSum + festivalBonus - deductionsSum;
 
           await this.db.insert(employeePayslips).values({
             payrollCycleId: cycleId,

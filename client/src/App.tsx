@@ -45,6 +45,7 @@ const ViewLetterPage = lazy(() => import("@/routes/pages/view-letter"))
 const PrintJoiningLetterPage = lazy(() => import("@/routes/pages/print/joining-letter"))
 const PrintOfferLetterPage = lazy(() => import("@/routes/pages/print/offer-letter"))
 const PrintHRLetterPage = lazy(() => import("@/routes/pages/print/hr-letter"))
+const PrintPayslipPage = lazy(() => import("@/routes/pages/print/payslip"))
 const ProfilePage = lazy(() => import("@/routes/pages/profile"))
 const TasksPage = lazy(() => import("@/routes/pages/tasks"))
 const ChatPage = lazy(() => import("@/routes/pages/chat"))
@@ -165,6 +166,9 @@ function App() {
                   <Route path="/recruitment/print/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintJoiningLetterPage /></Suspense>} />
                   <Route path="/recruitment/print-offer/:candidateId" element={<Suspense fallback={<LoadingSpinner />}><PrintOfferLetterPage /></Suspense>} />
                   <Route path="/letters/print/:id" element={<Suspense fallback={<LoadingSpinner />}><PrintHRLetterPage /></Suspense>} />
+                </Route>
+                <Route element={<PermissionGuard requires={["payroll:read"]} />}>
+                  <Route path="/payroll/print/:monthKey/:payslipId" element={<Suspense fallback={<LoadingSpinner />}><PrintPayslipPage /></Suspense>} />
                 </Route>
               </Route>
             </Routes>
