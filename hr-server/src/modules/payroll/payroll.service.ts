@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
-import { eq, and, sql, asc, not, inArray } from 'drizzle-orm';
+import { eq, and, sql, asc, not, inArray, between, lte, gte } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   payrollCycles,
@@ -12,6 +12,11 @@ import {
   salaryTemplateComponents,
   departments,
   designations,
+  attendanceSettings,
+  attendanceLogs,
+  holidays,
+  leaveApplications,
+  leaveTypes,
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
@@ -235,6 +240,37 @@ export class PayrollService implements OnModuleInit {
     };
   }
 
+  private parseOfficeTime(timeStr: string, dateStr: string): Date {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  }
+
+  private parseTimeString(timeStr: string, dateStr: string): Date {
+    const [time, modifier] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (modifier === 'PM' && hours < 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  }
+
+  private getLatePenaltyHours(penaltyText: string): number {
+    const text = penaltyText.toLowerCase();
+    if (text.includes('30 minutes') || text.includes('half hour')) return 0.5;
+    if (text.includes('1 hour') || text.includes('one hour')) return 1;
+    if (text.includes('2 hours') || text.includes('two hours')) return 2;
+    if (text.includes('half-day') || text.includes('half day')) return 4;
+    return 0;
+  }
+
+  private getLocalTodayStr(): string {
+    const d = new Date();
+    const offset = d.getTimezoneOffset();
+    const localDate = new Date(d.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().split('T')[0];
+  }
+
   // Background payroll generation processor helper
   async processGeneratePayroll(cycleId: string, monthKey: string) {
     try {
@@ -246,6 +282,43 @@ export class PayrollService implements OnModuleInit {
       const [pfSettings] = await this.db.select().from(providentFundSettings).limit(1);
       const pfRate = pfSettings?.employeeContributionRate ?? 10;
       const fRules = await this.db.select().from(festivalBonusRules).orderBy(asc(festivalBonusRules.minServiceMonths));
+
+      const [settings] = await this.db.select().from(attendanceSettings).where(eq(attendanceSettings.id, 'default')).limit(1);
+      const [year, month] = monthKey.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const startOfMonthStr = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endOfMonthStr = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+      const todayStr = this.getLocalTodayStr();
+
+      const holidaysList = await this.db
+        .select()
+        .from(holidays)
+        .where(
+          and(
+            lte(holidays.startDate, endOfMonthStr),
+            gte(holidays.endDate, startOfMonthStr),
+          )
+        );
+
+      let totalWorkingDays = 0;
+      const weeklyHolidays = settings?.weeklyHolidays || ['Saturday', 'Sunday'];
+      const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month - 1, day);
+        const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayName = DAY_NAMES[currentDate.getDay()];
+
+        const isWeeklyHoliday = weeklyHolidays.includes(dayName);
+        const isPublicHoliday = holidaysList.some((h) => {
+          return currentDateStr >= h.startDate && currentDateStr <= h.endDate;
+        });
+
+        if (!isWeeklyHoliday && !isPublicHoliday) {
+          totalWorkingDays++;
+        }
+      }
+      if (totalWorkingDays === 0) totalWorkingDays = 22; // Fallback
 
       for (const emp of activeEmployees) {
         const [salAssignment] = await this.db
@@ -282,10 +355,139 @@ export class PayrollService implements OnModuleInit {
 
         const calc = this.calculateSalaryBreakdown(basic, pfApplicable, pfRate, components);
 
+        // Fetch employee's attendance logs for this month
+        const logs = await this.db
+          .select()
+          .from(attendanceLogs)
+          .where(
+            and(
+              eq(attendanceLogs.employeeId, emp.id),
+              between(attendanceLogs.date, startOfMonthStr, endOfMonthStr)
+            )
+          );
+        const logsMap = new Map(logs.map(l => [l.date, l]));
+
+        // Fetch approved leave applications for this employee for this month
+        const leaveApps = await this.db
+          .select({
+            startDate: leaveApplications.startDate,
+            endDate: leaveApplications.endDate,
+            paid: leaveTypes.paid,
+          })
+          .from(leaveApplications)
+          .innerJoin(leaveTypes, eq(leaveApplications.leaveTypeId, leaveTypes.id))
+          .where(
+            and(
+              eq(leaveApplications.employeeId, emp.id),
+              eq(leaveApplications.status, 'Approved'),
+              lte(leaveApplications.startDate, endOfMonthStr),
+              gte(leaveApplications.endDate, startOfMonthStr),
+            )
+          );
+
+        // Count attendance exceptions
+        let absentDays = 0;
+        let lwpDays = 0;
+        let halfDays = 0;
+        let totalLatePenaltyHours = 0;
+        let prorationDaysBefore = 0;
+        let prorationDaysAfter = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const currentDate = new Date(year, month - 1, day);
+          const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dayName = DAY_NAMES[currentDate.getDay()];
+
+          const isWeeklyHoliday = weeklyHolidays.includes(dayName);
+          const isPublicHoliday = holidaysList.some((h) => {
+            return currentDateStr >= h.startDate && currentDateStr <= h.endDate;
+          });
+          const isWorkingDay = !isWeeklyHoliday && !isPublicHoliday;
+
+          // Proration cuts
+          if (isWorkingDay) {
+            if (currentDateStr < emp.joinDate) {
+              prorationDaysBefore++;
+              continue;
+            }
+            if (emp.inactiveDate && currentDateStr > emp.inactiveDate && emp.status !== 'active') {
+              prorationDaysAfter++;
+              continue;
+            }
+          }
+
+          const existingLog = logsMap.get(currentDateStr);
+          const hasApprovedLeave = leaveApps.some(app => currentDateStr >= app.startDate && currentDateStr <= app.endDate);
+          const isUnpaidLeave = leaveApps.some(app => !app.paid && currentDateStr >= app.startDate && currentDateStr <= app.endDate);
+
+          // 1. Absent Days
+          if (isWorkingDay && currentDateStr <= todayStr && !hasApprovedLeave) {
+            if (!existingLog || existingLog.status === 'absent') {
+              absentDays++;
+            }
+          }
+
+          // 2. Leave Without Pay (LWP)
+          if (isWorkingDay && isUnpaidLeave) {
+            lwpDays++;
+          }
+
+          // 3. Half-Days
+          const halfDayThresholdHours = (settings?.halfDayThreshold ?? 240) / 60;
+          if (existingLog && existingLog.hours !== null && existingLog.hours < halfDayThresholdHours && existingLog.status !== 'leave' && existingLog.status !== 'holiday' && existingLog.status !== 'weekend') {
+            halfDays++;
+          }
+
+          // 4. Late Penalties
+          if (existingLog && existingLog.status === 'late' && existingLog.checkIn && settings?.startTime) {
+            try {
+              const checkInTime = this.parseTimeString(existingLog.checkIn, currentDateStr);
+              const officeStart = this.parseOfficeTime(settings.startTime, currentDateStr);
+              const lateMinutes = Math.max(0, Math.floor((checkInTime.getTime() - officeStart.getTime()) / (1000 * 60)));
+
+              const matchingRule = settings.lateRules?.find((r: any) => lateMinutes >= r.minMinutes && lateMinutes <= r.maxMinutes);
+              if (matchingRule) {
+                const penaltyHours = this.getLatePenaltyHours(matchingRule.penalty);
+                totalLatePenaltyHours += penaltyHours;
+              }
+            } catch (err: any) {
+              // Ignore parsing errors
+            }
+          }
+        }
+
+        const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const gross = basic + allowancesSum;
+
+        const perDayGross = gross / totalWorkingDays;
+        const perDayBasic = basic / totalWorkingDays;
+        const perHourBasic = perDayBasic / 8;
+
+        const absentDeduction = Math.round(absentDays * perDayGross);
+        const lwpDeduction = Math.round(lwpDays * perDayGross);
+        const halfDayDeduction = Math.round(halfDays * 0.5 * perDayGross);
+        const lateDeduction = Math.round(totalLatePenaltyHours * perHourBasic);
+        const prorationDeduction = Math.round((prorationDaysBefore + prorationDaysAfter) * perDayGross);
+
+        if (absentDeduction > 0) {
+          calc.deductions['Absenteeism Cut'] = absentDeduction;
+        }
+        if (lwpDeduction > 0) {
+          calc.deductions['LWP Deduction'] = lwpDeduction;
+        }
+        if (halfDayDeduction > 0) {
+          calc.deductions['Half-Day Cut'] = halfDayDeduction;
+        }
+        if (lateDeduction > 0) {
+          calc.deductions['Late Penalty'] = lateDeduction;
+        }
+        if (prorationDeduction > 0) {
+          calc.deductions['Proration Cut'] = prorationDeduction;
+        }
+
         // Festival Bonus (Disabled in monthly salary calculation)
         const festivalBonus = 0;
 
-        const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const netPay = basic + allowancesSum + festivalBonus - deductionsSum;
 
@@ -633,6 +835,43 @@ export class PayrollService implements OnModuleInit {
       const pfRate = pfSettings?.employeeContributionRate ?? 10;
       const fRules = await this.db.select().from(festivalBonusRules).orderBy(asc(festivalBonusRules.minServiceMonths));
 
+      const [settings] = await this.db.select().from(attendanceSettings).where(eq(attendanceSettings.id, 'default')).limit(1);
+      const [year, month] = monthKey.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const startOfMonthStr = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endOfMonthStr = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+      const todayStr = this.getLocalTodayStr();
+
+      const holidaysList = await this.db
+        .select()
+        .from(holidays)
+        .where(
+          and(
+            lte(holidays.startDate, endOfMonthStr),
+            gte(holidays.endDate, startOfMonthStr),
+          )
+        );
+
+      let totalWorkingDays = 0;
+      const weeklyHolidays = settings?.weeklyHolidays || ['Saturday', 'Sunday'];
+      const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(year, month - 1, day);
+        const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayName = DAY_NAMES[currentDate.getDay()];
+
+        const isWeeklyHoliday = weeklyHolidays.includes(dayName);
+        const isPublicHoliday = holidaysList.some((h) => {
+          return currentDateStr >= h.startDate && currentDateStr <= h.endDate;
+        });
+
+        if (!isWeeklyHoliday && !isPublicHoliday) {
+          totalWorkingDays++;
+        }
+      }
+      if (totalWorkingDays === 0) totalWorkingDays = 22; // Fallback
+
       for (const emp of activeEmployees) {
         const [salAssignment] = await this.db
           .select()
@@ -668,6 +907,136 @@ export class PayrollService implements OnModuleInit {
 
         const calc = this.calculateSalaryBreakdown(basic, pfApplicable, pfRate, components);
 
+        // Fetch employee's attendance logs for this month
+        const logs = await this.db
+          .select()
+          .from(attendanceLogs)
+          .where(
+            and(
+              eq(attendanceLogs.employeeId, emp.id),
+              between(attendanceLogs.date, startOfMonthStr, endOfMonthStr)
+            )
+          );
+        const logsMap = new Map(logs.map(l => [l.date, l]));
+
+        // Fetch approved leave applications for this employee for this month
+        const leaveApps = await this.db
+          .select({
+            startDate: leaveApplications.startDate,
+            endDate: leaveApplications.endDate,
+            paid: leaveTypes.paid,
+          })
+          .from(leaveApplications)
+          .innerJoin(leaveTypes, eq(leaveApplications.leaveTypeId, leaveTypes.id))
+          .where(
+            and(
+              eq(leaveApplications.employeeId, emp.id),
+              eq(leaveApplications.status, 'Approved'),
+              lte(leaveApplications.startDate, endOfMonthStr),
+              gte(leaveApplications.endDate, startOfMonthStr),
+            )
+          );
+
+        // Count attendance exceptions
+        let absentDays = 0;
+        let lwpDays = 0;
+        let halfDays = 0;
+        let totalLatePenaltyHours = 0;
+        let prorationDaysBefore = 0;
+        let prorationDaysAfter = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const currentDate = new Date(year, month - 1, day);
+          const currentDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dayName = DAY_NAMES[currentDate.getDay()];
+
+          const isWeeklyHoliday = weeklyHolidays.includes(dayName);
+          const isPublicHoliday = holidaysList.some((h) => {
+            return currentDateStr >= h.startDate && currentDateStr <= h.endDate;
+          });
+          const isWorkingDay = !isWeeklyHoliday && !isPublicHoliday;
+
+          // Proration cuts
+          if (isWorkingDay) {
+            if (currentDateStr < emp.joinDate) {
+              prorationDaysBefore++;
+              continue;
+            }
+            if (emp.inactiveDate && currentDateStr > emp.inactiveDate && emp.status !== 'active') {
+              prorationDaysAfter++;
+              continue;
+            }
+          }
+
+          const existingLog = logsMap.get(currentDateStr);
+          const hasApprovedLeave = leaveApps.some(app => currentDateStr >= app.startDate && currentDateStr <= app.endDate);
+          const isUnpaidLeave = leaveApps.some(app => !app.paid && currentDateStr >= app.startDate && currentDateStr <= app.endDate);
+
+          // 1. Absent Days
+          if (isWorkingDay && currentDateStr <= todayStr && !hasApprovedLeave) {
+            if (!existingLog || existingLog.status === 'absent') {
+              absentDays++;
+            }
+          }
+
+          // 2. Leave Without Pay (LWP)
+          if (isWorkingDay && isUnpaidLeave) {
+            lwpDays++;
+          }
+
+          // 3. Half-Days
+          const halfDayThresholdHours = (settings?.halfDayThreshold ?? 240) / 60;
+          if (existingLog && existingLog.hours !== null && existingLog.hours < halfDayThresholdHours && existingLog.status !== 'leave' && existingLog.status !== 'holiday' && existingLog.status !== 'weekend') {
+            halfDays++;
+          }
+
+          // 4. Late Penalties
+          if (existingLog && existingLog.status === 'late' && existingLog.checkIn && settings?.startTime) {
+            try {
+              const checkInTime = this.parseTimeString(existingLog.checkIn, currentDateStr);
+              const officeStart = this.parseOfficeTime(settings.startTime, currentDateStr);
+              const lateMinutes = Math.max(0, Math.floor((checkInTime.getTime() - officeStart.getTime()) / (1000 * 60)));
+
+              const matchingRule = settings.lateRules?.find((r: any) => lateMinutes >= r.minMinutes && lateMinutes <= r.maxMinutes);
+              if (matchingRule) {
+                const penaltyHours = this.getLatePenaltyHours(matchingRule.penalty);
+                totalLatePenaltyHours += penaltyHours;
+              }
+            } catch (err: any) {
+              // Ignore parsing errors
+            }
+          }
+        }
+
+        const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
+        const gross = basic + allowancesSum;
+
+        const perDayGross = gross / totalWorkingDays;
+        const perDayBasic = basic / totalWorkingDays;
+        const perHourBasic = perDayBasic / 8;
+
+        const absentDeduction = Math.round(absentDays * perDayGross);
+        const lwpDeduction = Math.round(lwpDays * perDayGross);
+        const halfDayDeduction = Math.round(halfDays * 0.5 * perDayGross);
+        const lateDeduction = Math.round(totalLatePenaltyHours * perHourBasic);
+        const prorationDeduction = Math.round((prorationDaysBefore + prorationDaysAfter) * perDayGross);
+
+        if (absentDeduction > 0) {
+          calc.deductions['Absenteeism Cut'] = absentDeduction;
+        }
+        if (lwpDeduction > 0) {
+          calc.deductions['LWP Deduction'] = lwpDeduction;
+        }
+        if (halfDayDeduction > 0) {
+          calc.deductions['Half-Day Cut'] = halfDayDeduction;
+        }
+        if (lateDeduction > 0) {
+          calc.deductions['Late Penalty'] = lateDeduction;
+        }
+        if (prorationDeduction > 0) {
+          calc.deductions['Proration Cut'] = prorationDeduction;
+        }
+
         // Festival Bonus (Disabled in monthly salary calculation)
         const festivalBonus = 0;
 
@@ -682,7 +1051,6 @@ export class PayrollService implements OnModuleInit {
           )
           .limit(1);
 
-        const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
         if (existingPayslip) {
