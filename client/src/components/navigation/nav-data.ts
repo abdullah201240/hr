@@ -19,6 +19,7 @@ import {
   CheckSquare,
   MessageSquare,
   Bell,
+  Crown,
 } from "lucide-react"
 
 import type { NavGroup } from "@/types"
@@ -27,6 +28,12 @@ export const navGroups: NavGroup[] = [
   {
     label: "Main",
     items: [
+      {
+        title: "Executive Dashboard",
+        href: "/ceo-dashboard",
+        icon: Crown,
+        permissions: ["dashboard:view_executive"],
+      },
       {
         title: "Dashboard",
         href: "/",

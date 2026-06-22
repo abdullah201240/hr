@@ -50,6 +50,7 @@ const TasksPage = lazy(() => import("@/routes/pages/tasks"))
 const ChatPage = lazy(() => import("@/routes/pages/chat"))
 const NotificationsPage = lazy(() => import("@/routes/pages/notifications"))
 const LeaveApplicationsPage = lazy(() => import("@/routes/pages/leave-applications"))
+const CeoDashboardPage = lazy(() => import("@/routes/pages/ceo-dashboard"))
 
 
 function NotFoundPage() {
@@ -118,6 +119,11 @@ function App() {
 
                   {/* Employee profile view: employees can view own profile (OwnerOnly guard on backend) */}
                   <Route path="employees/view/:id" element={<ViewEmployeePage />} />
+
+                  {/* ── Executive Dashboard ───────────────────────────────── */}
+                  <Route element={<PermissionGuard requires={["dashboard:view_executive"]} />}>
+                    <Route path="ceo-dashboard" element={<CeoDashboardPage />} />
+                  </Route>
 
                   {/* ── Manager+ routes ────────────────────────────────────── */}
                   <Route element={<PermissionGuard requires={["employees:view_all", "employees:view_team", "employees:read"]} />}>

@@ -150,6 +150,9 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
   { resource: 'salary', action: 'read', description: 'View salary data' },
   { resource: 'salary', action: 'update', description: 'Update salary records' },
   { resource: 'salary', action: 'delete', description: 'Delete salary records' },
+
+  // Executive Dashboard
+  { resource: 'dashboard', action: 'view_executive', description: 'Access the CEO Executive Dashboard with cross-module analytics' },
 ];
 
 @Injectable()

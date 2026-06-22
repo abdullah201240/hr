@@ -37,6 +37,7 @@ const formatResourceName = (resource: string) => {
     settings: "System Settings",
     roles: "Access Roles",
     "provident-fund-settings": "Provident Fund",
+    dashboard: "Executive Dashboard",
   };
   const key = resource.toLowerCase();
   if (customMap[key]) return customMap[key];
@@ -99,6 +100,14 @@ const formatActionName = (action: string, resource?: string) => {
       update: "Modify Access Roles, Permissions, & System Settings (Update)",
     };
     if (setMap[actKey]) return setMap[actKey];
+  }
+
+  // Custom formatting for executive dashboard resource actions
+  if (resKey === "dashboard") {
+    const dashMap: Record<string, string> = {
+      view_executive: "View CEO Executive Dashboard (Cross-Module Analytics)",
+    };
+    if (dashMap[actKey]) return dashMap[actKey];
   }
 
   const customMap: Record<string, string> = {
@@ -225,6 +234,9 @@ export function AccessControlTab() {
     if (['payroll', 'salary', 'claims', 'provident-fund-settings'].includes(resLower)) {
       return 'Finance & Compensation';
     }
+    if (['dashboard'].includes(resLower)) {
+      return 'Executive & Analytics';
+    }
     return 'Organization & System';
   };
 
@@ -264,7 +276,7 @@ export function AccessControlTab() {
     const result: Record<string, Array<{ resource: string; permissions: Permission[] }>> = {};
 
     // Sort order for categories
-    const categoryOrder = ['Workforce & Operations', 'Finance & Compensation', 'Organization & System'];
+    const categoryOrder = ['Workforce & Operations', 'Finance & Compensation', 'Executive & Analytics', 'Organization & System'];
     
     categoryOrder.forEach(cat => {
       if (!categories[cat]) return;
