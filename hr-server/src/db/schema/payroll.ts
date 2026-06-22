@@ -58,6 +58,13 @@ export const employeePayslips = pgTable(
     paymentReference: varchar('payment_reference', { length: 255 }),
     allowances: jsonb('allowances').$type<Record<string, number>>().default({}).notNull(),
     deductions: jsonb('deductions').$type<Record<string, number>>().default({}).notNull(),
+
+    // Attendance-based metrics for payroll period
+    totalWorkingDays: integer('total_working_days').default(0).notNull(),
+    presentDays: integer('present_days').default(0).notNull(),
+    absentDays: integer('absent_days').default(0).notNull(),
+    leaveDays: integer('leave_days').default(0).notNull(),
+    lateDays: integer('late_days').default(0).notNull(),
   },
   (table) => [
     uniqueIndex('employee_payslips_cycle_employee_idx').on(table.payrollCycleId, table.employeeId),

@@ -390,6 +390,8 @@ export class PayrollService implements OnModuleInit {
         let lwpDays = 0;
         let halfDays = 0;
         let totalLatePenaltyHours = 0;
+        let lateDays = 0;
+        let leaveDays = 0;
         let prorationDaysBefore = 0;
         let prorationDaysAfter = 0;
 
@@ -438,7 +440,12 @@ export class PayrollService implements OnModuleInit {
             halfDays++;
           }
 
-          // 4. Late Penalties
+          // 4. Late Days count
+          if (existingLog && existingLog.status === 'late') {
+            lateDays++;
+          }
+
+          // 5. Late Penalties
           if (existingLog && existingLog.status === 'late' && existingLog.checkIn && settings?.startTime) {
             try {
               const checkInTime = this.parseTimeString(existingLog.checkIn, currentDateStr);
@@ -454,7 +461,14 @@ export class PayrollService implements OnModuleInit {
               // Ignore parsing errors
             }
           }
+
+          // 6. Leave Days (all approved leaves on working days)
+          if (isWorkingDay && hasApprovedLeave) {
+            leaveDays++;
+          }
         }
+
+        const presentDays = Math.max(0, totalWorkingDays - absentDays - lwpDays - leaveDays);
 
         const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const gross = basic + allowancesSum;
@@ -507,6 +521,11 @@ export class PayrollService implements OnModuleInit {
           festivalBonusAmount: festivalBonus,
           netPay,
           paymentStatus: 'Unpaid',
+          totalWorkingDays,
+          presentDays,
+          absentDays,
+          leaveDays,
+          lateDays,
         });
       }
     } catch (err: any) {
@@ -942,6 +961,8 @@ export class PayrollService implements OnModuleInit {
         let lwpDays = 0;
         let halfDays = 0;
         let totalLatePenaltyHours = 0;
+        let lateDays = 0;
+        let leaveDays = 0;
         let prorationDaysBefore = 0;
         let prorationDaysAfter = 0;
 
@@ -990,7 +1011,12 @@ export class PayrollService implements OnModuleInit {
             halfDays++;
           }
 
-          // 4. Late Penalties
+          // 4. Late Days count
+          if (existingLog && existingLog.status === 'late') {
+            lateDays++;
+          }
+
+          // 5. Late Penalties
           if (existingLog && existingLog.status === 'late' && existingLog.checkIn && settings?.startTime) {
             try {
               const checkInTime = this.parseTimeString(existingLog.checkIn, currentDateStr);
@@ -1006,7 +1032,14 @@ export class PayrollService implements OnModuleInit {
               // Ignore parsing errors
             }
           }
+
+          // 6. Leave Days (all approved leaves on working days)
+          if (isWorkingDay && hasApprovedLeave) {
+            leaveDays++;
+          }
         }
+
+        const presentDays = Math.max(0, totalWorkingDays - absentDays - lwpDays - leaveDays);
 
         const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const gross = basic + allowancesSum;
@@ -1069,6 +1102,11 @@ export class PayrollService implements OnModuleInit {
               deductions: calc.deductions,
               festivalBonusAmount: festivalBonus,
               netPay,
+              totalWorkingDays,
+              presentDays,
+              absentDays,
+              leaveDays,
+              lateDays,
             })
             .where(eq(employeePayslips.id, existingPayslip.id));
         } else {
