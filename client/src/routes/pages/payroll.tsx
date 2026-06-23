@@ -34,6 +34,7 @@ import {
 } from "@/hooks/useSalary"
 import {
   useSalaryAdjustments,
+  useAllSalaryAdjustments,
   useCreateSalaryAdjustment,
   useDeleteSalaryAdjustment,
   useApplyPendingAdjustments,
@@ -116,11 +117,13 @@ export default function PayrollPage() {
     appliedMonthKey: selectedMonth,
     status: "Pending",
   })
+  const { data: allAdjustmentsData } = useAllSalaryAdjustments()
   const createAdjustmentMutation = useCreateSalaryAdjustment()
   const deleteAdjustmentMutation = useDeleteSalaryAdjustment()
   const applyAdjustmentsMutation = useApplyPendingAdjustments()
 
   const pendingAdjustments = adjustmentsData?.data || []
+  const allAdjustments = allAdjustmentsData?.data || []
 
   const employees = employeesData?.data || []
 
@@ -567,17 +570,8 @@ export default function PayrollPage() {
             formatCurrency={formatCurrency}
             onCreateAdjustment={(data) => {
               createAdjustmentMutation.mutate(data, {
-                onSuccess: () => {
-                  Swal.fire({
-                    title: "Adjustment Created",
-                    text: `The adjustment will be applied to ${selectedMonth} payroll cycle.`,
-                    icon: "success",
-                    confirmButtonText: "Done",
-                    buttonsStyling: false,
-                    customClass: {
-                      confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2",
-                    },
-                  })
+                onError: () => {
+                  // Error already shown by toast
                 },
               })
             }}
@@ -586,23 +580,14 @@ export default function PayrollPage() {
             }}
             onApplyAdjustments={(monthKey) => {
               applyAdjustmentsMutation.mutate(monthKey, {
-                onSuccess: (response) => {
-                  Swal.fire({
-                    title: "Adjustments Applied",
-                    text: response.message || `${response.appliedCount || 0} adjustment(s) applied to ${monthKey}`,
-                    icon: "success",
-                    confirmButtonText: "Done",
-                    buttonsStyling: false,
-                    customClass: {
-                      confirmButton: "swal2-confirm swal2-styled bg-primary text-primary-foreground font-semibold rounded-md px-4 py-2",
-                    },
-                  })
+                onError: () => {
+                  // Error already shown by toast
                 },
               })
             }}
             pendingAdjustments={pendingAdjustments}
+            allAdjustments={allAdjustments}
             isCreating={createAdjustmentMutation.isPending}
-            isDeleting={deleteAdjustmentMutation.isPending}
             isApplying={applyAdjustmentsMutation.isPending}
           />
 

@@ -25,3 +25,5 @@ export * from './chat';
 export * from './notifications';
 export * from './audit-logs';
 export * from './roles';
+export * from './office-regulations';
+export * from './office-regulations-relations';

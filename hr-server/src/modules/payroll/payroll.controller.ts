@@ -116,6 +116,15 @@ export class PayrollController {
     return this.payrollService.updateAdjustmentStatus(id, dto);
   }
 
+  @Patch('adjustments/:id')
+  @ApiOperation({ summary: 'Update a pending adjustment' })
+  async updateAdjustment(
+    @Param('id') id: string,
+    @Body() dto: CreateSalaryAdjustmentDto,
+  ) {
+    return this.payrollService.updateAdjustment(id, dto);
+  }
+
   @Delete('adjustments/:id')
   @ApiOperation({ summary: 'Delete a pending adjustment' })
   async deleteAdjustment(@Param('id') id: string) {

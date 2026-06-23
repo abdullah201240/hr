@@ -37,6 +37,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { RegulationsModule } from './modules/regulations/regulations.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { OwnershipGuard } from './modules/auth/guards/ownership.guard';
@@ -112,6 +113,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     NotificationsModule,
     RolesModule,
     DashboardModule,
+    RegulationsModule,
   ],
 
   providers: [

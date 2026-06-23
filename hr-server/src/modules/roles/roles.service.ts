@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DB_CONNECTION, type Database } from '../../db';
-import { permissions, customRoles, rolePermissions, employees, leaveApplications, claims } from '../../db/schema';
+import { permissions, customRoles, rolePermissions, employees, leaveApplications, claims, regulationRequests } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // Predefined set of resources and actions for seeding
@@ -153,6 +153,17 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
 
   // Executive Dashboard
   { resource: 'dashboard', action: 'view_executive', description: 'Access the CEO Executive Dashboard with cross-module analytics' },
+
+  // Office Regulations
+  { resource: 'regulations', action: 'create', description: 'Create regulation policies' },
+  { resource: 'regulations', action: 'read', description: 'View regulation policies' },
+  { resource: 'regulations', action: 'update', description: 'Edit regulation policies' },
+  { resource: 'regulations', action: 'delete', description: 'Delete regulation policies' },
+  { resource: 'regulations', action: 'apply', description: 'Submit regulation requests' },
+  { resource: 'regulations', action: 'view_own', description: 'View own regulation requests' },
+  { resource: 'regulations', action: 'view_team', description: 'View team regulation requests (Line Manager)' },
+  { resource: 'regulations', action: 'view_all', description: 'View all regulation requests (Admin/HR)' },
+  { resource: 'regulations', action: 'approve', description: 'Final approval of regulation requests' },
 ];
 
 @Injectable()
@@ -314,6 +325,19 @@ export class RolesService implements OnModuleInit {
       .from(claims)
       .innerJoin(employees, eq(claims.employeeId, employees.id))
       .where(eq(claims.id, claimId))
+      .limit(1);
+
+    return result ? result.lineManagerId === userId : false;
+  }
+
+  async isLineManagerForRegulation(userId: string, requestId: string): Promise<boolean> {
+    const [result] = await this.db
+      .select({
+        lineManagerId: employees.lineManagerId,
+      })
+      .from(regulationRequests)
+      .innerJoin(employees, eq(regulationRequests.employeeId, employees.id))
+      .where(eq(regulationRequests.id, requestId))
       .limit(1);
 
     return result ? result.lineManagerId === userId : false;

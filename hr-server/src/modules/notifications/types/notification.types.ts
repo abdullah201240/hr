@@ -16,6 +16,7 @@ export enum NotificationModule {
   PERFORMANCE = 'performance',
   DISCIPLINARY = 'disciplinary',
   SEPARATION = 'separation',
+  REGULATIONS = 'regulations',
 }
 
 export enum NotificationCategory {

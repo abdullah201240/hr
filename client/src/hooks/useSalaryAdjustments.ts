@@ -37,12 +37,39 @@ export function useCreateSalaryAdjustment() {
 
   return useMutation({
     mutationFn: async (data: any) => {
+      // If ID is present, it's an update
+      if (data.id) {
+        return apiClient.patch<any>(`/payroll/adjustments/${data.id}`, data)
+      }
       return apiClient.post<any>("/payroll/adjustments", data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["salary-adjustments"] })
       queryClient.invalidateQueries({ queryKey: ["pending-adjustments-summary", variables.appliedMonthKey] })
       queryClient.invalidateQueries({ queryKey: ["payroll-cycle", variables.appliedMonthKey] })
+    },
+  })
+}
+
+export function useUpdateSalaryAdjustment() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return apiClient.patch<any>(`/payroll/adjustments/${id}`, data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salary-adjustments"] })
+      queryClient.invalidateQueries({ queryKey: ["pending-adjustments-summary"] })
+    },
+  })
+}
+
+export function useAllSalaryAdjustments() {
+  return useQuery({
+    queryKey: ["salary-adjustments-all"],
+    queryFn: async () => {
+      return apiClient.get<any>("/payroll/adjustments")
     },
   })
 }

@@ -1535,6 +1535,43 @@ export class PayrollService implements OnModuleInit {
     };
   }
 
+  // Update an adjustment (only if pending)
+  async updateAdjustment(adjustmentId: string, dto: CreateSalaryAdjustmentDto) {
+    const [adjustment] = await this.db
+      .select()
+      .from(salaryAdjustments)
+      .where(eq(salaryAdjustments.id, adjustmentId))
+      .limit(1);
+
+    if (!adjustment) {
+      throw new NotFoundException('Salary adjustment not found');
+    }
+
+    if (adjustment.status !== 'Pending') {
+      throw new BadRequestException('Can only update pending adjustments');
+    }
+
+    const [updated] = await this.db
+      .update(salaryAdjustments)
+      .set({
+        adjustmentType: dto.adjustmentType,
+        amount: dto.amount,
+        reason: dto.reason,
+        metadata: dto.metadata,
+        updatedAt: new Date(),
+      })
+      .where(eq(salaryAdjustments.id, adjustmentId))
+      .returning();
+
+    await this.invalidateCache(adjustment.appliedMonthKey);
+
+    return {
+      success: true,
+      message: 'Adjustment updated successfully',
+      data: updated,
+    };
+  }
+
   // Apply all pending adjustments to current month's payroll cycle
   async applyPendingAdjustmentsToCycle(appliedMonthKey: string) {
     // Get the payroll cycle

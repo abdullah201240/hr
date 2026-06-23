@@ -38,6 +38,7 @@ const formatResourceName = (resource: string) => {
     roles: "Access Roles",
     "provident-fund-settings": "Provident Fund",
     dashboard: "Executive Dashboard",
+    regulations: "Office Regulations",
   };
   const key = resource.toLowerCase();
   if (customMap[key]) return customMap[key];
@@ -50,6 +51,21 @@ const formatResourceName = (resource: string) => {
 const formatActionName = (action: string, resource?: string) => {
   const resKey = resource?.toLowerCase() || "";
   const actKey = action.toLowerCase();
+
+  if (resKey === "regulations") {
+    const regMap: Record<string, string> = {
+      create: "Create Regulation Policies",
+      read: "View Regulation Policies",
+      update: "Edit Regulation Policies",
+      delete: "Delete Regulation Policies",
+      apply: "Submit Regulation Requests (Employee)",
+      view_own: "View Own Requests (Employee View)",
+      view_team: "Line Manager Approval (1st Step - View & Approve Team Requests)",
+      view_all: "View All Requests (Admin / HR View)",
+      approve: "2nd Step Final Approval (Approve / Reject)",
+    };
+    if (regMap[actKey]) return regMap[actKey];
+  }
 
   // Custom formatting for leave resource actions to make them clear
   if (resKey === "leave") {

@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Bell,
   Crown,
+  BookOpenCheck,
 } from "lucide-react"
 
 import type { NavGroup } from "@/types"
@@ -116,6 +117,12 @@ export const navGroups: NavGroup[] = [
         href: "/performance",
         icon: Target,
         permissions: ["employees:view_team", "employees:view_all"],
+      },
+      {
+        title: "Office Regulations",
+        href: "/regulations",
+        icon: BookOpenCheck,
+        permissions: ["regulations:read", "regulations:apply", "regulations:view_own", "regulations:view_team", "regulations:view_all", "regulations:approve"],
       },
     ],
   },

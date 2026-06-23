@@ -300,6 +300,34 @@ export const CacheKeys = {
     description: 'Claim record by ID',
   },
 
+  /** Regulation policies list */
+  regulationPolicies: {
+    key: key('regulations:policies:*'),
+    ttl: 300, // 5 min
+    description: 'All regulation policies',
+  },
+
+  /** Regulation policy by ID */
+  regulationPolicyById: {
+    key: key('regulations:policies:id:*'),
+    ttl: 300, // 5 min
+    description: 'Regulation policy by ID',
+  },
+
+  /** Regulation requests list (paginated/filtered) */
+  regulationRequestsList: {
+    key: key('regulations:requests:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated and filtered regulation requests list',
+  },
+
+  /** Single regulation request by ID */
+  regulationRequestById: {
+    key: key('regulations:requests:id:*'),
+    ttl: 300, // 5 min
+    description: 'Regulation request by ID',
+  },
+
   payrollDisbursements: {
     key: key('payroll:disbursements'),
     ttl: 300, // 5 min
