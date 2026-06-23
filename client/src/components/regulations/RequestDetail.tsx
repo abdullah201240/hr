@@ -95,6 +95,7 @@ export function RequestDetail({ open, onOpenChange, request }: RequestDetailProp
   // Decide if current user has action buttons
   const showActions =
     !showRejectForm &&
+    user?.id !== request.employeeId &&
     ((request.status === "Pending" && (isLineManager || canApproveFinal)) ||
       (request.status === "Pending_2nd" && canApproveFinal));
 

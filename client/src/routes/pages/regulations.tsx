@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, UserCheck, ShieldAlert, ListChecks } from "lucide-react";
+import { BookOpen, UserCheck, ShieldAlert, ListChecks, CheckSquare } from "lucide-react";
 import { PolicyList } from "@/components/regulations/PolicyList";
 import { MyRequests } from "@/components/regulations/MyRequests";
 import { ApprovalQueue } from "@/components/regulations/ApprovalQueue";
@@ -11,13 +11,15 @@ export default function RegulationsPage() {
 
   const canReadPolicies = hasPermission("regulations:read");
   const canViewOwn = hasAnyPermission(["regulations:apply", "regulations:view_own"]);
-  const canApprove = hasAnyPermission(["regulations:view_team", "regulations:approve"]);
+  const canManagerApprove = hasPermission("regulations:view_team");
+  const canFinalApprove = hasPermission("regulations:approve");
 
   // Calculate default tab
   let defaultTab = "";
   if (canReadPolicies) defaultTab = "policies";
   else if (canViewOwn) defaultTab = "requests";
-  else if (canApprove) defaultTab = "approvals";
+  else if (canManagerApprove) defaultTab = "manager_approvals";
+  else if (canFinalApprove) defaultTab = "final_approvals";
 
   if (!defaultTab) {
     return (
@@ -63,10 +65,16 @@ export default function RegulationsPage() {
               My Requests
             </TabsTrigger>
           )}
-          {canApprove && (
-            <TabsTrigger value="approvals" className="text-xs font-semibold px-4 gap-2">
+          {canManagerApprove && (
+            <TabsTrigger value="manager_approvals" className="text-xs font-semibold px-4 gap-2">
               <UserCheck className="h-3.5 w-3.5" />
-              Approval Queue
+              Line Manager Approval
+            </TabsTrigger>
+          )}
+          {canFinalApprove && (
+            <TabsTrigger value="final_approvals" className="text-xs font-semibold px-4 gap-2">
+              <CheckSquare className="h-3.5 w-3.5" />
+              Final Approval
             </TabsTrigger>
           )}
         </TabsList>
@@ -91,11 +99,21 @@ export default function RegulationsPage() {
           </TabsContent>
         )}
 
-        {canApprove && (
-          <TabsContent value="approvals" className="outline-none">
+        {canManagerApprove && (
+          <TabsContent value="manager_approvals" className="outline-none">
             <Card className="border border-border/40 shadow-xs">
               <CardContent className="p-6">
-                <ApprovalQueue />
+                <ApprovalQueue type="manager" />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {canFinalApprove && (
+          <TabsContent value="final_approvals" className="outline-none">
+            <Card className="border border-border/40 shadow-xs">
+              <CardContent className="p-6">
+                <ApprovalQueue type="final" />
               </CardContent>
             </Card>
           </TabsContent>

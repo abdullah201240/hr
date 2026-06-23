@@ -2,22 +2,22 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye, Trash2, Calendar, ChevronRight } from "lucide-react";
-import { useRegulationRequestsQuery, useRegulationPoliciesQuery, useCancelRequestMutation } from "@/hooks/useRegulations";
+import { Plus, Eye, Calendar, ChevronRight } from "lucide-react";
+import { useRegulationRequestsQuery, useRegulationPoliciesQuery } from "@/hooks/useRegulations";
 import type { RegulationRequest, RegulationPolicy } from "@/hooks/useRegulations";
 import { useAuthStore } from "@/store/useAuthStore";
 import { RequestForm } from "./RequestForm";
 import { RequestDetail } from "./RequestDetail";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import Swal from "sweetalert2";
+
+
 
 export function MyRequests() {
   const { user } = useAuthStore();
 
   const { data: requestsRes, isLoading: loadingRequests } = useRegulationRequestsQuery({ employeeId: user?.id });
   const { data: policies = [], isLoading: loadingPolicies } = useRegulationPoliciesQuery();
-  const cancelMutation = useCancelRequestMutation();
+
 
   const [selectedRequest, setSelectedRequest] = useState<RegulationRequest | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -34,32 +34,7 @@ export function MyRequests() {
     setDetailOpen(true);
   };
 
-  const handleCancelRequest = (req: RegulationRequest) => {
-    Swal.fire({
-      title: "Cancel Request?",
-      text: `Are you sure you want to cancel this request: "${req.title}"?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Cancel",
-      cancelButtonText: "Close",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-destructive hover:bg-destructive/90 text-white font-semibold rounded-md px-4 py-2 mr-2",
-        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        cancelMutation.mutate(req.id, {
-          onSuccess: () => {
-            toast.success("Request cancelled successfully");
-          },
-          onError: (err: any) => {
-            toast.error(err.message || "Failed to cancel request");
-          }
-        });
-      }
-    });
-  };
+
 
   const handleSelectPolicy = (policy: RegulationPolicy) => {
     setSelectedPolicy(policy);
@@ -147,7 +122,7 @@ export function MyRequests() {
                   </td>
                   <td className="p-3">{getStatusBadge(req.status)}</td>
                   <td className="p-3 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
+                    <div className="flex items-center justify-end">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -156,16 +131,6 @@ export function MyRequests() {
                       >
                         <Eye className="h-3.5 w-3.5" />
                       </Button>
-                      {req.status === "Pending" && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                          onClick={() => handleCancelRequest(req)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
                     </div>
                   </td>
                 </TableRow>

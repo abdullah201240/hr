@@ -5,17 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, UserCheck } from "lucide-react";
 import { useRegulationRequestsQuery } from "@/hooks/useRegulations";
 import type { RegulationRequest } from "@/hooks/useRegulations";
-import { usePermissions } from "@/hooks/usePermissions";
 import { RequestDetail } from "./RequestDetail";
 
-export function ApprovalQueue() {
-  const { hasPermission } = usePermissions();
+interface ApprovalQueueProps {
+  type: "manager" | "final";
+}
 
+export function ApprovalQueue({ type }: ApprovalQueueProps) {
   const { data: requestsRes, isLoading } = useRegulationRequestsQuery();
   const [selectedRequest, setSelectedRequest] = useState<RegulationRequest | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const canApproveFinal = hasPermission("regulations:approve");
   const requests = requestsRes?.data || [];
 
   const handleOpenDetail = (req: RegulationRequest) => {
@@ -23,23 +23,18 @@ export function ApprovalQueue() {
     setDetailOpen(true);
   };
 
-  // Filter requests that require the current user's approval
-  // Step 1: Status is 'Pending' AND the user is the line manager of the applicant
-  // Step 2: Status is 'Pending_2nd' AND the user has regulations:approve final permission
-  // Fallback: Status is 'Pending' AND applicant has no line manager AND user has regulations:approve permission
+  // Filter requests based on the step queue type
   const pendingApprovals = requests.filter((req) => {
     if (req.status === "Approved" || req.status === "Rejected" || req.status === "Cancelled") {
       return false;
     }
 
-    if (req.status === "Pending") {
-      // If we are HR/Admin, show it because we might need to approve if they have no line manager
-      // Or if the user is a line manager, let them see
-      return true; 
+    if (type === "manager") {
+      return req.status === "Pending";
     }
 
-    if (req.status === "Pending_2nd") {
-      return canApproveFinal;
+    if (type === "final") {
+      return req.status === "Pending_2nd";
     }
 
     return false;
