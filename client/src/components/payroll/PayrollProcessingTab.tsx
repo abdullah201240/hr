@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +10,9 @@ import { Eye, FileSpreadsheet, Loader2, AlertTriangle, Pencil, Save, Plus, Trash
 import { cn } from "@/lib/utils"
 import type { Payslip } from "@/types/salary"
 import { exportToCsv } from "@/lib/export"
-import { useUpdatePayslipAdjustmentsMutation } from "@/hooks/usePayroll"
+import {
+  useUpdatePayslipAdjustmentsMutation,
+} from "@/hooks/usePayroll"
 import Swal from "sweetalert2"
 
 interface PayrollProcessingTabProps {
@@ -46,6 +48,7 @@ export function PayrollProcessingTab({
   employees = [],
 }: PayrollProcessingTabProps) {
   const updateAdjustmentsMutation = useUpdatePayslipAdjustmentsMutation()
+
   const [adjustingPayslip, setAdjustingPayslip] = useState<Payslip | null>(null)
   const [adjustmentTitle, setAdjustmentTitle] = useState("")
   const [adjustmentAmount, setAdjustmentAmount] = useState("")
@@ -57,6 +60,71 @@ export function PayrollProcessingTab({
   const [partialStartDate, setPartialStartDate] = useState("")
   const [partialEndDate, setPartialEndDate] = useState("")
   const [customPaidDays, setCustomPaidDays] = useState("10")
+
+  const [useDateRange, setUseDateRange] = useState(false)
+  const [customStart, setCustomStart] = useState("")
+  const [customEnd, setCustomEnd] = useState("")
+
+  const daysInMonth = useMemo(() => {
+    const monthSource = (useDateRange && customStart) ? customStart.substring(0, 7) : selectedMonth
+    const [year, month] = monthSource.split("-").map(Number)
+    if (!year || !month) return 30
+    return new Date(year, month, 0).getDate()
+  }, [useDateRange, customStart, selectedMonth])
+
+  useEffect(() => {
+    if (selectedMonth) {
+      const currentStartMonth = customStart ? customStart.substring(0, 7) : ""
+      if (currentStartMonth !== selectedMonth) {
+        const [year, month] = selectedMonth.split("-").map(Number)
+        const days = new Date(year, month, 0).getDate()
+        setCustomStart(`${selectedMonth}-01`)
+        setCustomEnd(`${selectedMonth}-${String(days).padStart(2, "0")}`)
+      }
+    }
+  }, [selectedMonth, customStart])
+
+  useEffect(() => {
+    if (useDateRange && selectedMonth && (!customStart || !customEnd)) {
+      const [year, month] = selectedMonth.split("-").map(Number)
+      const days = new Date(year, month, 0).getDate()
+      setCustomStart(`${selectedMonth}-01`)
+      setCustomEnd(`${selectedMonth}-${String(days).padStart(2, "0")}`)
+    }
+  }, [useDateRange, selectedMonth])
+
+  const handleCustomStartChange = (val: string) => {
+    setCustomStart(val)
+    if (val && val.length >= 7) {
+      const monthKey = val.substring(0, 7)
+      if (/^\d{4}-\d{2}$/.test(monthKey) && monthKey !== selectedMonth) {
+        setSelectedMonth(monthKey)
+      }
+    }
+  }
+
+  const handleCustomEndChange = (val: string) => {
+    setCustomEnd(val)
+    if (val && val.length >= 7) {
+      const monthKey = val.substring(0, 7)
+      if (/^\d{4}-\d{2}$/.test(monthKey) && monthKey !== selectedMonth) {
+        setSelectedMonth(monthKey)
+      }
+    }
+  }
+
+  const prorationFactor = useMemo(() => {
+    if (!useDateRange || !customStart || !customEnd) return 1.0
+
+    const start = new Date(customStart)
+    const end = new Date(customEnd)
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 1.0
+
+    const diffTime = Math.abs(end.getTime() - start.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+
+    return diffDays / daysInMonth
+  }, [useDateRange, customStart, customEnd, daysInMonth])
 
   const getPayslipAllowancesSum = (p: Payslip) => {
     if (p.allowances && Object.keys(p.allowances).length > 0) {
@@ -282,18 +350,19 @@ export function PayrollProcessingTab({
     const rows = payslipsList.map((p) => [
       p.name,
       p.designationName,
-      p.basicSalary,
+      Math.round(p.basicSalary * prorationFactor),
       p.totalWorkingDays ?? 0,
       p.presentDays ?? 0,
       p.absentDays ?? 0,
       p.leaveDays ?? 0,
       p.lateDays ?? 0,
-      getPayslipAllowancesSum(p),
-      getPayslipDeductionsSum(p),
-      p.netPay,
+      Math.round(getPayslipAllowancesSum(p) * prorationFactor),
+      Math.round(getPayslipDeductionsSum(p) * prorationFactor),
+      Math.round(p.netPay * prorationFactor),
       p.paymentStatus
     ])
-    exportToCsv(`Payslips-${selectedMonth}`, headers, rows)
+    const titleSuffix = useDateRange ? `-${customStart}-to-${customEnd}` : `-${selectedMonth}`
+    exportToCsv(`Payslips${titleSuffix}`, headers, rows)
   }
 
   return (
@@ -329,6 +398,35 @@ export function PayrollProcessingTab({
               </option>
             ))}
           </select>
+
+          <div className="flex items-center gap-2 border border-border/60 rounded-md px-2.5 h-9 bg-muted/5">
+            <Label className="text-xs flex items-center gap-1.5 cursor-pointer select-none font-normal text-muted-foreground hover:text-foreground transition-colors">
+              <input
+                type="checkbox"
+                checked={useDateRange}
+                onChange={(e) => setUseDateRange(e.target.checked)}
+                className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+              />
+              Date Range
+            </Label>
+            {useDateRange && (
+              <div className="flex items-center gap-1.5 ml-1 border-l border-border/60 pl-2">
+                <Input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => handleCustomStartChange(e.target.value)}
+                  className="h-7 w-28 text-[11px] px-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+                <span className="text-muted-foreground text-[10px]">to</span>
+                <Input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => handleCustomEndChange(e.target.value)}
+                  className="h-7 w-28 text-[11px] px-1 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+            )}
+          </div>
 
           <Badge
             variant="outline"
@@ -366,6 +464,16 @@ export function PayrollProcessingTab({
                       </Badge>
                     ))}
                   </div>
+                </div>
+              </div>
+            )}
+            {useDateRange && (
+              <div className="mx-6 my-4 p-4 border border-blue-500/20 bg-blue-500/5 text-blue-600 rounded-lg flex items-center justify-between gap-3">
+                <div className="space-y-1 text-xs">
+                  <p className="font-semibold text-blue-700">Prorated Date Range View Active</p>
+                  <p className="text-[11px] text-blue-600/90">
+                    Displaying prorated salaries for the selected range: <strong>{customStart}</strong> to <strong>{customEnd}</strong> (Total: {Math.ceil(Math.abs(new Date(customEnd).getTime() - new Date(customStart).getTime()) / (1000 * 60 * 60 * 24)) + 1} of {daysInMonth} days, Factor: <strong>{(prorationFactor * 100).toFixed(1)}%</strong>).
+                  </p>
                 </div>
               </div>
             )}
@@ -409,13 +517,24 @@ export function PayrollProcessingTab({
                 payslipsList.map((payslip) => (
                   <TableRow key={payslip.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                     <TableCell className="py-3">
-                      <div>
-                        <p className="text-xs font-semibold text-foreground">{payslip.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{payslip.designationName}</p>
-                      </div>
+                      {(() => {
+                        const empInfo = employees.find((e) => e.id === payslip.employeeId)
+                        const managerName = empInfo?.lineManagerId ? employees.find(e => e.id === empInfo.lineManagerId)?.fullNameEnglish : null
+                        return (
+                          <div>
+                            <p className="text-xs font-semibold text-foreground">{payslip.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{payslip.designationName}</p>
+                            {managerName && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5">
+                                Manager: <span className="font-medium">{managerName}</span>
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell className="py-3 text-xs font-semibold text-muted-foreground">
-                      {formatCurrency(payslip.basicSalary)}
+                      {formatCurrency(Math.round(payslip.basicSalary * prorationFactor))}
                     </TableCell>
                     <TableCell className="py-3 text-xs text-muted-foreground">
                       <div className="flex flex-col gap-1">
@@ -439,42 +558,66 @@ export function PayrollProcessingTab({
                       </div>
                     </TableCell>
                     <TableCell className="py-3 text-xs text-emerald-600 font-semibold">
-                      +{formatCurrency(getPayslipAllowancesSum(payslip))}
+                      +{formatCurrency(Math.round(getPayslipAllowancesSum(payslip) * prorationFactor))}
                     </TableCell>
                     <TableCell className="py-3 text-xs text-rose-500 font-semibold">
-                      -{formatCurrency(getPayslipDeductionsSum(payslip))}
+                      -{formatCurrency(Math.round(getPayslipDeductionsSum(payslip) * prorationFactor))}
                     </TableCell>
                     <TableCell className="py-3 text-xs font-bold text-foreground">
-                      {formatCurrency(payslip.netPay)}
+                      {formatCurrency(Math.round(payslip.netPay * prorationFactor))}
                     </TableCell>
                     <TableCell className="py-3">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[9px] font-bold py-0.5 px-2",
-                          payslip.paymentStatus === "Paid"
-                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                            : "bg-rose-500/10 text-rose-600 border-rose-500/20"
-                        )}
-                      >
-                        {payslip.paymentStatus}
-                      </Badge>
-                    </TableCell>
-	                    <TableCell className="py-3 text-right">
-	                      <div className="flex items-center justify-end gap-1.5">
-                          {cycleStatus === "Draft" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 gap-1.5 text-xs rounded-md"
-                              onClick={() => openAdjustmentDialog(payslip)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                              Adjust
-                            </Button>
+                      <div className="flex flex-col gap-1">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] font-bold py-0.5 px-2 w-fit",
+                            payslip.paymentStatus === "Paid"
+                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                              : "bg-rose-500/10 text-rose-600 border-rose-500/20"
                           )}
-	                        <Button
-	                          variant="ghost"
+                        >
+                          {payslip.paymentStatus}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[9px] font-bold py-0.5 px-2 w-fit",
+                            payslip.status === "Draft" && "bg-muted text-muted-foreground",
+                            payslip.status === "Awaiting_LM_Approval" && "bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse",
+                            payslip.status === "Awaiting_MD_Approval" && "bg-indigo-500/10 text-indigo-600 border-indigo-500/20 animate-pulse",
+                            payslip.status === "Awaiting_Disbursement" && "bg-blue-500/10 text-blue-600 border-blue-500/20",
+                            payslip.status === "Disbursed" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                            payslip.status === "Rejected" && "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                          )}
+                        >
+                          {(payslip.status || "Draft").replace(/_/g, " ")}
+                        </Badge>
+                        {payslip.status === "Rejected" && payslip.rejectionReason && (
+                          <span className="text-[9px] text-rose-500 max-w-[120px] truncate block" title={payslip.rejectionReason}>
+                            Reason: {payslip.rejectionReason}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        {cycleStatus === "Draft" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-1.5 text-xs rounded-md"
+                            onClick={() => openAdjustmentDialog(payslip)}
+                            disabled={useDateRange}
+                            title={useDateRange ? "Disable adjustments in date-range view" : undefined}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Adjust
+                          </Button>
+                        )}
+                        {/* Approvals are handled strictly on their dedicated approval pages */}
+                        <Button
+                          variant="ghost"
                           size="sm"
                           className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-primary rounded-md"
                           onClick={() => setViewPayslip(payslip)}

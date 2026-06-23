@@ -126,12 +126,18 @@ export interface Payslip {
   leaveDays?: number;
   lateDays?: number;
   monthKey?: string;
+  status: "Draft" | "Awaiting_LM_Approval" | "Awaiting_MD_Approval" | "Awaiting_Disbursement" | "Disbursed" | "Rejected";
+  rejectionReason?: string;
+  lmApprovedById?: string;
+  lmApprovedAt?: string;
+  mdApprovedById?: string;
+  mdApprovedAt?: string;
 }
 
 export interface PayrollCycle {
   id: string;
   monthKey: string;
-  status: "Draft" | "Processed" | "Distributed";
+  status: "Draft" | "Processed" | "Distributed" | "Awaiting_LM_Approval" | "Awaiting_MD_Approval" | "Awaiting_Disbursement" | "Disbursed";
   isProcessing?: boolean;
   payslips: Payslip[];
 }

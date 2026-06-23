@@ -130,10 +130,46 @@ export const navGroups: NavGroup[] = [
     label: "Finance",
     items: [
       {
-        title: "Salary & Payroll",
-        href: "/payroll",
+        title: "Employee Salary",
+        href: "/payroll/employee-salary",
         icon: Coins,
         permissions: ["payroll:read", "payroll:view_all", "payroll:create", "payroll:process"],
+      },
+      {
+        title: "Payroll Processing",
+        href: "/payroll/processing",
+        icon: Coins,
+        permissions: ["payroll:read", "payroll:process"],
+      },
+      {
+        title: "Provident Fund (PF)",
+        href: "/payroll/provident-fund",
+        icon: Coins,
+        permissions: ["payroll:read"],
+      },
+      {
+        title: "Disbursement Logs",
+        href: "/payroll/disbursement-logs",
+        icon: Coins,
+        permissions: ["payroll:read", "payroll:disburse"],
+      },
+      {
+        title: "LM Approvals Queue",
+        href: "/payroll/lm-approvals",
+        icon: Coins,
+        permissions: ["payroll:approve_lm", "employees:view_team", "payroll:read", "payroll:process"],
+      },
+      {
+        title: "MD Approvals Queue",
+        href: "/payroll/md-approvals",
+        icon: Coins,
+        permissions: ["payroll:approve_md", "payroll:read", "payroll:process"],
+      },
+      {
+        title: "Disbursement Portal",
+        href: "/payroll/disbursement",
+        icon: Coins,
+        permissions: ["payroll:disburse", "payroll:read", "payroll:process"],
       },
       {
         title: "Claims & Reimbursement",

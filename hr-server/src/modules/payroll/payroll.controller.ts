@@ -52,8 +52,9 @@ export class PayrollController {
 
   @Post('disburse')
   @ApiOperation({ summary: 'Execute disbursement and record payment detail' })
-  async recordDisbursement(@Body() dto: DisburseDto) {
-    return this.payrollService.recordDisbursement(dto);
+  async recordDisbursement(@Body() dto: DisburseDto, @Req() req: any) {
+    const userId = req.user.id;
+    return this.payrollService.recordDisbursement(dto, userId);
   }
 
   @Get('disbursements')
@@ -141,6 +142,47 @@ export class PayrollController {
   @ApiOperation({ summary: 'Get pending adjustments summary for a month' })
   async getPendingAdjustmentsSummary(@Query('appliedMonthKey') appliedMonthKey: string) {
     return this.payrollService.getPendingAdjustmentsSummary(appliedMonthKey);
+  }
+
+  @Post('cycles/:monthKey/submit-for-approval')
+  @ApiOperation({ summary: 'Submit draft payroll cycle for approval' })
+  async submitForApproval(
+    @Param('monthKey') monthKey: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.submitForApproval(monthKey, userId);
+  }
+
+  @Post('payslips/:id/approve')
+  @ApiOperation({ summary: 'Approve a payslip at the current workflow stage' })
+  async approvePayslip(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.approvePayslip(id, userId);
+  }
+
+  @Post('payslips/:id/reject')
+  @ApiOperation({ summary: 'Reject a payslip and return it to draft/rejected status' })
+  async rejectPayslip(
+    @Param('id') id: string,
+    @Body() dto: { comment: string },
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.rejectPayslip(id, dto.comment, userId);
+  }
+
+  @Post('cycles/:monthKey/bulk-approve')
+  @ApiOperation({ summary: 'Bulk approve pending payslips in the cycle' })
+  async bulkApprove(
+    @Param('monthKey') monthKey: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.bulkApprove(monthKey, userId);
   }
 }
 

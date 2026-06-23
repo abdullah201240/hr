@@ -122,3 +122,47 @@ export function useMyPayslipsQuery() {
   });
 }
 
+export function useSubmitPayrollMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<PayrollCycle, Error, string>({
+    mutationFn: (monthKey) =>
+      apiClient.post<PayrollCycle>(`payroll/cycles/${monthKey}/submit-for-approval`, {}),
+    onSuccess: (_, monthKey) => {
+      queryClient.invalidateQueries({ queryKey: ["payrollCycle", monthKey] });
+    },
+  });
+}
+
+export function useApprovePayslipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<PayrollCycle, Error, { payslipId: string; monthKey: string }>({
+    mutationFn: ({ payslipId }) =>
+      apiClient.post<PayrollCycle>(`payroll/payslips/${payslipId}/approve`, {}),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["payrollCycle", variables.monthKey] });
+    },
+  });
+}
+
+export function useRejectPayslipMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<PayrollCycle, Error, { payslipId: string; comment: string; monthKey: string }>({
+    mutationFn: ({ payslipId, comment }) =>
+      apiClient.post<PayrollCycle>(`payroll/payslips/${payslipId}/reject`, { comment }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["payrollCycle", variables.monthKey] });
+    },
+  });
+}
+
+export function useBulkApprovePayrollMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: boolean; message: string }, Error, string>({
+    mutationFn: (monthKey) =>
+      apiClient.post<{ success: boolean; message: string }>(`payroll/cycles/${monthKey}/bulk-approve`, {}),
+    onSuccess: (_, monthKey) => {
+      queryClient.invalidateQueries({ queryKey: ["payrollCycle", monthKey] });
+    },
+  });
+}
+

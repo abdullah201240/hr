@@ -22,6 +22,13 @@ const AttendancePage = lazy(() => import("@/routes/pages/attendance"))
 const CompanyAttendancePage = lazy(() => import("@/routes/pages/company-attendance"))
 const LeavePage = lazy(() => import("@/routes/pages/leave"))
 const PayrollPage = lazy(() => import("@/routes/pages/payroll"))
+const PayrollLmApprovalsPage = lazy(() => import("@/routes/pages/payroll-lm-approvals"))
+const PayrollMdApprovalsPage = lazy(() => import("@/routes/pages/payroll-md-approvals"))
+const PayrollDisbursementPage = lazy(() => import("@/routes/pages/payroll-disbursement"))
+const PayrollEmployeeSalaryPage = lazy(() => import("@/routes/pages/payroll-employee-salary"))
+const PayrollProcessingPage = lazy(() => import("@/routes/pages/payroll-processing"))
+const PayrollProvidentFundPage = lazy(() => import("@/routes/pages/payroll-provident-fund"))
+const PayrollDisbursementLogsPage = lazy(() => import("@/routes/pages/payroll-disbursement-logs"))
 const DepartmentsPage = lazy(() => import("@/routes/pages/departments"))
 const CreateDepartmentPage = lazy(() => import("@/routes/pages/create-department"))
 const EditDepartmentPage = lazy(() => import("@/routes/pages/edit-department"))
@@ -113,6 +120,7 @@ function App() {
                   <Route path="notifications" element={<NotificationsPage />} />
                   <Route path="leave-applications" element={<LeaveApplicationsPage />} />
                   <Route path="regulations" element={<RegulationsPage />} />
+                  <Route path="payroll/lm-approvals" element={<PayrollLmApprovalsPage />} />
 
                   {/* Departments & designations: read-only view for all */}
                   <Route path="departments" element={<DepartmentsPage />} />
@@ -136,11 +144,23 @@ function App() {
                     <Route path="reports" element={<ReportsPage />} />
                   </Route>
 
+                  {/* ── MD/Finance-specific routes ─────────────────────────── */}
+                  <Route element={<PermissionGuard requires={["payroll:approve_md", "payroll:read", "payroll:process"]} />}>
+                    <Route path="payroll/md-approvals" element={<PayrollMdApprovalsPage />} />
+                  </Route>
+                  <Route element={<PermissionGuard requires={["payroll:disburse", "payroll:read", "payroll:process"]} />}>
+                    <Route path="payroll/disbursement" element={<PayrollDisbursementPage />} />
+                  </Route>
+
                   {/* ── Admin/HR-only routes ───────────────────────────────── */}
                   <Route element={<PermissionGuard requires={["employees:create", "employees:update", "employees:delete", "payroll:read", "payroll:process", "recruitment:read", "letters:read"]} />}>
                     <Route path="employees/create" element={<CreateEmployeePage />} />
                     <Route path="employees/edit/:id" element={<EditEmployeePage />} />
                     <Route path="payroll" element={<PayrollPage />} />
+                    <Route path="payroll/employee-salary" element={<PayrollEmployeeSalaryPage />} />
+                    <Route path="payroll/processing" element={<PayrollProcessingPage />} />
+                    <Route path="payroll/provident-fund" element={<PayrollProvidentFundPage />} />
+                    <Route path="payroll/disbursement-logs" element={<PayrollDisbursementLogsPage />} />
                     <Route path="recruitment" element={<RecruitmentPage />} />
                     <Route path="separation" element={<SeparationPage />} />
                     <Route path="disciplinary" element={<DisciplinaryPage />} />

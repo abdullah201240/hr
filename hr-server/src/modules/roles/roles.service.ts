@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DB_CONNECTION, type Database } from '../../db';
-import { permissions, customRoles, rolePermissions, employees, leaveApplications, claims, regulationRequests } from '../../db/schema';
+import { permissions, customRoles, rolePermissions, employees, leaveApplications, claims, regulationRequests, employeePayslips } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // Predefined set of resources and actions for seeding
@@ -28,6 +28,8 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
   { resource: 'payroll', action: 'disburse', description: 'Disburse payroll funds' },
   { resource: 'payroll', action: 'view_own', description: 'View own payslips and salary details' },
   { resource: 'payroll', action: 'view_all', description: 'View payroll details for all employees' },
+  { resource: 'payroll', action: 'approve_lm', description: 'Stage 1: Line Manager Approval' },
+  { resource: 'payroll', action: 'approve_md', description: 'Stage 2: Managing Director Approval' },
 
   // Leave Management
   { resource: 'leave', action: 'apply', description: 'Apply for leave requests' },
@@ -338,6 +340,19 @@ export class RolesService implements OnModuleInit {
       .from(regulationRequests)
       .innerJoin(employees, eq(regulationRequests.employeeId, employees.id))
       .where(eq(regulationRequests.id, requestId))
+      .limit(1);
+
+    return result ? result.lineManagerId === userId : false;
+  }
+
+  async isLineManagerForPayslip(userId: string, payslipId: string): Promise<boolean> {
+    const [result] = await this.db
+      .select({
+        lineManagerId: employees.lineManagerId,
+      })
+      .from(employeePayslips)
+      .innerJoin(employees, eq(employeePayslips.employeeId, employees.id))
+      .where(eq(employeePayslips.id, payslipId))
       .limit(1);
 
     return result ? result.lineManagerId === userId : false;

@@ -82,6 +82,15 @@ export class RolesGuard implements CanActivate {
         }
       }
 
+      // Special check: If payroll:approve_lm is required and user is the Line Manager of the employee in the payslip, allow.
+      if (requiredPermissions.includes('payroll:approve_lm')) {
+        const payslipId = req.params.id;
+        if (payslipId) {
+          const isLineManager = await this.rolesService.isLineManagerForPayslip(user.id, payslipId);
+          if (isLineManager) return true;
+        }
+      }
+
       throw new ForbiddenException(
         `Access denied: lacks required permission [${requiredPermissions.join(', ')}]`,
       );

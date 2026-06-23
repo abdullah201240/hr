@@ -10,6 +10,7 @@ import {
   uniqueIndex,
   boolean,
   jsonb,
+  text,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
@@ -20,7 +21,7 @@ export const payrollCycles = pgTable(
   {
     ...baseTable,
     monthKey: varchar('month_key', { length: 10 }).notNull(), // e.g. "2026-06"
-    status: varchar('status', { length: 20 }).default('Draft').notNull(), // 'Draft' | 'Processed' | 'Distributed'
+    status: varchar('status', { length: 30 }).default('Draft').notNull(), // 'Draft' | 'Awaiting_LM_Approval' | 'Awaiting_MD_Approval' | 'Awaiting_Disbursement' | 'Disbursed'
     isProcessing: boolean('is_processing').default(false).notNull(),
   },
   (table) => [
@@ -61,10 +62,19 @@ export const employeePayslips = pgTable(
     absentDays: integer('absent_days').default(0).notNull(),
     leaveDays: integer('leave_days').default(0).notNull(),
     lateDays: integer('late_days').default(0).notNull(),
+
+    // Approval Workflow tracking
+    status: varchar('status', { length: 30 }).default('Draft').notNull(), // 'Draft' | 'Awaiting_LM_Approval' | 'Awaiting_MD_Approval' | 'Awaiting_Disbursement' | 'Disbursed' | 'Rejected'
+    rejectionReason: text('rejection_reason'),
+    lmApprovedById: uuid('lm_approved_by_id').references(() => employees.id, { onDelete: 'set null' }),
+    lmApprovedAt: timestamp('lm_approved_at', { withTimezone: true }),
+    mdApprovedById: uuid('md_approved_by_id').references(() => employees.id, { onDelete: 'set null' }),
+    mdApprovedAt: timestamp('md_approved_at', { withTimezone: true }),
   },
   (table) => [
     uniqueIndex('employee_payslips_cycle_employee_idx').on(table.payrollCycleId, table.employeeId),
     index('employee_payslips_employee_idx').on(table.employeeId),
+    index('employee_payslips_status_idx').on(table.status),
   ],
 );
 
@@ -84,19 +94,69 @@ export const disbursements = pgTable(
   ],
 );
 
+export const payrollApprovals = pgTable(
+  'payroll_approvals',
+  {
+    ...baseTable,
+    payrollCycleId: uuid('payroll_cycle_id')
+      .notNull()
+      .references(() => payrollCycles.id, { onDelete: 'cascade' }),
+    employeePayslipId: uuid('employee_payslip_id')
+      .references(() => employeePayslips.id, { onDelete: 'cascade' }),
+    stage: varchar('stage', { length: 50 }).notNull(), // 'LineManager' | 'MD' | 'Accounts'
+    status: varchar('status', { length: 50 }).notNull(), // 'Approved' | 'Rejected'
+    comment: text('comment'),
+    actionById: uuid('action_by_id')
+      .notNull()
+      .references(() => employees.id, { onDelete: 'restrict' }),
+    actionAt: timestamp('action_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('payroll_approvals_cycle_idx').on(table.payrollCycleId),
+    index('payroll_approvals_payslip_idx').on(table.employeePayslipId),
+  ],
+);
+
 // ─── Relations ──────────────────────────────────────────────────────────────
 
 export const payrollCyclesRelations = relations(payrollCycles, ({ many }) => ({
   payslips: many(employeePayslips),
+  approvals: many(payrollApprovals),
 }));
 
-export const employeePayslipsRelations = relations(employeePayslips, ({ one }) => ({
+export const employeePayslipsRelations = relations(employeePayslips, ({ one, many }) => ({
   payrollCycle: one(payrollCycles, {
     fields: [employeePayslips.payrollCycleId],
     references: [payrollCycles.id],
   }),
   employee: one(employees, {
     fields: [employeePayslips.employeeId],
+    references: [employees.id],
+  }),
+  approvals: many(payrollApprovals),
+  lmApprover: one(employees, {
+    fields: [employeePayslips.lmApprovedById],
+    references: [employees.id],
+    relationName: 'lmApprover',
+  }),
+  mdApprover: one(employees, {
+    fields: [employeePayslips.mdApprovedById],
+    references: [employees.id],
+    relationName: 'mdApprover',
+  }),
+}));
+
+export const payrollApprovalsRelations = relations(payrollApprovals, ({ one }) => ({
+  payrollCycle: one(payrollCycles, {
+    fields: [payrollApprovals.payrollCycleId],
+    references: [payrollCycles.id],
+  }),
+  employeePayslip: one(employeePayslips, {
+    fields: [payrollApprovals.employeePayslipId],
+    references: [employeePayslips.id],
+  }),
+  actionBy: one(employees, {
+    fields: [payrollApprovals.actionById],
     references: [employees.id],
   }),
 }));
