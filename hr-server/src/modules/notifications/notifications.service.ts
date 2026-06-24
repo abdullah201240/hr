@@ -127,7 +127,11 @@ export class NotificationService implements OnModuleInit {
     }
 
     // Increment unread count in Redis
-    await this.redis.incr(`notif:unread:${dto.recipientId}`);
+    try {
+      await this.redis.incr(`notif:unread:${dto.recipientId}`);
+    } catch (err) {
+      // Ignore Redis connection/cache errors
+    }
 
     // 6. WebSocket real-time delivery
     await this.gateway.publishSyncEvent('NEW_NOTIFICATION', dto.recipientId, notification);
@@ -207,9 +211,13 @@ export class NotificationService implements OnModuleInit {
    * Get total unread count for user (Redis-first with DB fallback)
    */
   async getUnreadCount(recipientId: string): Promise<number> {
-    const cached = await this.redis.get(`notif:unread:${recipientId}`);
-    if (cached !== null) {
-      return parseInt(cached, 10);
+    try {
+      const cached = await this.redis.get(`notif:unread:${recipientId}`);
+      if (cached !== null) {
+        return parseInt(cached, 10);
+      }
+    } catch (err) {
+      // Ignore Redis cache errors
     }
 
     const [result] = await this.db
@@ -224,7 +232,11 @@ export class NotificationService implements OnModuleInit {
       );
 
     const countVal = result?.count || 0;
-    await this.redis.setex(`notif:unread:${recipientId}`, 3600, countVal.toString());
+    try {
+      await this.redis.setex(`notif:unread:${recipientId}`, 3600, countVal.toString());
+    } catch (err) {
+      // Ignore Redis cache errors
+    }
     return countVal;
   }
 
@@ -256,11 +268,15 @@ export class NotificationService implements OnModuleInit {
       .returning();
 
     // Decrement unread counter in Redis
-    const current = await this.redis.get(`notif:unread:${recipientId}`);
-    if (current && parseInt(current, 10) > 0) {
-      await this.redis.decr(`notif:unread:${recipientId}`);
-    } else {
-      await this.redis.set(`notif:unread:${recipientId}`, '0');
+    try {
+      const current = await this.redis.get(`notif:unread:${recipientId}`);
+      if (current && parseInt(current, 10) > 0) {
+        await this.redis.decr(`notif:unread:${recipientId}`);
+      } else {
+        await this.redis.set(`notif:unread:${recipientId}`, '0');
+      }
+    } catch (err) {
+      // Ignore Redis cache errors
     }
 
     await this.gateway.publishSyncEvent('NOTIFICATION_READ', recipientId, {
@@ -291,7 +307,11 @@ export class NotificationService implements OnModuleInit {
         )
       );
 
-    await this.redis.set(`notif:unread:${recipientId}`, '0');
+    try {
+      await this.redis.set(`notif:unread:${recipientId}`, '0');
+    } catch (err) {
+      // Ignore Redis cache errors
+    }
 
     await this.gateway.publishSyncEvent('NOTIFICATION_MARK_ALL_READ', recipientId, {
       readAt: now.toISOString(),
@@ -324,9 +344,13 @@ export class NotificationService implements OnModuleInit {
 
     // If it was unread, decrement unread count
     if (!notification.isRead) {
-      const current = await this.redis.get(`notif:unread:${recipientId}`);
-      if (current && parseInt(current, 10) > 0) {
-        await this.redis.decr(`notif:unread:${recipientId}`);
+      try {
+        const current = await this.redis.get(`notif:unread:${recipientId}`);
+        if (current && parseInt(current, 10) > 0) {
+          await this.redis.decr(`notif:unread:${recipientId}`);
+        }
+      } catch (err) {
+        // Ignore Redis cache errors
       }
     }
 
@@ -374,9 +398,13 @@ export class NotificationService implements OnModuleInit {
       .where(eq(notifications.id, id));
 
     if (!notification.isRead && !notification.isArchived) {
-      const current = await this.redis.get(`notif:unread:${recipientId}`);
-      if (current && parseInt(current, 10) > 0) {
-        await this.redis.decr(`notif:unread:${recipientId}`);
+      try {
+        const current = await this.redis.get(`notif:unread:${recipientId}`);
+        if (current && parseInt(current, 10) > 0) {
+          await this.redis.decr(`notif:unread:${recipientId}`);
+        }
+      } catch (err) {
+        // Ignore Redis cache errors
       }
     }
 

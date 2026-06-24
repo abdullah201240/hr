@@ -1,7 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../../../common/cache/cache.service';
+import { CacheService } from '../../../common/cache/cache.service';
 import { DB_CONNECTION } from '../../../db';
 import type { Database } from '../../../db';
 import { notificationPreferences } from '../../../db/schema/notifications';
@@ -12,7 +11,7 @@ import { NotificationPriority } from '../types/notification.types';
 export class PreferencesService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly cache: CacheService,
   ) {}
 
   /**
@@ -20,9 +19,9 @@ export class PreferencesService {
    */
   async getPreferences(employeeId: string): Promise<any> {
     const cacheKey = `notif:prefs:${employeeId}`;
-    const cached = await this.redis.get(cacheKey);
+    const cached = await this.cache.get<any>(cacheKey);
     if (cached) {
-      return JSON.parse(cached);
+      return cached;
     }
 
     let [prefs] = await this.db
@@ -43,7 +42,7 @@ export class PreferencesService {
         .returning();
     }
 
-    await this.redis.setex(cacheKey, 300, JSON.stringify(prefs)); // Cache for 5 mins
+    await this.cache.set(cacheKey, prefs, 300); // Cache for 5 mins
     return prefs;
   }
 
@@ -51,7 +50,7 @@ export class PreferencesService {
    * Invalidate cached user preferences
    */
   async invalidateCache(employeeId: string): Promise<void> {
-    await this.redis.del(`notif:prefs:${employeeId}`);
+    await this.cache.del(`notif:prefs:${employeeId}`);
   }
 
   /**
