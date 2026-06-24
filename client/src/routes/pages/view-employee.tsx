@@ -59,6 +59,7 @@ export default function ViewEmployeePage() {
     department: employee.departmentId,
     employeeType: employee.employeeType,
     joinDate: employee.joinDate,
+    isSalary: employee.isSalary ?? true,
     lineManager: employee.lineManagerId || "none",
     spouses: (employee.spouses || []).map((s) => ({
       name: s.name,

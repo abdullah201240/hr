@@ -47,6 +47,7 @@ export const employeeFormSchema = z
     bloodGroup: z.string().default("Not Specified"),
     employeeType: z.string().min(1, "Required"),
     lineManager: z.string().default(""),
+    isSalary: z.boolean().default(true),
     // Family
     maritalStatus: z.string().default("Single"),
     spouses: z
@@ -133,7 +134,7 @@ export const PERSONAL_FIELDS: (keyof EmployeeFormInput)[] = [
 ]
 
 export const WORK_FIELDS: (keyof EmployeeFormInput)[] = [
-  "designation", "department", "password", "confirmPassword", "employeeType", "lineManager",
+  "designation", "department", "password", "confirmPassword", "employeeType", "lineManager", "isSalary",
 ]
 
 export const FAMILY_FIELDS: (keyof EmployeeFormInput)[] = [
@@ -184,6 +185,7 @@ export const DEFAULT_VALUES: EmployeeFormInput = {
   bloodGroup: "",
   employeeType: "Full-time",
   lineManager: "",
+  isSalary: true,
   maritalStatus: "Single",
   spouses: [],
   children: [],

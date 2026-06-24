@@ -154,6 +154,7 @@ export class EmployeeService {
         customRoleId: employees.customRoleId,
         status: employees.status,
         inactiveDate: employees.inactiveDate,
+        isSalary: employees.isSalary,
         isEmailVerified: employees.isEmailVerified,
         lastLoginAt: employees.lastLoginAt,
         createdAt: employees.createdAt,
@@ -302,6 +303,7 @@ export class EmployeeService {
           status: employees.status,
           customRoleId: employees.customRoleId,
           inactiveDate: employees.inactiveDate,
+          isSalary: employees.isSalary,
           employeePhotoUrl: employees.employeePhotoUrl,
           createdAt: employees.createdAt,
         })

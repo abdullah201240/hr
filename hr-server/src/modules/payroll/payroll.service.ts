@@ -289,7 +289,12 @@ export class PayrollService implements OnModuleInit {
       const activeEmployees = await this.db
         .select()
         .from(employees)
-        .where(eq(employees.status, 'active'));
+        .where(
+          and(
+            eq(employees.status, 'active'),
+            eq(employees.isSalary, true),
+          ),
+        );
 
       const [pfSettings] = await this.db.select().from(providentFundSettings).limit(1);
       const pfRate = pfSettings?.employeeContributionRate ?? 10;
@@ -965,7 +970,12 @@ export class PayrollService implements OnModuleInit {
       const activeEmployees = await this.db
         .select()
         .from(employees)
-        .where(eq(employees.status, 'active'));
+        .where(
+          and(
+            eq(employees.status, 'active'),
+            eq(employees.isSalary, true),
+          ),
+        );
 
       const activeEmployeeIds = activeEmployees.map((e) => e.id);
 

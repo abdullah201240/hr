@@ -136,6 +136,7 @@ export const employees = pgTable(
     // Status
     status: varchar('status', { length: 20 }).default('active').notNull(), // active | inactive | terminated
     inactiveDate: date('inactive_date'), // Scheduled date to become inactive
+    isSalary: boolean('is_salary').default(true).notNull(),
 
     // Auth
     customRoleId: uuid('custom_role_id').references((): AnyPgColumn => customRoles.id, { onDelete: 'set null' }),

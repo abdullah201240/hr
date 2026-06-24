@@ -84,6 +84,7 @@ export default function CreateEmployeePage() {
         departmentId: data.department,
         employeeType: data.employeeType,
         joinDate: data.joinDate,
+        isSalary: data.isSalary,
         lineManagerId: data.lineManager === "none" || !data.lineManager ? undefined : data.lineManager,
         spouses: (data.spouses || []).map((s: any) => ({
           name: s.name,

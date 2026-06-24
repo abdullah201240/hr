@@ -12,6 +12,7 @@ import {
 import { Eye, EyeOff, FileText, X, Briefcase, Lock, FileCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Field, SectionTitle, SectionCard, StepHeader } from "./form-ui"
+import { Switch } from "@/components/ui/switch"
 import type { EmployeeFormInput } from "./form-schema"
 import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
 import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
@@ -176,6 +177,15 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
               </Select>
             )} />
           </Field>
+          <div className="flex items-center space-x-3 mt-6">
+            <Controller name="isSalary" control={control} render={({ field }) => (
+              <Switch checked={field.value} onCheckedChange={field.onChange} disabled={isView} />
+            )} />
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Eligible for Salary?</Label>
+              <p className="text-[11px] text-muted-foreground">Include in monthly payroll cycles.</p>
+            </div>
+          </div>
         </div>
       </SectionCard>
 

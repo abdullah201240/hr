@@ -431,7 +431,12 @@ export class SalaryService {
         total: sql<number>`COUNT(*)`,
       })
       .from(employees)
-      .where(eq(employees.status, 'active'));
+      .where(
+        and(
+          eq(employees.status, 'active'),
+          eq(employees.isSalary, true),
+        ),
+      );
 
     return {
       totalBudget: Number(stats?.totalBudget || 0),

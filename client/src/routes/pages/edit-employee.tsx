@@ -75,6 +75,7 @@ export default function EditEmployeePage() {
     department: employee.departmentId,
     employeeType: employee.employeeType,
     joinDate: employee.joinDate,
+    isSalary: employee.isSalary ?? true,
     lineManager: employee.lineManagerId || "none",
     spouses: (employee.spouses || []).map((s) => ({
       name: s.name,
@@ -172,6 +173,7 @@ export default function EditEmployeePage() {
         departmentId: data.department,
         employeeType: data.employeeType,
         joinDate: data.joinDate,
+        isSalary: data.isSalary,
         lineManagerId: data.lineManager === "none" || !data.lineManager ? undefined : data.lineManager,
         spouses: (data.spouses || []).map((s: any) => ({
           name: s.name,

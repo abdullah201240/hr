@@ -170,6 +170,7 @@ export interface Employee {
   inactiveDate: string | null;
   role: string;
   customRoleId?: string | null;
+  isSalary?: boolean;
   isEmailVerified: boolean;
   lastLoginAt: string | null;
   createdAt: string;
