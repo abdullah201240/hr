@@ -4,6 +4,7 @@ import {
   UserPlus,
   CalendarClock,
   CalendarOff,
+  CalendarHeart,
   Building2,
   BarChart3,
   Settings,
@@ -176,6 +177,12 @@ export const navGroups: NavGroup[] = [
         href: "/payroll/disbursement",
         icon: Banknote,
         permissions: ["payroll:disburse", "payroll:read", "payroll:process"],
+      },
+      {
+        title: "Festival Bonus Payouts",
+        href: "/payroll/festival-bonus",
+        icon: CalendarHeart,
+        permissions: ["payroll:read", "payroll:process"],
       },
       {
         title: "Claims & Reimbursement",

@@ -168,3 +168,36 @@ export interface UpdateFestivalBonusSettingsPayload {
   eligibleEmployeeTypes?: string[];
   allowSpecialApproval?: boolean;
 }
+
+export interface FestivalBonusCycle {
+  id: string;
+  name: string;
+  festivalDate: string;
+  status: 'Draft' | 'Approved' | 'Disbursed';
+  totalAmount: number;
+  totalEmployees: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FestivalBonusPayout {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  employeeType: string;
+  joinDate: string;
+  basicSalary: number;
+  grossSalary: number;
+  serviceMonths: number;
+  calculatedAmount: number;
+  overrideAmount: number | null;
+  finalAmount: number;
+  isEligible: boolean;
+  eligibilityReason: string | null;
+  specialApprovalGranted: boolean;
+  status: 'Calculated' | 'Paid';
+  paymentMethod: string | null;
+  paymentRef: string | null;
+  paidAt: string | null;
+}

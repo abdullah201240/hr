@@ -29,6 +29,7 @@ const PayrollEmployeeSalaryPage = lazy(() => import("@/routes/pages/payroll-empl
 const PayrollProcessingPage = lazy(() => import("@/routes/pages/payroll-processing"))
 const PayrollProvidentFundPage = lazy(() => import("@/routes/pages/payroll-provident-fund"))
 const PayrollDisbursementLogsPage = lazy(() => import("@/routes/pages/payroll-disbursement-logs"))
+const PayrollFestivalBonusPage = lazy(() => import("@/routes/pages/payroll-festival-bonus"))
 const DepartmentsPage = lazy(() => import("@/routes/pages/departments"))
 const CreateDepartmentPage = lazy(() => import("@/routes/pages/create-department"))
 const EditDepartmentPage = lazy(() => import("@/routes/pages/edit-department"))
@@ -161,6 +162,7 @@ function App() {
                     <Route path="payroll/processing" element={<PayrollProcessingPage />} />
                     <Route path="payroll/provident-fund" element={<PayrollProvidentFundPage />} />
                     <Route path="payroll/disbursement-logs" element={<PayrollDisbursementLogsPage />} />
+                    <Route path="payroll/festival-bonus" element={<PayrollFestivalBonusPage />} />
                     <Route path="recruitment" element={<RecruitmentPage />} />
                     <Route path="separation" element={<SeparationPage />} />
                     <Route path="disciplinary" element={<DisciplinaryPage />} />
