@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PayrollService } from './payroll.service';
 import { DisburseDto, UpdatePayslipAdjustmentsDto } from './dto/payroll.dto';
-import { CreateSalaryAdjustmentDto, UpdateAdjustmentStatusDto, ApplyAdjustmentsToCycleDto } from './dto/salary-adjustment.dto';
 
 @ApiTags('Payroll')
 @ApiBearerAuth()
@@ -80,68 +79,6 @@ export class PayrollController {
   @ApiOperation({ summary: 'Get payroll cycle processing status' })
   async getCycleStatus(@Param('monthKey') monthKey: string) {
     return this.payrollService.getCycleStatus(monthKey);
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Cross-Month Salary Adjustments
-  // ─────────────────────────────────────────────────────────────
-
-  @Post('adjustments')
-  @ApiOperation({ summary: 'Create a cross-month salary adjustment' })
-  async createSalaryAdjustment(@Body() dto: CreateSalaryAdjustmentDto) {
-    return this.payrollService.createSalaryAdjustment(dto);
-  }
-
-  @Get('adjustments')
-  @ApiOperation({ summary: 'Get salary adjustments with optional filters' })
-  async getSalaryAdjustments(
-    @Query('employeeId') employeeId?: string,
-    @Query('targetMonthKey') targetMonthKey?: string,
-    @Query('appliedMonthKey') appliedMonthKey?: string,
-    @Query('status') status?: string,
-  ) {
-    return this.payrollService.getSalaryAdjustments({
-      employeeId,
-      targetMonthKey,
-      appliedMonthKey,
-      status,
-    });
-  }
-
-  @Patch('adjustments/:id/status')
-  @ApiOperation({ summary: 'Update adjustment status' })
-  async updateAdjustmentStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateAdjustmentStatusDto,
-  ) {
-    return this.payrollService.updateAdjustmentStatus(id, dto);
-  }
-
-  @Patch('adjustments/:id')
-  @ApiOperation({ summary: 'Update a pending adjustment' })
-  async updateAdjustment(
-    @Param('id') id: string,
-    @Body() dto: CreateSalaryAdjustmentDto,
-  ) {
-    return this.payrollService.updateAdjustment(id, dto);
-  }
-
-  @Delete('adjustments/:id')
-  @ApiOperation({ summary: 'Delete a pending adjustment' })
-  async deleteAdjustment(@Param('id') id: string) {
-    return this.payrollService.deleteAdjustment(id);
-  }
-
-  @Post('adjustments/apply')
-  @ApiOperation({ summary: 'Apply all pending adjustments to current month payroll' })
-  async applyPendingAdjustments(@Body() dto: ApplyAdjustmentsToCycleDto) {
-    return this.payrollService.applyPendingAdjustmentsToCycle(dto.appliedMonthKey);
-  }
-
-  @Get('adjustments/pending-summary')
-  @ApiOperation({ summary: 'Get pending adjustments summary for a month' })
-  async getPendingAdjustmentsSummary(@Query('appliedMonthKey') appliedMonthKey: string) {
-    return this.payrollService.getPendingAdjustmentsSummary(appliedMonthKey);
   }
 
   @Post('cycles/:monthKey/submit-for-approval')

@@ -4,7 +4,6 @@ import {
   UserPlus,
   CalendarClock,
   CalendarOff,
-  Coins,
   Building2,
   BarChart3,
   Settings,
@@ -21,6 +20,13 @@ import {
   Bell,
   Crown,
   BookOpenCheck,
+  Wallet,
+  Calculator,
+  PiggyBank,
+  ScrollText,
+  ClipboardCheck,
+  ShieldCheck,
+  Banknote,
 } from "lucide-react"
 
 import type { NavGroup } from "@/types"
@@ -132,43 +138,43 @@ export const navGroups: NavGroup[] = [
       {
         title: "Employee Salary",
         href: "/payroll/employee-salary",
-        icon: Coins,
+        icon: Wallet,
         permissions: ["payroll:read", "payroll:view_all", "payroll:create", "payroll:process"],
       },
       {
         title: "Payroll Processing",
         href: "/payroll/processing",
-        icon: Coins,
+        icon: Calculator,
         permissions: ["payroll:read", "payroll:process"],
       },
       {
         title: "Provident Fund (PF)",
         href: "/payroll/provident-fund",
-        icon: Coins,
+        icon: PiggyBank,
         permissions: ["payroll:read"],
       },
       {
         title: "Disbursement Logs",
         href: "/payroll/disbursement-logs",
-        icon: Coins,
+        icon: ScrollText,
         permissions: ["payroll:read", "payroll:disburse"],
       },
       {
         title: "LM Approvals Queue",
         href: "/payroll/lm-approvals",
-        icon: Coins,
+        icon: ClipboardCheck,
         permissions: ["payroll:approve_lm", "employees:view_team", "payroll:read", "payroll:process"],
       },
       {
         title: "MD Approvals Queue",
         href: "/payroll/md-approvals",
-        icon: Coins,
+        icon: ShieldCheck,
         permissions: ["payroll:approve_md", "payroll:read", "payroll:process"],
       },
       {
         title: "Disbursement Portal",
         href: "/payroll/disbursement",
-        icon: Coins,
+        icon: Banknote,
         permissions: ["payroll:disburse", "payroll:read", "payroll:process"],
       },
       {

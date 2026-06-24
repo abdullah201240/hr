@@ -28,15 +28,7 @@ import { usePermissions } from "@/hooks/usePermissions"
 import {
   useEmployeeSalariesQuery,
 } from "@/hooks/useSalary"
-import {
-  useSalaryAdjustments,
-  useAllSalaryAdjustments,
-  useCreateSalaryAdjustment,
-  useDeleteSalaryAdjustment,
-  useApplyPendingAdjustments,
-} from "@/hooks/useSalaryAdjustments"
 import { PayrollProcessingTab } from "@/components/payroll/PayrollProcessingTab"
-import { CrossMonthAdjustments } from "@/components/payroll/CrossMonthAdjustments"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
 import {
   SalaryDisbursementDialog,
@@ -76,19 +68,6 @@ export default function PayrollProcessingPage() {
   const submitPayrollMutation = useSubmitPayrollMutation()
   const bulkApproveMutation = useBulkApprovePayrollMutation()
   const { hasPermission } = usePermissions()
-
-  // Cross-month salary adjustments
-  const { data: adjustmentsData } = useSalaryAdjustments({
-    appliedMonthKey: selectedMonth,
-    status: "Pending",
-  })
-  const { data: allAdjustmentsData } = useAllSalaryAdjustments()
-  const createAdjustmentMutation = useCreateSalaryAdjustment()
-  const deleteAdjustmentMutation = useDeleteSalaryAdjustment()
-  const applyAdjustmentsMutation = useApplyPendingAdjustments()
-
-  const pendingAdjustments = adjustmentsData?.data || []
-  const allAdjustments = allAdjustmentsData?.data || []
 
   const employees = employeesData?.data || []
 
@@ -596,32 +575,6 @@ export default function PayrollProcessingPage() {
       </div>
 
       <div className="space-y-4">
-        {/* Cross-Month Adjustments */}
-        <CrossMonthAdjustments
-          employees={employees}
-          salaries={allSalariesData?.data || []}
-          selectedMonth={selectedMonth}
-          cycleStatus={cycleStatus}
-          formatCurrency={formatCurrency}
-          onCreateAdjustment={(data) => {
-            createAdjustmentMutation.mutate(data, {
-              onError: () => {},
-            })
-          }}
-          onDeleteAdjustment={(id) => {
-            deleteAdjustmentMutation.mutate(id)
-          }}
-          onApplyAdjustments={(monthKey) => {
-            applyAdjustmentsMutation.mutate(monthKey, {
-              onError: () => {},
-            })
-          }}
-          pendingAdjustments={pendingAdjustments}
-          allAdjustments={allAdjustments}
-          isCreating={createAdjustmentMutation.isPending}
-          isApplying={applyAdjustmentsMutation.isPending}
-        />
-
         <PayrollProcessingTab
           selectedMonth={selectedMonth}
           setSelectedMonth={handleMonthChange}
