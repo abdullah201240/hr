@@ -50,24 +50,13 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     return initial
   })
 
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
-    const initial = new Set<string>()
-    navGroups.forEach(group => {
-      initial.add(group.label)
-    })
-    return initial
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(() => {
+    // Default to the first group
+    return navGroups[0]?.label || null
   })
 
   const toggleGroup = (label: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev)
-      if (next.has(label)) {
-        next.delete(label)
-      } else {
-        next.add(label)
-      }
-      return next
-    })
+    setExpandedGroup(prev => (prev === label ? null : label))
   }
 
   const toggleMenu = (href: string) => {
@@ -130,12 +119,12 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                     <ChevronDown
                       className={cn(
                         "h-3 w-3 transition-transform duration-200 text-muted-foreground/60",
-                        expandedGroups.has(group.label) ? "rotate-0" : "-rotate-90"
+                        expandedGroup === group.label ? "rotate-0" : "-rotate-90"
                       )}
                     />
                   </button>
                 ) : null}
-                {(collapsed || expandedGroups.has(group.label)) && group.items.filter(item => {
+                {(collapsed || expandedGroup === group.label) && group.items.filter(item => {
                   // Check permissions if defined
                   if (item.permissions && item.permissions.length > 0) {
                     return canAccessNavItem(item)

@@ -342,7 +342,8 @@ export class PayrollService implements OnModuleInit {
           .where(
             and(
               eq(employeeSalaries.employeeId, emp.id),
-              eq(employeeSalaries.status, 'active'),
+              inArray(employeeSalaries.status, ['active', 'superseded']),
+              lte(employeeSalaries.effectiveDate, endOfMonthStr),
             ),
           )
           .orderBy(sql`${employeeSalaries.effectiveDate} DESC`)
@@ -487,13 +488,13 @@ export class PayrollService implements OnModuleInit {
           }
         }
 
-        const presentDays = Math.max(0, totalWorkingDays - absentDays - lwpDays - leaveDays);
+        const presentDays = Math.max(0, totalWorkingDays - absentDays - lwpDays - leaveDays - prorationDaysBefore - prorationDaysAfter);
 
         const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const gross = basic + allowancesSum;
 
-        const perDayGross = gross / totalWorkingDays;
-        const perDayBasic = basic / totalWorkingDays;
+        const perDayGross = gross / daysInMonth;
+        const perDayBasic = basic / daysInMonth;
         const perHourBasic = perDayBasic / 8;
 
         const absentDeduction = Math.round(absentDays * perDayGross);
@@ -527,7 +528,7 @@ export class PayrollService implements OnModuleInit {
         }
 
         const updatedAllowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
-        const netPay = basic + updatedAllowancesSum - deductionsSum;
+        const netPay = Math.max(0, basic + updatedAllowancesSum - deductionsSum);
 
         await this.db.insert(employeePayslips).values({
           payrollCycleId: cycleId,
@@ -693,7 +694,7 @@ export class PayrollService implements OnModuleInit {
     const allowancesSum = Object.values(allowances).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const deductionsSum = Object.values(deductions).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
-    const netPay = basic + allowancesSum - deductionsSum;
+    const netPay = Math.max(0, basic + allowancesSum - deductionsSum);
 
     await this.db
       .update(employeePayslips)
@@ -1040,7 +1041,8 @@ export class PayrollService implements OnModuleInit {
           .where(
             and(
               eq(employeeSalaries.employeeId, emp.id),
-              eq(employeeSalaries.status, 'active'),
+              inArray(employeeSalaries.status, ['active', 'superseded']),
+              lte(employeeSalaries.effectiveDate, endOfMonthStr),
             ),
           )
           .orderBy(sql`${employeeSalaries.effectiveDate} DESC`)
@@ -1185,13 +1187,24 @@ export class PayrollService implements OnModuleInit {
           }
         }
 
-        const presentDays = Math.max(0, totalWorkingDays - absentDays - lwpDays - leaveDays);
+        const [existingPayslip] = await this.db
+          .select()
+          .from(employeePayslips)
+          .where(
+            and(
+              eq(employeePayslips.payrollCycleId, cycleId),
+              eq(employeePayslips.employeeId, emp.id),
+            ),
+          )
+          .limit(1);
+
+        const presentDays = Math.max(0, totalWorkingDays - absentDays - lwpDays - leaveDays - prorationDaysBefore - prorationDaysAfter);
 
         const allowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
         const gross = basic + allowancesSum;
 
-        const perDayGross = gross / totalWorkingDays;
-        const perDayBasic = basic / totalWorkingDays;
+        const perDayGross = gross / daysInMonth;
+        const perDayBasic = basic / daysInMonth;
         const perHourBasic = perDayBasic / 8;
 
         const absentDeduction = Math.round(absentDays * perDayGross);
@@ -1216,16 +1229,34 @@ export class PayrollService implements OnModuleInit {
           calc.deductions['Proration Cut'] = prorationDeduction;
         }
 
-        const [existingPayslip] = await this.db
-          .select()
-          .from(employeePayslips)
-          .where(
-            and(
-              eq(employeePayslips.payrollCycleId, cycleId),
-              eq(employeePayslips.employeeId, emp.id),
-            ),
-          )
-          .limit(1);
+        // Preserve manual adjustments if existing payslip is present
+        const preservedAllowances: Record<string, number> = {};
+        const preservedDeductions: Record<string, number> = {};
+        if (existingPayslip) {
+          const existingAllowances = (existingPayslip.allowances as Record<string, number>) || {};
+          for (const [key, val] of Object.entries(existingAllowances)) {
+            if (
+              key.startsWith('Manual Addition') ||
+              key.startsWith('Adjustment:')
+            ) {
+              preservedAllowances[key] = val;
+            }
+          }
+          const existingDeductions = (existingPayslip.deductions as Record<string, number>) || {};
+          for (const [key, val] of Object.entries(existingDeductions)) {
+            if (
+              key.startsWith('Deduction Reduction') ||
+              key.startsWith('Extra Deduction') ||
+              key.startsWith('Adjustment:')
+            ) {
+              preservedDeductions[key] = val;
+            }
+          }
+        }
+
+        // Add manual adjustments to new calculation
+        Object.assign(calc.allowances, preservedAllowances);
+        Object.assign(calc.deductions, preservedDeductions);
 
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
@@ -1236,7 +1267,7 @@ export class PayrollService implements OnModuleInit {
         }
 
         const updatedAllowancesSum = Object.values(calc.allowances || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
-        const netPay = basic + updatedAllowancesSum - deductionsSum;
+        const netPay = Math.max(0, basic + updatedAllowancesSum - deductionsSum);
 
         if (existingPayslip) {
           await this.db
@@ -1256,6 +1287,12 @@ export class PayrollService implements OnModuleInit {
               absentDays,
               leaveDays,
               lateDays,
+              status: 'Draft',
+              rejectionReason: null,
+              lmApprovedById: null,
+              lmApprovedAt: null,
+              mdApprovedById: null,
+              mdApprovedAt: null,
             })
             .where(eq(employeePayslips.id, existingPayslip.id));
         } else {
