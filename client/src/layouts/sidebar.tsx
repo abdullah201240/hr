@@ -50,6 +50,26 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     return initial
   })
 
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    const initial = new Set<string>()
+    navGroups.forEach(group => {
+      initial.add(group.label)
+    })
+    return initial
+  })
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) {
+        next.delete(label)
+      } else {
+        next.add(label)
+      }
+      return next
+    })
+  }
+
   const toggleMenu = (href: string) => {
     setExpandedMenus(prev => {
       const next = new Set(prev)
@@ -71,7 +91,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex h-full w-full flex-col bg-sidebar transition-all duration-300 ease-in-out shadow-none",
+          "flex h-full w-full flex-col bg-sidebar transition-all duration-300 ease-in-out shadow-none overflow-hidden",
           className
         )}
       >
@@ -100,12 +120,22 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                 {groupIndex > 0 && (
                   <Separator className="my-1.5 bg-sidebar-border/20 mx-2" />
                 )}
-                {!collapsed && (
-                  <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    {group.label}
-                  </p>
-                )}
-                {group.items.filter(item => {
+                {!collapsed ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.label)}
+                    className="flex w-full items-center justify-between mb-1 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 hover:text-sidebar-foreground transition-colors"
+                  >
+                    <span>{group.label}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3 w-3 transition-transform duration-200 text-muted-foreground/60",
+                        expandedGroups.has(group.label) ? "rotate-0" : "-rotate-90"
+                      )}
+                    />
+                  </button>
+                ) : null}
+                {(collapsed || expandedGroups.has(group.label)) && group.items.filter(item => {
                   // Check permissions if defined
                   if (item.permissions && item.permissions.length > 0) {
                     return canAccessNavItem(item)

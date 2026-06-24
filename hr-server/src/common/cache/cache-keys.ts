@@ -146,6 +146,13 @@ export const CacheKeys = {
     description: 'Holidays configuration list',
   },
 
+  /** Festival bonus settings (singleton) */
+  festivalBonusSettings: {
+    key: key('payroll:festival-bonus:settings'),
+    ttl: 1800, // 30 min
+    description: 'Festival bonus settings singleton',
+  },
+
   /** Generic settings / config cache */
   settings: {
     key: key('settings:*'),

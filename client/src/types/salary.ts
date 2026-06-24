@@ -151,3 +151,20 @@ export interface DisbursementRecord {
   totalDisbursed: number;
   employeeCount: number;
 }
+
+export interface FestivalBonusSettings {
+  id: string;
+  bonusesPerYear: number;
+  minServiceMonths: number;
+  amountFormula: string;
+  eligibleEmployeeTypes: string[];
+  allowSpecialApproval: boolean;
+}
+
+export interface UpdateFestivalBonusSettingsPayload {
+  bonusesPerYear?: number;
+  minServiceMonths?: number;
+  amountFormula?: string;
+  eligibleEmployeeTypes?: string[];
+  allowSpecialApproval?: boolean;
+}

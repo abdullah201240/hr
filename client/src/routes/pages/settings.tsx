@@ -11,6 +11,7 @@ import { AttendanceSetup } from "@/components/settings/attendance-setup"
 import { OfficeHours } from "@/components/settings/office-hours"
 import { ThemeSettings } from "@/components/settings/theme-settings"
 import { SalarySetup } from "@/components/settings/salary-setup"
+import { FestivalBonusSetup } from "@/components/settings/festival-bonus-setup"
 import Swal from "sweetalert2"
 import {
   useLeaveTypesQuery,
@@ -130,6 +131,11 @@ export default function SettingsPage() {
     {
       value: "salary",
       label: "Salary Structure",
+      permissions: ["payroll:create", "payroll:process", "payroll:read"],
+    },
+    {
+      value: "bonus",
+      label: "Festival Bonus Settings",
       permissions: ["payroll:create", "payroll:process", "payroll:read"],
     },
     {
@@ -253,6 +259,12 @@ export default function SettingsPage() {
         {visibleTabs.some((t) => t.value === "salary") && (
           <TabsContent value="salary">
             <SalarySetup />
+          </TabsContent>
+        )}
+
+        {visibleTabs.some((t) => t.value === "bonus") && (
+          <TabsContent value="bonus">
+            <FestivalBonusSetup />
           </TabsContent>
         )}
 

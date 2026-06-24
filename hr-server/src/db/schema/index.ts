@@ -26,3 +26,4 @@ export * from './audit-logs';
 export * from './roles';
 export * from './office-regulations';
 export * from './office-regulations-relations';
+export * from './festival-bonus';
