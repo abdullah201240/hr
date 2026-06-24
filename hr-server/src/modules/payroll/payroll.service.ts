@@ -781,13 +781,6 @@ export class PayrollService implements OnModuleInit {
       .set({ status: 'Distributed' })
       .where(eq(payrollCycles.id, cycle.id));
 
-    // Run email distribution synchronously to avoid BullMQ/Redis dependencies
-    try {
-      await this.processEmailDistribution(cycle.id, monthKey);
-    } catch (err: any) {
-      this.logger.error(`Failed to distribute emails synchronously: ${err.message}`, err.stack);
-    }
-
     // Trigger Notification
     await this.triggerPayrollDistributionNotifications(cycle.id, monthKey);
 
@@ -1425,29 +1418,6 @@ export class PayrollService implements OnModuleInit {
           eq(payrollCycles.status, 'Distributed'),
         ),
       );
-  }
-
-  async processEmailDistribution(cycleId: string, monthKey: string) {
-    const payslips = await this.db
-      .select({
-        id: employeePayslips.id,
-        email: employees.email,
-        name: employees.fullNameEnglish,
-        netPay: employeePayslips.netPay,
-      })
-      .from(employeePayslips)
-      .innerJoin(employees, eq(employeePayslips.employeeId, employees.id))
-      .where(eq(employeePayslips.payrollCycleId, cycleId));
-
-    this.logger.log(`Starting email distribution simulation for ${payslips.length} employees for cycle ${monthKey}`);
-    for (const slip of payslips) {
-      // Simulate sending email
-      this.logger.log(
-        `[Email Simulation] Sent payslip for ${monthKey} to ${slip.name} (${slip.email}) - Net Pay: $${slip.netPay}`
-      );
-    }
-    this.logger.log(`Email distribution simulation completed for cycle ${monthKey}`);
-    return { distributedCount: payslips.length };
   }
 
   // Invalidate cache helpers

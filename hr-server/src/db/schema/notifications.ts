@@ -52,7 +52,6 @@ export const notificationPreferences = pgTable(
       .default([])
       .notNull()
       .$type<string[]>(),
-    emailEnabled: boolean('email_enabled').default(false).notNull(),
     pushEnabled: boolean('push_enabled').default(true).notNull(),
     quietHoursStart: varchar('quiet_hours_start', { length: 5 }), // e.g. "22:00"
     quietHoursEnd: varchar('quiet_hours_end', { length: 5 }), // e.g. "07:00"

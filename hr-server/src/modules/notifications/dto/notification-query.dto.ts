@@ -1,4 +1,5 @@
 import { IsOptional, IsString, IsEnum, IsInt, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { NotificationModule, NotificationCategory } from '../types/notification.types';
 
 export class NotificationQueryDto {
@@ -27,6 +28,7 @@ export class NotificationQueryDto {
   cursor?: string; // CreatedAt ISO string cursor
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(50)

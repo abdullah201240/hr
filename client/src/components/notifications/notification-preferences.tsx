@@ -14,7 +14,6 @@ import {
   Save, 
   BellRing, 
   VolumeX, 
-  Mail, 
   AppWindow,
   Bell,
   Calendar,
@@ -36,7 +35,6 @@ export function NotificationPreferences() {
   const { data: preferences, isLoading } = usePreferencesQuery();
   const updateMutation = useUpdatePreferencesMutation();
 
-  const [emailEnabled, setEmailEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [quietHoursStart, setQuietHoursStart] = useState('22:00');
   const [quietHoursEnd, setQuietHoursEnd] = useState('08:00');
@@ -47,7 +45,6 @@ export function NotificationPreferences() {
   // Sync state with fetched preferences data
   useEffect(() => {
     if (preferences) {
-      setEmailEnabled(preferences.emailEnabled);
       setPushEnabled(preferences.pushEnabled);
       setQuietHoursStart(preferences.quietHoursStart || '22:00');
       setQuietHoursEnd(preferences.quietHoursEnd || '08:00');
@@ -59,7 +56,6 @@ export function NotificationPreferences() {
 
   const handleSave = () => {
     updateMutation.mutate({
-      emailEnabled,
       pushEnabled,
       quietHoursStart,
       quietHoursEnd,
@@ -169,19 +165,6 @@ export function NotificationPreferences() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start justify-between p-3 rounded-lg border border-border/30 bg-muted/10 hover:bg-muted/20 transition-colors">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                    <Mail className="h-4.5 w-4.5 text-blue-500" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-sm font-semibold">Email Notifications</Label>
-                    <p className="text-xs text-muted-foreground">Receive daily summaries and critical alerts via email.</p>
-                  </div>
-                </div>
-                <Switch checked={emailEnabled} onCheckedChange={setEmailEnabled} className="ml-3" />
-              </div>
-
               <div className="flex items-start justify-between p-3 rounded-lg border border-border/30 bg-muted/10 hover:bg-muted/20 transition-colors">
                 <div className="flex items-start gap-3 flex-1">
                   <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">

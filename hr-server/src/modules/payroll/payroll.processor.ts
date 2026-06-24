@@ -38,12 +38,6 @@ export class PayrollProcessor extends WorkerHost {
           return await this.salaryService.processBulkRevision(job.data);
         }
 
-        case 'distribute-emails': {
-          const { cycleId, monthKey } = job.data;
-          this.logger.log(`Executing distribute-emails background job for cycle ID: ${cycleId}`);
-          return await this.payrollService.processEmailDistribution(cycleId, monthKey);
-        }
-
         case 'auto-generate-monthly-payroll': {
           this.logger.log(`Executing monthly scheduled auto-generate-payroll job`);
           const now = new Date();

@@ -58,7 +58,6 @@ export interface NotificationPreferences {
   employeeId: string;
   disabledModules: NotificationModule[];
   disabledCategories: NotificationCategory[];
-  emailEnabled: boolean;
   pushEnabled: boolean;
   quietHoursStart: string | null; // "22:00"
   quietHoursEnd: string | null;   // "07:00"

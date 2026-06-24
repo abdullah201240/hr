@@ -20,10 +20,6 @@ export class UpdatePreferencesDto {
 
   @IsOptional()
   @IsBoolean()
-  emailEnabled?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
   pushEnabled?: boolean;
 
   @IsOptional()

@@ -37,7 +37,6 @@ export class PreferencesService {
           employeeId,
           disabledModules: [],
           disabledCategories: [],
-          emailEnabled: false,
           pushEnabled: true,
           digestFrequency: 'realtime',
         })

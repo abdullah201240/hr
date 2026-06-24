@@ -38,14 +38,16 @@ describe('Notifications Module (e2e)', () => {
     });
 
     it('should support pagination', async () => {
-      const res = await authGet(ctx, '/notifications?page=1&limit=5');
+      const res = await authGet(ctx, '/notifications?limit=5');
       expect(res.status).toBe(200);
-      expect(res.body.data.meta.page).toBe(1);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data.data)).toBe(true);
     });
 
     it('should support unread filter', async () => {
-      const res = await authGet(ctx, '/notifications?unread=true');
+      const res = await authGet(ctx, '/notifications?isRead=false');
       expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
     });
 
     it('should reject unauthenticated request', async () => {
@@ -58,8 +60,8 @@ describe('Notifications Module (e2e)', () => {
     it('should return unread notification count', async () => {
       const res = await authGet(ctx, '/notifications/unread-count');
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('unreadCount');
-      expect(typeof res.body.unreadCount).toBe('number');
+      expect(res.body.data).toHaveProperty('unreadCount');
+      expect(typeof res.body.data.unreadCount).toBe('number');
     });
   });
 
@@ -81,7 +83,7 @@ describe('Notifications Module (e2e)', () => {
   describe('POST /notifications/mark-all-read', () => {
     it('should mark all notifications as read', async () => {
       const res = await authPost(ctx, '/notifications/mark-all-read', {});
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
     });
   });
@@ -99,7 +101,7 @@ describe('Notifications Module (e2e)', () => {
   describe('POST /notifications/archive-all-read', () => {
     it('should archive all read notifications', async () => {
       const res = await authPost(ctx, '/notifications/archive-all-read', {});
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
     });
   });
@@ -122,16 +124,14 @@ describe('Notifications Module (e2e)', () => {
       const res = await authGet(ctx, '/notifications/preferences');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('email');
-      expect(res.body.data).toHaveProperty('push');
+      expect(res.body.data).toHaveProperty('pushEnabled');
     });
   });
 
   describe('PATCH /notifications/preferences', () => {
     it('should update notification preferences', async () => {
       const res = await authPatch(ctx, '/notifications/preferences', {
-        email: true,
-        push: false,
+        pushEnabled: false,
       });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
