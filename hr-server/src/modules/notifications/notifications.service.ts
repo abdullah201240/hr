@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -9,8 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { REDIS_CLIENT } from '../../common/cache/cache.service';
 import { DB_CONNECTION } from '../../db';
 import type { Database } from '../../db';
-import { notifications } from '../../db/schema/notifications';
-import { employees } from '../../db/schema/employee';
+import { notifications, employees, regulationRequests, claims, leaveApplications } from '../../db/schema';
 import { EmitNotificationDto } from './dto/emit-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { NotificationGateway } from './notifications.gateway';
@@ -22,6 +21,7 @@ export const NOTIFICATION_QUEUE = 'notifications';
 
 @Injectable()
 export class NotificationService implements OnModuleInit {
+  private readonly logger = new Logger(NotificationService.name);
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     @InjectQueue(NOTIFICATION_QUEUE) private readonly queue: Queue,
@@ -193,6 +193,60 @@ export class NotificationService implements OnModuleInit {
     if (list.length > limit) {
       hasMore = true;
       data = list.slice(0, limit);
+    }
+
+    // Resolve real-time action status for entities dynamically
+    for (const item of data) {
+      if (item.actions && (item.actions as any[]).length > 0 && item.entityType && item.entityId) {
+        try {
+          if (item.entityType === 'regulation_request') {
+            const [req] = await this.db
+              .select({ status: regulationRequests.status })
+              .from(regulationRequests)
+              .where(eq(regulationRequests.id, item.entityId))
+              .limit(1);
+
+            if (req) {
+              if (req.status === 'Approved' || req.status === 'Pending_2nd') {
+                item.metadata = { ...(item.metadata as any), actionTaken: 'Approve' };
+              } else if (req.status === 'Rejected') {
+                item.metadata = { ...(item.metadata as any), actionTaken: 'Reject' };
+              }
+            }
+          } else if (item.entityType === 'claim') {
+            const [claim] = await this.db
+              .select({ status: claims.status })
+              .from(claims)
+              .where(eq(claims.id, item.entityId))
+              .limit(1);
+
+            if (claim) {
+              if (claim.status === 'Approved' || claim.status === 'Pending_2nd') {
+                item.metadata = { ...(item.metadata as any), actionTaken: 'Approve' };
+              } else if (claim.status === 'Rejected') {
+                item.metadata = { ...(item.metadata as any), actionTaken: 'Reject' };
+              }
+            }
+          } else if (item.entityType === 'leave_application') {
+            const [leave] = await this.db
+              .select({ status: leaveApplications.status })
+              .from(leaveApplications)
+              .where(eq(leaveApplications.id, item.entityId))
+              .limit(1);
+
+            if (leave) {
+              if (leave.status === 'Approved') {
+                item.metadata = { ...(item.metadata as any), actionTaken: 'Approve' };
+              } else if (leave.status === 'Rejected') {
+                item.metadata = { ...(item.metadata as any), actionTaken: 'Reject' };
+              }
+            }
+          }
+        } catch (err: any) {
+          // Non-blocking log
+          this.logger.error(`Error resolving action status for entityType ${item.entityType}: ${err.message}`);
+        }
+      }
     }
 
     const nextCursor = hasMore ? data[data.length - 1].createdAt.toISOString() : null;

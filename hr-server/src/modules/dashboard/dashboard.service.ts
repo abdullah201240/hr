@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { eq, and, count, sql, gte, lte, isNull } from 'drizzle-orm';
+import { eq, and, count, sql, gte, lte, isNull, desc } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   employees,
@@ -14,6 +14,9 @@ import {
   appraisalCycles,
   employeeAppraisals,
   employeeSalaries,
+  separationRecords,
+  festivalBonusCycles,
+  employeeFestivalBonuses,
 } from '../../db/schema';
 
 @Injectable()
@@ -38,6 +41,7 @@ export class DashboardService {
       performanceStats,
       taskStats,
       claimsStats,
+      festivalStats,
     ] = await Promise.all([
       this.getWorkforceStats(monthStart, monthEnd),
       this.getAttendanceStats(today),
@@ -47,6 +51,7 @@ export class DashboardService {
       this.getPerformanceStats(),
       this.getTaskStats(),
       this.getClaimsStats(monthStart, monthEnd),
+      this.getFestivalBonusStats(),
     ]);
 
     return {
@@ -58,11 +63,12 @@ export class DashboardService {
       performance: performanceStats,
       tasks: taskStats,
       claims: claimsStats,
+      festivalBonus: festivalStats,
     };
   }
 
   private async getWorkforceStats(monthStart: string, monthEnd: string) {
-    const [totalResult, activeResult, newHiresResult, deptBreakdown, typeBreakdown] =
+    const [totalResult, activeResult, newHiresResult, separationsResult, deptBreakdown, typeBreakdown] =
       await Promise.all([
         this.db.select({ count: count() }).from(employees).where(isNull(employees.deletedAt)),
         this.db
@@ -77,6 +83,15 @@ export class DashboardService {
               gte(employees.joinDate, monthStart),
               lte(employees.joinDate, monthEnd),
               isNull(employees.deletedAt),
+            ),
+          ),
+        this.db
+          .select({ count: count() })
+          .from(separationRecords)
+          .where(
+            and(
+              gte(separationRecords.lastWorkingDay, monthStart),
+              lte(separationRecords.lastWorkingDay, monthEnd),
             ),
           ),
         this.db
@@ -103,13 +118,15 @@ export class DashboardService {
     const totalEmployees = totalResult[0]?.count ?? 0;
     const activeEmployees = activeResult[0]?.count ?? 0;
     const newHiresThisMonth = newHiresResult[0]?.count ?? 0;
+    const separationsThisMonth = separationsResult[0]?.count ?? 0;
+    const turnoverRate = activeEmployees > 0 ? Number(((separationsThisMonth / activeEmployees) * 100).toFixed(1)) : 0;
 
     return {
       totalEmployees,
       activeEmployees,
       newHiresThisMonth,
-      separationsThisMonth: 0, // TODO: add separation tracking
-      turnoverRate: 0,
+      separationsThisMonth,
+      turnoverRate,
       departmentBreakdown: deptBreakdown.map((d) => ({ department: d.department, count: d.count })),
       employeeTypeBreakdown: typeBreakdown.map((t) => ({ type: t.type, count: t.count })),
     };
@@ -406,5 +423,50 @@ export class DashboardService {
       approvedThisMonth: approvedResult[0]?.count ?? 0,
       totalClaimAmount: Number(totalAmountResult[0]?.total ?? 0),
     };
+  }
+
+  private async getFestivalBonusStats() {
+    try {
+      const [latestCycle] = await this.db
+        .select()
+        .from(festivalBonusCycles)
+        .orderBy(desc(festivalBonusCycles.createdAt))
+        .limit(1);
+
+      if (!latestCycle) {
+        return {
+          activeCycleName: 'N/A',
+          activeCycleStatus: 'N/A',
+          awaitingMdApprovalCount: 0,
+          totalBonusAmount: 0,
+        };
+      }
+
+      const [awaitingMdCount] = await this.db
+        .select({ count: count() })
+        .from(employeeFestivalBonuses)
+        .where(
+          and(
+            eq(employeeFestivalBonuses.festivalBonusCycleId, latestCycle.id),
+            eq(employeeFestivalBonuses.isEligible, true),
+            eq(employeeFestivalBonuses.status, 'Awaiting_MD_Approval'),
+          ),
+        );
+
+      return {
+        activeCycleName: latestCycle.name,
+        activeCycleStatus: latestCycle.status,
+        awaitingMdApprovalCount: awaitingMdCount?.count ?? 0,
+        totalBonusAmount: Number(latestCycle.totalAmount || 0),
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to get festival bonus dashboard stats: ${err.message}`);
+      return {
+        activeCycleName: 'Error',
+        activeCycleStatus: 'Error',
+        awaitingMdApprovalCount: 0,
+        totalBonusAmount: 0,
+      };
+    }
   }
 }

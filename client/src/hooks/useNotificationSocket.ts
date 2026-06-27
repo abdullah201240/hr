@@ -223,6 +223,12 @@ export function useNotificationSocket() {
 
         // Debounced batch query invalidation
         triggerBatchedInvalidation();
+
+        // Real-time invalidation of festival bonus details and lists
+        if (data.module === 'payroll') {
+          queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+          queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails"] });
+        }
         break;
 
       case 'notification_read':

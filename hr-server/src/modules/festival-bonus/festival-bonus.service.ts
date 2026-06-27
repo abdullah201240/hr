@@ -1104,20 +1104,76 @@ export class FestivalBonusService {
       .limit(1);
 
     if (cycle) {
-      const [emp] = await this.db
-        .select({ fullNameEnglish: employees.fullNameEnglish })
-        .from(employees)
-        .where(eq(employees.id, payout.employeeId))
-        .limit(1);
-      const empName = emp?.fullNameEnglish || 'Employee';
+      try {
+        const recipients = new Set<string>();
 
-      await this.notifyByPermission(
-        'bonus',
-        'process',
-        'New Payout Note/Comment Added',
-        `${userName} added a note on ${empName}'s payout: "${text}"`,
-        '/payroll/festival-bonus',
-      );
+        // 1. Line Manager
+        const [emp] = await this.db
+          .select({
+            fullNameEnglish: employees.fullNameEnglish,
+            lineManagerId: employees.lineManagerId,
+          })
+          .from(employees)
+          .where(eq(employees.id, payout.employeeId))
+          .limit(1);
+
+        if (emp?.lineManagerId && emp.lineManagerId !== userId) {
+          recipients.add(emp.lineManagerId);
+        }
+
+        // 2. HR Users (bonus:process)
+        const hrUsers = await this.db
+          .select({ id: employees.id })
+          .from(employees)
+          .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+          .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+          .where(
+            and(
+              eq(permissions.resource, 'bonus'),
+              eq(permissions.action, 'process'),
+            ),
+          );
+
+        for (const hr of hrUsers) {
+          if (hr.id !== userId) {
+            recipients.add(hr.id);
+          }
+        }
+
+        // 3. MD Users (bonus:approve_md)
+        const mdUsers = await this.db
+          .select({ id: employees.id })
+          .from(employees)
+          .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+          .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+          .where(
+            and(
+              eq(permissions.resource, 'bonus'),
+              eq(permissions.action, 'approve_md'),
+            ),
+          );
+
+        for (const md of mdUsers) {
+          if (md.id !== userId) {
+            recipients.add(md.id);
+          }
+        }
+
+        if (recipients.size > 0) {
+          const empName = emp?.fullNameEnglish || 'Employee';
+          const dtos = Array.from(recipients).map(rId => ({
+            recipientId: rId,
+            module: NotificationModule.PAYROLL,
+            category: NotificationCategory.COMMENT,
+            title: 'New Collaboration Note',
+            message: `${userName} added a note on ${empName}'s payout: "${text}"`,
+            actionUrl: '/payroll/festival-bonus',
+          }));
+          await this.notificationService.emitBulk(dtos);
+        }
+      } catch (err: any) {
+        this.logger.error(`Failed to send comment notifications: ${err.message}`);
+      }
     }
 
     return this.getCycleById(payout.festivalBonusCycleId);

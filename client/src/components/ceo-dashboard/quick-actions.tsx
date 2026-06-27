@@ -69,6 +69,14 @@ const actions: QuickAction[] = [
     iconBg: "bg-indigo-500/10",
     href: "/reports",
   },
+  {
+    title: "Bonus MD Approvals",
+    description: "Review pending bonus cycles",
+    icon: Coins,
+    iconColor: "text-indigo-500",
+    iconBg: "bg-indigo-500/10",
+    href: "/payroll/md-approvals?tab=bonus",
+  },
 ]
 
 export function QuickActions() {

@@ -97,6 +97,13 @@ export interface ClaimsStats {
   totalClaimAmount: number;
 }
 
+export interface FestivalBonusStats {
+  activeCycleName: string;
+  activeCycleStatus: string;
+  awaitingMdApprovalCount: number;
+  totalBonusAmount: number;
+}
+
 export interface ExecutiveDashboardData {
   workforce: WorkforceStats;
   attendance: AttendanceStats;
@@ -106,6 +113,7 @@ export interface ExecutiveDashboardData {
   performance: PerformanceStats;
   tasks: TaskStats;
   claims: ClaimsStats;
+  festivalBonus: FestivalBonusStats;
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────

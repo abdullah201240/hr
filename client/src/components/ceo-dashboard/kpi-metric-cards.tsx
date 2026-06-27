@@ -62,10 +62,11 @@ function getCards(data: ExecutiveDashboardData | undefined): KpiCardConfig[] {
     {
       title: "Total Workforce",
       value: String(data.workforce.activeEmployees),
-      subtitle: `${data.workforce.newHiresThisMonth} new hires this month`,
+      subtitle: `${data.workforce.newHiresThisMonth} hires | ${data.workforce.separationsThisMonth} separations`,
       icon: Users,
       iconBg: "bg-blue-500/10",
       iconColor: "text-blue-500",
+      badge: data.workforce.turnoverRate > 0 ? { value: `${data.workforce.turnoverRate}% turnover`, variant: "warning" } : undefined,
       trend: data.workforce.newHiresThisMonth > 0 ? { value: `+${data.workforce.newHiresThisMonth}`, positive: true } : undefined,
     },
     {
