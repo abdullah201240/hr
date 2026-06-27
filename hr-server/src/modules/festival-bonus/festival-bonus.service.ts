@@ -353,31 +353,43 @@ export class FestivalBonusService {
       .from(employees)
       .where(eq(employees.status, 'active'));
 
-    for (const emp of activeEmployees) {
-      // 2. Fetch basic salary (active)
-      const [salaryRecord] = await this.db
-        .select()
-        .from(employeeSalaries)
-        .where(
-          and(
-            eq(employeeSalaries.employeeId, emp.id),
-            eq(employeeSalaries.status, 'active'),
-          ),
-        )
-        .limit(1);
+    // 2. Fetch all active employee salaries in bulk
+    const activeSalaries = await this.db
+      .select()
+      .from(employeeSalaries)
+      .where(eq(employeeSalaries.status, 'active'));
 
+    const salariesMap = new Map<string, typeof employeeSalaries.$inferSelect>();
+    for (const sal of activeSalaries) {
+      salariesMap.set(sal.employeeId, sal);
+    }
+
+    // 3. Fetch all salary template components in bulk
+    const allComponents = await this.db
+      .select()
+      .from(salaryTemplateComponents);
+
+    const componentsMap = new Map<string, (typeof salaryTemplateComponents.$inferSelect)[]>();
+    for (const comp of allComponents) {
+      const list = componentsMap.get(comp.templateId) || [];
+      list.push(comp);
+      componentsMap.set(comp.templateId, list);
+    }
+
+    // 4. Batch insert array for efficiency
+    const payoutsToInsert: any[] = [];
+
+    for (const emp of activeEmployees) {
+      const salaryRecord = salariesMap.get(emp.id);
       const basicSalary = salaryRecord ? salaryRecord.basicSalary : 0;
 
-      // 3. Resolve allowances for gross salary calculation
+      // 5. Resolve allowances for gross salary calculation
       let hra = Math.round(basicSalary * 0.20);
       let transport = Math.round(basicSalary * 0.10);
       let medical = Math.round(basicSalary * 0.05);
 
       if (salaryRecord?.templateId) {
-        const components = await this.db
-          .select()
-          .from(salaryTemplateComponents)
-          .where(eq(salaryTemplateComponents.templateId, salaryRecord.templateId));
+        const components = componentsMap.get(salaryRecord.templateId) || [];
         
         let tempHra = 0;
         let tempTransport = 0;
@@ -410,13 +422,13 @@ export class FestivalBonusService {
 
       const grossSalary = basicSalary + hra + transport + medical;
 
-      // 4. Calculate tenure in months
+      // 6. Calculate tenure in months
       const joinDate = new Date(emp.joinDate);
       const diffTime = festivalDate.getTime() - joinDate.getTime();
       const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
       const serviceMonths = Number((diffDays / 30.437).toFixed(2)); // Average days in month
 
-      // 5. Determine rules eligibility
+      // 7. Determine rules eligibility
       const typeEligible = settings.eligibleEmployeeTypes.includes(emp.employeeType);
       const tenureEligible = serviceMonths >= settings.minServiceMonths;
 
@@ -425,7 +437,7 @@ export class FestivalBonusService {
         ? 'Meets eligibility requirements'
         : `Ineligible: Type eligible = ${typeEligible}, Tenure = ${serviceMonths} mo (min ${settings.minServiceMonths})`;
 
-      // 6. Calculate bonus amount based on settings formula
+      // 8. Calculate bonus amount based on settings formula
       let calculatedAmount = 0;
       if (isEligible) {
         const baseSalary = settings.salaryComponent === 'gross' ? grossSalary : basicSalary;
@@ -454,22 +466,26 @@ export class FestivalBonusService {
         }
       }
 
-      // 7. Insert payout record
+      payoutsToInsert.push({
+        festivalBonusCycleId: cycleId,
+        employeeId: emp.id,
+        basicSalary,
+        grossSalary,
+        serviceMonths,
+        calculatedAmount,
+        finalAmount: calculatedAmount,
+        isEligible,
+        eligibilityReason,
+        specialApprovalGranted: false,
+        status: 'Calculated',
+      });
+    }
+
+    // 9. Batch insert all payouts at once
+    if (payoutsToInsert.length > 0) {
       await this.db
         .insert(employeeFestivalBonuses)
-        .values({
-          festivalBonusCycleId: cycleId,
-          employeeId: emp.id,
-          basicSalary,
-          grossSalary,
-          serviceMonths,
-          calculatedAmount,
-          finalAmount: calculatedAmount,
-          isEligible,
-          eligibilityReason,
-          specialApprovalGranted: false,
-          status: 'Calculated',
-        });
+        .values(payoutsToInsert);
     }
   }
 
