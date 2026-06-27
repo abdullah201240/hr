@@ -97,6 +97,20 @@ export class AttendanceSettingsService {
         updateData.twoStepLeaveThresholdDays = dto.twoStepLeaveThresholdDays;
       if (dto.twoStepClaimThresholdAmount !== undefined)
         updateData.twoStepClaimThresholdAmount = String(dto.twoStepClaimThresholdAmount);
+      if (dto.earlyOutThreshold !== undefined)
+        updateData.earlyOutThreshold = dto.earlyOutThreshold;
+      if (dto.maxLateAllowedPerMonth !== undefined)
+        updateData.maxLateAllowedPerMonth = dto.maxLateAllowedPerMonth;
+      if (dto.lateToDayDeductionRate !== undefined)
+        updateData.lateToDayDeductionRate = dto.lateToDayDeductionRate;
+      if (dto.maxEarlyOutAllowedPerMonth !== undefined)
+        updateData.maxEarlyOutAllowedPerMonth = dto.maxEarlyOutAllowedPerMonth;
+      if (dto.earlyOutToDayDeductionRate !== undefined)
+        updateData.earlyOutToDayDeductionRate = dto.earlyOutToDayDeductionRate;
+      if (dto.enableLateDeduction !== undefined)
+        updateData.enableLateDeduction = dto.enableLateDeduction;
+      if (dto.enableEarlyOutDeduction !== undefined)
+        updateData.enableEarlyOutDeduction = dto.enableEarlyOutDeduction;
 
       const [updated] = await tx
         .update(attendanceSettings)

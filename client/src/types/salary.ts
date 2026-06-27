@@ -125,6 +125,7 @@ export interface Payslip {
   absentDays?: number;
   leaveDays?: number;
   lateDays?: number;
+  earlyOutDays?: number;
   monthKey?: string;
   status: "Draft" | "Awaiting_LM_Approval" | "Awaiting_MD_Approval" | "Awaiting_Disbursement" | "Disbursed" | "Rejected";
   rejectionReason?: string;

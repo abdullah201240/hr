@@ -258,11 +258,11 @@ export const CacheKeys = {
     description: 'Single leave application details by ID',
   },
 
-  /** Employee leave balances by year */
+  /** Employee leave balances by year and month */
   leaveBalances: {
-    key: key('leave:balances:*:*'), // employeeId:year
+    key: key('leave:balances:*:*:*'), // employeeId:year:month
     ttl: 300, // 5 min
-    description: 'Calculated leave balances for employee by year',
+    description: 'Calculated leave balances for employee by year and month',
   },
 
   /** Salary templates list */

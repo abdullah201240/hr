@@ -68,22 +68,28 @@ export function useLeaveApplicationsQuery(query: LeaveApplicationQuery) {
   });
 }
 
-export function useLeaveBalancesQuery(year?: number) {
-  const endpoint = year
-    ? `leave-applications/balances?year=${year}`
-    : "leave-applications/balances";
+export function useLeaveBalancesQuery(year?: number, month?: number) {
+  const queryParams = [];
+  if (year !== undefined) queryParams.push(`year=${year}`);
+  if (month !== undefined) queryParams.push(`month=${month}`);
+  const queryString = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
+  const endpoint = `leave-applications/balances${queryString}`;
+
   return useQuery<LeaveBalance[]>({
-    queryKey: ["leaveBalances", "my", year],
+    queryKey: ["leaveBalances", "my", year, month],
     queryFn: () => apiClient.get<LeaveBalance[]>(endpoint),
   });
 }
 
-export function useEmployeeLeaveBalancesQuery(employeeId: string, year?: number) {
-  const endpoint = year
-    ? `leave-applications/balances/${employeeId}?year=${year}`
-    : `leave-applications/balances/${employeeId}`;
+export function useEmployeeLeaveBalancesQuery(employeeId: string, year?: number, month?: number) {
+  const queryParams = [];
+  if (year !== undefined) queryParams.push(`year=${year}`);
+  if (month !== undefined) queryParams.push(`month=${month}`);
+  const queryString = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
+  const endpoint = `leave-applications/balances/${employeeId}${queryString}`;
+
   return useQuery<LeaveBalance[]>({
-    queryKey: ["leaveBalances", employeeId, year],
+    queryKey: ["leaveBalances", employeeId, year, month],
     queryFn: () => apiClient.get<LeaveBalance[]>(endpoint),
     enabled: !!employeeId,
   });

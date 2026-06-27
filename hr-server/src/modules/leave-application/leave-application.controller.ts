@@ -56,10 +56,14 @@ export class LeaveApplicationController {
   @Get('balances')
   @ApiOperation({ summary: 'Get leave balances for the logged-in employee' })
   @ApiResponse({ status: 200, description: 'List of leave balances' })
-  async getMyBalances(@Req() req: any, @Query('year') year?: number) {
+  async getMyBalances(
+    @Req() req: any,
+    @Query('year') year?: number,
+    @Query('month') month?: number,
+  ) {
     const employeeId = req.user.id;
     const currentYear = year ? Number(year) : new Date().getFullYear();
-    return this.leaveApplicationService.getLeaveBalances(employeeId, currentYear);
+    return this.leaveApplicationService.getLeaveBalances(employeeId, currentYear, month);
   }
 
   // ─── Admin route: Get Leave Balances of a specific employee ────────────────
@@ -71,9 +75,10 @@ export class LeaveApplicationController {
   async getEmployeeBalances(
     @Param('employeeId', ParseUUIDPipe) employeeId: string,
     @Query('year') year?: number,
+    @Query('month') month?: number,
   ) {
     const currentYear = year ? Number(year) : new Date().getFullYear();
-    return this.leaveApplicationService.getLeaveBalances(employeeId, currentYear);
+    return this.leaveApplicationService.getLeaveBalances(employeeId, currentYear, month);
   }
 
   // ─── List Leave Applications ──────────────────────────────────────────────

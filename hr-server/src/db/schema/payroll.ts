@@ -62,6 +62,7 @@ export const employeePayslips = pgTable(
     absentDays: integer('absent_days').default(0).notNull(),
     leaveDays: integer('leave_days').default(0).notNull(),
     lateDays: integer('late_days').default(0).notNull(),
+    earlyOutDays: integer('early_out_days').default(0).notNull(),
 
     // Approval Workflow tracking
     status: varchar('status', { length: 30 }).default('Draft').notNull(), // 'Draft' | 'Awaiting_LM_Approval' | 'Awaiting_MD_Approval' | 'Awaiting_Disbursement' | 'Disbursed' | 'Rejected'

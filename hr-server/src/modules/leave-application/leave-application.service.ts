@@ -212,9 +212,15 @@ export class LeaveApplicationService {
         throw new BadRequestException('This leave type is currently inactive');
       }
 
-      // 2.5 Verify single day duration for Early Out and Movement
+      // 2.5 Verify single day duration for Early Out, Movement, and Late Arrival
       const lowerLeaveTypeName = leaveType.name.toLowerCase();
-      if ((lowerLeaveTypeName.includes('early out') || lowerLeaveTypeName.includes('movement')) && days !== 1) {
+      if (
+        (lowerLeaveTypeName.includes('early out') ||
+          lowerLeaveTypeName.includes('movement') ||
+          lowerLeaveTypeName.includes('late arrival') ||
+          lowerLeaveTypeName.includes('late entry')) &&
+        days !== 1
+      ) {
         throw new BadRequestException(`"${leaveType.name}" requests must be for a single day only.`);
       }
 
@@ -231,7 +237,8 @@ export class LeaveApplicationService {
 
       // 4. Verify leave balance for the year of the start date
       const startYear = start.getUTCFullYear();
-      const balances = await this.getLeaveBalancesInternal(tx, employeeId, startYear);
+      const startMonth = start.getUTCMonth() + 1;
+      const balances = await this.getLeaveBalancesInternal(tx, employeeId, startYear, startMonth);
       const balance = balances.find((b: any) => b.id === leaveType.id);
 
       if (balance && (balance.total - balance.used) < days) {
@@ -888,7 +895,13 @@ export class LeaveApplicationService {
       }
 
       const lowerLeaveTypeName = leaveType.name.toLowerCase();
-      if ((lowerLeaveTypeName.includes('early out') || lowerLeaveTypeName.includes('movement')) && days !== 1) {
+      if (
+        (lowerLeaveTypeName.includes('early out') ||
+          lowerLeaveTypeName.includes('movement') ||
+          lowerLeaveTypeName.includes('late arrival') ||
+          lowerLeaveTypeName.includes('late entry')) &&
+        days !== 1
+      ) {
         throw new BadRequestException(`"${leaveType.name}" requests must be for a single day only.`);
       }
 
@@ -940,18 +953,20 @@ export class LeaveApplicationService {
   }
 
   // ─── Get Leave Balances ───────────────────────────────────────────────────
-  async getLeaveBalances(employeeId: string, year: number) {
-    const cached = await this.cache.getByKey<any>(CacheKeys.leaveBalances, employeeId, String(year));
+  // ─── Get Leave Balances ───────────────────────────────────────────────────
+  async getLeaveBalances(employeeId: string, year: number, month?: number) {
+    const currentMonth = month !== undefined ? Number(month) : new Date().getMonth() + 1; // 1-indexed default
+    const cached = await this.cache.getByKey<any>(CacheKeys.leaveBalances, employeeId, String(year), String(currentMonth));
     if (cached) return cached;
 
-    const balances = await this.getLeaveBalancesInternal(this.db, employeeId, year);
+    const balances = await this.getLeaveBalancesInternal(this.db, employeeId, year, currentMonth);
 
-    await this.cache.setByKey(CacheKeys.leaveBalances, balances, employeeId, String(year));
+    await this.cache.setByKey(CacheKeys.leaveBalances, balances, employeeId, String(year), String(currentMonth));
     return balances;
   }
 
   // Internal balance calculation query
-  private async getLeaveBalancesInternal(db: any, employeeId: string, year: number) {
+  private async getLeaveBalancesInternal(db: any, employeeId: string, year: number, month: number) {
     // Fetch employee gender to check eligibility
     const [employee] = await db
       .select({ gender: employees.gender })
@@ -989,6 +1004,8 @@ export class LeaveApplicationService {
       .select({
         leaveTypeId: leaveApplications.leaveTypeId,
         days: leaveApplications.days,
+        startDate: leaveApplications.startDate,
+        endDate: leaveApplications.endDate,
       })
       .from(leaveApplications)
       .where(
@@ -999,23 +1016,63 @@ export class LeaveApplicationService {
         ),
       );
 
-    // Sum up used days per leave type
-    const usedMap = new Map<string, number>();
+    // Sum up used days per leave type (both yearly and monthly)
+    const usedYearMap = new Map<string, number>();
+    const usedMonthMap = new Map<string, number>();
+
+    const monthStr = String(month).padStart(2, '0');
+    const prefix = `${year}-${monthStr}-`;
+
     for (const app of approvedLeaves) {
-      const current = usedMap.get(app.leaveTypeId) || 0;
-      usedMap.set(app.leaveTypeId, current + app.days);
+      const yearCount = usedYearMap.get(app.leaveTypeId) || 0;
+      usedYearMap.set(app.leaveTypeId, yearCount + app.days);
+
+      // Check if it overlaps with/starts in the requested month
+      if (app.startDate.startsWith(prefix)) {
+        const monthCount = usedMonthMap.get(app.leaveTypeId) || 0;
+        usedMonthMap.set(app.leaveTypeId, monthCount + app.days);
+      }
+    }
+
+    // 2.5 Fetch attendance settings for late / early out monthly limits
+    let [settings] = await db
+      .select()
+      .from(attendanceSettings)
+      .where(eq(attendanceSettings.id, 'default'))
+      .limit(1);
+
+    if (!settings) {
+      settings = {
+        maxLateAllowedPerMonth: 3,
+        maxEarlyOutAllowedPerMonth: 3,
+      };
     }
 
     // 3. Construct balance records
     return eligibleTypes.map((lt: any) => {
-      const used = usedMap.get(lt.id) || 0;
+      const isLate = lt.name.toLowerCase().includes('late');
+      const isEarlyOut = lt.name.toLowerCase().includes('early out');
+
+      let total = lt.days;
+      let used = 0;
+
+      if (isLate) {
+        total = settings.maxLateAllowedPerMonth;
+        used = usedMonthMap.get(lt.id) || 0;
+      } else if (isEarlyOut) {
+        total = settings.maxEarlyOutAllowedPerMonth;
+        used = usedMonthMap.get(lt.id) || 0;
+      } else {
+        used = usedYearMap.get(lt.id) || 0;
+      }
+
       return {
         id: lt.id,
         key: lt.name.toLowerCase().replace(' leave', '').replace(' ', ''),
         label: lt.name,
         color: lt.color,
         icon: lt.icon,
-        total: lt.days,
+        total,
         used,
         requiresDocument: lt.requiresDocument,
       };
@@ -1026,7 +1083,7 @@ export class LeaveApplicationService {
   private async invalidateCache(employeeId: string, year: number, id?: string) {
     const promises: Promise<void>[] = [
       this.cache.delByPattern(CacheKeys.leaveApplicationsList),
-      this.cache.delByKey(CacheKeys.leaveBalances, employeeId, String(year)),
+      this.cache.delByPattern(CacheKeys.leaveBalances),
       // Invalidate attendance logs for employee as well
       this.cache.delPattern(resolveKey(CacheKeys.attendanceLogsByMonth, employeeId, '*', '*')),
       this.cache.delPattern(resolveKey(CacheKeys.attendanceDailyLogs, '*')),

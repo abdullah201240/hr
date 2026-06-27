@@ -134,9 +134,15 @@ export class LeaveApplicationProcessor extends WorkerHost {
           throw new Error('This leave type is currently inactive');
         }
 
-        // 2.5 Verify single day duration for Early Out and Movement
+        // 2.5 Verify single day duration for Early Out, Movement, and Late Arrival
         const lowerLeaveTypeName = leaveType.name.toLowerCase();
-        if ((lowerLeaveTypeName.includes('early out') || lowerLeaveTypeName.includes('movement')) && days !== 1) {
+        if (
+          (lowerLeaveTypeName.includes('early out') ||
+            lowerLeaveTypeName.includes('movement') ||
+            lowerLeaveTypeName.includes('late arrival') ||
+            lowerLeaveTypeName.includes('late entry')) &&
+          days !== 1
+        ) {
           throw new Error(`"${leaveType.name}" requests must be for a single day only.`);
         }
 
@@ -348,7 +354,13 @@ export class LeaveApplicationProcessor extends WorkerHost {
         }
 
         const lowerLeaveTypeName = leaveType.name.toLowerCase();
-        if ((lowerLeaveTypeName.includes('early out') || lowerLeaveTypeName.includes('movement')) && days !== 1) {
+        if (
+          (lowerLeaveTypeName.includes('early out') ||
+            lowerLeaveTypeName.includes('movement') ||
+            lowerLeaveTypeName.includes('late arrival') ||
+            lowerLeaveTypeName.includes('late entry')) &&
+          days !== 1
+        ) {
           throw new Error(`"${leaveType.name}" requests must be for a single day only.`);
         }
 
@@ -476,7 +488,7 @@ export class LeaveApplicationProcessor extends WorkerHost {
   private async invalidateCache(employeeId: string, year: number, id?: string) {
     const promises: Promise<any>[] = [
       this.cache.delByPattern(CacheKeys.leaveApplicationsList),
-      this.cache.delByKey(CacheKeys.leaveBalances, employeeId, String(year)),
+      this.cache.delByPattern(CacheKeys.leaveBalances),
       this.cache.delPattern(resolveKey(CacheKeys.attendanceLogsByMonth, employeeId, '*', '*')),
       this.cache.delPattern(resolveKey(CacheKeys.attendanceDailyLogs, '*')),
     ];

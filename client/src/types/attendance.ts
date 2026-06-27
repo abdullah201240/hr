@@ -16,6 +16,13 @@ export interface AttendanceSettings {
   lateRules: LateRule[];
   twoStepLeaveThresholdDays: number;
   twoStepClaimThresholdAmount: number | string;
+  earlyOutThreshold: number;
+  maxLateAllowedPerMonth: number;
+  lateToDayDeductionRate: number;
+  maxEarlyOutAllowedPerMonth: number;
+  earlyOutToDayDeductionRate: number;
+  enableLateDeduction: boolean;
+  enableEarlyOutDeduction: boolean;
 }
 
 export interface Holiday {
@@ -38,6 +45,13 @@ export interface UpdateAttendanceSettingsPayload {
   lateRules?: LateRule[];
   twoStepLeaveThresholdDays?: number;
   twoStepClaimThresholdAmount?: number;
+  earlyOutThreshold?: number;
+  maxLateAllowedPerMonth?: number;
+  lateToDayDeductionRate?: number;
+  maxEarlyOutAllowedPerMonth?: number;
+  earlyOutToDayDeductionRate?: number;
+  enableLateDeduction?: boolean;
+  enableEarlyOutDeduction?: boolean;
 }
 
 export interface CreateHolidayPayload {

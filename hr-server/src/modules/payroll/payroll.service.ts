@@ -405,6 +405,7 @@ export class PayrollService implements OnModuleInit {
         let halfDays = 0;
         let totalLatePenaltyHours = 0;
         let lateDays = 0;
+        let earlyOutDays = 0;
         let leaveDays = 0;
         let prorationDaysBefore = 0;
         let prorationDaysAfter = 0;
@@ -458,6 +459,21 @@ export class PayrollService implements OnModuleInit {
           // 4. Late Days count
           if (existingLog && existingLog.status === 'late') {
             lateDays++;
+          }
+
+          // 4.5 Early Out count
+          if (existingLog && existingLog.checkOut && settings?.endTime) {
+            try {
+              const checkOutTime = this.parseTimeString(existingLog.checkOut, currentDateStr);
+              const officeEnd = this.parseOfficeTime(settings.endTime, currentDateStr);
+              const earlyThreshold = settings.earlyOutThreshold ?? 15;
+              const earlyMinutes = Math.max(0, Math.floor((officeEnd.getTime() - checkOutTime.getTime()) / (1000 * 60)));
+              if (earlyMinutes > earlyThreshold && existingLog.status !== 'leave' && existingLog.status !== 'holiday' && existingLog.status !== 'weekend') {
+                earlyOutDays++;
+              }
+            } catch (err) {
+              // Ignore parsing errors
+            }
           }
 
           // 5. Late Penalties
@@ -519,6 +535,32 @@ export class PayrollService implements OnModuleInit {
           calc.deductions['Proration Cut'] = prorationDeduction;
         }
 
+        if (settings?.enableLateDeduction) {
+          const maxLate = settings.maxLateAllowedPerMonth ?? 3;
+          const rate = settings.lateToDayDeductionRate ?? 3;
+          if (lateDays > maxLate && rate > 0) {
+            const excess = lateDays - maxLate;
+            const deductionDays = Math.floor(excess / rate);
+            const lateLimitDeduction = Math.round(deductionDays * perDayGross);
+            if (lateLimitDeduction > 0) {
+              calc.deductions['Late Limit Deduction'] = lateLimitDeduction;
+            }
+          }
+        }
+
+        if (settings?.enableEarlyOutDeduction) {
+          const maxEarly = settings.maxEarlyOutAllowedPerMonth ?? 3;
+          const rate = settings.earlyOutToDayDeductionRate ?? 3;
+          if (earlyOutDays > maxEarly && rate > 0) {
+            const excess = earlyOutDays - maxEarly;
+            const deductionDays = Math.floor(excess / rate);
+            const earlyOutLimitDeduction = Math.round(deductionDays * perDayGross);
+            if (earlyOutLimitDeduction > 0) {
+              calc.deductions['Early Out Limit Deduction'] = earlyOutLimitDeduction;
+            }
+          }
+        }
+
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
         // Calculate overtime
@@ -548,6 +590,7 @@ export class PayrollService implements OnModuleInit {
           absentDays,
           leaveDays,
           lateDays,
+          earlyOutDays,
         });
       }
     } catch (err: any) {
@@ -586,6 +629,7 @@ export class PayrollService implements OnModuleInit {
         absentDays: employeePayslips.absentDays,
         leaveDays: employeePayslips.leaveDays,
         lateDays: employeePayslips.lateDays,
+        earlyOutDays: employeePayslips.earlyOutDays,
         name: employees.fullNameEnglish,
         email: employees.email,
         department: employees.departmentId,
@@ -1097,6 +1141,7 @@ export class PayrollService implements OnModuleInit {
         let halfDays = 0;
         let totalLatePenaltyHours = 0;
         let lateDays = 0;
+        let earlyOutDays = 0;
         let leaveDays = 0;
         let prorationDaysBefore = 0;
         let prorationDaysAfter = 0;
@@ -1150,6 +1195,21 @@ export class PayrollService implements OnModuleInit {
           // 4. Late Days count
           if (existingLog && existingLog.status === 'late') {
             lateDays++;
+          }
+
+          // 4.5 Early Out count
+          if (existingLog && existingLog.checkOut && settings?.endTime) {
+            try {
+              const checkOutTime = this.parseTimeString(existingLog.checkOut, currentDateStr);
+              const officeEnd = this.parseOfficeTime(settings.endTime, currentDateStr);
+              const earlyThreshold = settings.earlyOutThreshold ?? 15;
+              const earlyMinutes = Math.max(0, Math.floor((officeEnd.getTime() - checkOutTime.getTime()) / (1000 * 60)));
+              if (earlyMinutes > earlyThreshold && existingLog.status !== 'leave' && existingLog.status !== 'holiday' && existingLog.status !== 'weekend') {
+                earlyOutDays++;
+              }
+            } catch (err) {
+              // Ignore parsing errors
+            }
           }
 
           // 5. Late Penalties
@@ -1222,6 +1282,32 @@ export class PayrollService implements OnModuleInit {
           calc.deductions['Proration Cut'] = prorationDeduction;
         }
 
+        if (settings?.enableLateDeduction) {
+          const maxLate = settings.maxLateAllowedPerMonth ?? 3;
+          const rate = settings.lateToDayDeductionRate ?? 3;
+          if (lateDays > maxLate && rate > 0) {
+            const excess = lateDays - maxLate;
+            const deductionDays = Math.floor(excess / rate);
+            const lateLimitDeduction = Math.round(deductionDays * perDayGross);
+            if (lateLimitDeduction > 0) {
+              calc.deductions['Late Limit Deduction'] = lateLimitDeduction;
+            }
+          }
+        }
+
+        if (settings?.enableEarlyOutDeduction) {
+          const maxEarly = settings.maxEarlyOutAllowedPerMonth ?? 3;
+          const rate = settings.earlyOutToDayDeductionRate ?? 3;
+          if (earlyOutDays > maxEarly && rate > 0) {
+            const excess = earlyOutDays - maxEarly;
+            const deductionDays = Math.floor(excess / rate);
+            const earlyOutLimitDeduction = Math.round(deductionDays * perDayGross);
+            if (earlyOutLimitDeduction > 0) {
+              calc.deductions['Early Out Limit Deduction'] = earlyOutLimitDeduction;
+            }
+          }
+        }
+
         // Preserve manual adjustments if existing payslip is present
         const preservedAllowances: Record<string, number> = {};
         const preservedDeductions: Record<string, number> = {};
@@ -1280,6 +1366,7 @@ export class PayrollService implements OnModuleInit {
               absentDays,
               leaveDays,
               lateDays,
+              earlyOutDays,
               status: 'Draft',
               rejectionReason: null,
               lmApprovedById: null,
@@ -1307,6 +1394,7 @@ export class PayrollService implements OnModuleInit {
             absentDays,
             leaveDays,
             lateDays,
+            earlyOutDays,
           });
         }
       }
@@ -1399,6 +1487,7 @@ export class PayrollService implements OnModuleInit {
         absentDays: employeePayslips.absentDays,
         leaveDays: employeePayslips.leaveDays,
         lateDays: employeePayslips.lateDays,
+        earlyOutDays: employeePayslips.earlyOutDays,
         monthKey: payrollCycles.monthKey,
         name: employees.fullNameEnglish,
         email: employees.email,

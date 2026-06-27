@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import {
   Clock,
   Building2,
@@ -35,6 +36,13 @@ interface OfficeSettings {
   lateRules: LateRule[]
   twoStepLeaveThresholdDays: number
   twoStepClaimThresholdAmount: number
+  earlyOutThreshold: number
+  maxLateAllowedPerMonth: number
+  lateToDayDeductionRate: number
+  maxEarlyOutAllowedPerMonth: number
+  earlyOutToDayDeductionRate: number
+  enableLateDeduction: boolean
+  enableEarlyOutDeduction: boolean
 }
 
 const DEFAULT_SETTINGS: OfficeSettings = {
@@ -52,6 +60,13 @@ const DEFAULT_SETTINGS: OfficeSettings = {
   ],
   twoStepLeaveThresholdDays: 2,
   twoStepClaimThresholdAmount: 1000,
+  earlyOutThreshold: 15,
+  maxLateAllowedPerMonth: 3,
+  lateToDayDeductionRate: 3,
+  maxEarlyOutAllowedPerMonth: 3,
+  earlyOutToDayDeductionRate: 3,
+  enableLateDeduction: true,
+  enableEarlyOutDeduction: true,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -96,6 +111,13 @@ export function OfficeHours() {
         lateRules: d.lateRules || DEFAULT_SETTINGS.lateRules,
         twoStepLeaveThresholdDays: d.twoStepLeaveThresholdDays ?? DEFAULT_SETTINGS.twoStepLeaveThresholdDays,
         twoStepClaimThresholdAmount: d.twoStepClaimThresholdAmount ? Number(d.twoStepClaimThresholdAmount) : DEFAULT_SETTINGS.twoStepClaimThresholdAmount,
+        earlyOutThreshold: d.earlyOutThreshold ?? DEFAULT_SETTINGS.earlyOutThreshold,
+        maxLateAllowedPerMonth: d.maxLateAllowedPerMonth ?? DEFAULT_SETTINGS.maxLateAllowedPerMonth,
+        lateToDayDeductionRate: d.lateToDayDeductionRate ?? DEFAULT_SETTINGS.lateToDayDeductionRate,
+        maxEarlyOutAllowedPerMonth: d.maxEarlyOutAllowedPerMonth ?? DEFAULT_SETTINGS.maxEarlyOutAllowedPerMonth,
+        earlyOutToDayDeductionRate: d.earlyOutToDayDeductionRate ?? DEFAULT_SETTINGS.earlyOutToDayDeductionRate,
+        enableLateDeduction: d.enableLateDeduction ?? DEFAULT_SETTINGS.enableLateDeduction,
+        enableEarlyOutDeduction: d.enableEarlyOutDeduction ?? DEFAULT_SETTINGS.enableEarlyOutDeduction,
       })
     }
   }, [settingsQuery.data])
@@ -165,11 +187,38 @@ export function OfficeHours() {
       toast.error("Validation Error", { description: "Half day threshold must be positive." })
       return
     }
+    if (settings.earlyOutThreshold < 0) {
+      toast.error("Validation Error", { description: "Early out threshold must be non-negative." })
+      return
+    }
+    if (settings.maxLateAllowedPerMonth < 0) {
+      toast.error("Validation Error", { description: "Max allowed lates must be non-negative." })
+      return
+    }
+    if (settings.lateToDayDeductionRate <= 0) {
+      toast.error("Validation Error", { description: "Late deduction rate must be positive." })
+      return
+    }
+    if (settings.maxEarlyOutAllowedPerMonth < 0) {
+      toast.error("Validation Error", { description: "Max allowed early outs must be non-negative." })
+      return
+    }
+    if (settings.earlyOutToDayDeductionRate <= 0) {
+      toast.error("Validation Error", { description: "Early out deduction rate must be positive." })
+      return
+    }
 
     updateSettingsMut.mutate({
       lateThreshold: settings.lateThreshold,
       halfDayThreshold: settings.halfDayThreshold,
       lateRules: settings.lateRules,
+      earlyOutThreshold: settings.earlyOutThreshold,
+      maxLateAllowedPerMonth: settings.maxLateAllowedPerMonth,
+      lateToDayDeductionRate: settings.lateToDayDeductionRate,
+      maxEarlyOutAllowedPerMonth: settings.maxEarlyOutAllowedPerMonth,
+      earlyOutToDayDeductionRate: settings.earlyOutToDayDeductionRate,
+      enableLateDeduction: settings.enableLateDeduction,
+      enableEarlyOutDeduction: settings.enableEarlyOutDeduction,
     }, {
       onSuccess: () => {
         toast.success("Attendance policies saved successfully!")
@@ -385,7 +434,7 @@ export function OfficeHours() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Late Threshold (mins)</Label>
                   <Input
@@ -397,7 +446,7 @@ export function OfficeHours() {
                     className="h-10"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Arriving more than {settings.lateThreshold} min after shift start marked Late.
+                    Marked Late after {settings.lateThreshold} min.
                   </p>
                 </div>
                 <div className="space-y-1.5">
@@ -411,8 +460,103 @@ export function OfficeHours() {
                     className="h-10"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    Arriving more than {settings.halfDayThreshold} min late marked Half Day.
+                    Marked Half Day after {settings.halfDayThreshold} min.
                   </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Early Out Threshold (mins)</Label>
+                  <Input
+                    type="number"
+                    value={settings.earlyOutThreshold}
+                    onChange={(e) => updateField("earlyOutThreshold", parseInt(e.target.value) || 0)}
+                    min={0}
+                    className="h-10"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Early out if checkOut &lt; end time - {settings.earlyOutThreshold} min.
+                  </p>
+                </div>
+              </div>
+
+              <Separator className="bg-border/30" />
+
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Late & Early Out Limits</h4>
+                
+                {/* Late limit policy */}
+                <div className="p-3.5 rounded-xl border border-border/30 bg-muted/5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-semibold">Enable Late Limit Deductions</Label>
+                      <p className="text-[10px] text-muted-foreground">Deduct salary for excessive monthly late arrivals</p>
+                    </div>
+                    <Switch
+                      checked={settings.enableLateDeduction}
+                      onCheckedChange={(checked) => updateField("enableLateDeduction", checked)}
+                    />
+                  </div>
+                  {settings.enableLateDeduction && (
+                    <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground uppercase">Max Lates Allowed / Month</Label>
+                        <Input
+                          type="number"
+                          value={settings.maxLateAllowedPerMonth}
+                          onChange={(e) => updateField("maxLateAllowedPerMonth", parseInt(e.target.value) || 0)}
+                          min={0}
+                          className="h-8.5 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground uppercase">Lates for 1-Day Cut</Label>
+                        <Input
+                          type="number"
+                          value={settings.lateToDayDeductionRate}
+                          onChange={(e) => updateField("lateToDayDeductionRate", parseInt(e.target.value) || 1)}
+                          min={1}
+                          className="h-8.5 text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Early Out limit policy */}
+                <div className="p-3.5 rounded-xl border border-border/30 bg-muted/5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-semibold">Enable Early Out Deductions</Label>
+                      <p className="text-[10px] text-muted-foreground">Deduct salary for checking out early</p>
+                    </div>
+                    <Switch
+                      checked={settings.enableEarlyOutDeduction}
+                      onCheckedChange={(checked) => updateField("enableEarlyOutDeduction", checked)}
+                    />
+                  </div>
+                  {settings.enableEarlyOutDeduction && (
+                    <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground uppercase">Max Early Outs Allowed / Month</Label>
+                        <Input
+                          type="number"
+                          value={settings.maxEarlyOutAllowedPerMonth}
+                          onChange={(e) => updateField("maxEarlyOutAllowedPerMonth", parseInt(e.target.value) || 0)}
+                          min={0}
+                          className="h-8.5 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground uppercase">Early Outs for 1-Day Cut</Label>
+                        <Input
+                          type="number"
+                          value={settings.earlyOutToDayDeductionRate}
+                          onChange={(e) => updateField("earlyOutToDayDeductionRate", parseInt(e.target.value) || 1)}
+                          min={1}
+                          className="h-8.5 text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -430,6 +574,11 @@ export function OfficeHours() {
                     label="Half Day"
                     description={`After ${settings.halfDayThreshold} min past ${formatTime12(settings.startTime)}`}
                     color="red"
+                  />
+                  <PolicyRow
+                    label="Early Out"
+                    description={`Checking out more than ${settings.earlyOutThreshold} min before ${formatTime12(settings.endTime)}`}
+                    color="amber"
                   />
                 </div>
               </div>

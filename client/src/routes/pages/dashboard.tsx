@@ -134,7 +134,7 @@ export default function DashboardPage() {
   })
   const leaveApplications = leaveApplicationsData?.data || []
 
-  const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear)
+  const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear, calMonth + 1)
 
   const balances = useMemo(() => {
     if (!dbBalances || dbBalances.length === 0) return []

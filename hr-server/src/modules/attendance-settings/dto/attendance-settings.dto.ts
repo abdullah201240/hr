@@ -9,6 +9,7 @@ import {
   MaxLength,
   Matches,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -82,6 +83,46 @@ export class UpdateAttendanceSettingsDto {
   @IsNumber()
   @Min(0.01)
   twoStepClaimThresholdAmount?: number;
+
+  @ApiPropertyOptional({ example: 15 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  earlyOutThreshold?: number;
+
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  maxLateAllowedPerMonth?: number;
+
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  lateToDayDeductionRate?: number;
+
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  maxEarlyOutAllowedPerMonth?: number;
+
+  @ApiPropertyOptional({ example: 3 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  earlyOutToDayDeductionRate?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  enableLateDeduction?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  enableEarlyOutDeduction?: boolean;
 }
 
 // ─── Holiday DTOs ────────────────────────────────────────────────────────

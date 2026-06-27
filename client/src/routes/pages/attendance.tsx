@@ -55,7 +55,7 @@ export default function AttendancePage() {
   })
   const leaveApplications = leaveApplicationsData?.data || []
 
-  const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear)
+  const { data: dbBalances = [] } = useLeaveBalancesQuery(calYear, calMonth + 1)
 
   const balances = useMemo(() => {
     return mapBalances(dbBalances, resolveLeaveIcon)

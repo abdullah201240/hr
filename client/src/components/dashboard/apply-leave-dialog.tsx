@@ -178,9 +178,15 @@ export function ApplyLeaveDialog({
   const selectedType = balances.find((b) => b.id === leaveTypeId)
   const showDocuments = selectedType?.requiresDocument ?? false
 
-  // Lock dates for Early Out and Movement
+  // Lock dates for Early Out, Movement, and Late Arrival
   useEffect(() => {
-    if (selectedType && (selectedType.key === "earlyout" || selectedType.key === "movement")) {
+    if (
+      selectedType &&
+      (selectedType.key === "earlyout" ||
+        selectedType.key === "movement" ||
+        selectedType.key === "latearrival" ||
+        selectedType.key === "lateentry")
+    ) {
       setEndDate(startDate)
     }
   }, [startDate, selectedType])
@@ -454,7 +460,13 @@ export function ApplyLeaveDialog({
                 type="date"
                 min={startDate}
                 value={endDate}
-                disabled={isSubmitting || selectedType?.key === "earlyout" || selectedType?.key === "movement"}
+                disabled={
+                  isSubmitting ||
+                  selectedType?.key === "earlyout" ||
+                  selectedType?.key === "movement" ||
+                  selectedType?.key === "latearrival" ||
+                  selectedType?.key === "lateentry"
+                }
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full text-xs h-9"
               />

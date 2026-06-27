@@ -126,6 +126,9 @@ export const AttendanceCalendar = memo(function AttendanceCalendar({
                   if (leaveKey === "earlyout") {
                     cellBg = "bg-orange-500/10 hover:bg-orange-500/15 dark:bg-orange-500/[0.04]"
                     textColor = "text-orange-600 dark:text-orange-400 font-semibold"
+                  } else if (leaveKey === "latearrival" || leaveKey === "lateentry") {
+                    cellBg = "bg-amber-500/10 hover:bg-amber-500/15 dark:bg-amber-500/[0.04]"
+                    textColor = "text-amber-600 dark:text-amber-400 font-semibold"
                   } else if (leaveKey === "movement") {
                     cellBg = "bg-indigo-500/10 hover:bg-indigo-500/15 dark:bg-indigo-500/[0.04]"
                     textColor = "text-indigo-600 dark:text-indigo-400 font-semibold"

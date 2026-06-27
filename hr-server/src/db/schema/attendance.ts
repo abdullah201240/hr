@@ -9,6 +9,7 @@ import {
   index,
   uniqueIndex,
   numeric,
+  boolean,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
@@ -53,6 +54,15 @@ export const attendanceSettings = pgTable('attendance_settings', {
 
   // Two-step claim approval threshold amount
   twoStepClaimThresholdAmount: numeric('two_step_claim_threshold_amount', { precision: 12, scale: 2 }).default('1000.00').notNull(),
+
+  // Late and Early Out Policies
+  earlyOutThreshold: integer('early_out_threshold').default(15).notNull(),
+  maxLateAllowedPerMonth: integer('max_late_allowed_per_month').default(3).notNull(),
+  lateToDayDeductionRate: integer('late_to_day_deduction_rate').default(3).notNull(),
+  maxEarlyOutAllowedPerMonth: integer('max_early_out_allowed_per_month').default(3).notNull(),
+  earlyOutToDayDeductionRate: integer('early_out_to_day_deduction_rate').default(3).notNull(),
+  enableLateDeduction: boolean('enable_late_deduction').default(true).notNull(),
+  enableEarlyOutDeduction: boolean('enable_early_out_deduction').default(true).notNull(),
 });
 
 // ─── Holidays ──────────────────────────────────────────────────────────────
