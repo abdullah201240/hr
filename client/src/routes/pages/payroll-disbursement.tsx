@@ -6,8 +6,12 @@ import { DisbursementTab } from "@/components/payroll/DisbursementTab"
 import { DisbursementFestivalBonusTab } from "@/components/payroll/DisbursementFestivalBonusTab"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useSearchParams } from "react-router"
 
 export default function PayrollDisbursementPage() {
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get("tab") || "salary"
+
   const monthsOptions = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const d = new Date()
@@ -40,7 +44,7 @@ export default function PayrollDisbursementPage() {
         <p className="text-muted-foreground text-sm">Disburse monthly employee compensation payments and post references.</p>
       </div>
 
-      <Tabs defaultValue="salary" className="w-full">
+      <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="salary">Monthly Salaries</TabsTrigger>
           <TabsTrigger value="bonus">Festival Bonuses</TabsTrigger>

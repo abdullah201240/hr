@@ -6,8 +6,12 @@ import { MdApprovalsTab } from "@/components/payroll/MdApprovalsTab"
 import { MdFestivalBonusApprovalsTab } from "@/components/payroll/MdFestivalBonusApprovalsTab"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useSearchParams } from "react-router"
 
 export default function PayrollMdApprovalsPage() {
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get("tab") || "salary"
+
   const monthsOptions = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const d = new Date()
@@ -40,7 +44,7 @@ export default function PayrollMdApprovalsPage() {
         <p className="text-muted-foreground text-sm">Final high-level monthly compensation approval and sign-off.</p>
       </div>
 
-      <Tabs defaultValue="salary" className="w-full">
+      <Tabs key={defaultTab} defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="salary">Monthly Salaries</TabsTrigger>
           <TabsTrigger value="bonus">Festival Bonuses</TabsTrigger>
