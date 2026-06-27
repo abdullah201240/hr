@@ -26,8 +26,8 @@ describe('Provident Fund Module (e2e)', () => {
       const res = await authGet(ctx, '/provident-fund-settings');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('employeeContribution');
-      expect(res.body.data).toHaveProperty('employerContribution');
+      expect(res.body.data).toHaveProperty('employeeContributionRate');
+      expect(res.body.data).toHaveProperty('employerContributionRate');
     });
 
     it('should reject unauthenticated request', async () => {
@@ -39,8 +39,8 @@ describe('Provident Fund Module (e2e)', () => {
   describe('PATCH /provident-fund-settings', () => {
     it('should update provident fund settings', async () => {
       const res = await authPatch(ctx, '/provident-fund-settings', {
-        employeeContribution: 10,
-        employerContribution: 10,
+        employeeContributionRate: 10,
+        employerContributionRate: 10,
       });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -48,7 +48,7 @@ describe('Provident Fund Module (e2e)', () => {
 
     it('should reject invalid values', async () => {
       const res = await authPatch(ctx, '/provident-fund-settings', {
-        employeeContribution: -5,
+        employeeContributionRate: -5,
       });
       expect([400, 200]).toContain(res.status);
     });

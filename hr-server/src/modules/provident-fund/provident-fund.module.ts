@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ProvidentFundService } from './provident-fund.service';
-import { ProvidentFundController } from './provident-fund.controller';
+import { ProvidentFundController, ProvidentFundSettingsController } from './provident-fund.controller';
 
 @Module({
   providers: [ProvidentFundService],
-  controllers: [ProvidentFundController],
+  controllers: [ProvidentFundController, ProvidentFundSettingsController],
   exports: [ProvidentFundService],
 })
 export class ProvidentFundModule {}

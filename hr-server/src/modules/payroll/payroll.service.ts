@@ -8,6 +8,7 @@ import {
   employees,
   employeeSalaries,
   providentFundSettings,
+  providentFundTransactions,
   salaryTemplateComponents,
   departments,
   designations,
@@ -887,6 +888,33 @@ export class PayrollService implements OnModuleInit {
           }));
           await tx.insert(payrollApprovals).values(approvalsToInsert);
         }
+
+        // --- NEW: Insert matching PF transactions ---
+        const [pfSettings] = await tx
+          .select()
+          .from(providentFundSettings)
+          .limit(1);
+        const employerPfRate = pfSettings?.employerContributionRate ?? 10;
+
+        const pfTransactionsToInsert = payslips
+          .filter((slip) => slip.deductionPf > 0)
+          .map((slip) => {
+            const employerMatch = Math.round(slip.basicSalary * (employerPfRate / 100));
+            const netAmount = slip.deductionPf + employerMatch;
+            return {
+              employeeId: slip.employeeId,
+              monthKey: dto.monthKey,
+              employeeContribution: slip.deductionPf,
+              employerContribution: employerMatch,
+              type: 'contribution',
+              amount: netAmount,
+              description: `Provident Fund contribution for the month of ${dto.monthKey}`,
+            };
+          });
+
+        if (pfTransactionsToInsert.length > 0) {
+          await tx.insert(providentFundTransactions).values(pfTransactionsToInsert);
+        }
       }
 
       await tx.insert(disbursements).values({
@@ -1423,23 +1451,16 @@ export class PayrollService implements OnModuleInit {
     return list;
   }
 
-  // Get accumulated PF balances based on Paid or Distributed payslips
+  // Get accumulated PF balances based on transactions ledger
   async getPfBalances() {
     return this.db
       .select({
-        employeeId: employeePayslips.employeeId,
-        totalPf: sql<number>`COALESCE(SUM(${employeePayslips.deductionPf}), 0)`,
-        monthsContributed: sql<number>`COUNT(DISTINCT ${employeePayslips.payrollCycleId})`,
+        employeeId: providentFundTransactions.employeeId,
+        totalPf: sql<number>`COALESCE(SUM(${providentFundTransactions.amount}), 0)`,
+        monthsContributed: sql<number>`COALESCE(COUNT(DISTINCT CASE WHEN ${providentFundTransactions.type} = 'contribution' THEN ${providentFundTransactions.monthKey} END), 0)`,
       })
-      .from(employeePayslips)
-      .innerJoin(payrollCycles, eq(employeePayslips.payrollCycleId, payrollCycles.id))
-      .where(
-        or(
-          eq(employeePayslips.paymentStatus, 'Paid'),
-          eq(payrollCycles.status, 'Distributed'),
-        ),
-      )
-      .groupBy(employeePayslips.employeeId);
+      .from(providentFundTransactions)
+      .groupBy(providentFundTransactions.employeeId);
   }
 
   // Helper: Default Salary based on designation / role

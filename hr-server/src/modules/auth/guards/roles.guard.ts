@@ -119,6 +119,24 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
+    // Allow employees to query/interact with their own PF balances/withdrawals (self-service)
+    if (
+      resource === 'provident_fund' &&
+      (lastSegment === 'ledger' || lastSegment === 'withdrawals')
+    ) {
+      return true;
+    }
+
+    // Allow processing of PF withdrawals for users with salary/payroll edit permissions
+    if (resource === 'provident_fund' && action === 'process') {
+      if (
+        userPermissions.has('salary:update') ||
+        userPermissions.has('payroll:process')
+      ) {
+        return true;
+      }
+    }
+
     // Check direct permission
     if (userPermissions.has(`${resource}:${action}`)) {
       return true;
