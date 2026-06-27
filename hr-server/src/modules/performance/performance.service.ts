@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { eq, and, desc, or } from 'drizzle-orm';
+import { eq, and, desc, or, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { employeeKpis, employees, designations, departments, appraisalCycles, employeeAppraisals, rolePermissions, permissions } from '../../db/schema';
 import {
@@ -189,18 +189,34 @@ export class PerformanceService {
       .from(employees)
       .where(eq(employees.status, 'active'));
 
-    const result: Record<string, any[]> = {};
-    for (const emp of allEmployees) {
-      result[emp.id] = await this.db
-        .select()
-        .from(employeeKpis)
-        .where(
-          and(
-            eq(employeeKpis.employeeId, emp.id),
-            eq(employeeKpis.cycleId, activeCycleId)
-          )
-        );
+    if (allEmployees.length === 0) {
+      return {};
     }
+
+    const employeeIds = allEmployees.map(emp => emp.id);
+
+    // Fetch all KPIs for all active employees in this cycle in one query (O(1) database queries)
+    const allKpis = await this.db
+      .select()
+      .from(employeeKpis)
+      .where(
+        and(
+          inArray(employeeKpis.employeeId, employeeIds),
+          eq(employeeKpis.cycleId, activeCycleId)
+        )
+      );
+
+    const result: Record<string, any[]> = {};
+    allEmployees.forEach(emp => {
+      result[emp.id] = [];
+    });
+
+    for (const kpi of allKpis) {
+      if (result[kpi.employeeId]) {
+        result[kpi.employeeId].push(kpi);
+      }
+    }
+
     return result;
   }
 

@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { eq, and, desc, asc, count, or } from 'drizzle-orm';
+import { eq, and, desc, asc, count, or, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   jobOpenings,
@@ -138,20 +138,34 @@ export class RecruitmentService {
       .from(candidates)
       .orderBy(desc(candidates.appliedDate));
 
-    // Fetch stage history for each candidate
-    const candidatesWithHistory = await Promise.all(
-      records.map(async (cand) => {
-        const history = await this.db
-          .select({ stage: candidateStageHistories.stage, date: candidateStageHistories.date })
-          .from(candidateStageHistories)
-          .where(eq(candidateStageHistories.candidateId, cand.id))
-          .orderBy(asc(candidateStageHistories.createdAt));
+    if (records.length === 0) return [];
 
-        return { ...cand, stageHistory: history };
-      }),
-    );
+    const candidateIds = records.map(c => c.id);
 
-    return candidatesWithHistory;
+    // Fetch stage history for all candidates in one query
+    const allHistory = await this.db
+      .select({
+        candidateId: candidateStageHistories.candidateId,
+        stage: candidateStageHistories.stage,
+        date: candidateStageHistories.date,
+      })
+      .from(candidateStageHistories)
+      .where(inArray(candidateStageHistories.candidateId, candidateIds))
+      .orderBy(asc(candidateStageHistories.createdAt));
+
+    // Group history by candidateId in memory
+    const historyMap = new Map<string, { stage: string; date: string }[]>();
+    for (const h of allHistory) {
+      if (!historyMap.has(h.candidateId)) {
+        historyMap.set(h.candidateId, []);
+      }
+      historyMap.get(h.candidateId)!.push({ stage: h.stage, date: h.date });
+    }
+
+    return records.map(cand => ({
+      ...cand,
+      stageHistory: historyMap.get(cand.id) || [],
+    }));
   }
 
   async findOneCandidate(id: string) {
@@ -353,17 +367,30 @@ export class RecruitmentService {
       .from(onboardingHires)
       .orderBy(desc(onboardingHires.startDate));
 
-    return Promise.all(
-      hires.map(async (hire) => {
-        const tasks = await this.db
-          .select()
-          .from(onboardingTasks)
-          .where(eq(onboardingTasks.hireId, hire.id))
-          .orderBy(asc(onboardingTasks.createdAt));
+    if (hires.length === 0) return [];
 
-        return { ...hire, tasks };
-      }),
-    );
+    const hireIds = hires.map(h => h.id);
+
+    // Fetch tasks for all hires in one query
+    const allTasks = await this.db
+      .select()
+      .from(onboardingTasks)
+      .where(inArray(onboardingTasks.hireId, hireIds))
+      .orderBy(asc(onboardingTasks.createdAt));
+
+    // Group tasks by hireId in memory
+    const tasksMap = new Map<string, any[]>();
+    for (const t of allTasks) {
+      if (!tasksMap.has(t.hireId)) {
+        tasksMap.set(t.hireId, []);
+      }
+      tasksMap.get(t.hireId)!.push(t);
+    }
+
+    return hires.map(hire => ({
+      ...hire,
+      tasks: tasksMap.get(hire.id) || [],
+    }));
   }
 
   async toggleOnboardingTask(taskId: string) {

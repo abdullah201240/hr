@@ -19,11 +19,17 @@ import {
   employeeFestivalBonuses,
 } from '../../db/schema';
 
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
+
 @Injectable()
 export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
-  constructor(@Inject(DB_CONNECTION) private readonly db: Database) {}
+  constructor(
+    @Inject(DB_CONNECTION) private readonly db: Database,
+    private readonly cache: CacheService,
+  ) {}
 
   async getExecutiveSummary() {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD

@@ -39,6 +39,8 @@ import {
 } from './dto/tasks.dto';
 import { RealtimeGateway } from './realtime.gateway';
 import { TASK_RECURRENCE_QUEUE } from '../queue/queue.module';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
 
 @Injectable()
 export class TasksService {
@@ -47,10 +49,17 @@ export class TasksService {
     private readonly realtimeGateway: RealtimeGateway,
     @InjectQueue(TASK_RECURRENCE_QUEUE) private readonly taskRecurrenceQueue: Queue,
     private readonly notificationService: NotificationService,
+    private readonly cache: CacheService,
   ) {}
 
   private broadcastMutation(action: string, id?: string) {
     this.realtimeGateway.broadcast('tasks_mutated', { action, id });
+    try {
+      this.cache.delByPattern(CacheKeys.tasksList).catch(() => {});
+      if (id) {
+        this.cache.delByKey(CacheKeys.taskById, id).catch(() => {});
+      }
+    } catch (e) {}
   }
 
   // ─── Project Endpoints ───────────────────────────────────────────────────────
@@ -271,6 +280,17 @@ export class TasksService {
 
   async findAllTasks(query: TaskQueryDto) {
     const { search, projectId, assigneeId, status, priority, limit, cursor } = query;
+    const cacheKeyParts = `${search || ''}:${projectId || ''}:${assigneeId || ''}:${status || ''}:${priority || ''}:${limit || ''}:${cursor || ''}`;
+
+    try {
+      const cached = await this.cache.getByKey<any>(CacheKeys.tasksList, cacheKeyParts);
+      if (cached) {
+        return cached;
+      }
+    } catch (err: any) {
+      // Non-blocking
+    }
+
     const conditions = [isNull(tasks.deletedAt)];
 
     if (projectId) {
@@ -451,19 +471,31 @@ export class TasksService {
       };
     });
 
-    if (limit !== undefined) {
-      const nextCursor = hasMore ? slicedTasks[slicedTasks.length - 1].id : null;
-      return {
-        tasks: results,
-        nextCursor,
-        hasMore,
-      };
+    const finalResult = limit !== undefined ? {
+      tasks: results,
+      nextCursor: hasMore ? slicedTasks[slicedTasks.length - 1].id : null,
+      hasMore,
+    } : results;
+
+    try {
+      await this.cache.setByKey(CacheKeys.tasksList, finalResult, cacheKeyParts);
+    } catch (err: any) {
+      // Non-blocking
     }
 
-    return results;
+    return finalResult;
   }
 
   async findOneTask(id: string) {
+    try {
+      const cached = await this.cache.getByKey<any>(CacheKeys.taskById, id);
+      if (cached) {
+        return cached;
+      }
+    } catch (err: any) {
+      // Non-blocking
+    }
+
     const [task] = await this.db
       .select({
         id: tasks.id,
@@ -592,7 +624,7 @@ export class TasksService {
         .orderBy(desc(timeEntries.startTime)),
     ]);
 
-    return {
+    const result = {
       ...task,
       comments,
       activities,
@@ -601,6 +633,14 @@ export class TasksService {
       attachments,
       timeEntries: timeLogs,
     };
+
+    try {
+      await this.cache.setByKey(CacheKeys.taskById, result, id);
+    } catch (err: any) {
+      // Non-blocking
+    }
+
+    return result;
   }
 
   async updateTask(id: string, dto: UpdateTaskDto, userId: string) {

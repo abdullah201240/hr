@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleIni
 import { HttpAdapterHost } from '@nestjs/core';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { eq, and, desc, lt, gt, count } from 'drizzle-orm';
+import { eq, and, desc, lt, gt, count, inArray } from 'drizzle-orm';
 import Redis from 'ioredis';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -195,58 +195,83 @@ export class NotificationService implements OnModuleInit {
       data = list.slice(0, limit);
     }
 
-    // Resolve real-time action status for entities dynamically
+    // Resolve real-time action status for entities dynamically using batched queries (O(1) database queries)
+    const regReqIds: string[] = [];
+    const claimIds: string[] = [];
+    const leaveIds: string[] = [];
+
     for (const item of data) {
       if (item.actions && (item.actions as any[]).length > 0 && item.entityType && item.entityId) {
-        try {
-          if (item.entityType === 'regulation_request') {
-            const [req] = await this.db
-              .select({ status: regulationRequests.status })
-              .from(regulationRequests)
-              .where(eq(regulationRequests.id, item.entityId))
-              .limit(1);
+        if (item.entityType === 'regulation_request') {
+          regReqIds.push(item.entityId);
+        } else if (item.entityType === 'claim') {
+          claimIds.push(item.entityId);
+        } else if (item.entityType === 'leave_application') {
+          leaveIds.push(item.entityId);
+        }
+      }
+    }
 
-            if (req) {
-              if (req.status === 'Approved' || req.status === 'Pending_2nd') {
+    try {
+      const [regReqsList, claimsList, leavesList] = await Promise.all([
+        regReqIds.length > 0
+          ? this.db
+              .select({ id: regulationRequests.id, status: regulationRequests.status })
+              .from(regulationRequests)
+              .where(inArray(regulationRequests.id, regReqIds))
+          : [],
+        claimIds.length > 0
+          ? this.db
+              .select({ id: claims.id, status: claims.status })
+              .from(claims)
+              .where(inArray(claims.id, claimIds))
+          : [],
+        leaveIds.length > 0
+          ? this.db
+              .select({ id: leaveApplications.id, status: leaveApplications.status })
+              .from(leaveApplications)
+              .where(inArray(leaveApplications.id, leaveIds))
+          : [],
+      ]);
+
+      const regReqMap = new Map(regReqsList.map(r => [r.id, r.status]));
+      const claimMap = new Map(claimsList.map(c => [c.id, c.status]));
+      const leaveMap = new Map(leavesList.map(l => [l.id, l.status]));
+
+      for (const item of data) {
+        if (item.actions && (item.actions as any[]).length > 0 && item.entityType && item.entityId) {
+          if (item.entityType === 'regulation_request') {
+            const status = regReqMap.get(item.entityId);
+            if (status) {
+              if (status === 'Approved' || status === 'Pending_2nd') {
                 item.metadata = { ...(item.metadata as any), actionTaken: 'Approve' };
-              } else if (req.status === 'Rejected') {
+              } else if (status === 'Rejected') {
                 item.metadata = { ...(item.metadata as any), actionTaken: 'Reject' };
               }
             }
           } else if (item.entityType === 'claim') {
-            const [claim] = await this.db
-              .select({ status: claims.status })
-              .from(claims)
-              .where(eq(claims.id, item.entityId))
-              .limit(1);
-
-            if (claim) {
-              if (claim.status === 'Approved' || claim.status === 'Pending_2nd') {
+            const status = claimMap.get(item.entityId);
+            if (status) {
+              if (status === 'Approved' || status === 'Pending_2nd') {
                 item.metadata = { ...(item.metadata as any), actionTaken: 'Approve' };
-              } else if (claim.status === 'Rejected') {
+              } else if (status === 'Rejected') {
                 item.metadata = { ...(item.metadata as any), actionTaken: 'Reject' };
               }
             }
           } else if (item.entityType === 'leave_application') {
-            const [leave] = await this.db
-              .select({ status: leaveApplications.status })
-              .from(leaveApplications)
-              .where(eq(leaveApplications.id, item.entityId))
-              .limit(1);
-
-            if (leave) {
-              if (leave.status === 'Approved') {
+            const status = leaveMap.get(item.entityId);
+            if (status) {
+              if (status === 'Approved') {
                 item.metadata = { ...(item.metadata as any), actionTaken: 'Approve' };
-              } else if (leave.status === 'Rejected') {
+              } else if (status === 'Rejected') {
                 item.metadata = { ...(item.metadata as any), actionTaken: 'Reject' };
               }
             }
           }
-        } catch (err: any) {
-          // Non-blocking log
-          this.logger.error(`Error resolving action status for entityType ${item.entityType}: ${err.message}`);
         }
       }
+    } catch (err: any) {
+      this.logger.error(`Error resolving action status for batch entities: ${err.message}`);
     }
 
     const nextCursor = hasMore ? data[data.length - 1].createdAt.toISOString() : null;

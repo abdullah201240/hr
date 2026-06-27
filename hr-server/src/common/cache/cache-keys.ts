@@ -209,11 +209,32 @@ export const CacheKeys = {
     description: 'Cached JWT user validation result',
   },
 
+  /** Executive Dashboard summary metrics */
+  executiveSummary: {
+    key: key('dashboard:executive'),
+    ttl: 60, // 1 minute cache TTL
+    description: 'Executive dashboard summary analytics',
+  },
+
   /** Announcement list (legacy, non-paginated) */
   announcementList: {
     key: key('announcements:list'),
     ttl: 300, // 5 min
     description: 'All announcements (legacy)',
+  },
+
+  /** Tasks list cache */
+  tasksList: {
+    key: key('tasks:list:*'),
+    ttl: 60, // 1 minute
+    description: 'Cached list of tasks',
+  },
+
+  /** Task detail by ID */
+  taskById: {
+    key: key('tasks:id:*'),
+    ttl: 300, // 5 minutes
+    description: 'Cached task by ID',
   },
 
   /** Announcement paginated list (cursor-based) */
