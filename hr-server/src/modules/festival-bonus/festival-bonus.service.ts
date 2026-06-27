@@ -49,6 +49,9 @@ export class FestivalBonusService {
           bonusesPerYear: 2,
           minServiceMonths: 6,
           amountFormula: 'one_month_basic',
+          salaryComponent: 'basic',
+          prorataFullServiceMonths: 12,
+          tierRules: [],
           eligibleEmployeeTypes: ['Permanent'],
           allowSpecialApproval: true,
         })
@@ -425,12 +428,29 @@ export class FestivalBonusService {
       // 6. Calculate bonus amount based on settings formula
       let calculatedAmount = 0;
       if (isEligible) {
+        const baseSalary = settings.salaryComponent === 'gross' ? grossSalary : basicSalary;
+
         if (settings.amountFormula === 'one_month_basic') {
           calculatedAmount = basicSalary;
         } else if (settings.amountFormula === 'pro_rata_service_months') {
           calculatedAmount = Math.round(basicSalary * (Math.min(12, serviceMonths) / 12));
         } else if (settings.amountFormula === 'earned_festival_bonus') {
           calculatedAmount = Math.round(basicSalary * serviceMonths);
+        } else if (settings.amountFormula === 'prorated_service') {
+          const fullMonths = settings.prorataFullServiceMonths || 12;
+          calculatedAmount = Math.round((baseSalary / fullMonths) * Math.min(serviceMonths, fullMonths));
+        } else if (settings.amountFormula === 'tiered_ranges') {
+          const rules = settings.tierRules || [];
+          const matchingRule = rules.find((rule: any) => {
+            const minOk = serviceMonths >= rule.minMonths;
+            const maxOk = rule.maxMonths === null || rule.maxMonths === undefined || serviceMonths < rule.maxMonths;
+            return minOk && maxOk;
+          });
+          if (matchingRule) {
+            calculatedAmount = Math.round(baseSalary * (matchingRule.percentage / 100));
+          } else {
+            calculatedAmount = 0;
+          }
         }
       }
 

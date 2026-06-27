@@ -38,9 +38,9 @@ export function DisbursementTab({
   const payslipsList = cycle?.payslips || []
   const cycleStatus = cycle?.status || "Draft"
 
-  // Filter payslips that are in Awaiting_Disbursement status
+  // Filter payslips that are in Awaiting_Disbursement or Disbursed status
   const eligiblePayslips = useMemo(() => {
-    return payslipsList.filter((p) => p.status === "Awaiting_Disbursement")
+    return payslipsList.filter((p) => p.status === "Awaiting_Disbursement" || p.status === "Disbursed")
   }, [payslipsList])
 
   // Disbursement Form local states
@@ -253,9 +253,15 @@ export function DisbursementTab({
                           {formatCurrency(payslip.netPay)}
                         </TableCell>
                         <TableCell className="py-3">
-                          <Badge variant="outline" className="text-[9px] font-bold py-0.5 px-2 bg-blue-500/10 text-blue-600 border-blue-500/20">
-                            Awaiting Disbursement
-                          </Badge>
+                          {payslip.status === "Disbursed" ? (
+                            <Badge variant="outline" className="text-[9px] font-bold py-0.5 px-2 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                              Disbursed
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] font-bold py-0.5 px-2 bg-blue-500/10 text-blue-600 border-blue-500/20">
+                              Awaiting Disbursement
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="py-3 text-right">
                           <Button

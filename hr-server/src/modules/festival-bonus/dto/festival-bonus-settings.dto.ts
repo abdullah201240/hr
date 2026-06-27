@@ -26,6 +26,25 @@ export class UpdateFestivalBonusSettingsDto {
   @IsString()
   amountFormula?: string;
 
+  @ApiPropertyOptional({ example: 'basic' })
+  @IsOptional()
+  @IsString()
+  salaryComponent?: string;
+
+  @ApiPropertyOptional({ example: 12 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  prorataFullServiceMonths?: number;
+
+  @ApiPropertyOptional({
+    example: [{ minMonths: 6, maxMonths: 8, percentage: 20 }],
+    type: [Object],
+  })
+  @IsOptional()
+  @IsArray()
+  tierRules?: Array<{ minMonths: number; maxMonths: number | null; percentage: number }>;
+
   @ApiPropertyOptional({
     example: ['Permanent'],
     type: [String],

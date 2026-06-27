@@ -158,6 +158,9 @@ export interface FestivalBonusSettings {
   bonusesPerYear: number;
   minServiceMonths: number;
   amountFormula: string;
+  salaryComponent: string;
+  prorataFullServiceMonths: number;
+  tierRules: Array<{ minMonths: number; maxMonths: number | null; percentage: number }>;
   eligibleEmployeeTypes: string[];
   allowSpecialApproval: boolean;
 }
@@ -166,6 +169,9 @@ export interface UpdateFestivalBonusSettingsPayload {
   bonusesPerYear?: number;
   minServiceMonths?: number;
   amountFormula?: string;
+  salaryComponent?: string;
+  prorataFullServiceMonths?: number;
+  tierRules?: Array<{ minMonths: number; maxMonths: number | null; percentage: number }>;
   eligibleEmployeeTypes?: string[];
   allowSpecialApproval?: boolean;
 }

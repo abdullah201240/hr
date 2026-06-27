@@ -611,6 +611,7 @@ export class PayrollService implements OnModuleInit {
       .select({
         id: employeePayslips.id,
         employeeId: employeePayslips.employeeId,
+        status: employeePayslips.status,
         basicSalary: employeePayslips.basicSalary,
         allowanceHra: employeePayslips.allowanceHra,
         allowanceTransport: employeePayslips.allowanceTransport,
