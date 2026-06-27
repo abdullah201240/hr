@@ -82,13 +82,25 @@ export class FestivalBonusService {
   // ─── Bonus Cycles & Processing ──────────────────────────────────────────────
 
   async getCycles() {
-    return this.db
+    const cached = await this.cache.getByKey<any[]>(CacheKeys.festivalBonusCyclesList);
+    if (cached) return cached;
+
+    const list = await this.db
       .select()
       .from(festivalBonusCycles)
       .orderBy(desc(festivalBonusCycles.festivalDate));
+
+    await this.cache.setByKey(CacheKeys.festivalBonusCyclesList, list);
+    return list;
   }
 
   async getCycleById(id: string) {
+    const cached = await this.cache.getByKey<{ cycle: any; payouts: any[] }>(
+      CacheKeys.festivalBonusCycleDetails,
+      id,
+    );
+    if (cached) return cached;
+
     const [cycle] = await this.db
       .select()
       .from(festivalBonusCycles)
@@ -126,10 +138,13 @@ export class FestivalBonusService {
       .innerJoin(employees, eq(employeeFestivalBonuses.employeeId, employees.id))
       .where(eq(employeeFestivalBonuses.festivalBonusCycleId, id));
 
-    return {
+    const result = {
       cycle,
       payouts,
     };
+
+    await this.cache.setByKey(CacheKeys.festivalBonusCycleDetails, result, id);
+    return result;
   }
 
   async createCycle(dto: CreateFestivalBonusCycleDto) {
@@ -152,7 +167,9 @@ export class FestivalBonusService {
     await this.calculatePayoutsForCycle(cycle.id, festDate, settings);
 
     // 3. Recalculate summary stats for the cycle
-    return this.refreshCycleSummary(cycle.id);
+    const result = await this.refreshCycleSummary(cycle.id);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+    return result;
   }
 
   async recalculateCycle(id: string) {
@@ -271,6 +288,8 @@ export class FestivalBonusService {
       .where(eq(festivalBonusCycles.id, id))
       .returning();
 
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
     return updated;
   }
 
@@ -318,6 +337,8 @@ export class FestivalBonusService {
       .where(eq(festivalBonusCycles.id, id))
       .returning();
 
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
     return updated;
   }
 
@@ -337,6 +358,8 @@ export class FestivalBonusService {
     }
 
     await this.db.delete(festivalBonusCycles).where(eq(festivalBonusCycles.id, id));
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
     return { success: true };
   }
 
@@ -507,6 +530,9 @@ export class FestivalBonusService {
         updatedAt: new Date(),
       })
       .where(eq(festivalBonusCycles.id, cycleId));
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, cycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
 
     return this.getCycleById(cycleId);
   }

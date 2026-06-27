@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, boolean, jsonb, uuid, doublePrecision, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, integer, boolean, jsonb, uuid, doublePrecision, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
 import { employees } from './employee';
@@ -54,7 +54,10 @@ export const employeeFestivalBonuses = pgTable('employee_festival_bonuses', {
   paymentMethod: varchar('payment_method', { length: 50 }),
   paymentRef: varchar('payment_ref', { length: 100 }),
   paidAt: timestamp('paid_at', { withTimezone: true }),
-});
+}, (table) => ({
+  cycleIdx: index('emp_fb_cycle_idx').on(table.festivalBonusCycleId),
+  employeeIdx: index('emp_fb_employee_idx').on(table.employeeId),
+}));
 
 export const festivalBonusCyclesRelations = relations(festivalBonusCycles, ({ many }) => ({
   payouts: many(employeeFestivalBonuses),

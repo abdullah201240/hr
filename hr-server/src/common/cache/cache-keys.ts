@@ -153,6 +153,20 @@ export const CacheKeys = {
     description: 'Festival bonus settings singleton',
   },
 
+  /** All festival bonus cycles list */
+  festivalBonusCyclesList: {
+    key: key('payroll:festival-bonus:cycles:list'),
+    ttl: 1800, // 30 min
+    description: 'All festival bonus cycles list',
+  },
+
+  /** Details for a specific festival bonus cycle (including payouts) */
+  festivalBonusCycleDetails: {
+    key: key('payroll:festival-bonus:cycles:details:*'), // cycleId
+    ttl: 1800, // 30 min
+    description: 'Festival bonus cycle details by ID',
+  },
+
   /** Generic settings / config cache */
   settings: {
     key: key('settings:*'),
