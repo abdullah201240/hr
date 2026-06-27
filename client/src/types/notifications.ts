@@ -41,7 +41,8 @@ export type NotificationModule =
   | 'announcements'
   | 'performance'
   | 'disciplinary'
-  | 'separation';
+  | 'separation'
+  | 'regulations';
 
 export type NotificationCategory =
   | 'approval'

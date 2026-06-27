@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   LogOut,
   Bell,
+  BookOpenCheck,
 } from 'lucide-react';
 import type { NotificationModule } from '@/types/notifications';
 
@@ -40,6 +41,8 @@ export function NotificationIcon({ module, className = 'h-5 w-5' }: Notification
       return <AlertTriangle className={`${className} text-red-500`} />;
     case 'separation':
       return <LogOut className={`${className} text-slate-500`} />;
+    case 'regulations':
+      return <BookOpenCheck className={`${className} text-orange-500`} />;
     default:
       return <Bell className={`${className} text-slate-400`} />;
   }

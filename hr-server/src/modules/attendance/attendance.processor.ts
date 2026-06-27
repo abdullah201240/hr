@@ -54,19 +54,7 @@ export class AttendanceProcessor extends WorkerHost {
 
     this.logger.log(`Running daily attendance initialization for date: ${todayStr}`);
 
-    // 1. Check if logs are already generated for today
-    const existing = await this.db
-      .select({ id: attendanceLogs.id })
-      .from(attendanceLogs)
-      .where(eq(attendanceLogs.date, todayStr))
-      .limit(1);
-
-    if (existing.length > 0) {
-      this.logger.log(`Attendance logs already exist for today (${todayStr}) — skipping initialization`);
-      return { status: 'skipped', reason: 'already_initialized' };
-    }
-
-    // 2. Load active employees, settings (cached), and holidays
+    // 1. Load active employees, settings (cached), and holidays
     const [activeEmployees, settings, holiday] = await Promise.all([
       this.db
         .select({ id: employees.id })
@@ -85,6 +73,27 @@ export class AttendanceProcessor extends WorkerHost {
         .limit(1),
     ]);
 
+    if (activeEmployees.length === 0) {
+      this.logger.log('No active employees found to initialize attendance logs');
+      return { status: 'success', count: 0 };
+    }
+
+    // 2. Fetch existing logs for today to avoid overwriting pre-existing logs (e.g. approved leaves)
+    const existingLogs = await this.db
+      .select({ employeeId: attendanceLogs.employeeId })
+      .from(attendanceLogs)
+      .where(eq(attendanceLogs.date, todayStr));
+
+    const existingEmpIds = new Set(existingLogs.map((log) => log.employeeId));
+
+    // Filter employees who do not have logs initialized yet
+    const employeesToInitialize = activeEmployees.filter((emp) => !existingEmpIds.has(emp.id));
+
+    if (employeesToInitialize.length === 0) {
+      this.logger.log(`All active employees already have attendance logs for today (${todayStr})`);
+      return { status: 'skipped', reason: 'all_already_initialized' };
+    }
+
     const weeklyHolidays = settings.weeklyHolidays || ['Saturday', 'Sunday'];
 
     // 3. Determine today's default status
@@ -98,15 +107,10 @@ export class AttendanceProcessor extends WorkerHost {
       defaultStatus = 'weekend';
     }
 
-    if (activeEmployees.length === 0) {
-      this.logger.log('No active employees found to initialize attendance logs');
-      return { status: 'success', count: 0 };
-    }
-
     // 4. Chunked batch insert (200 per chunk to avoid large SQL statements)
     const CHUNK_SIZE = 200;
-    for (let i = 0; i < activeEmployees.length; i += CHUNK_SIZE) {
-      const chunk = activeEmployees.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < employeesToInitialize.length; i += CHUNK_SIZE) {
+      const chunk = employeesToInitialize.slice(i, i + CHUNK_SIZE);
       await this.db.insert(attendanceLogs).values(
         chunk.map((emp) => ({
           employeeId: emp.id,
@@ -118,7 +122,7 @@ export class AttendanceProcessor extends WorkerHost {
     }
 
     this.logger.log(
-      `Successfully initialized ${activeEmployees.length} attendance logs for today as status "${defaultStatus}"`,
+      `Successfully initialized ${employeesToInitialize.length} attendance logs for today as status "${defaultStatus}"`,
     );
 
     // 5. Schedule delayed jobs for auto-checkin and auto-checkout if it's a regular workday
@@ -149,7 +153,7 @@ export class AttendanceProcessor extends WorkerHost {
       }
     }
 
-    return { status: 'success', count: activeEmployees.length, defaultStatus };
+    return { status: 'success', count: employeesToInitialize.length, defaultStatus };
   }
 
   // ─── Auto Check-In ──────────────────────────────────────────────────────

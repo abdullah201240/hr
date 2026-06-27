@@ -858,12 +858,12 @@ export class PayrollService implements OnModuleInit {
       .from(employeePayslips)
       .where(eq(employeePayslips.payrollCycleId, cycle.id));
 
-    let totalDisbursed = 0;
+    const totalDisbursed = payslips.reduce((sum, slip) => sum + slip.netPay, 0);
     const employeeCount = payslips.length;
 
     await this.db.transaction(async (tx) => {
-      for (const slip of payslips) {
-        totalDisbursed += slip.netPay;
+      if (employeeCount > 0) {
+        // 1. Bulk update all payslips for this cycle in a single query
         await tx
           .update(employeePayslips)
           .set({
@@ -873,17 +873,19 @@ export class PayrollService implements OnModuleInit {
             paymentDate: dto.disbursementDate,
             paymentReference: dto.referenceId,
           })
-          .where(eq(employeePayslips.id, slip.id));
+          .where(eq(employeePayslips.payrollCycleId, cycle.id));
 
+        // 2. Bulk insert approvals in a single query
         if (userId) {
-          await tx.insert(payrollApprovals).values({
+          const approvalsToInsert = payslips.map((slip) => ({
             payrollCycleId: cycle.id,
             employeePayslipId: slip.id,
-            stage: 'Accounts',
+            stage: 'Accounts' as const,
             status: 'Approved',
             comment: `Disbursed via ${dto.paymentMethod} (Ref: ${dto.referenceId})`,
             actionById: userId,
-          });
+          }));
+          await tx.insert(payrollApprovals).values(approvalsToInsert);
         }
       }
 
@@ -1743,25 +1745,85 @@ export class PayrollService implements OnModuleInit {
       .from(employeePayslips)
       .where(eq(employeePayslips.payrollCycleId, cycle.id));
 
-    let approvedCount = 0;
+    if (payslips.length === 0) {
+      return {
+        success: true,
+        message: 'No payslips found to approve',
+      };
+    }
+
+    // Fetch all relevant employee managers in one single batch query (resolves N+1 query)
+    const employeeIds = payslips.map((p) => p.employeeId);
+    const empsList = await this.db
+      .select({ id: employees.id, lineManagerId: employees.lineManagerId })
+      .from(employees)
+      .where(inArray(employees.id, employeeIds));
+
+    const empMap = new Map(empsList.map((e) => [e.id, e]));
+
+    const lmApprovedIds: string[] = [];
+    const mdApprovedIds: string[] = [];
+    const approvalsToInsert: any[] = [];
 
     for (const payslip of payslips) {
-      const [emp] = await this.db
-        .select({ lineManagerId: employees.lineManagerId })
-        .from(employees)
-        .where(eq(employees.id, payslip.employeeId))
-        .limit(1);
-
+      const emp = empMap.get(payslip.employeeId);
       const isSubordinate = emp?.lineManagerId === userId;
 
       if (payslip.status === 'Awaiting_LM_Approval' && (isSubordinate || isLM)) {
-        await this.approvePayslip(payslip.id, userId);
-        approvedCount++;
+        lmApprovedIds.push(payslip.id);
+        approvalsToInsert.push({
+          payrollCycleId: cycle.id,
+          employeePayslipId: payslip.id,
+          stage: 'LineManager' as const,
+          status: 'Approved',
+          actionById: userId,
+        });
       } else if (payslip.status === 'Awaiting_MD_Approval' && isMD) {
-        await this.approvePayslip(payslip.id, userId);
-        approvedCount++;
+        mdApprovedIds.push(payslip.id);
+        approvalsToInsert.push({
+          payrollCycleId: cycle.id,
+          employeePayslipId: payslip.id,
+          stage: 'MD' as const,
+          status: 'Approved',
+          actionById: userId,
+        });
       }
     }
+
+    const approvedCount = lmApprovedIds.length + mdApprovedIds.length;
+
+    if (approvedCount > 0) {
+      await this.db.transaction(async (tx) => {
+        if (lmApprovedIds.length > 0) {
+          await tx
+            .update(employeePayslips)
+            .set({
+              status: 'Awaiting_MD_Approval',
+              lmApprovedById: userId,
+              lmApprovedAt: new Date(),
+            })
+            .where(inArray(employeePayslips.id, lmApprovedIds));
+        }
+
+        if (mdApprovedIds.length > 0) {
+          await tx
+            .update(employeePayslips)
+            .set({
+              status: 'Awaiting_Disbursement',
+              mdApprovedById: userId,
+              mdApprovedAt: new Date(),
+            })
+            .where(inArray(employeePayslips.id, mdApprovedIds));
+        }
+
+        await tx.insert(payrollApprovals).values(approvalsToInsert);
+
+        // Update cycle status using transaction context
+        await this.bubbleCycleStatus(cycle.id, tx);
+      });
+    }
+
+    await this.invalidateCache(monthKey);
 
     return {
       success: true,
@@ -1782,8 +1844,9 @@ export class PayrollService implements OnModuleInit {
     return result ? result.lineManagerId === userId : false;
   }
 
-  private async bubbleCycleStatus(cycleId: string) {
-    const payslips = await this.db
+  private async bubbleCycleStatus(cycleId: string, tx?: any) {
+    const db = tx || this.db;
+    const payslips = await db
       .select({
         id: employeePayslips.id,
         status: employeePayslips.status,
@@ -1793,18 +1856,18 @@ export class PayrollService implements OnModuleInit {
 
     if (payslips.length === 0) return;
 
-    const hasRejected = payslips.some(p => p.status === 'Rejected');
+    const hasRejected = payslips.some((p: any) => p.status === 'Rejected');
     if (hasRejected) {
-      await this.db
+      await db
         .update(payrollCycles)
         .set({ status: 'Draft' })
         .where(eq(payrollCycles.id, cycleId));
       return;
     }
 
-    const allDisbursed = payslips.every(p => p.status === 'Disbursed');
+    const allDisbursed = payslips.every((p: any) => p.status === 'Disbursed');
     if (allDisbursed) {
-      await this.db
+      await db
         .update(payrollCycles)
         .set({ status: 'Disbursed' })
         .where(eq(payrollCycles.id, cycleId));
@@ -1812,10 +1875,10 @@ export class PayrollService implements OnModuleInit {
     }
 
     const allAwaitingDisbursement = payslips.every(
-      p => p.status === 'Awaiting_Disbursement' || p.status === 'Disbursed'
+      (p: any) => p.status === 'Awaiting_Disbursement' || p.status === 'Disbursed'
     );
     if (allAwaitingDisbursement) {
-      await this.db
+      await db
         .update(payrollCycles)
         .set({ status: 'Awaiting_Disbursement' })
         .where(eq(payrollCycles.id, cycleId));
@@ -1823,17 +1886,17 @@ export class PayrollService implements OnModuleInit {
     }
 
     const allAwaitingMD = payslips.every(
-      p => p.status === 'Awaiting_MD_Approval' || p.status === 'Awaiting_Disbursement' || p.status === 'Disbursed'
+      (p: any) => p.status === 'Awaiting_MD_Approval' || p.status === 'Awaiting_Disbursement' || p.status === 'Disbursed'
     );
     if (allAwaitingMD) {
-      await this.db
+      await db
         .update(payrollCycles)
         .set({ status: 'Awaiting_MD_Approval' })
         .where(eq(payrollCycles.id, cycleId));
       return;
     }
 
-    await this.db
+    await db
       .update(payrollCycles)
       .set({ status: 'Awaiting_LM_Approval' })
       .where(eq(payrollCycles.id, cycleId));

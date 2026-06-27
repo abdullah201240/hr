@@ -1302,14 +1302,27 @@ export class TasksService {
       hoursByTask.set(dto.taskId, (hoursByTask.get(dto.taskId) || 0) + addedHours);
     }
 
-    // Batch update actualHours per task
-    for (const [taskId, addedHours] of hoursByTask) {
-      const [task] = await this.db.select({ actualHours: tasks.actualHours }).from(tasks).where(eq(tasks.id, taskId)).limit(1);
-      await this.db
-        .update(tasks)
-        .set({ actualHours: Number(task?.actualHours || 0) + addedHours })
-        .where(eq(tasks.id, taskId));
-      this.broadcastMutation('task_updated', taskId);
+    // Batch update actualHours per task (resolves N+1 select queries)
+    const taskIdsToUpdate = Array.from(hoursByTask.keys());
+    if (taskIdsToUpdate.length > 0) {
+      const targetTasks = await this.db
+        .select({ id: tasks.id, actualHours: tasks.actualHours })
+        .from(tasks)
+        .where(inArray(tasks.id, taskIdsToUpdate));
+
+      const taskMap = new Map(targetTasks.map((t) => [t.id, t]));
+
+      await this.db.transaction(async (tx) => {
+        for (const [taskId, addedHours] of hoursByTask) {
+          const task = taskMap.get(taskId);
+          const currentHours = Number(task?.actualHours || 0);
+          await tx
+            .update(tasks)
+            .set({ actualHours: currentHours + addedHours })
+            .where(eq(tasks.id, taskId));
+          this.broadcastMutation('task_updated', taskId);
+        }
+      });
     }
 
     return entries;
