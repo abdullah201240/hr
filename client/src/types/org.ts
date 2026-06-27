@@ -166,6 +166,7 @@ export interface Employee {
   employeeType: string;
   joinDate: string;
   lineManagerId: string | null;
+  lineManagerName?: string | null;
   status: string;
   inactiveDate: string | null;
   role: string;

@@ -22,6 +22,9 @@ import {
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys, resolveKey } from '../../common/cache/cache-keys';
+import { alias } from 'drizzle-orm/pg-core';
+
+const lineManager = alias(employees, 'line_manager');
 import {
   EMPLOYEE_CREATE_QUEUE,
   EMPLOYEE_UPDATE_QUEUE,
@@ -305,11 +308,14 @@ export class EmployeeService {
           inactiveDate: employees.inactiveDate,
           isSalary: employees.isSalary,
           employeePhotoUrl: employees.employeePhotoUrl,
+          lineManagerId: employees.lineManagerId,
+          lineManagerName: lineManager.fullNameEnglish,
           createdAt: employees.createdAt,
         })
         .from(employees)
         .leftJoin(departments, eq(employees.departmentId, departments.id))
         .leftJoin(designations, eq(employees.designationId, designations.id))
+        .leftJoin(lineManager, eq(employees.lineManagerId, lineManager.id))
         .where(where)
         .orderBy(orderFn(sortCol))
         .limit(limit)

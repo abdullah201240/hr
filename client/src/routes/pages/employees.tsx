@@ -366,6 +366,7 @@ export default function EmployeesPage() {
                 </TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Department</TableHead>
                 <TableHead className="font-semibold text-xs text-muted-foreground">Designation</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Line Manager</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Phone</TableHead>
                 <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">
                   <button
@@ -384,7 +385,7 @@ export default function EmployeesPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-48 text-center border-b-0">
+                  <TableCell colSpan={11} className="h-48 text-center border-b-0">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                       <p className="text-xs text-muted-foreground">Loading employees...</p>
@@ -393,7 +394,7 @@ export default function EmployeesPage() {
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-48 text-center border-b-0">
+                  <TableCell colSpan={11} className="h-48 text-center border-b-0">
                     <p className="text-sm text-destructive font-medium">
                       Error loading records: {error.message}
                     </p>
@@ -401,7 +402,7 @@ export default function EmployeesPage() {
                 </TableRow>
               ) : employeesList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-32 text-center border-b-0">
+                  <TableCell colSpan={11} className="h-32 text-center border-b-0">
                     <p className="text-sm text-muted-foreground">No employees found matching query.</p>
                   </TableCell>
                 </TableRow>
@@ -442,6 +443,9 @@ export default function EmployeesPage() {
                     </TableCell>
                     <TableCell className="py-3">
                       <span className="text-xs text-muted-foreground">{emp.designationName || "—"}</span>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <span className="text-xs font-medium text-foreground">{emp.lineManagerName || "—"}</span>
                     </TableCell>
                     <TableCell className="hidden md:table-cell py-3">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

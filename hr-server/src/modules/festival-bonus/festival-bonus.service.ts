@@ -561,25 +561,52 @@ export class FestivalBonusService {
       throw new BadRequestException('Cannot submit an empty cycle register for approval');
     }
 
-    // Update cycle status
-    await this.db
-      .update(festivalBonusCycles)
-      .set({ status: 'Awaiting_LM_Approval', updatedAt: new Date() })
-      .where(eq(festivalBonusCycles.id, id));
-
-    // Update payouts status
-    await this.db
-      .update(employeeFestivalBonuses)
-      .set({
-        status: 'Awaiting_LM_Approval',
-        rejectionReason: null,
+    // Get employee manager information for dynamic routing
+    const employeeDetails = await this.db
+      .select({
+        payoutId: employeeFestivalBonuses.id,
+        lineManagerId: employees.lineManagerId,
       })
+      .from(employeeFestivalBonuses)
+      .leftJoin(employees, eq(employeeFestivalBonuses.employeeId, employees.id))
       .where(
         and(
           eq(employeeFestivalBonuses.festivalBonusCycleId, id),
           eq(employeeFestivalBonuses.isEligible, true),
         ),
       );
+
+    const lmPayoutIds = employeeDetails.filter(e => e.lineManagerId).map(e => e.payoutId);
+    const mdPayoutIds = employeeDetails.filter(e => !e.lineManagerId).map(e => e.payoutId);
+
+    const nextCycleStatus = lmPayoutIds.length > 0 ? 'Awaiting_LM_Approval' : 'Awaiting_MD_Approval';
+
+    // Update cycle status
+    await this.db
+      .update(festivalBonusCycles)
+      .set({ status: nextCycleStatus, updatedAt: new Date() })
+      .where(eq(festivalBonusCycles.id, id));
+
+    // Update payouts status
+    if (lmPayoutIds.length > 0) {
+      await this.db
+        .update(employeeFestivalBonuses)
+        .set({
+          status: 'Awaiting_LM_Approval',
+          rejectionReason: null,
+        })
+        .where(inArray(employeeFestivalBonuses.id, lmPayoutIds));
+    }
+
+    if (mdPayoutIds.length > 0) {
+      await this.db
+        .update(employeeFestivalBonuses)
+        .set({
+          status: 'Awaiting_MD_Approval',
+          rejectionReason: null,
+        })
+        .where(inArray(employeeFestivalBonuses.id, mdPayoutIds));
+    }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
     await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);

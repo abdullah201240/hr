@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
-import { usePermissions } from "@/hooks/usePermissions"
 import {
   useFestivalCyclesQuery,
   useFestivalCycleDetailsQuery,
@@ -26,7 +25,6 @@ export function LineManagerFestivalBonusApprovalsTab({
   employees = [],
 }: LineManagerFestivalBonusApprovalsTabProps) {
   const { user } = useAuthStore()
-  const { hasPermission } = usePermissions()
 
   const { data: cycles = [], isLoading: isCyclesLoading } = useFestivalCyclesQuery()
 
@@ -53,10 +51,9 @@ export function LineManagerFestivalBonusApprovalsTab({
     return payouts.filter((p) => {
       if (p.status !== "Awaiting_LM_Approval") return false
       const empInfo = employees.find((e) => e.id === p.employeeId)
-      const isLineManager = empInfo?.lineManagerId === user?.id
-      return isLineManager || hasPermission("payroll:approve_lm")
+      return empInfo?.lineManagerId === user?.id
     })
-  }, [payouts, employees, user, hasPermission])
+  }, [payouts, employees, user])
 
   const handleApprove = (payout: any) => {
     Swal.fire({

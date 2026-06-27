@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Eye, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import type { Payslip, PayrollCycle } from "@/types/salary"
 import { useAuthStore } from "@/store/useAuthStore"
-import { usePermissions } from "@/hooks/usePermissions"
 import { useApprovePayslipMutation, useRejectPayslipMutation, useBulkApprovePayrollMutation } from "@/hooks/usePayroll"
 import Swal from "sweetalert2"
 
@@ -32,7 +31,6 @@ export function LineManagerApprovalsTab({
   employees = [],
 }: LineManagerApprovalsTabProps) {
   const { user } = useAuthStore()
-  const { hasPermission } = usePermissions()
   const approvePayslipMutation = useApprovePayslipMutation()
   const rejectPayslipMutation = useRejectPayslipMutation()
   const bulkApproveMutation = useBulkApprovePayrollMutation()
@@ -40,15 +38,14 @@ export function LineManagerApprovalsTab({
   const payslipsList = cycle?.payslips || []
 
   // Filter payslips that are in Awaiting_LM_Approval status
-  // and the logged-in user is the line manager of the employee OR has the global approve_lm permission.
+  // and the logged-in user is the line manager of the employee.
   const eligiblePayslips = useMemo(() => {
     return payslipsList.filter((p) => {
       if (p.status !== "Awaiting_LM_Approval") return false
       const empInfo = employees.find((e) => e.id === p.employeeId)
-      const isLineManager = empInfo?.lineManagerId === user?.id
-      return isLineManager || hasPermission("payroll:approve_lm")
+      return empInfo?.lineManagerId === user?.id
     })
-  }, [payslipsList, employees, user, hasPermission])
+  }, [payslipsList, employees, user])
 
   const handleApprovePayslip = (payslip: Payslip) => {
     Swal.fire({
