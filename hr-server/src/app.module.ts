@@ -24,6 +24,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { ProvidentFundModule } from './modules/provident-fund/provident-fund.module';
 import { LoansModule } from './modules/loans/loans.module';
+import { AssetsModule } from './modules/assets/assets.module';
 import { SalaryModule } from './modules/salary/salary.module';
 import { ClaimsModule } from './modules/claims/claims.module';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
@@ -103,6 +104,7 @@ import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor
     AnnouncementsModule,
     ProvidentFundModule,
     LoansModule,
+    AssetsModule,
     SalaryModule,
     ClaimsModule,
     RecruitmentModule,

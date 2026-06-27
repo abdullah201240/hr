@@ -174,6 +174,18 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
   { resource: 'regulations', action: 'view_team', description: 'View team regulation requests (Line Manager)' },
   { resource: 'regulations', action: 'view_all', description: 'View all regulation requests (Admin/HR)' },
   { resource: 'regulations', action: 'approve', description: 'Final approval of regulation requests' },
+
+  // Employee Loans
+  { resource: 'loans', action: 'read', description: 'Read employee loan requests and ledgers' },
+  { resource: 'loans', action: 'process', description: 'Approve, reject or disburse employee loans' },
+  { resource: 'loans', action: 'payments', description: 'Record manual payment logs for loans' },
+
+  // IT Assets
+  { resource: 'assets', action: 'create', description: 'Register new hardware assets' },
+  { resource: 'assets', action: 'read', description: 'View company asset ledger' },
+  { resource: 'assets', action: 'allocate', description: 'Allocate assets to employees' },
+  { resource: 'assets', action: 'return', description: 'Process returned hardware assets' },
+  { resource: 'assets', action: 'condition', description: 'Update physical asset condition' },
 ];
 
 @Injectable()

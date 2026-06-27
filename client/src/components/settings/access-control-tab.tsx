@@ -40,6 +40,8 @@ const formatResourceName = (resource: string) => {
     dashboard: "Executive Dashboard",
     regulations: "Office Regulations",
     bonus: "Festival Bonus",
+    loans: "Employee Loans",
+    assets: "IT Asset Inventory",
   };
   const key = resource.toLowerCase();
   if (customMap[key]) return customMap[key];

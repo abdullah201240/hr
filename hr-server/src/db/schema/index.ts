@@ -28,3 +28,4 @@ export * from './office-regulations';
 export * from './office-regulations-relations';
 export * from './festival-bonus';
 export * from './loans';
+export * from './assets';

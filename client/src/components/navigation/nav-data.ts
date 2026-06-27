@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   Banknote,
   Coins,
+  Cpu,
 } from "lucide-react"
 
 import type { NavGroup } from "@/types"
@@ -182,6 +183,11 @@ export const navGroups: NavGroup[] = [
             title: "Loans & Advances",
             href: "/payroll/loans",
             icon: Coins,
+          },
+          {
+            title: "IT Asset Inventory",
+            href: "/payroll/assets",
+            icon: Cpu,
           },
           {
             title: "Disbursement Logs",

@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { eq, and, or, like, desc, between, sql } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
@@ -13,6 +13,7 @@ import {
   payrollCycles,
   rolePermissions,
   permissions,
+  assets,
 } from '../../db/schema';
 import { CreateSeparationDto, UpdateSeparationDto, SeparationQueryDto } from './dto/separation.dto';
 import { CalculateSettlementDto } from './dto/settlement.dto';
@@ -96,6 +97,27 @@ export class SeparationService {
     }
 
     const clearanceIt = dto.clearanceIt !== undefined ? dto.clearanceIt : existing.clearanceIt;
+
+    if (clearanceIt) {
+      const [emp] = await this.db
+        .select()
+        .from(employees)
+        .where(eq(employees.email, existing.employeeEmail))
+        .limit(1);
+
+      if (emp) {
+        const activeAssets = await this.db
+          .select()
+          .from(assets)
+          .where(and(eq(assets.assignedToId, emp.id), eq(assets.status, 'Assigned')));
+
+        if (activeAssets.length > 0) {
+          throw new BadRequestException(
+            `Cannot give IT clearance: Employee still has ${activeAssets.length} active allocated assets: ${activeAssets.map((a) => a.name).join(', ')}`
+          );
+        }
+      }
+    }
     const clearanceFinance = dto.clearanceFinance !== undefined ? dto.clearanceFinance : existing.clearanceFinance;
     const clearanceHr = dto.clearanceHr !== undefined ? dto.clearanceHr : existing.clearanceHr;
     const clearanceManager = dto.clearanceManager !== undefined ? dto.clearanceManager : existing.clearanceManager;

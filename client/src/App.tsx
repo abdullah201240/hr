@@ -29,6 +29,7 @@ const PayrollEmployeeSalaryPage = lazy(() => import("@/routes/pages/payroll-empl
 const PayrollProcessingPage = lazy(() => import("@/routes/pages/payroll-processing"))
 const PayrollProvidentFundPage = lazy(() => import("@/routes/pages/payroll-provident-fund"))
 const PayrollLoansPage = lazy(() => import("@/routes/pages/payroll-loans"))
+const PayrollAssetsPage = lazy(() => import("@/routes/pages/payroll-assets"))
 const PayrollDisbursementLogsPage = lazy(() => import("@/routes/pages/payroll-disbursement-logs"))
 const PayrollFestivalBonusPage = lazy(() => import("@/routes/pages/payroll-festival-bonus"))
 const DepartmentsPage = lazy(() => import("@/routes/pages/departments"))
@@ -131,6 +132,7 @@ function App() {
                   <Route path="documents" element={<DocumentsPage />} />
                   <Route path="payroll/provident-fund" element={<PayrollProvidentFundPage />} />
                   <Route path="payroll/loans" element={<PayrollLoansPage />} />
+                  <Route path="payroll/assets" element={<PayrollAssetsPage />} />
 
                   {/* Employee profile view: employees can view own profile (OwnerOnly guard on backend) */}
                   <Route path="employees/view/:id" element={<ViewEmployeePage />} />

@@ -158,6 +158,24 @@ export class RolesGuard implements CanActivate {
       }
     }
 
+    // Allow employees to query/interact with their own assigned assets or report condition (self-service)
+    if (
+      resource === 'assets' &&
+      (req.method === 'GET' || (req.method === 'PATCH' && lastSegment === 'condition'))
+    ) {
+      return true;
+    }
+
+    // Allow IT/HR/Admin to manage asset allocations, returns, and conditions
+    if (resource === 'assets') {
+      if (
+        userPermissions.has('employees:update') ||
+        userPermissions.has('payroll:process')
+      ) {
+        return true;
+      }
+    }
+
     // Check direct permission
     if (userPermissions.has(`${resource}:${action}`)) {
       return true;
