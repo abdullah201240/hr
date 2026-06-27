@@ -28,6 +28,7 @@ const PayrollDisbursementPage = lazy(() => import("@/routes/pages/payroll-disbur
 const PayrollEmployeeSalaryPage = lazy(() => import("@/routes/pages/payroll-employee-salary"))
 const PayrollProcessingPage = lazy(() => import("@/routes/pages/payroll-processing"))
 const PayrollProvidentFundPage = lazy(() => import("@/routes/pages/payroll-provident-fund"))
+const PayrollLoansPage = lazy(() => import("@/routes/pages/payroll-loans"))
 const PayrollDisbursementLogsPage = lazy(() => import("@/routes/pages/payroll-disbursement-logs"))
 const PayrollFestivalBonusPage = lazy(() => import("@/routes/pages/payroll-festival-bonus"))
 const DepartmentsPage = lazy(() => import("@/routes/pages/departments"))
@@ -128,6 +129,8 @@ function App() {
                   <Route path="departments/view/:id" element={<ViewDepartmentPage />} />
                   <Route path="designations/view/:id" element={<ViewDesignationPage />} />
                   <Route path="documents" element={<DocumentsPage />} />
+                  <Route path="payroll/provident-fund" element={<PayrollProvidentFundPage />} />
+                  <Route path="payroll/loans" element={<PayrollLoansPage />} />
 
                   {/* Employee profile view: employees can view own profile (OwnerOnly guard on backend) */}
                   <Route path="employees/view/:id" element={<ViewEmployeePage />} />
@@ -160,7 +163,6 @@ function App() {
                     <Route path="payroll" element={<PayrollPage />} />
                     <Route path="payroll/employee-salary" element={<PayrollEmployeeSalaryPage />} />
                     <Route path="payroll/processing" element={<PayrollProcessingPage />} />
-                    <Route path="payroll/provident-fund" element={<PayrollProvidentFundPage />} />
                     <Route path="payroll/disbursement-logs" element={<PayrollDisbursementLogsPage />} />
                     <Route path="payroll/festival-bonus" element={<PayrollFestivalBonusPage />} />
                     <Route path="recruitment" element={<RecruitmentPage />} />

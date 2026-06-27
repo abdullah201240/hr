@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
-import { eq, and, or, sql, asc, not, inArray, between, lte, gte } from 'drizzle-orm';
+import { eq, and, or, sql, asc, desc, not, inArray, between, lte, gte } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   payrollCycles,
@@ -20,6 +20,8 @@ import {
   payrollApprovals,
   permissions,
   rolePermissions,
+  loans,
+  loanPayments,
 } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
@@ -562,6 +564,9 @@ export class PayrollService implements OnModuleInit {
           }
         }
 
+        // Apply active loan EMI deductions
+        await this.injectLoanDeduction(emp.id, calc.deductions);
+
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
         // Calculate overtime
@@ -915,6 +920,51 @@ export class PayrollService implements OnModuleInit {
         if (pfTransactionsToInsert.length > 0) {
           await tx.insert(providentFundTransactions).values(pfTransactionsToInsert);
         }
+
+        // --- NEW: Process Loan Deductions & record payments ---
+        for (const slip of payslips) {
+          const deductionsRecord = (slip.deductions as Record<string, number>) || {};
+          const loanDeduction = deductionsRecord['Loan Installment'] || 0;
+          if (loanDeduction > 0) {
+            // Find active/disbursed loans for this employee
+            const empLoans = await tx
+              .select()
+              .from(loans)
+              .where(and(eq(loans.employeeId, slip.employeeId), eq(loans.status, 'Disbursed')))
+              .orderBy(desc(loans.createdAt));
+
+            let remainingDeductionToApply = loanDeduction;
+            for (const empLoan of empLoans) {
+              if (remainingDeductionToApply <= 0) break;
+              const applyAmount = Math.min(remainingDeductionToApply, empLoan.remainingBalance);
+              if (applyAmount > 0) {
+                const newBalance = Math.max(0, empLoan.remainingBalance - applyAmount);
+                const finalStatus = newBalance <= 0 ? 'Repaid' : 'Disbursed';
+
+                await tx
+                  .insert(loanPayments)
+                  .values({
+                    loanId: empLoan.id,
+                    payslipId: slip.id,
+                    amount: applyAmount,
+                    paymentDate: new Date(dto.disbursementDate),
+                    paymentMethod: 'Salary Deduction',
+                    remarks: `Auto-deducted from payslip of cycle ${dto.monthKey}`,
+                  });
+
+                await tx
+                  .update(loans)
+                  .set({
+                    remainingBalance: newBalance,
+                    status: finalStatus,
+                  })
+                  .where(eq(loans.id, empLoan.id));
+
+                remainingDeductionToApply -= applyAmount;
+              }
+            }
+          }
+        }
       }
 
       await tx.insert(disbursements).values({
@@ -937,6 +987,26 @@ export class PayrollService implements OnModuleInit {
 
     await this.invalidateCache(dto.monthKey);
     return this.getOrCreateCycle(dto.monthKey);
+  }
+
+  private async injectLoanDeduction(employeeId: string, calcDeductions: Record<string, number>) {
+    const activeLoans = await this.db
+      .select()
+      .from(loans)
+      .where(and(eq(loans.employeeId, employeeId), eq(loans.status, 'Disbursed')));
+
+    if (activeLoans.length > 0) {
+      let totalLoanDeduction = 0;
+      for (const activeLoan of activeLoans) {
+        const emi = Math.min(activeLoan.monthlyInstallment, activeLoan.remainingBalance);
+        if (emi > 0) {
+          totalLoanDeduction += emi;
+        }
+      }
+      if (totalLoanDeduction > 0) {
+        calcDeductions['Loan Installment'] = totalLoanDeduction;
+      }
+    }
   }
 
   private async triggerPayrollDistributionNotifications(cycleId: string, monthKey: string) {
@@ -1367,6 +1437,9 @@ export class PayrollService implements OnModuleInit {
         // Add manual adjustments to new calculation
         Object.assign(calc.allowances, preservedAllowances);
         Object.assign(calc.deductions, preservedDeductions);
+
+        // Apply active loan EMI deductions
+        await this.injectLoanDeduction(emp.id, calc.deductions);
 
         const deductionsSum = Object.values(calc.deductions || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 

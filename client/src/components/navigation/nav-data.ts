@@ -28,6 +28,7 @@ import {
   ClipboardCheck,
   ShieldCheck,
   Banknote,
+  Coins,
 } from "lucide-react"
 
 import type { NavGroup } from "@/types"
@@ -176,7 +177,11 @@ export const navGroups: NavGroup[] = [
             title: "Provident Fund (PF)",
             href: "/payroll/provident-fund",
             icon: PiggyBank,
-            permissions: ["payroll:read"],
+          },
+          {
+            title: "Loans & Advances",
+            href: "/payroll/loans",
+            icon: Coins,
           },
           {
             title: "Disbursement Logs",

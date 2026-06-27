@@ -137,6 +137,27 @@ export class RolesGuard implements CanActivate {
       }
     }
 
+    // Allow employees to view/request their own loans (self-service)
+    if (
+      resource === 'loans' &&
+      (req.method === 'GET' || (req.method === 'POST' && lastSegment === 'loans'))
+    ) {
+      return true;
+    }
+
+    // Allow HR/Admin/Finance to process, disburse, or record loan payments
+    if (
+      resource === 'loans' &&
+      (action === 'process' || lastSegment === 'disburse' || lastSegment === 'payments')
+    ) {
+      if (
+        userPermissions.has('salary:update') ||
+        userPermissions.has('payroll:process')
+      ) {
+        return true;
+      }
+    }
+
     // Check direct permission
     if (userPermissions.has(`${resource}:${action}`)) {
       return true;
