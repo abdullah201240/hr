@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
+import { useAttendanceSettingsQuery, useHolidaysQuery } from "@/hooks/useAttendanceSettings"
+import { useLeaveTypesQuery } from "@/hooks/useLeaveTypes"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -128,6 +130,10 @@ export function ApplyLeaveDialog({
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const { data: attendanceSettingsData } = useAttendanceSettingsQuery()
+  const { data: holidaysData = [] } = useHolidaysQuery()
+  const { data: leaveTypesResponse } = useLeaveTypesQuery({ limit: 100 })
 
   // Reset when dialog opens
   useEffect(() => {
@@ -352,7 +358,39 @@ export function ApplyLeaveDialog({
     const start = new Date(startDate)
     const end = new Date(endDate)
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0
-    return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+
+    const rawDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+
+    const selectedLeaveType = leaveTypesResponse?.data?.find((lt) => lt.id === leaveTypeId)
+    if (!selectedLeaveType || selectedLeaveType.sandwichRule) {
+      return rawDays
+    }
+
+    const weeklyHolidays = attendanceSettingsData?.weeklyHolidays || ["Saturday", "Sunday"]
+
+    let activeDays = 0
+    const current = new Date(start)
+    while (current <= end) {
+      const dayName = current.toLocaleDateString("en-US", { weekday: "long" })
+      const isWeeklyHoliday = weeklyHolidays.includes(dayName)
+
+      const year = current.getFullYear()
+      const month = String(current.getMonth() + 1).padStart(2, "0")
+      const dateVal = String(current.getDate()).padStart(2, "0")
+      const formattedCurrent = `${year}-${month}-${dateVal}`
+
+      const isPublicHoliday = holidaysData.some((h) =>
+        formattedCurrent >= h.startDate && formattedCurrent <= h.endDate
+      )
+
+      if (!isWeeklyHoliday && !isPublicHoliday) {
+        activeDays++
+      }
+
+      current.setDate(current.getDate() + 1)
+    }
+
+    return activeDays
   }
 
   const formatDateDisplay = (dateStr: string) => {

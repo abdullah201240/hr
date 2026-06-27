@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { eq, and, between, desc, asc, count, sum, inArray, or } from 'drizzle-orm';
+import { eq, and, between, desc, asc, count, sum, inArray, or, lte, gte } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../db';
-import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments, rolePermissions, permissions, attendanceSettings } from '../../db/schema';
+import { leaveApplications, leaveTypes, employees, attendanceLogs, leaveAttachments, rolePermissions, permissions, attendanceSettings, holidays } from '../../db/schema';
 import { NotificationService } from '../notifications/notifications.service';
 import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
@@ -170,6 +170,66 @@ export class LeaveApplicationService {
     return new Date(Date.UTC(year, month - 1, day));
   }
 
+  private async calculateLeaveDays(start: Date, end: Date, leaveTypeId: string, tx: any): Promise<number> {
+    const [leaveType] = await tx
+      .select()
+      .from(leaveTypes)
+      .where(eq(leaveTypes.id, leaveTypeId))
+      .limit(1);
+
+    if (!leaveType) {
+      throw new NotFoundException(`Leave type with ID "${leaveTypeId}" not found`);
+    }
+
+    const timeDiff = end.getTime() - start.getTime();
+    const totalRawDays = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+
+    if (leaveType.sandwichRule) {
+      return totalRawDays;
+    }
+
+    // Query weekly holidays
+    const [attSettings] = await tx
+      .select()
+      .from(attendanceSettings)
+      .limit(1);
+
+    const weeklyHolidays = attSettings?.weeklyHolidays || ['Saturday', 'Sunday'];
+
+    // Query public holidays overlapping
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
+    const overlappingHolidays = await tx
+      .select()
+      .from(holidays)
+      .where(
+        and(
+          lte(holidays.startDate, endStr),
+          gte(holidays.endDate, startStr)
+        )
+      );
+
+    let activeDays = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      const dayName = current.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+      const isWeeklyHoliday = weeklyHolidays.includes(dayName);
+
+      const formattedCurrent = current.toISOString().split('T')[0];
+      const isPublicHoliday = overlappingHolidays.some((h: any) =>
+        formattedCurrent >= h.startDate && formattedCurrent <= h.endDate
+      );
+
+      if (!isWeeklyHoliday && !isPublicHoliday) {
+        activeDays++;
+      }
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+
+    return activeDays;
+  }
+
   // ─── Create Leave Application ─────────────────────────────────────────────
   async create(employeeId: string, dto: CreateLeaveApplicationDto) {
     const start = this.parseDateUTC(dto.startDate);
@@ -212,6 +272,12 @@ export class LeaveApplicationService {
         throw new BadRequestException('This leave type is currently inactive');
       }
 
+      // Calculate actual working days excluding weekends and holidays
+      const actualDays = await this.calculateLeaveDays(start, end, leaveType.id, tx);
+      if (actualDays <= 0) {
+        throw new BadRequestException('The requested leave period consists entirely of weekends and public holidays.');
+      }
+
       // 2.5 Verify single day duration for Early Out, Movement, and Late Arrival
       const lowerLeaveTypeName = leaveType.name.toLowerCase();
       if (
@@ -241,9 +307,9 @@ export class LeaveApplicationService {
       const balances = await this.getLeaveBalancesInternal(tx, employeeId, startYear, startMonth);
       const balance = balances.find((b: any) => b.id === leaveType.id);
 
-      if (balance && (balance.total - balance.used) < days) {
+      if (balance && (balance.total - balance.used) < actualDays) {
         throw new BadRequestException(
-          `Insufficient balance. You requested ${days} days, but only have ${balance.total - balance.used} days remaining.`,
+          `Insufficient balance. You requested ${actualDays} days, but only have ${balance.total - balance.used} days remaining.`,
         );
       }
 
@@ -272,7 +338,7 @@ export class LeaveApplicationService {
           leaveTypeId: dto.leaveTypeId,
           startDate: dto.startDate,
           endDate: dto.endDate,
-          days,
+          days: actualDays,
           reason: dto.reason,
           status: 'Pending',
         })
@@ -894,6 +960,11 @@ export class LeaveApplicationService {
         throw new NotFoundException(`Leave type with ID "${targetLeaveTypeId}" not found`);
       }
 
+      const actualDays = await this.calculateLeaveDays(start, end, targetLeaveTypeId, tx);
+      if (actualDays <= 0) {
+        throw new BadRequestException('The requested leave period consists entirely of weekends and public holidays.');
+      }
+
       const lowerLeaveTypeName = leaveType.name.toLowerCase();
       if (
         (lowerLeaveTypeName.includes('early out') ||
@@ -909,7 +980,7 @@ export class LeaveApplicationService {
       const updateData: Record<string, any> = {
         startDate: dto.startDate || app.startDate,
         endDate: dto.endDate || app.endDate,
-        days,
+        days: actualDays,
         reason: dto.reason !== undefined ? dto.reason : app.reason,
         status: 'Pending', // Resubmitted applications reset to Pending
       };
