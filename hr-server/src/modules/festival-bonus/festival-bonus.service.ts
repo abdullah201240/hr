@@ -8,6 +8,9 @@ import {
   employees,
   employeeSalaries,
   salaryTemplateComponents,
+  customRoles,
+  rolePermissions,
+  permissions,
 } from '../../db/schema';
 import { CreateFestivalBonusCycleDto } from './dto/create-cycle.dto';
 import { UpdateFestivalBonusPayoutDto } from './dto/update-payout.dto';
@@ -15,6 +18,8 @@ import { DisburseFestivalBonusCycleDto } from './dto/disburse-cycle.dto';
 import { UpdateFestivalBonusSettingsDto } from './dto/festival-bonus-settings.dto';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationModule, NotificationCategory } from '../notifications/types/notification.types';
 
 const SINGLETON_ID = 'default';
 
@@ -25,7 +30,44 @@ export class FestivalBonusService {
   constructor(
     @Inject(DB_CONNECTION) private readonly db: Database,
     private readonly cache: CacheService,
+    private readonly notificationService: NotificationService,
   ) {}
+
+  private async notifyByPermission(
+    resource: string,
+    action: string,
+    title: string,
+    message: string,
+    url: string,
+  ) {
+    try {
+      const authorizedUsers = await this.db
+        .select({ id: employees.id })
+        .from(employees)
+        .innerJoin(rolePermissions, eq(rolePermissions.roleKey, employees.customRoleId))
+        .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+        .where(
+          and(
+            eq(permissions.resource, resource),
+            eq(permissions.action, action),
+          ),
+        );
+
+      if (authorizedUsers.length > 0) {
+        const dtos = authorizedUsers.map(user => ({
+          recipientId: user.id,
+          module: NotificationModule.PAYROLL,
+          category: NotificationCategory.APPROVAL,
+          title,
+          message,
+          actionUrl: url,
+        }));
+        await this.notificationService.emitBulk(dtos);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to send permission-based notifications for ${resource}:${action}: ${err.message}`);
+    }
+  }
 
   // ─── Settings ──────────────────────────────────────────────────────────────
 
@@ -133,6 +175,8 @@ export class FestivalBonusService {
         paymentMethod: employeeFestivalBonuses.paymentMethod,
         paymentRef: employeeFestivalBonuses.paymentRef,
         paidAt: employeeFestivalBonuses.paidAt,
+        rejectionReason: employeeFestivalBonuses.rejectionReason,
+        comments: employeeFestivalBonuses.comments,
       })
       .from(employeeFestivalBonuses)
       .innerJoin(employees, eq(employeeFestivalBonuses.employeeId, employees.id))
@@ -224,6 +268,11 @@ export class FestivalBonusService {
 
     const updates: Partial<typeof employeeFestivalBonuses.$inferInsert> = {};
 
+    if (payout.status === 'Rejected') {
+      updates.status = 'Calculated';
+      updates.rejectionReason = null;
+    }
+
     if (dto.specialApprovalGranted !== undefined) {
       updates.specialApprovalGranted = dto.specialApprovalGranted;
       if (dto.specialApprovalGranted) {
@@ -304,8 +353,8 @@ export class FestivalBonusService {
       throw new NotFoundException(`Festival Cycle not found`);
     }
 
-    if (cycle.status !== 'Approved') {
-      throw new BadRequestException('Only Approved cycles can be disbursed');
+    if (cycle.status !== 'Awaiting_Disbursement') {
+      throw new BadRequestException('Only cycles in Awaiting_Disbursement status can be disbursed');
     }
 
     const payDate = new Date(dto.disbursementDate);
@@ -336,6 +385,33 @@ export class FestivalBonusService {
       })
       .where(eq(festivalBonusCycles.id, id))
       .returning();
+
+    // Notify all eligible employees that their bonus is paid
+    try {
+      const paidPayouts = await this.db
+        .select()
+        .from(employeeFestivalBonuses)
+        .where(
+          and(
+            eq(employeeFestivalBonuses.festivalBonusCycleId, id),
+            eq(employeeFestivalBonuses.isEligible, true),
+          ),
+        );
+
+      if (paidPayouts.length > 0) {
+        const dtos = paidPayouts.map((payout) => ({
+          recipientId: payout.employeeId,
+          module: NotificationModule.PAYROLL,
+          category: NotificationCategory.STATUS_CHANGE,
+          title: 'Festival Bonus Disbursed',
+          message: `Your festival bonus of ৳${payout.finalAmount.toLocaleString()} has been disbursed via ${dto.paymentMethod}.`,
+          actionUrl: '/payroll/festival-bonus',
+        }));
+        await this.notificationService.emitBulk(dtos);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to send disbursement notifications: ${err.message}`);
+    }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
     await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
@@ -611,6 +687,49 @@ export class FestivalBonusService {
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
     await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
 
+    // Notify Line Managers who have subordinate payouts in this cycle
+    if (lmPayoutIds.length > 0) {
+      try {
+        const managers = await this.db
+          .selectDistinct({ lineManagerId: employees.lineManagerId })
+          .from(employeeFestivalBonuses)
+          .innerJoin(employees, eq(employeeFestivalBonuses.employeeId, employees.id))
+          .where(
+            and(
+              eq(employeeFestivalBonuses.festivalBonusCycleId, id),
+              eq(employeeFestivalBonuses.isEligible, true),
+              eq(employeeFestivalBonuses.status, 'Awaiting_LM_Approval'),
+            ),
+          );
+
+        const managerIds = managers.map(m => m.lineManagerId).filter(Boolean) as string[];
+        if (managerIds.length > 0) {
+          const dtos = managerIds.map(mId => ({
+            recipientId: mId,
+            module: NotificationModule.PAYROLL,
+            category: NotificationCategory.APPROVAL,
+            title: 'Festival Bonus LM Approval Required',
+            message: `Festival bonus cycle "${cycle.name}" has been submitted and subordinate payouts require your approval.`,
+            actionUrl: '/payroll/lm-approvals?tab=bonus',
+          }));
+          await this.notificationService.emitBulk(dtos);
+        }
+      } catch (err: any) {
+        this.logger.error(`Failed to notify Line Managers: ${err.message}`);
+      }
+    }
+
+    // If there are managerless payouts going directly to MD, notify the MDs
+    if (mdPayoutIds.length > 0 && lmPayoutIds.length === 0) {
+      await this.notifyByPermission(
+        'bonus',
+        'approve_md',
+        'Festival Bonus MD Approval Required',
+        `Festival bonus cycle "${cycle.name}" has been submitted and payouts require your final approval.`,
+        '/payroll/md-approvals?tab=bonus',
+      );
+    }
+
     return this.getCycleById(id);
   }
 
@@ -648,6 +767,22 @@ export class FestivalBonusService {
         .update(festivalBonusCycles)
         .set({ status: 'Awaiting_MD_Approval', updatedAt: new Date() })
         .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+
+      const [cycle] = await this.db
+        .select()
+        .from(festivalBonusCycles)
+        .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId))
+        .limit(1);
+
+      if (cycle) {
+        await this.notifyByPermission(
+          'bonus',
+          'approve_md',
+          'Festival Bonus MD Approval Required',
+          `All subordinate approvals have been signed off for cycle "${cycle.name}". Final MD sign-off is required.`,
+          '/payroll/md-approvals?tab=bonus',
+        );
+      }
     }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
@@ -682,6 +817,22 @@ export class FestivalBonusService {
       .update(festivalBonusCycles)
       .set({ status: 'Draft', updatedAt: new Date() })
       .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+
+    const [cycle] = await this.db
+      .select()
+      .from(festivalBonusCycles)
+      .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId))
+      .limit(1);
+
+    if (cycle) {
+      await this.notifyByPermission(
+        'bonus',
+        'process',
+        'Festival Payout Rejected',
+        `A payout in cycle "${cycle.name}" was rejected by Line Manager. Reason: ${comment}`,
+        '/payroll/festival-bonus',
+      );
+    }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
     await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
@@ -734,6 +885,14 @@ export class FestivalBonusService {
         .update(festivalBonusCycles)
         .set({ status: 'Awaiting_MD_Approval', updatedAt: new Date() })
         .where(eq(festivalBonusCycles.id, cycleId));
+
+      await this.notifyByPermission(
+        'bonus',
+        'approve_md',
+        'Festival Bonus MD Approval Required',
+        `All subordinate approvals have been signed off for cycle "${cycle.name}". Final MD sign-off is required.`,
+        '/payroll/md-approvals?tab=bonus',
+      );
     }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, cycleId);
@@ -776,6 +935,22 @@ export class FestivalBonusService {
         .update(festivalBonusCycles)
         .set({ status: 'Awaiting_Disbursement', updatedAt: new Date() })
         .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+
+      const [cycle] = await this.db
+        .select()
+        .from(festivalBonusCycles)
+        .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId))
+        .limit(1);
+
+      if (cycle) {
+        await this.notifyByPermission(
+          'bonus',
+          'disburse',
+          'Festival Bonus Disbursement Ready',
+          `Festival bonus cycle "${cycle.name}" has received final MD approval and is ready for payment disbursement.`,
+          '/payroll/disbursement?tab=bonus',
+        );
+      }
     }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
@@ -810,6 +985,22 @@ export class FestivalBonusService {
       .update(festivalBonusCycles)
       .set({ status: 'Draft', updatedAt: new Date() })
       .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+
+    const [cycle] = await this.db
+      .select()
+      .from(festivalBonusCycles)
+      .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId))
+      .limit(1);
+
+    if (cycle) {
+      await this.notifyByPermission(
+        'bonus',
+        'process',
+        'Festival Payout Rejected',
+        `A payout in cycle "${cycle.name}" was rejected by Managing Director. Reason: ${comment}`,
+        '/payroll/festival-bonus',
+      );
+    }
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
     await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
@@ -849,9 +1040,86 @@ export class FestivalBonusService {
       .set({ status: 'Awaiting_Disbursement', updatedAt: new Date() })
       .where(eq(festivalBonusCycles.id, cycleId));
 
+    await this.notifyByPermission(
+      'bonus',
+      'disburse',
+      'Festival Bonus Disbursement Ready',
+      `Festival bonus cycle "${cycle.name}" has received final MD approval and is ready for payment disbursement.`,
+      '/payroll/disbursement?tab=bonus',
+    );
+
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, cycleId);
     await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
 
     return this.getCycleById(cycleId);
+  }
+
+  async addPayoutComment(payoutId: string, userId: string, text: string) {
+    const [payout] = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.id, payoutId))
+      .limit(1);
+
+    if (!payout) {
+      throw new NotFoundException(`Payout not found`);
+    }
+
+    const [user] = await this.db
+      .select({ fullNameEnglish: employees.fullNameEnglish })
+      .from(employees)
+      .where(eq(employees.id, userId))
+      .limit(1);
+
+    const userName = user?.fullNameEnglish || 'Unknown User';
+
+    const currentComments = (payout.comments || []) as Array<{
+      authorId: string;
+      authorName: string;
+      text: string;
+      createdAt: string;
+    }>;
+
+    const newComment = {
+      authorId: userId,
+      authorName: userName,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedComments = [...currentComments, newComment];
+
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({ comments: updatedComments })
+      .where(eq(employeeFestivalBonuses.id, payoutId));
+
+    // Invalidate details cache
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
+
+    const [cycle] = await this.db
+      .select({ name: festivalBonusCycles.name })
+      .from(festivalBonusCycles)
+      .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId))
+      .limit(1);
+
+    if (cycle) {
+      const [emp] = await this.db
+        .select({ fullNameEnglish: employees.fullNameEnglish })
+        .from(employees)
+        .where(eq(employees.id, payout.employeeId))
+        .limit(1);
+      const empName = emp?.fullNameEnglish || 'Employee';
+
+      await this.notifyByPermission(
+        'bonus',
+        'process',
+        'New Payout Note/Comment Added',
+        `${userName} added a note on ${empName}'s payout: "${text}"`,
+        '/payroll/festival-bonus',
+      );
+    }
+
+    return this.getCycleById(payout.festivalBonusCycleId);
   }
 }

@@ -195,3 +195,14 @@ export function useBulkApproveFestivalMdMutation() {
     },
   });
 }
+
+export function useAddFestivalPayoutCommentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, { payoutId: string; cycleId: string; text: string }>({
+    mutationFn: ({ payoutId, text }) => apiClient.post(`festival-bonus/payouts/${payoutId}/comments`, { text }),
+    onSuccess: (_, { cycleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", cycleId] });
+    },
+  });
+}

@@ -204,6 +204,8 @@ export interface FestivalBonusPayout {
   eligibilityReason: string | null;
   specialApprovalGranted: boolean;
   status: 'Draft' | 'Calculated' | 'Paid' | 'Awaiting_LM_Approval' | 'Awaiting_MD_Approval' | 'Awaiting_Disbursement' | 'Rejected';
+  rejectionReason?: string | null;
+  comments?: Array<{ authorId: string; authorName: string; text: string; createdAt: string }> | null;
   paymentMethod: string | null;
   paymentRef: string | null;
   paidAt: string | null;

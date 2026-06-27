@@ -1,0 +1,1 @@
+ALTER TABLE "employee_festival_bonuses" ADD COLUMN "comments" jsonb DEFAULT '[]'::jsonb NOT NULL;

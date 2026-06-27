@@ -15,9 +15,11 @@ import {
   CreditCard,
   Percent,
   Loader2,
+  MessageSquare,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Swal from "sweetalert2"
+import { PayoutCommentsDialog } from "@/components/payroll/PayoutCommentsDialog"
 import {
   useFestivalCyclesQuery,
   useFestivalCycleDetailsQuery,
@@ -30,6 +32,7 @@ import {
   useSubmitFestivalCycleForApprovalMutation,
 } from "@/hooks/useFestivalBonus"
 import { toast } from "sonner"
+import type { FestivalBonusPayout } from "@/types"
 
 const FORMULA_LABELS: Record<string, string> = {
   one_month_basic: "One Month Basic",
@@ -56,6 +59,13 @@ export default function PayrollFestivalBonusPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isDisburseOpen, setIsDisburseOpen] = useState(false)
   const [isOverrideOpen, setIsOverrideOpen] = useState(false)
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false)
+  const [activePayoutForComments, setActivePayoutForComments] = useState<FestivalBonusPayout | null>(null)
+
+  const openCommentsDialog = (payout: FestivalBonusPayout) => {
+    setActivePayoutForComments(payout)
+    setIsCommentsOpen(true)
+  }
 
   // Form states
   const [newCycleName, setNewCycleName] = useState("")
@@ -452,6 +462,11 @@ export default function PayrollFestivalBonusPage() {
                             <td className="p-3">
                               <div className="font-semibold text-foreground">{pay.employeeName}</div>
                               <div className="text-[10px] text-muted-foreground">{pay.employeeCode}</div>
+                              {pay.status === "Rejected" && pay.rejectionReason && (
+                                <div className="text-[9px] text-rose-500 font-semibold mt-1 bg-rose-500/5 border border-rose-500/10 rounded px-1.5 py-0.5 inline-block max-w-[180px] truncate" title={pay.rejectionReason}>
+                                  Rejected: {pay.rejectionReason}
+                                </div>
+                              )}
                             </td>
                             <td className="p-3">{pay.employeeType}</td>
                             <td className="p-3">{new Date(pay.joinDate).toLocaleDateString()}</td>
@@ -498,9 +513,39 @@ export default function PayrollFestivalBonusPage() {
                                       Adjust
                                     </Button>
                                   )}
+                                  <Button
+                                    onClick={() => openCommentsDialog(pay)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary relative"
+                                    title="View collaboration notes"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    {pay.comments && pay.comments.length > 0 && (
+                                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
+                                        {pay.comments.length}
+                                      </span>
+                                    )}
+                                  </Button>
                                 </div>
                               ) : (
-                                <span className="text-[10px] text-muted-foreground">{pay.status}</span>
+                                <div className="flex gap-2 justify-end items-center">
+                                  <span className="text-[10px] text-muted-foreground">{pay.status}</span>
+                                  <Button
+                                    onClick={() => openCommentsDialog(pay)}
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary relative"
+                                    title="View collaboration notes"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    {pay.comments && pay.comments.length > 0 && (
+                                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
+                                        {pay.comments.length}
+                                      </span>
+                                    )}
+                                  </Button>
+                                </div>
                               )}
                             </td>
                           </tr>
@@ -662,6 +707,20 @@ export default function PayrollFestivalBonusPage() {
           </Card>
         </div>
       )}
+      {/* ─── Comments Dialog ─── */}
+      <PayoutCommentsDialog
+        isOpen={isCommentsOpen}
+        onClose={() => {
+          setIsCommentsOpen(false)
+          setActivePayoutForComments(null)
+        }}
+        payout={
+          activePayoutForComments
+            ? payouts.find((p) => p.id === activePayoutForComments.id) || activePayoutForComments
+            : null
+        }
+        cycleId={selectedCycleId}
+      />
     </div>
   )
 }

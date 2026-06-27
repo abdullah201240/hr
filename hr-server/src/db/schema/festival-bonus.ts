@@ -55,6 +55,10 @@ export const employeeFestivalBonuses = pgTable('employee_festival_bonuses', {
   paymentMethod: varchar('payment_method', { length: 50 }),
   paymentRef: varchar('payment_ref', { length: 100 }),
   paidAt: timestamp('paid_at', { withTimezone: true }),
+  comments: jsonb('comments')
+    .default([])
+    .notNull()
+    .$type<Array<{ authorId: string; authorName: string; text: string; createdAt: string }>>(),
 }, (table) => ({
   cycleIdx: index('emp_fb_cycle_idx').on(table.festivalBonusCycleId),
   employeeIdx: index('emp_fb_employee_idx').on(table.employeeId),

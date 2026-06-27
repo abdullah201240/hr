@@ -7,3 +7,10 @@ export class RejectPayoutDto {
   @IsNotEmpty()
   comment!: string;
 }
+
+export class AddPayoutCommentDto {
+  @ApiProperty({ example: 'Tenure needs double check' })
+  @IsString()
+  @IsNotEmpty()
+  text!: string;
+}

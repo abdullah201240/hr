@@ -20,7 +20,7 @@ import { UpdateFestivalBonusSettingsDto } from './dto/festival-bonus-settings.dt
 import { CreateFestivalBonusCycleDto } from './dto/create-cycle.dto';
 import { UpdateFestivalBonusPayoutDto } from './dto/update-payout.dto';
 import { DisburseFestivalBonusCycleDto } from './dto/disburse-cycle.dto';
-import { RejectPayoutDto } from './dto/approval.dto';
+import { RejectPayoutDto, AddPayoutCommentDto } from './dto/approval.dto';
 import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Festival Bonus')
@@ -166,5 +166,17 @@ export class FestivalBonusController {
   @ApiOperation({ summary: 'MD bulk approve cycle payouts' })
   async bulkApproveMD(@Param('id', ParseUUIDPipe) id: string) {
     return this.festivalBonusService.bulkApproveMD(id);
+  }
+
+  @Post('payouts/:payoutId/comments')
+  @Permissions('bonus:read', 'bonus:process', 'bonus:approve_lm', 'bonus:approve_md')
+  @ApiOperation({ summary: 'Add a note/comment to a payout' })
+  async addComment(
+    @Param('payoutId', ParseUUIDPipe) payoutId: string,
+    @Body() dto: AddPayoutCommentDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.festivalBonusService.addPayoutComment(payoutId, userId, dto.text);
   }
 }

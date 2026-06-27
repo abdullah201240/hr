@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { CheckCircle, AlertCircle, Loader2, MessageSquare } from "lucide-react"
 import { usePermissions } from "@/hooks/usePermissions"
 import {
   useFestivalCyclesQuery,
@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useFestivalBonus"
 import Swal from "sweetalert2"
 import { toast } from "sonner"
+import { PayoutCommentsDialog } from "./PayoutCommentsDialog"
 
 interface MdFestivalBonusApprovalsTabProps {
   formatCurrency: (amount: number) => string
@@ -48,6 +49,14 @@ export function MdFestivalBonusApprovalsTab({
   const eligiblePayouts = useMemo(() => {
     return payouts.filter((p) => p.status === "Awaiting_MD_Approval")
   }, [payouts])
+
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false)
+  const [activePayoutForComments, setActivePayoutForComments] = useState<any>(null)
+
+  const openCommentsDialog = (payout: any) => {
+    setActivePayoutForComments(payout)
+    setIsCommentsOpen(true)
+  }
 
   const handleApprove = (payout: any) => {
     Swal.fire({
@@ -253,6 +262,20 @@ export function MdFestivalBonusApprovalsTab({
                         >
                           Reject
                         </Button>
+                        <Button
+                          onClick={() => openCommentsDialog(pay)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary relative rounded-md border border-border/40 hover:bg-muted/10"
+                          title="View collaboration notes"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          {pay.comments && pay.comments.length > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
+                              {pay.comments.length}
+                            </span>
+                          )}
+                        </Button>
                       </div>
                     )}
                   </TableCell>
@@ -262,6 +285,20 @@ export function MdFestivalBonusApprovalsTab({
           </Table>
         )}
       </CardContent>
+      {/* ─── Comments Dialog ─── */}
+      <PayoutCommentsDialog
+        isOpen={isCommentsOpen}
+        onClose={() => {
+          setIsCommentsOpen(false)
+          setActivePayoutForComments(null)
+        }}
+        payout={
+          activePayoutForComments
+            ? payouts.find((p) => p.id === activePayoutForComments.id) || activePayoutForComments
+            : null
+        }
+        cycleId={activeCycleId}
+      />
     </Card>
   )
 }
