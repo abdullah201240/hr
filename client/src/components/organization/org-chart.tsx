@@ -489,6 +489,30 @@ export default function OrgChart() {
 
   return (
     <div className="flex flex-col gap-3 h-[calc(100vh-200px)]">
+      {/* Status Banner */}
+      <div className={cn(
+        "p-3 rounded-lg border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm",
+        tree?.isRealData
+          ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600"
+          : "bg-amber-500/5 border-amber-500/10 text-amber-600"
+      )}>
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "h-2 w-2 rounded-full",
+            tree?.isRealData ? "bg-emerald-600 animate-pulse" : "bg-amber-500"
+          )} />
+          <p className="font-semibold text-foreground">
+            {tree?.isRealData ? "Live Reporting Hierarchy Enabled" : "Displaying Sample Org Chart"}
+          </p>
+          <span className="text-muted-foreground hidden sm:inline">|</span>
+          <p className="text-muted-foreground text-[10px]">
+            {tree?.isRealData
+              ? "This chart is dynamically compiled from reporting relationship profiles."
+              : "No active employees are configured. Set up designations and manager lines to enable live syncing."}
+          </p>
+        </div>
+      </div>
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">

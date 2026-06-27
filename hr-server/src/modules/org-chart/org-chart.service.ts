@@ -353,8 +353,8 @@ export class OrgChartService {
         employeePhotoUrl: employees.employeePhotoUrl,
       })
       .from(employees)
-      .innerJoin(designations, eq(employees.designationId, designations.id))
-      .innerJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
       .where(eq(employees.status, 'active'));
 
     if (list.length === 0) {
@@ -363,15 +363,16 @@ export class OrgChartService {
 
     // Map database active employees to OrgNode structure
     const nodes = list.map(emp => {
-      // Pick color based on department or fallback to Engineering
-      const deptColor = DEPT_COLORS[emp.department] || DEPT_COLORS["Engineering"] || "bg-gradient-to-br from-blue-500 to-indigo-600";
+      const deptName = emp.department || 'Operations';
+      // Pick color based on department or fallback
+      const deptColor = DEPT_COLORS[deptName] || DEPT_COLORS["Operations"] || "bg-gradient-to-br from-slate-500 to-zinc-600";
       return {
         id: emp.id,
         parentId: emp.parentId || undefined,
         personName: emp.personName,
-        title: emp.title,
-        department: emp.department,
-        grade: emp.grade,
+        title: emp.title || 'Associate',
+        department: deptName,
+        grade: emp.grade || 'L1',
         headcount: 0, // Computed below
         openRoles: 0,
         avatarColor: deptColor,
