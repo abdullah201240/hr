@@ -11,8 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Gift, ArrowRight } from "lucide-react"
-import { useAuthStore } from "@/store/useAuthStore"
+import { Gift, ArrowRight } from "lucide-react"
 import { useNavigate } from "react-router"
 
 function formatCurrency(amount: number): string {
@@ -30,31 +29,12 @@ function formatCurrency(amount: number): string {
 
 export default function CeoDashboardPage() {
   const { data, isLoading } = useExecutiveDashboardQuery()
-  const { user } = useAuthStore()
+
   const navigate = useNavigate()
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* CEO Welcome Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 p-6 sm:p-8 text-white shadow-md border border-indigo-500/20">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white/10 blur-xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 -mb-6 -ml-6 h-24 w-24 rounded-full bg-white/10 blur-lg" />
-        
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-semibold tracking-wider uppercase text-blue-100">
-              <Sparkles className="h-3 w-3 animate-pulse text-yellow-300" />
-              Executive Dashboard
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight">
-              Hello, {user?.fullNameEnglish || 'Executive'}
-            </h1>
-            <p className="text-sm text-indigo-100/90 max-w-xl leading-relaxed">
-              Here is your central control center. Monitor total workforce productivity, attendance ratios, recruitment pipelines, and payroll health live.
-            </p>
-          </div>
-        </div>
-      </div>
+     
 
       {/* KPI Metric Cards */}
       <KpiMetricCards data={data} isLoading={isLoading} />
