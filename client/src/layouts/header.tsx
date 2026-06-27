@@ -34,12 +34,27 @@ import { useTheme } from "@/hooks/use-theme"
 import { UserAvatar } from "@/components/common/user-avatar"
 import { navGroups } from "@/components/navigation/nav-data"
 
+// Pre-compile routes title map for instant O(1) lookup
+const routeTitleMap = new Map<string, string>()
+navGroups.forEach((group) => {
+  group.items.forEach((item) => {
+    routeTitleMap.set(item.href, item.title)
+    if (item.items) {
+      item.items.forEach((sub) => {
+        routeTitleMap.set(sub.href, sub.title)
+      })
+    }
+  })
+})
+
 function getPageTitle(pathname: string): string {
-  for (const group of navGroups) {
-    for (const item of group.items) {
-      if (item.href === pathname || (item.href !== "/" && pathname.startsWith(item.href))) {
-        return item.title
-      }
+  const exactMatch = routeTitleMap.get(pathname)
+  if (exactMatch) return exactMatch
+
+  // Fallback prefix match for dynamic nested sub-pages
+  for (const [route, title] of routeTitleMap.entries()) {
+    if (route !== "/" && pathname.startsWith(route)) {
+      return title
     }
   }
   return "Dashboard"
