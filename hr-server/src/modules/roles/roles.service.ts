@@ -31,6 +31,14 @@ const SYSTEM_PERMISSIONS: PermissionSeed[] = [
   { resource: 'payroll', action: 'approve_lm', description: 'Stage 1: Line Manager Approval' },
   { resource: 'payroll', action: 'approve_md', description: 'Stage 2: Managing Director Approval' },
 
+  // Festival Bonus
+  { resource: 'bonus', action: 'create', description: 'Create and configure festival bonus cycles' },
+  { resource: 'bonus', action: 'read', description: 'Read festival bonus registers and history' },
+  { resource: 'bonus', action: 'process', description: 'Process bonus calculations and adjustments' },
+  { resource: 'bonus', action: 'approve_lm', description: 'Line Manager approval for subordinates bonus' },
+  { resource: 'bonus', action: 'approve_md', description: 'MD final approval for festival bonus' },
+  { resource: 'bonus', action: 'disburse', description: 'Disburse festival bonus funds' },
+
   // Leave Management
   { resource: 'leave', action: 'apply', description: 'Apply for leave requests' },
   { resource: 'leave', action: 'create', description: 'Create leave types and configurations' },

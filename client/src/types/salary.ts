@@ -180,7 +180,7 @@ export interface FestivalBonusCycle {
   id: string;
   name: string;
   festivalDate: string;
-  status: 'Draft' | 'Approved' | 'Disbursed';
+  status: 'Draft' | 'Approved' | 'Disbursed' | 'Awaiting_LM_Approval' | 'Awaiting_MD_Approval' | 'Awaiting_Disbursement';
   totalAmount: number;
   totalEmployees: number;
   createdAt: string;
@@ -203,7 +203,7 @@ export interface FestivalBonusPayout {
   isEligible: boolean;
   eligibilityReason: string | null;
   specialApprovalGranted: boolean;
-  status: 'Calculated' | 'Paid';
+  status: 'Draft' | 'Calculated' | 'Paid' | 'Awaiting_LM_Approval' | 'Awaiting_MD_Approval' | 'Awaiting_Disbursement' | 'Rejected';
   paymentMethod: string | null;
   paymentRef: string | null;
   paidAt: string | null;

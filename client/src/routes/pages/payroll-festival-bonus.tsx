@@ -24,10 +24,10 @@ import {
   useCreateFestivalCycleMutation,
   useRecalculateFestivalCycleMutation,
   useUpdateFestivalPayoutMutation,
-  useApproveFestivalCycleMutation,
   useDisburseFestivalCycleMutation,
   useDeleteFestivalCycleMutation,
   useFestivalBonusSettingsQuery,
+  useSubmitFestivalCycleForApprovalMutation,
 } from "@/hooks/useFestivalBonus"
 import { toast } from "sonner"
 
@@ -48,9 +48,9 @@ export default function PayrollFestivalBonusPage() {
   const createCycleMutation = useCreateFestivalCycleMutation()
   const recalculateCycleMutation = useRecalculateFestivalCycleMutation()
   const updatePayoutMutation = useUpdateFestivalPayoutMutation()
-  const approveCycleMutation = useApproveFestivalCycleMutation()
   const disburseCycleMutation = useDisburseFestivalCycleMutation()
   const deleteCycleMutation = useDeleteFestivalCycleMutation()
+  const submitForApprovalMutation = useSubmitFestivalCycleForApprovalMutation()
 
   // Modal / Dialog local states
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -166,28 +166,30 @@ export default function PayrollFestivalBonusPage() {
     })
   }
 
-  const handleApprove = () => {
+
+
+  const handleSubmitForApproval = () => {
     if (!selectedCycleId) return
     Swal.fire({
-      title: "Approve Register?",
-      text: "Are you sure you want to lock the calculations and approve this festival bonus register?",
+      title: "Submit for Approval?",
+      text: "Are you sure you want to submit this festival bonus register for Line Manager approvals?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Yes, Approve",
+      confirmButtonText: "Yes, Submit",
       cancelButtonText: "Cancel",
       buttonsStyling: false,
       customClass: {
-        confirmButton: "swal2-confirm swal2-styled bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        confirmButton: "swal2-confirm swal2-styled bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
         cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
       },
     }).then((res) => {
       if (res.isConfirmed) {
-        approveCycleMutation.mutate(selectedCycleId, {
+        submitForApprovalMutation.mutate(selectedCycleId, {
           onSuccess: () => {
-            toast.success("Festival register approved.")
+            toast.success("Festival register submitted for Line Manager approvals.")
           },
           onError: (err) => {
-            toast.error(err.message || "Failed to approve.")
+            toast.error(err.message || "Failed to submit.")
           },
         })
       }
@@ -306,9 +308,12 @@ export default function PayrollFestivalBonusPage() {
                       variant="outline"
                       className={cn(
                         "text-[9px] px-1.5 py-0 border-none font-bold",
-                        cy.status === "Disbursed" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500",
-                        cy.status === "Approved" && "bg-blue-500/10 text-blue-600 dark:text-blue-500",
-                        cy.status === "Draft" && "bg-amber-500/10 text-amber-600 dark:text-amber-500"
+                         cy.status === "Disbursed" && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500",
+                         cy.status === "Approved" && "bg-blue-500/10 text-blue-600 dark:text-blue-500",
+                         cy.status === "Awaiting_LM_Approval" && "bg-amber-500/10 text-amber-600 dark:text-amber-500",
+                         cy.status === "Awaiting_MD_Approval" && "bg-indigo-500/10 text-indigo-600 dark:text-indigo-500",
+                         cy.status === "Awaiting_Disbursement" && "bg-blue-500/10 text-blue-600 dark:text-blue-500",
+                         cy.status === "Draft" && "bg-amber-500/10 text-amber-600 dark:text-amber-500"
                       )}
                     >
                       {cy.status}
@@ -386,8 +391,8 @@ export default function PayrollFestivalBonusPage() {
                         <Button onClick={handleRecalculate} variant="outline" size="sm" className="gap-1.5 h-8 text-[11px] hover:border-amber-500/40 hover:text-amber-600 hover:bg-amber-500/5">
                           <RefreshCw className="h-3 w-3" /> Recalculate
                         </Button>
-                        <Button onClick={handleApprove} variant="outline" size="sm" className="gap-1.5 h-8 text-[11px] border-emerald-600/30 text-emerald-600 dark:text-emerald-500 hover:bg-emerald-500/5">
-                          <CheckCircle className="h-3 w-3" /> Approve register
+                        <Button onClick={handleSubmitForApproval} variant="outline" size="sm" className="gap-1.5 h-8 text-[11px] border-primary/30 text-primary hover:bg-primary/5">
+                          <CheckCircle className="h-3 w-3" /> Submit for Approval
                         </Button>
                         <Button onClick={handleDelete} variant="ghost" size="sm" className="gap-1.5 h-8 text-[11px] text-rose-500 hover:text-rose-600 hover:bg-rose-500/5">
                           <Trash2 className="h-3.5 w-3.5" /> Delete
@@ -395,7 +400,19 @@ export default function PayrollFestivalBonusPage() {
                       </>
                     )}
 
-                    {activeCycle?.status === "Approved" && (
+                    {activeCycle?.status === "Awaiting_LM_Approval" && (
+                      <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 font-bold text-xs py-1 px-3">
+                        Awaiting Line Manager Approvals
+                      </Badge>
+                    )}
+
+                    {activeCycle?.status === "Awaiting_MD_Approval" && (
+                      <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 border-indigo-500/20 font-bold text-xs py-1 px-3">
+                        Awaiting MD Approvals
+                      </Badge>
+                    )}
+
+                    {(activeCycle?.status === "Approved" || activeCycle?.status === "Awaiting_Disbursement") && (
                       <>
                         <Button onClick={() => setIsDisburseOpen(true)} className="gap-1.5 h-8 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-sm">
                           <CreditCard className="h-3 w-3" /> Disburse Register

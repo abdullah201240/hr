@@ -3,7 +3,9 @@ import { usePayrollCycleQuery, type Payslip } from "@/hooks/usePayroll"
 import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useProvidentFundSettingsQuery } from "@/hooks/useProvidentFund"
 import { MdApprovalsTab } from "@/components/payroll/MdApprovalsTab"
+import { MdFestivalBonusApprovalsTab } from "@/components/payroll/MdFestivalBonusApprovalsTab"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function PayrollMdApprovalsPage() {
   const monthsOptions = useMemo(() => {
@@ -38,16 +40,31 @@ export default function PayrollMdApprovalsPage() {
         <p className="text-muted-foreground text-sm">Final high-level monthly compensation approval and sign-off.</p>
       </div>
 
-      <MdApprovalsTab
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        cycle={cycle}
-        formatCurrency={formatCurrency}
-        setViewPayslip={setViewPayslip}
-        monthsOptions={monthsOptions}
-        isLoading={isCycleLoading}
-        employees={employees}
-      />
+      <Tabs defaultValue="salary" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="salary">Monthly Salaries</TabsTrigger>
+          <TabsTrigger value="bonus">Festival Bonuses</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="salary" className="mt-0">
+          <MdApprovalsTab
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            cycle={cycle}
+            formatCurrency={formatCurrency}
+            setViewPayslip={setViewPayslip}
+            monthsOptions={monthsOptions}
+            isLoading={isCycleLoading}
+            employees={employees}
+          />
+        </TabsContent>
+
+        <TabsContent value="bonus" className="mt-0">
+          <MdFestivalBonusApprovalsTab
+            formatCurrency={formatCurrency}
+          />
+        </TabsContent>
+      </Tabs>
 
       <DetailedPayslipDialog
         isOpen={viewPayslip !== null}

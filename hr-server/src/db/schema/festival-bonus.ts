@@ -47,6 +47,7 @@ export const employeeFestivalBonuses = pgTable('employee_festival_bonuses', {
   finalAmount: doublePrecision('final_amount').notNull(),
   isEligible: boolean('is_eligible').default(true).notNull(),
   eligibilityReason: varchar('eligibility_reason', { length: 255 }),
+  rejectionReason: varchar('rejection_reason', { length: 255 }),
   specialApprovalGranted: boolean('special_approval_granted').default(false).notNull(),
   specialApprovalBy: uuid('special_approval_by')
     .references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),

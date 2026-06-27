@@ -118,3 +118,80 @@ export function useDeleteFestivalCycleMutation() {
     },
   });
 }
+
+export function useSubmitFestivalCycleForApprovalMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, string>({
+    mutationFn: (id) => apiClient.post(`festival-bonus/cycles/${id}/submit-for-approval`),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", id] });
+    },
+  });
+}
+
+export function useApproveFestivalPayoutLmMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, { payoutId: string; cycleId: string }>({
+    mutationFn: ({ payoutId }) => apiClient.post(`festival-bonus/payouts/${payoutId}/approve-lm`),
+    onSuccess: (_, { cycleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", cycleId] });
+    },
+  });
+}
+
+export function useRejectFestivalPayoutLmMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, { payoutId: string; cycleId: string; comment: string }>({
+    mutationFn: ({ payoutId, comment }) => apiClient.post(`festival-bonus/payouts/${payoutId}/reject-lm`, { comment }),
+    onSuccess: (_, { cycleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", cycleId] });
+    },
+  });
+}
+
+export function useBulkApproveFestivalLmMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, string>({
+    mutationFn: (id) => apiClient.post(`festival-bonus/cycles/${id}/bulk-approve-lm`),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", id] });
+    },
+  });
+}
+
+export function useApproveFestivalPayoutMdMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, { payoutId: string; cycleId: string }>({
+    mutationFn: ({ payoutId }) => apiClient.post(`festival-bonus/payouts/${payoutId}/approve-md`),
+    onSuccess: (_, { cycleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", cycleId] });
+    },
+  });
+}
+
+export function useRejectFestivalPayoutMdMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, { payoutId: string; cycleId: string; comment: string }>({
+    mutationFn: ({ payoutId, comment }) => apiClient.post(`festival-bonus/payouts/${payoutId}/reject-md`, { comment }),
+    onSuccess: (_, { cycleId }) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", cycleId] });
+    },
+  });
+}
+
+export function useBulkApproveFestivalMdMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ cycle: FestivalBonusCycle; payouts: FestivalBonusPayout[] }, Error, string>({
+    mutationFn: (id) => apiClient.post(`festival-bonus/cycles/${id}/bulk-approve-md`),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["festivalCycles"] });
+      queryClient.invalidateQueries({ queryKey: ["festivalCycleDetails", id] });
+    },
+  });
+}

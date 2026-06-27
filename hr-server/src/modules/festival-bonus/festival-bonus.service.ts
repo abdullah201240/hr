@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import {
   festivalBonusSettings,
@@ -529,6 +529,297 @@ export class FestivalBonusService {
         totalEmployees,
         updatedAt: new Date(),
       })
+      .where(eq(festivalBonusCycles.id, cycleId));
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, cycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(cycleId);
+  }
+
+  async submitCycleForApproval(id: string) {
+    const [cycle] = await this.db
+      .select()
+      .from(festivalBonusCycles)
+      .where(eq(festivalBonusCycles.id, id))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Festival Cycle not found`);
+    }
+
+    if (cycle.status !== 'Draft') {
+      throw new BadRequestException('Only cycles in Draft status can be submitted for approval');
+    }
+
+    const payouts = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.festivalBonusCycleId, id));
+
+    if (payouts.length === 0) {
+      throw new BadRequestException('Cannot submit an empty cycle register for approval');
+    }
+
+    // Update cycle status
+    await this.db
+      .update(festivalBonusCycles)
+      .set({ status: 'Awaiting_LM_Approval', updatedAt: new Date() })
+      .where(eq(festivalBonusCycles.id, id));
+
+    // Update payouts status
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({
+        status: 'Awaiting_LM_Approval',
+        rejectionReason: null,
+      })
+      .where(
+        and(
+          eq(employeeFestivalBonuses.festivalBonusCycleId, id),
+          eq(employeeFestivalBonuses.isEligible, true),
+        ),
+      );
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, id);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(id);
+  }
+
+  async approvePayoutLM(payoutId: string) {
+    const [payout] = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.id, payoutId))
+      .limit(1);
+
+    if (!payout) {
+      throw new NotFoundException(`Payout not found`);
+    }
+
+    if (payout.status !== 'Awaiting_LM_Approval') {
+      throw new BadRequestException('Payout is not awaiting Line Manager approval');
+    }
+
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({ status: 'Awaiting_MD_Approval' })
+      .where(eq(employeeFestivalBonuses.id, payoutId));
+
+    // Check if all eligible payouts are now Awaiting_MD_Approval
+    const allPayouts = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.festivalBonusCycleId, payout.festivalBonusCycleId));
+
+    const eligible = allPayouts.filter(p => p.isEligible);
+    const allApprovedByLM = eligible.every(p => p.status === 'Awaiting_MD_Approval');
+
+    if (allApprovedByLM) {
+      await this.db
+        .update(festivalBonusCycles)
+        .set({ status: 'Awaiting_MD_Approval', updatedAt: new Date() })
+        .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+    }
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(payout.festivalBonusCycleId);
+  }
+
+  async rejectPayoutLM(payoutId: string, comment: string) {
+    const [payout] = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.id, payoutId))
+      .limit(1);
+
+    if (!payout) {
+      throw new NotFoundException(`Payout not found`);
+    }
+
+    if (payout.status !== 'Awaiting_LM_Approval') {
+      throw new BadRequestException('Payout is not awaiting Line Manager approval');
+    }
+
+    // Set payout status to Rejected
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({ status: 'Rejected', rejectionReason: comment })
+      .where(eq(employeeFestivalBonuses.id, payoutId));
+
+    // Revert cycle status to Draft
+    await this.db
+      .update(festivalBonusCycles)
+      .set({ status: 'Draft', updatedAt: new Date() })
+      .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(payout.festivalBonusCycleId);
+  }
+
+  async bulkApproveLM(cycleId: string, managerId: string) {
+    const [cycle] = await this.db
+      .select()
+      .from(festivalBonusCycles)
+      .where(eq(festivalBonusCycles.id, cycleId))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Cycle not found`);
+    }
+
+    // Find all subordinates
+    const subordinates = await this.db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(eq(employees.lineManagerId, managerId));
+
+    const subIds = subordinates.map(s => s.id);
+    if (subIds.length > 0) {
+      await this.db
+        .update(employeeFestivalBonuses)
+        .set({ status: 'Awaiting_MD_Approval' })
+        .where(
+          and(
+            eq(employeeFestivalBonuses.festivalBonusCycleId, cycleId),
+            eq(employeeFestivalBonuses.status, 'Awaiting_LM_Approval'),
+            inArray(employeeFestivalBonuses.employeeId, subIds),
+          ),
+        );
+    }
+
+    // Check if all eligible payouts are now Awaiting_MD_Approval
+    const allPayouts = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.festivalBonusCycleId, cycleId));
+
+    const eligible = allPayouts.filter(p => p.isEligible);
+    const allApprovedByLM = eligible.every(p => p.status === 'Awaiting_MD_Approval');
+
+    if (allApprovedByLM) {
+      await this.db
+        .update(festivalBonusCycles)
+        .set({ status: 'Awaiting_MD_Approval', updatedAt: new Date() })
+        .where(eq(festivalBonusCycles.id, cycleId));
+    }
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, cycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(cycleId);
+  }
+
+  async approvePayoutMD(payoutId: string) {
+    const [payout] = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.id, payoutId))
+      .limit(1);
+
+    if (!payout) {
+      throw new NotFoundException(`Payout not found`);
+    }
+
+    if (payout.status !== 'Awaiting_MD_Approval') {
+      throw new BadRequestException('Payout is not awaiting MD approval');
+    }
+
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({ status: 'Awaiting_Disbursement' })
+      .where(eq(employeeFestivalBonuses.id, payoutId));
+
+    // Check if all eligible payouts are now Awaiting_Disbursement
+    const allPayouts = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.festivalBonusCycleId, payout.festivalBonusCycleId));
+
+    const eligible = allPayouts.filter(p => p.isEligible);
+    const allApprovedByMD = eligible.every(p => p.status === 'Awaiting_Disbursement');
+
+    if (allApprovedByMD) {
+      await this.db
+        .update(festivalBonusCycles)
+        .set({ status: 'Awaiting_Disbursement', updatedAt: new Date() })
+        .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+    }
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(payout.festivalBonusCycleId);
+  }
+
+  async rejectPayoutMD(payoutId: string, comment: string) {
+    const [payout] = await this.db
+      .select()
+      .from(employeeFestivalBonuses)
+      .where(eq(employeeFestivalBonuses.id, payoutId))
+      .limit(1);
+
+    if (!payout) {
+      throw new NotFoundException(`Payout not found`);
+    }
+
+    if (payout.status !== 'Awaiting_MD_Approval') {
+      throw new BadRequestException('Payout is not awaiting MD approval');
+    }
+
+    // Set payout status to Rejected
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({ status: 'Rejected', rejectionReason: comment })
+      .where(eq(employeeFestivalBonuses.id, payoutId));
+
+    // Revert cycle status to Draft
+    await this.db
+      .update(festivalBonusCycles)
+      .set({ status: 'Draft', updatedAt: new Date() })
+      .where(eq(festivalBonusCycles.id, payout.festivalBonusCycleId));
+
+    await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, payout.festivalBonusCycleId);
+    await this.cache.delByKey(CacheKeys.festivalBonusCyclesList);
+
+    return this.getCycleById(payout.festivalBonusCycleId);
+  }
+
+  async bulkApproveMD(cycleId: string) {
+    const [cycle] = await this.db
+      .select()
+      .from(festivalBonusCycles)
+      .where(eq(festivalBonusCycles.id, cycleId))
+      .limit(1);
+
+    if (!cycle) {
+      throw new NotFoundException(`Cycle not found`);
+    }
+
+    if (cycle.status !== 'Awaiting_MD_Approval') {
+      throw new BadRequestException('Cycle status is not awaiting MD approval');
+    }
+
+    // Set all payouts to Awaiting_Disbursement
+    await this.db
+      .update(employeeFestivalBonuses)
+      .set({ status: 'Awaiting_Disbursement' })
+      .where(
+        and(
+          eq(employeeFestivalBonuses.festivalBonusCycleId, cycleId),
+          eq(employeeFestivalBonuses.isEligible, true),
+        ),
+      );
+
+    // Set cycle status to Awaiting_Disbursement
+    await this.db
+      .update(festivalBonusCycles)
+      .set({ status: 'Awaiting_Disbursement', updatedAt: new Date() })
       .where(eq(festivalBonusCycles.id, cycleId));
 
     await this.cache.delByKey(CacheKeys.festivalBonusCycleDetails, cycleId);

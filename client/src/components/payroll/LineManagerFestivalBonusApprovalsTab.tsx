@@ -1,0 +1,274 @@
+import { useState, useMemo } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { useAuthStore } from "@/store/useAuthStore"
+import { usePermissions } from "@/hooks/usePermissions"
+import {
+  useFestivalCyclesQuery,
+  useFestivalCycleDetailsQuery,
+  useApproveFestivalPayoutLmMutation,
+  useRejectFestivalPayoutLmMutation,
+  useBulkApproveFestivalLmMutation,
+} from "@/hooks/useFestivalBonus"
+import Swal from "sweetalert2"
+import { toast } from "sonner"
+
+interface LineManagerFestivalBonusApprovalsTabProps {
+  formatCurrency: (amount: number) => string
+  employees?: any[]
+}
+
+export function LineManagerFestivalBonusApprovalsTab({
+  formatCurrency,
+  employees = [],
+}: LineManagerFestivalBonusApprovalsTabProps) {
+  const { user } = useAuthStore()
+  const { hasPermission } = usePermissions()
+
+  const { data: cycles = [], isLoading: isCyclesLoading } = useFestivalCyclesQuery()
+
+  // Find active cycles awaiting Line Manager approval
+  const lmAwaitingCycles = useMemo(() => {
+    return cycles.filter((cy) => cy.status === "Awaiting_LM_Approval")
+  }, [cycles])
+
+  const [selectedCycleId, setSelectedCycleId] = useState<string>("")
+
+  // Auto-select first cycle if none selected
+  const activeCycleId = selectedCycleId || lmAwaitingCycles[0]?.id || ""
+
+  const { data: cycleDetails, isLoading: isDetailsLoading } = useFestivalCycleDetailsQuery(activeCycleId)
+
+  const approvePayoutMutation = useApproveFestivalPayoutLmMutation()
+  const rejectPayoutMutation = useRejectFestivalPayoutLmMutation()
+  const bulkApproveMutation = useBulkApproveFestivalLmMutation()
+
+  const payouts = cycleDetails?.payouts || []
+
+  // Filter payouts that are Awaiting_LM_Approval and subordinates of current user
+  const eligiblePayouts = useMemo(() => {
+    return payouts.filter((p) => {
+      if (p.status !== "Awaiting_LM_Approval") return false
+      const empInfo = employees.find((e) => e.id === p.employeeId)
+      const isLineManager = empInfo?.lineManagerId === user?.id
+      return isLineManager || hasPermission("payroll:approve_lm")
+    })
+  }, [payouts, employees, user, hasPermission])
+
+  const handleApprove = (payout: any) => {
+    Swal.fire({
+      title: "Approve Bonus Payout?",
+      text: `Are you sure you want to approve the festival payout of ${formatCurrency(payout.finalAmount)} for ${payout.employeeName}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Approve",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal2-confirm swal2-styled bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        approvePayoutMutation.mutate(
+          { payoutId: payout.id, cycleId: activeCycleId },
+          {
+            onSuccess: () => {
+              toast.success(`Approved payout for ${payout.employeeName}`)
+            },
+            onError: (err) => {
+              toast.error(err.message || "Failed to approve payout")
+            },
+          }
+        )
+      }
+    })
+  }
+
+  const handleReject = (payout: any) => {
+    Swal.fire({
+      title: "Reject Bonus Payout?",
+      text: `Enter the rejection reason/comment for ${payout.employeeName}:`,
+      icon: "warning",
+      input: "text",
+      inputPlaceholder: "Enter rejection reason...",
+      showCancelButton: true,
+      confirmButtonText: "Reject",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal2-confirm swal2-styled bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return "You must enter a reason for rejection!"
+        }
+        return null
+      },
+    }).then((result) => {
+      if (result.isConfirmed && result.value) {
+        rejectPayoutMutation.mutate(
+          { payoutId: payout.id, cycleId: activeCycleId, comment: result.value.trim() },
+          {
+            onSuccess: () => {
+              toast.success(`Rejected payout for ${payout.employeeName}`)
+            },
+            onError: (err) => {
+              toast.error(err.message || "Failed to reject payout")
+            },
+          }
+        )
+      }
+    })
+  }
+
+  const handleBulkApprove = () => {
+    if (!activeCycleId) return
+    Swal.fire({
+      title: "Bulk Approve Subordinates?",
+      text: `Are you sure you want to approve all subordinate bonus payouts in this cycle?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Approve All",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal2-confirm swal2-styled bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md px-4 py-2 mr-2",
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        bulkApproveMutation.mutate(activeCycleId, {
+          onSuccess: () => {
+            Swal.fire("Bulk Approved!", "All subordinate payouts approved successfully.", "success")
+          },
+          onError: (err) => {
+            toast.error(err.message || "Bulk approval failed")
+          },
+        })
+      }
+    })
+  }
+
+  return (
+    <Card className="shadow-none border-border/40">
+      <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <CardTitle className="text-sm font-bold flex items-center gap-2">
+            Festival Bonus Line Manager Approvals
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Review and approve festival bonus payouts for direct subordinates.
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {eligiblePayouts.length > 0 && (
+            <Button
+              size="sm"
+              className="gap-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleBulkApprove}
+              disabled={bulkApproveMutation.isPending}
+            >
+              <CheckCircle className="h-4 w-4" />
+              Bulk Approve All Subordinates
+            </Button>
+          )}
+
+          {lmAwaitingCycles.length > 0 && (
+            <select
+              value={activeCycleId}
+              onChange={(e) => setSelectedCycleId(e.target.value)}
+              className="bg-transparent border border-border/60 hover:border-border transition-colors text-xs h-9 rounded-md px-2"
+            >
+              {lmAwaitingCycles.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isCyclesLoading || isDetailsLoading ? (
+          <div className="flex flex-col items-center justify-center p-12 gap-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">Loading festival approvals...</span>
+          </div>
+        ) : eligiblePayouts.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground text-xs">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/60" />
+            No pending festival bonus payouts require your approval for this cycle.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-muted/10 border-b border-border/30">
+              <TableRow className="border-b-0 hover:bg-transparent">
+                <TableHead className="font-semibold text-xs text-muted-foreground">Employee</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Type</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Join Date</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Tenure</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Basic / Gross</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Bonus Amount</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground">Status</TableHead>
+                <TableHead className="font-semibold text-xs text-muted-foreground text-right w-36">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {eligiblePayouts.map((pay) => (
+                <TableRow key={pay.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                  <TableCell className="py-3">
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{pay.employeeName}</p>
+                      <p className="text-[10px] text-muted-foreground">{pay.employeeCode}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-3 text-xs">{pay.employeeType}</TableCell>
+                  <TableCell className="py-3 text-xs">{new Date(pay.joinDate).toLocaleDateString()}</TableCell>
+                  <TableCell className="py-3 text-xs font-medium">{pay.serviceMonths} mo</TableCell>
+                  <TableCell className="py-3 text-xs text-muted-foreground">
+                    {formatCurrency(pay.basicSalary)} / {formatCurrency(pay.grossSalary)}
+                  </TableCell>
+                  <TableCell className="py-3 text-xs font-bold text-foreground">
+                    {formatCurrency(pay.finalAmount)}
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Badge variant="outline" className="text-[9px] font-bold py-0.5 px-2 bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse">
+                      Awaiting LM Approval
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-1.5 mr-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs font-semibold bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 rounded-md px-2"
+                        onClick={() => handleApprove(pay)}
+                        disabled={approvePayoutMutation.isPending || rejectPayoutMutation.isPending}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs font-semibold bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 hover:text-rose-700 rounded-md px-2"
+                        onClick={() => handleReject(pay)}
+                        disabled={approvePayoutMutation.isPending || rejectPayoutMutation.isPending}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

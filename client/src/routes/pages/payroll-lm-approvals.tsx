@@ -3,7 +3,9 @@ import { usePayrollCycleQuery, type Payslip } from "@/hooks/usePayroll"
 import { useEmployeesQuery } from "@/hooks/useEmployees"
 import { useProvidentFundSettingsQuery } from "@/hooks/useProvidentFund"
 import { LineManagerApprovalsTab } from "@/components/payroll/LineManagerApprovalsTab"
+import { LineManagerFestivalBonusApprovalsTab } from "@/components/payroll/LineManagerFestivalBonusApprovalsTab"
 import { DetailedPayslipDialog } from "@/components/payroll/DetailedPayslipDialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function PayrollLmApprovalsPage() {
   const monthsOptions = useMemo(() => {
@@ -38,16 +40,32 @@ export default function PayrollLmApprovalsPage() {
         <p className="text-muted-foreground text-sm">Review and verify subordinate monthly compensation logs.</p>
       </div>
 
-      <LineManagerApprovalsTab
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-        cycle={cycle}
-        formatCurrency={formatCurrency}
-        setViewPayslip={setViewPayslip}
-        monthsOptions={monthsOptions}
-        isLoading={isCycleLoading}
-        employees={employees}
-      />
+      <Tabs defaultValue="salary" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="salary">Monthly Salaries</TabsTrigger>
+          <TabsTrigger value="bonus">Festival Bonuses</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="salary" className="mt-0">
+          <LineManagerApprovalsTab
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            cycle={cycle}
+            formatCurrency={formatCurrency}
+            setViewPayslip={setViewPayslip}
+            monthsOptions={monthsOptions}
+            isLoading={isCycleLoading}
+            employees={employees}
+          />
+        </TabsContent>
+
+        <TabsContent value="bonus" className="mt-0">
+          <LineManagerFestivalBonusApprovalsTab
+            formatCurrency={formatCurrency}
+            employees={employees}
+          />
+        </TabsContent>
+      </Tabs>
 
       <DetailedPayslipDialog
         isOpen={viewPayslip !== null}

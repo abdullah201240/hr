@@ -39,6 +39,7 @@ const formatResourceName = (resource: string) => {
     "provident-fund-settings": "Provident Fund",
     dashboard: "Executive Dashboard",
     regulations: "Office Regulations",
+    bonus: "Festival Bonus",
   };
   const key = resource.toLowerCase();
   if (customMap[key]) return customMap[key];
@@ -107,6 +108,19 @@ const formatActionName = (action: string, resource?: string) => {
       view_all: "View Company Payroll Details (Admin / HR View)",
     };
     if (payMap[actKey]) return payMap[actKey];
+  }
+
+  // Custom formatting for bonus resource actions to make them clear
+  if (resKey === "bonus") {
+    const bonusMap: Record<string, string> = {
+      create: "Setup Festival Bonus settings and cycles (Create)",
+      read: "View Festival Bonus sheets and details",
+      process: "Process calculations and overrides for Festival Bonus",
+      approve_lm: "Line Manager approval for subordinates bonus",
+      approve_md: "MD final approval for festival bonus",
+      disburse: "Disburse festival bonus funds",
+    };
+    if (bonusMap[actKey]) return bonusMap[actKey];
   }
 
   // Custom formatting for settings resource actions to make them clear
@@ -247,7 +261,7 @@ export function AccessControlTab() {
     if (['employees', 'recruitment', 'letters', 'performance', 'disciplinary', 'separation', 'attendance', 'tasks', 'leave'].includes(resLower)) {
       return 'Workforce & Operations';
     }
-    if (['payroll', 'salary', 'claims', 'provident-fund-settings'].includes(resLower)) {
+    if (['payroll', 'salary', 'claims', 'provident-fund-settings', 'bonus'].includes(resLower)) {
       return 'Finance & Compensation';
     }
     if (['dashboard'].includes(resLower)) {
