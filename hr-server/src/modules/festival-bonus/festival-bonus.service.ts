@@ -52,7 +52,7 @@ export class FestivalBonusService {
           salaryComponent: 'basic',
           prorataFullServiceMonths: 12,
           tierRules: [],
-          eligibleEmployeeTypes: ['Permanent'],
+          eligibleEmployeeTypes: ['Full-time'],
           allowSpecialApproval: true,
         })
         .returning();

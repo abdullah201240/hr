@@ -16,7 +16,7 @@ export const festivalBonusSettings = pgTable('festival_bonus_settings', {
     .notNull()
     .$type<Array<{ minMonths: number; maxMonths: number | null; percentage: number }>>(),
   eligibleEmployeeTypes: jsonb('eligible_employee_types')
-    .default(['Permanent'])
+    .default(['Full-time'])
     .notNull()
     .$type<string[]>(),
   allowSpecialApproval: boolean('allow_special_approval').default(true).notNull(),
