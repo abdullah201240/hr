@@ -57,7 +57,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Job offer with terms and conditions",
-    templateFields: ["designation", "department", "salary", "startDate", "probationPeriod", "benefits"],
+    templateFields: ["presentAddress", "designation", "department", "employmentType", "reportingTo", "dutyStation", "proposedJoiningDate", "monthlyGrossSalary", "offerExpiryDate"],
   },
   {
     id: "appointment",
@@ -286,7 +286,7 @@ export function LetterCreateDialog({
     let defaultBody = ""
     switch (selectedType) {
       case "offer":
-        defaultBody = `Dear ${employeeName},\n\nWe are pleased to offer you employment at Sadoshima Global Corp. Details of your offer are as follows:\n- Designation: ${formFields.designation || "[Designation]"}\n- Salary: ৳${formFields.salary || "[Salary]"}/month\n- Start Date: ${formFields.startDate || "[Start Date]"}\n\nPlease review and sign to confirm your acceptance.`
+        defaultBody = `Following the selection process and our subsequent discussions, we are pleased to offer you employment with Sadoshima Corporation – Bangladesh Liaison Office for the position of ${formFields.designation || "[Designation]"}.`
         break
       case "appointment":
         defaultBody = `We are pleased to appoint you as ${formFields.designation || "[Designation]"} in the ${formFields.department || "[Department Name]"} of Sadoshima Corporation – Bangladesh Liaison Office effective from ${formFields.startDate || "[Joining Date]"}. Your appointment is made based on your acceptance of our Offer Letter dated ${formFields.offerLetterDate || "[Offer Letter Date]"} and is governed by the following terms and conditions.`
@@ -324,6 +324,8 @@ export function LetterCreateDialog({
         setFormSubject("Acceptance of Resignation")
       } else if (typeId === "confirmation") {
         setFormSubject("Confirmation of Employment")
+      } else if (typeId === "offer") {
+        setFormSubject("Offer of Employment")
       } else {
         setFormSubject(`Official Correspondence: ${config.name}`)
       }

@@ -77,7 +77,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Job offer with terms and conditions",
-    templateFields: ["designation", "department", "salary", "startDate", "probationPeriod", "benefits"],
+    templateFields: ["presentAddress", "designation", "department", "employmentType", "reportingTo", "dutyStation", "proposedJoiningDate", "monthlyGrossSalary", "offerExpiryDate"],
   },
   {
     id: "appointment",
