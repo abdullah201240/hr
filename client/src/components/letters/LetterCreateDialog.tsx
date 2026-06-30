@@ -169,6 +169,26 @@ const letterTypes: LetterTypeConfig[] = [
     description: "Employment verification document",
     templateFields: ["designation", "salary", "joiningDate", "employmentType"],
   },
+  {
+    id: "inquiry_committee",
+    name: "Inquiry Committee Appointment",
+    category: "discipline",
+    icon: ShieldCheck,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Inquiry committee appointment letter",
+    templateFields: ["committeeMemberDesignation", "accusedEmployeeName", "accusedEmployeeId", "briefAllegation", "committeeChair", "committeeMembers", "reportDueDate"],
+  },
+  {
+    id: "domestic_inquiry",
+    name: "Domestic Inquiry Notice",
+    category: "discipline",
+    icon: ShieldCheck,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Notice to attend domestic inquiry",
+    templateFields: ["explanationDate", "incidentDate", "incidentLocation", "summaryOfAllegation", "inquiryDate", "inquiryTime", "inquiryVenue", "inquiryOfficer"],
+  },
 ]
 
 const getLetterTypeConfig = (typeId: string): LetterTypeConfig | undefined =>
@@ -303,6 +323,12 @@ export function LetterCreateDialog({
       case "relieving":
         defaultBody = `We acknowledge receipt of your resignation letter dated ${formFields.resignationDate || "[Resignation Date]"}. After due consideration, Management has accepted your resignation from the position of ${formFields.designation || "[Designation]"} with effect from ${formFields.lastWorkingDay || "[Last Working Date]"}.`
         break
+      case "inquiry_committee":
+        defaultBody = `You are hereby appointed as the Inquiry Officer / a member of the Inquiry Committee to conduct a domestic inquiry regarding the alleged misconduct involving ${formFields.accusedEmployeeName || "[Employee Name]"}, Employee ID ${formFields.accusedEmployeeId || "[ID]"}.`
+        break
+      case "domestic_inquiry":
+        defaultBody = `Following the preliminary investigation into the alleged misconduct and after consideration of your written explanation dated ${formFields.explanationDate ? new Date(formFields.explanationDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "[Explanation Date]"} (or your failure to submit an explanation within the stipulated time), Management has decided to conduct a Domestic Inquiry to determine the facts of the matter before any disciplinary decision is made.`
+        break
       case "warning":
         defaultBody = `It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.`
         break
@@ -326,6 +352,10 @@ export function LetterCreateDialog({
         setFormSubject("Confirmation of Employment")
       } else if (typeId === "offer") {
         setFormSubject("Offer of Employment")
+      } else if (typeId === "inquiry_committee") {
+        setFormSubject("Appointment as Inquiry Officer / Member of Inquiry Committee")
+      } else if (typeId === "domestic_inquiry") {
+        setFormSubject("Notice to Attend Domestic Inquiry")
       } else {
         setFormSubject(`Official Correspondence: ${config.name}`)
       }
@@ -583,7 +613,7 @@ export function LetterCreateDialog({
                             </option>
                           ))}
                         </select>
-                      ) : field === "reportingManager" || field === "reportingTo" ? (
+                      ) : ["reportingManager", "reportingTo", "committeeChair", "inquiryOfficer"].includes(field) ? (
                         <div className="relative">
                           <Input
                             placeholder="Enter Reporting Manager Name"

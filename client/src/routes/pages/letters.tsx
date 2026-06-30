@@ -189,6 +189,26 @@ const letterTypes: LetterTypeConfig[] = [
     description: "Employment verification document",
     templateFields: ["designation", "salary", "joiningDate", "employmentType"],
   },
+  {
+    id: "inquiry_committee",
+    name: "Inquiry Committee Appointment",
+    category: "discipline",
+    icon: ShieldCheck,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Inquiry committee appointment letter",
+    templateFields: ["committeeMemberDesignation", "accusedEmployeeName", "accusedEmployeeId", "briefAllegation", "committeeChair", "committeeMembers", "reportDueDate"],
+  },
+  {
+    id: "domestic_inquiry",
+    name: "Domestic Inquiry Notice",
+    category: "discipline",
+    icon: ShieldCheck,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Notice to attend domestic inquiry",
+    templateFields: ["explanationDate", "incidentDate", "incidentLocation", "summaryOfAllegation", "inquiryDate", "inquiryTime", "inquiryVenue", "inquiryOfficer"],
+  },
 ]
 
 // ─── Helper Functions ───────────────────────────────────────────────────────────
