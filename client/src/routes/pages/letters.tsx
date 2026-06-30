@@ -117,7 +117,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-violet-600",
     bgColor: "bg-violet-500/10",
     description: "Employee promotion notification",
-    templateFields: ["oldDesignation", "newDesignation", "salaryChange", "effectiveDate"],
+    templateFields: ["currentDesignation", "newDesignation", "currentGrade", "newGrade", "currentReportingTo", "newReportingTo", "currentGrossSalary", "revGrossSalary", "revBasic", "revHouseRent", "revMedical", "revConveyance", "revOtherAllowance"],
   },
   {
     id: "transfer",

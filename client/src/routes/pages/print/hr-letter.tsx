@@ -15,6 +15,7 @@ import {
   PrintOffer,
   PrintSalaryRevision,
   PrintDefaultLetter,
+  PrintPromotion,
 } from "@/components/letters/print/LetterPrintComponents"
 
 const letterTypeNames: Record<string, string> = {
@@ -88,6 +89,8 @@ export default function PrintHRLetterPage() {
         return <PrintOffer letter={letter} fields={fields} formatDate={formatDate} />
       case "salary_increment":
         return <PrintSalaryRevision letter={letter} fields={fields} formatDate={formatDate} />
+      case "promotion":
+        return <PrintPromotion letter={letter} fields={fields} formatDate={formatDate} />
       default:
         return <PrintDefaultLetter letter={letter} fields={fields} formatDate={formatDate} typeName={typeName} />
     }

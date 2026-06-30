@@ -97,7 +97,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-violet-600",
     bgColor: "bg-violet-500/10",
     description: "Employee promotion notification",
-    templateFields: ["oldDesignation", "newDesignation", "salaryChange", "effectiveDate"],
+    templateFields: ["currentDesignation", "newDesignation", "currentGrade", "newGrade", "currentReportingTo", "newReportingTo", "currentGrossSalary", "revGrossSalary", "revBasic", "revHouseRent", "revMedical", "revConveyance", "revOtherAllowance"],
   },
   {
     id: "transfer",
@@ -371,6 +371,9 @@ export function LetterCreateDialog({
       case "warning":
         defaultBody = `It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.`
         break
+      case "promotion":
+        defaultBody = `We are pleased to inform you that, in recognition of your performance, commitment, and contribution to Sadoshima Corporation, Management has approved your promotion and revision of compensation with effect from ${formEffectiveDate ? new Date(formEffectiveDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "[Effective Date]"}.`
+        break
       case "salary_increment":
         defaultBody = `We are pleased to inform you that Management has approved a revision of your monthly salary in recognition of ${formFields.reasonForRevision || "[Annual Performance / Exceptional Performance / Market Salary Adjustment / Retention / Special Achievement / Other]"}. The revised salary shall be effective from ${formEffectiveDate ? new Date(formEffectiveDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "[Effective Date]"}.`
         break
@@ -403,6 +406,8 @@ export function LetterCreateDialog({
         setFormSubject("First Written Warning")
       } else if (typeId === "salary_increment") {
         setFormSubject("Salary Revision")
+      } else if (typeId === "promotion") {
+        setFormSubject("Promotion and Revision of Compensation")
       } else {
         setFormSubject(`Official Correspondence: ${config.name}`)
       }
@@ -647,7 +652,7 @@ export function LetterCreateDialog({
                             </option>
                           ))}
                         </select>
-                      ) : ["designation", "confirmedDesignation", "oldDesignation", "newDesignation", "fromRole", "toRole"].includes(field) ? (
+                      ) : ["designation", "confirmedDesignation", "oldDesignation", "newDesignation", "fromRole", "toRole", "currentDesignation"].includes(field) ? (
                         <select
                           value={formFields[field] || ""}
                           onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
@@ -660,7 +665,7 @@ export function LetterCreateDialog({
                             </option>
                           ))}
                         </select>
-                      ) : ["reportingManager", "reportingTo", "committeeChair", "inquiryOfficer"].includes(field) ? (
+                      ) : ["reportingManager", "reportingTo", "committeeChair", "inquiryOfficer", "currentReportingTo", "newReportingTo"].includes(field) ? (
                         <div className="relative">
                           <Input
                             placeholder="Enter Reporting Manager Name"
