@@ -131,13 +131,13 @@ const letterTypes: LetterTypeConfig[] = [
   },
   {
     id: "salary_increment",
-    name: "Salary Increment",
+    name: "Salary Revision",
     category: "employment",
     icon: Coins,
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Salary revision notification",
-    templateFields: ["reviewPeriod", "performanceRating", "overallScore", "currentGrossSalary", "revisedGrossSalary", "monthlyIncrement", "annualIncrementPercentage", "managementRemarks"],
+    templateFields: ["reasonForRevision", "prevBasic", "revBasic", "prevHouseRent", "revHouseRent", "prevMedical", "revMedical", "prevConveyance", "revConveyance", "prevOtherAllowance", "revOtherAllowance", "prevGross", "revGross"],
   },
   {
     id: "warning",

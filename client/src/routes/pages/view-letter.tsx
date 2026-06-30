@@ -1056,6 +1056,20 @@ export default function ViewLetterPage() {
     }
 
     if (letter.type === "salary_increment") {
+      const prevBasic = fields.prevBasic || "—"
+      const revBasic = fields.revBasic || "—"
+      const prevHouseRent = fields.prevHouseRent || "—"
+      const revHouseRent = fields.revHouseRent || "—"
+      const prevMedical = fields.prevMedical || "—"
+      const revMedical = fields.revMedical || "—"
+      const prevConveyance = fields.prevConveyance || "—"
+      const revConveyance = fields.revConveyance || "—"
+      const prevOtherAllowance = fields.prevOtherAllowance || "—"
+      const revOtherAllowance = fields.revOtherAllowance || "—"
+      const prevGross = fields.prevGross || "—"
+      const revGross = fields.revGross || "—"
+      const effectiveDate = letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"
+
       return (
         <div className="space-y-6">
           <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
@@ -1067,7 +1081,7 @@ export default function ViewLetterPage() {
 
             <div className="text-center mb-10">
               <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                PERFORMANCE REVIEW OUTCOME & SALARY INCREMENT LETTER
+                SALARY REVISION LETTER
               </h2>
             </div>
 
@@ -1079,98 +1093,75 @@ export default function ViewLetterPage() {
               <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
             </div>
 
-            <div className="text-xs space-y-4 mb-6">
-              <p className="font-bold text-blue-600 dark:text-blue-400">
-                Subject: Annual Performance Review Outcome and Salary Revision
-              </p>
-              <p className="font-semibold">Dear Mr./Ms. {employeeLastName},</p>
-              <p className="leading-relaxed">
-                We are pleased to inform you that your Annual Performance Review for the period{" "}
-                <span className="font-semibold">{fields.reviewPeriod || "[Review Period]"}</span> has been completed.
-                Based on your overall performance, achievement of assigned Key Performance Indicators (KPIs),
-                demonstration of Company values, and Management's assessment, the Management has approved the following:
-              </p>
+            <div className="text-xs space-y-4 mb-6 leading-relaxed">
+              <p className="font-bold text-blue-600 dark:text-blue-400">Subject: Salary Revision</p>
+              <p>Dear Mr./Ms. {employeeLastName},</p>
+              <p className="whitespace-pre-line">{letter.body}</p>
             </div>
 
-            <div className="mb-6">
-              <table className="w-full border-collapse border border-slate-300 dark:border-slate-700 text-xs">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900">
-                    <th className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-50 w-[40%]">Particular</th>
-                    <th className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-50">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Performance Rating</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.performanceRating || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Overall Score</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.overallScore || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Review Period</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.reviewPeriod || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Effective Date</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Current Gross Salary</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">BDT {fields.currentGrossSalary || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Revised Gross Salary</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">BDT {fields.revisedGrossSalary || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Monthly Increment</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">BDT {fields.monthlyIncrement || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Annual Increment (%)</td>
-                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.annualIncrementPercentage || "—"}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="text-xs space-y-2 mb-8">
+              <div className="border rounded-md overflow-hidden border-slate-200 dark:border-slate-800">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-2 font-bold w-1/3">Particular</th>
+                      <th className="p-2 font-bold">Previous (BDT)</th>
+                      <th className="p-2 font-bold">Revised (BDT)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-900">
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Basic Salary</td>
+                      <td className="p-2">{prevBasic}</td>
+                      <td className="p-2">{revBasic}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">House Rent Allowance</td>
+                      <td className="p-2">{prevHouseRent}</td>
+                      <td className="p-2">{revHouseRent}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Medical Allowance</td>
+                      <td className="p-2">{prevMedical}</td>
+                      <td className="p-2">{revMedical}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Conveyance Allowance</td>
+                      <td className="p-2">{prevConveyance}</td>
+                      <td className="p-2">{revConveyance}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Other Allowance(s)</td>
+                      <td className="p-2">{prevOtherAllowance}</td>
+                      <td className="p-2">{revOtherAllowance}</td>
+                    </tr>
+                    <tr className="font-bold bg-slate-50 dark:bg-slate-900">
+                      <td className="p-2">Gross Monthly Salary</td>
+                      <td className="p-2">{prevGross}</td>
+                      <td className="p-2">{revGross}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div className="text-xs space-y-2 mb-6">
-              <h3 className="font-bold text-blue-600 dark:text-blue-400">Management Remarks</h3>
-              <p className="leading-relaxed whitespace-pre-line italic">
-                {fields.managementRemarks || "[Remarks are pending completion.]"}
-              </p>
-            </div>
-
-            <div className="text-xs space-y-2">
-              <h3 className="font-bold text-blue-600 dark:text-blue-400">Future Expectations</h3>
-              <p className="leading-relaxed">
-                You are expected to continue maintaining high standards of professionalism, integrity,
-                teamwork and performance while contributing towards the achievement of departmental and
-                organizational objectives. Your performance will continue to be reviewed in accordance
-                with the Company's Performance Management System.
+            <div className="text-xs space-y-4 mb-8 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-blue-600 dark:text-blue-400">Terms and Conditions</h4>
+                <ul className="list-disc pl-5 mt-1 space-y-1">
+                  <li>The revised salary shall be effective from <span className="font-semibold">{effectiveDate}</span>.</li>
+                  <li>Your designation, reporting relationship, duties and responsibilities shall remain unchanged unless otherwise notified by the Company.</li>
+                  <li>All other terms and conditions of your employment shall remain unchanged.</li>
+                  <li>This salary revision supersedes your previous salary structure from the effective date.</li>
+                </ul>
+              </div>
+              <p className="pt-2">
+                We appreciate your dedication and valuable contribution to Sadoshima Corporation and wish you continued success.
               </p>
             </div>
           </Card>
 
           <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
-            <div className="text-xs space-y-4 mb-8">
-              <h3 className="font-bold text-blue-600 dark:text-blue-400">Salary Revision</h3>
-              <p className="leading-relaxed">
-                The revised salary stated above shall be effective from{" "}
-                <span className="font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "[Effective Date]"}</span> and shall
-                supersede your previous salary. All other terms and conditions of your employment
-                shall remain unchanged.
-              </p>
-              <p className="leading-relaxed">
-                We appreciate your valuable contribution and congratulate you on your continued
-                commitment to Sadoshima Corporation. We wish you every success in your future
-                career with the Company.
-              </p>
-            </div>
-
             <div className="text-xs space-y-6 mb-12">
               <p>Yours faithfully,</p>
               <p className="font-semibold">For Sadoshima Corporation</p>
@@ -1181,16 +1172,17 @@ export default function ViewLetterPage() {
               </div>
             </div>
 
-            <div className="text-xs space-y-6 border-t border-slate-200 dark:border-slate-800 pt-6">
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
               <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Acknowledgement</h3>
               <p className="leading-relaxed">
-                I acknowledge receipt of this Performance Review Outcome and Salary Increment Letter.
+                I acknowledge receipt of this Salary Revision Letter.
               </p>
               <div className="pt-12">
                 <div className="border-b border-slate-400 w-64 mb-2"></div>
                 <p className="font-semibold">Signature of Employee</p>
                 <div className="space-y-1 mt-2 text-muted-foreground">
                   <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Employee ID: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeIdCode || "—"}</span></p>
                   <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
                 </div>
               </div>

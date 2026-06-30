@@ -111,13 +111,13 @@ const letterTypes: LetterTypeConfig[] = [
   },
   {
     id: "salary_increment",
-    name: "Salary Increment",
+    name: "Salary Revision",
     category: "employment",
     icon: Coins,
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Salary revision notification",
-    templateFields: ["reviewPeriod", "performanceRating", "overallScore", "currentGrossSalary", "revisedGrossSalary", "monthlyIncrement", "annualIncrementPercentage", "managementRemarks"],
+    templateFields: ["reasonForRevision", "prevBasic", "revBasic", "prevHouseRent", "revHouseRent", "prevMedical", "revMedical", "prevConveyance", "revConveyance", "prevOtherAllowance", "revOtherAllowance", "prevGross", "revGross"],
   },
   {
     id: "warning",
@@ -372,7 +372,7 @@ export function LetterCreateDialog({
         defaultBody = `It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.`
         break
       case "salary_increment":
-        defaultBody = `We are pleased to inform you that your Annual Performance Review for the period ${formFields.reviewPeriod || "[Review Period]"} has been completed. Based on your overall performance, achievement of assigned Key Performance Indicators (KPIs), demonstration of Company values, and Management's assessment, the Management has approved the following:`
+        defaultBody = `We are pleased to inform you that Management has approved a revision of your monthly salary in recognition of ${formFields.reasonForRevision || "[Annual Performance / Exceptional Performance / Market Salary Adjustment / Retention / Special Achievement / Other]"}. The revised salary shall be effective from ${formEffectiveDate ? new Date(formEffectiveDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "[Effective Date]"}.`
         break
       default:
         defaultBody = `Dear ${employeeName},\n\nThis letter is to confirm official updates regarding your employment records at Sadoshima Global Corp.\n\nDetails:\n- Reference Field: ${Object.values(formFields)[0] || "Update"}\n- Effective Date: ${formEffectiveDate || "[Date]"}\n\nPlease feel free to contact HR if you have any questions.`
@@ -401,6 +401,8 @@ export function LetterCreateDialog({
         setFormSubject("Final Written Warning")
       } else if (typeId === "first_warning") {
         setFormSubject("First Written Warning")
+      } else if (typeId === "salary_increment") {
+        setFormSubject("Salary Revision")
       } else {
         setFormSubject(`Official Correspondence: ${config.name}`)
       }
