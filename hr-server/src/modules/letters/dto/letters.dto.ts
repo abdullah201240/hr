@@ -91,3 +91,55 @@ export class LetterQueryDto {
   @IsOptional()
   limit?: number = 20;
 }
+
+export class UpdateLetterDto {
+  @ApiProperty({ description: 'Letter type (e.g. offer, appointment)', required: false })
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @ApiProperty({ description: 'Target employee UUID', required: false })
+  @IsUUID()
+  @IsOptional()
+  employeeId?: string;
+
+  @ApiProperty({ description: 'Custom Employee Name', required: false })
+  @IsString()
+  @IsOptional()
+  employeeName?: string;
+
+  @ApiProperty({ description: 'Custom Employee Email', required: false })
+  @IsString()
+  @IsOptional()
+  employeeEmail?: string;
+
+  @ApiProperty({ description: 'Subject line', required: false })
+  @IsString()
+  @IsOptional()
+  subject?: string;
+
+  @ApiProperty({ description: 'Date of issue (YYYY-MM-DD)', required: false })
+  @IsDateString()
+  @IsOptional()
+  issueDate?: string;
+
+  @ApiProperty({ description: 'Effective date (YYYY-MM-DD)', required: false })
+  @IsDateString()
+  @IsOptional()
+  effectiveDate?: string;
+
+  @ApiProperty({ description: 'Full compilation text of the letter', required: false })
+  @IsString()
+  @IsOptional()
+  body?: string;
+
+  @ApiProperty({ description: 'Dynamic fields used in template', required: false })
+  @IsObject()
+  @IsOptional()
+  fields?: Record<string, string>;
+
+  @ApiProperty({ description: 'Status of the letter', enum: ['Draft', 'Sent', 'Signed', 'Archived'], required: false })
+  @IsEnum(['Draft', 'Sent', 'Signed', 'Archived'])
+  @IsOptional()
+  status?: 'Draft' | 'Sent' | 'Signed' | 'Archived';
+}

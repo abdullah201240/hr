@@ -190,6 +190,7 @@ interface LetterCreateDialogProps {
   employeeOptions: any[]
   onSubmit: (data: any) => Promise<void>
   isPending: boolean
+  letterToEdit?: any
 }
 
 export function LetterCreateDialog({
@@ -198,6 +199,7 @@ export function LetterCreateDialog({
   employeeOptions,
   onSubmit,
   isPending,
+  letterToEdit,
 }: LetterCreateDialogProps) {
   const [selectedType, setSelectedType] = useState<string>("")
   const [formEmployeeId, setFormEmployeeId] = useState("")
@@ -220,7 +222,7 @@ export function LetterCreateDialog({
 
   // Autofill fields when employee is selected
   useEffect(() => {
-    if (employeeDetails) {
+    if (employeeDetails && !letterToEdit) {
       setFormFields((prev) => ({
         ...prev,
         department: employeeDetails.departmentName || "",
@@ -229,7 +231,7 @@ export function LetterCreateDialog({
         startDate: employeeDetails.joinDate ? new Date(employeeDetails.joinDate).toISOString().split('T')[0] : "",
       }))
     }
-  }, [employeeDetails])
+  }, [employeeDetails, letterToEdit])
 
   const resetForm = () => {
     setSelectedType("")
@@ -248,8 +250,33 @@ export function LetterCreateDialog({
     setErrors({})
   }
 
+  // Pre-fill form when editing an existing letter
+  useEffect(() => {
+    if (isOpen) {
+      if (letterToEdit) {
+        setSelectedType(letterToEdit.type || "")
+        setFormEmployeeId(letterToEdit.employeeId || "")
+        setFormEmployeeName(letterToEdit.employeeName || "")
+        setFormEmployeeEmail(letterToEdit.employeeEmail || "")
+        setFormSubject(letterToEdit.subject || "")
+        setFormIssueDate(letterToEdit.issueDate ? new Date(letterToEdit.issueDate).toISOString().split('T')[0] : "")
+        setFormEffectiveDate(letterToEdit.effectiveDate ? new Date(letterToEdit.effectiveDate).toISOString().split('T')[0] : "")
+        setFormFields(letterToEdit.fields || {})
+        setFormBody(letterToEdit.body || "")
+        setFormStatus(letterToEdit.status || "Draft")
+        if (letterToEdit.fields?.signatoryName) {
+          const sig = employeeOptions.find(o => o.fullNameEnglish === letterToEdit.fields.signatoryName)
+          if (sig) setFormSignatoryId(sig.id)
+        }
+      } else {
+        resetForm()
+      }
+    }
+  }, [isOpen, letterToEdit, employeeOptions])
+
   // Pre-fill body template when letter type or employee is selected
   useEffect(() => {
+    if (letterToEdit) return
     if (!selectedType) return
     const config = getLetterTypeConfig(selectedType)
     if (!config) return
@@ -280,7 +307,7 @@ export function LetterCreateDialog({
         defaultBody = `Dear ${employeeName},\n\nThis letter is to confirm official updates regarding your employment records at Sadoshima Global Corp.\n\nDetails:\n- Reference Field: ${Object.values(formFields)[0] || "Update"}\n- Effective Date: ${formEffectiveDate || "[Date]"}\n\nPlease feel free to contact HR if you have any questions.`
     }
     setFormBody(defaultBody)
-  }, [selectedType, formEmployeeName, formFields, formEffectiveDate])
+  }, [selectedType, formEmployeeName, formFields, formEffectiveDate, letterToEdit])
 
   const handleTypeSelect = (typeId: string) => {
     setSelectedType(typeId)
@@ -327,7 +354,7 @@ export function LetterCreateDialog({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); resetForm() } }}>
       <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] overflow-y-auto text-xs">
         <DialogHeader>
-          <DialogTitle>Create HR Letter</DialogTitle>
+          <DialogTitle>{letterToEdit ? "Edit HR Letter" : "Create HR Letter"}</DialogTitle>
           <DialogDescription>
             Select a letter type and fill in the details to generate an HR letter
           </DialogDescription>
@@ -639,7 +666,7 @@ export function LetterCreateDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={!selectedType || isPending}>
-              {isPending ? "Creating..." : "Create Letter"}
+              {isPending ? (letterToEdit ? "Saving..." : "Creating...") : (letterToEdit ? "Save Changes" : "Create Letter")}
             </Button>
           </DialogFooter>
         </form>

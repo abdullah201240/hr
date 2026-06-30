@@ -41,12 +41,14 @@ import {
   Printer,
   MoreHorizontal,
   Loader2,
+  Edit,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useEmployeeOptionsQuery } from "@/hooks/useEmployees"
 import {
   useLettersQuery,
   useCreateLetterMutation,
+  useUpdateLetterMutation,
   useUpdateLetterStatusMutation,
   useDeleteLetterMutation,
   type HRLetter,
@@ -237,10 +239,12 @@ export default function LettersPage() {
   const { data: employeeOptions = [] } = useEmployeeOptionsQuery()
 
   const createMutation = useCreateLetterMutation()
+  const updateMutation = useUpdateLetterMutation()
   const updateStatusMutation = useUpdateLetterStatusMutation()
   const deleteMutation = useDeleteLetterMutation()
 
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [letterToEdit, setLetterToEdit] = useState<HRLetter | null>(null)
 
 
   // Stats
@@ -252,12 +256,23 @@ export default function LettersPage() {
 
   const handleCreateLetterSubmit = async (payload: any) => {
     try {
-      await createMutation.mutateAsync(payload)
-      Swal.fire("Success", "HR Letter has been successfully created.", "success")
+      if (letterToEdit) {
+        await updateMutation.mutateAsync({ id: letterToEdit.id, payload })
+        Swal.fire("Success", "HR Letter has been successfully updated.", "success")
+      } else {
+        await createMutation.mutateAsync(payload)
+        Swal.fire("Success", "HR Letter has been successfully created.", "success")
+      }
       setDialogOpen(false)
+      setLetterToEdit(null)
     } catch (err: any) {
-      Swal.fire("Error", err.message || "Failed to create letter.", "error")
+      Swal.fire("Error", err.message || "Failed to save letter.", "error")
     }
+  }
+
+  const handleEditLetter = (letter: HRLetter) => {
+    setLetterToEdit(letter)
+    setDialogOpen(true)
   }
 
   // Handle status change
@@ -326,10 +341,11 @@ export default function LettersPage() {
 
       <LetterCreateDialog
         isOpen={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={() => { setDialogOpen(false); setLetterToEdit(null) }}
         employeeOptions={employeeOptions}
         onSubmit={handleCreateLetterSubmit}
-        isPending={createMutation.isPending}
+        isPending={createMutation.isPending || updateMutation.isPending}
+        letterToEdit={letterToEdit}
       />
 
       {/* KPI Cards - Compact Style */}
@@ -477,6 +493,12 @@ export default function LettersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="text-xs">
+                            {letter.status === "Draft" && (
+                              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleEditLetter(letter)}>
+                                <Edit className="h-3.5 w-3.5" />
+                                Edit Document
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => openPreview(letter)}>
                               <Eye className="h-3.5 w-3.5" />
                               Preview Document

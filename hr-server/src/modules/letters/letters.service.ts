@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, and, or, like, desc, sql } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { issuedLetters, employees, departments, designations } from '../../db/schema';
-import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto } from './dto/letters.dto';
+import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto, UpdateLetterDto } from './dto/letters.dto';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
 
@@ -158,6 +158,50 @@ export class LettersService {
     const [updated] = await this.db
       .update(issuedLetters)
       .set({ status: dto.status })
+      .where(eq(issuedLetters.id, id))
+      .returning();
+
+    await this.invalidateCache();
+    return this.findOne(updated.id);
+  }
+
+  async update(id: string, dto: UpdateLetterDto) {
+    const [existing] = await this.db
+      .select()
+      .from(issuedLetters)
+      .where(eq(issuedLetters.id, id))
+      .limit(1);
+
+    if (!existing) {
+      throw new NotFoundException(`HR Letter with ID "${id}" not found`);
+    }
+
+    if (dto.employeeId) {
+      const [emp] = await this.db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.id, dto.employeeId))
+        .limit(1);
+
+      if (!emp) {
+        throw new NotFoundException(`Employee with ID "${dto.employeeId}" not found`);
+      }
+    }
+
+    const [updated] = await this.db
+      .update(issuedLetters)
+      .set({
+        type: dto.type,
+        employeeId: dto.employeeId !== undefined ? (dto.employeeId || null) : undefined,
+        employeeName: dto.employeeName !== undefined ? (dto.employeeName || null) : undefined,
+        employeeEmail: dto.employeeEmail !== undefined ? (dto.employeeEmail || null) : undefined,
+        subject: dto.subject,
+        issueDate: dto.issueDate,
+        effectiveDate: dto.effectiveDate,
+        status: dto.status,
+        body: dto.body,
+        fields: dto.fields,
+      })
       .where(eq(issuedLetters.id, id))
       .returning();
 

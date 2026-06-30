@@ -85,6 +85,35 @@ export function useCreateLetterMutation() {
   });
 }
 
+export function useUpdateLetterMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    HRLetter,
+    Error,
+    {
+      id: string;
+      payload: Partial<{
+        type: string;
+        employeeId: string;
+        employeeName: string;
+        employeeEmail: string;
+        subject: string;
+        issueDate: string;
+        effectiveDate: string;
+        body: string;
+        fields: Record<string, string>;
+        status: "Draft" | "Sent" | "Signed" | "Archived";
+      }>;
+    }
+  >({
+    mutationFn: ({ id, payload }) => apiClient.patch<HRLetter>(`letters/${id}`, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["letters"] });
+      queryClient.invalidateQueries({ queryKey: ["letters", variables.id] });
+    },
+  });
+}
+
 export function useUpdateLetterStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation<

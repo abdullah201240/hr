@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Query, Param, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { LettersService } from './letters.service';
-import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto } from './dto/letters.dto';
+import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto, UpdateLetterDto } from './dto/letters.dto';
 import { Permissions } from '../auth/guards/roles.decorator';
 
 @ApiTags('Letters')
@@ -34,6 +34,13 @@ export class LettersController {
   @ApiOperation({ summary: 'Update status of an issued HR letter' })
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateLetterStatusDto) {
     return this.lettersService.updateStatus(id, dto);
+  }
+
+  @Patch(':id')
+  @Permissions('letters:update')
+  @ApiOperation({ summary: 'Update/edit an issued HR letter' })
+  async update(@Param('id') id: string, @Body() dto: UpdateLetterDto) {
+    return this.lettersService.update(id, dto);
   }
 
   @Delete(':id')
