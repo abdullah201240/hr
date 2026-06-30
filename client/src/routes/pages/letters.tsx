@@ -209,6 +209,36 @@ const letterTypes: LetterTypeConfig[] = [
     description: "Notice to attend domestic inquiry",
     templateFields: ["explanationDate", "incidentDate", "incidentLocation", "summaryOfAllegation", "inquiryDate", "inquiryTime", "inquiryVenue", "inquiryOfficer"],
   },
+  {
+    id: "suspension",
+    name: "Suspension Pending Investigation",
+    category: "discipline",
+    icon: Ban,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Suspension pending investigation letter",
+    templateFields: ["incidentDate", "natureOfAllegation", "reasonForSuspension"],
+  },
+  {
+    id: "final_warning",
+    name: "Final Written Warning",
+    category: "discipline",
+    icon: AlertTriangle,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Final written warning letter",
+    templateFields: ["previousWarningDate", "incidentDate", "incidentLocation", "description", "verbalCounselingDate", "firstWarningDate", "employeeExplanationDate", "policyViolated"],
+  },
+  {
+    id: "first_warning",
+    name: "First Written Warning",
+    category: "discipline",
+    icon: AlertTriangle,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "First written warning letter",
+    templateFields: ["incidentDate", "incidentLocation", "description", "previousCounseling", "policyBreach"],
+  },
 ]
 
 // ─── Helper Functions ───────────────────────────────────────────────────────────

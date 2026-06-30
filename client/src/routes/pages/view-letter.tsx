@@ -377,6 +377,308 @@ export default function ViewLetterPage() {
       )
     }
 
+    if (letter.type === "first_warning") {
+      const incidentDate = fields.incidentDate || "—"
+      const incidentLocation = fields.incidentLocation || "—"
+      const description = fields.description || letter.body || "—"
+      const previousCounseling = fields.previousCounseling || "—"
+      const policyBreach = fields.policyBreach || "—"
+
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                FIRST WRITTEN WARNING LETTER
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+              <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+              <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6 leading-relaxed">
+              <p className="font-bold text-blue-600 dark:text-blue-400">Subject: First Written Warning</p>
+              <p>Dear Mr./Ms. {employeeLastName},</p>
+              <p className="whitespace-pre-line">{letter.body}</p>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Details of the Incident</h3>
+              <div className="space-y-1 pl-1">
+                <p className="font-semibold">Date of Incident: <span className="font-normal">{incidentDate}</span></p>
+                <p className="font-semibold">Location: <span className="font-normal">{incidentLocation}</span></p>
+                <p className="font-semibold mt-2">Description:</p>
+                <p className="leading-relaxed whitespace-pre-wrap pl-2 border-l border-slate-200 dark:border-slate-800 italic">
+                  {description}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6 leading-relaxed">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Previous Counseling (if any)</h3>
+              <p className="whitespace-pre-line pl-1">{previousCounseling}</p>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6 leading-relaxed">
+              <h4 className="font-bold text-blue-600 dark:text-blue-400">Policy Breach</h4>
+              <p className="whitespace-pre-line pl-1">{policyBreach}</p>
+            </div>
+
+            <div className="text-xs space-y-3 leading-relaxed">
+              <h4 className="font-bold text-blue-600 dark:text-blue-400">Required Improvement</h4>
+              <p className="pl-1">
+                You are expected to immediately correct your conduct and comply with all Company policies. Failure to demonstrate sustained improvement or repetition of similar misconduct may result in further disciplinary action, including a Final Written Warning, suspension pending investigation, domestic inquiry, or any other action permitted under the Company's HR Policy and applicable laws.
+              </p>
+              <p className="pl-1 font-semibold">
+                Please treat this matter seriously and ensure that such incidents do not recur.
+              </p>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-6 mb-12">
+              <p>Yours faithfully,</p>
+              <p className="font-semibold">For Sadoshima Corporation</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Human Resources"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Acknowledgement</h3>
+              <p className="leading-relaxed">
+                I acknowledge receipt of this First Written Warning Letter.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Employee ID: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeIdCode || "—"}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
+    if (letter.type === "final_warning") {
+      const incidentDate = fields.incidentDate || "—"
+      const incidentLocation = fields.incidentLocation || "—"
+      const description = fields.description || letter.body || "—"
+      const verbalCounselingDate = fields.verbalCounselingDate ? formatDate(fields.verbalCounselingDate) : "—"
+      const firstWarningDate = fields.firstWarningDate ? formatDate(fields.firstWarningDate) : "—"
+      const employeeExplanationDate = fields.employeeExplanationDate ? formatDate(fields.employeeExplanationDate) : "—"
+      const policyViolated = fields.policyViolated || "—"
+
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                FINAL WRITTEN WARNING LETTER
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+              <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+              <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6 leading-relaxed">
+              <p className="font-bold text-blue-600 dark:text-blue-400">Subject: Final Written Warning</p>
+              <p>Dear Mr./Ms. {employeeLastName},</p>
+              <p className="whitespace-pre-line">{letter.body}</p>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Details of Misconduct / Performance Concern</h3>
+              <div className="space-y-1 pl-1">
+                <p className="font-semibold">Date(s) of Incident: <span className="font-normal">{incidentDate}</span></p>
+                <p className="font-semibold">Location: <span className="font-normal">{incidentLocation}</span></p>
+                <p className="font-semibold mt-2">Description:</p>
+                <p className="leading-relaxed whitespace-pre-wrap pl-2 border-l border-slate-200 dark:border-slate-800 italic">
+                  {description}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Previous Disciplinary Action</h3>
+              <ul className="list-disc pl-5 space-y-1 mt-1">
+                <li><span className="font-semibold">Verbal Counseling (if applicable):</span> {verbalCounselingDate}</li>
+                <li><span className="font-semibold">First Written Warning:</span> {firstWarningDate}</li>
+                <li><span className="font-semibold">Employee Explanation (if applicable):</span> {employeeExplanationDate}</li>
+              </ul>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6 leading-relaxed">
+              <h4 className="font-bold text-blue-600 dark:text-blue-400">Policy / Rule Violated</h4>
+              <p className="whitespace-pre-line pl-1">{policyViolated}</p>
+            </div>
+
+            <div className="text-xs space-y-2 leading-relaxed">
+              <h4 className="font-bold text-blue-600 dark:text-blue-400">Required Corrective Action</h4>
+              <p className="pl-1">
+                You are required to demonstrate immediate and sustained improvement in your conduct, attendance, performance, and compliance with Company policies. Failure to do so, or any further misconduct of a similar or serious nature, may result in disciplinary action including suspension pending investigation, domestic inquiry, termination of employment, or any other action permitted under the Company's HR Policy and applicable laws.
+              </p>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-4 mb-12">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Support</h3>
+              <p className="leading-relaxed">
+                If you require clarification regarding the expectations outlined in this letter or need guidance to improve your performance or conduct, you are encouraged to discuss the matter with your Reporting Manager or the Human Resources Department.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-6 mb-12">
+              <p>Yours faithfully,</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Human Resources"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Acknowledgement</h3>
+              <p className="leading-relaxed">
+                I acknowledge receipt of this Final Written Warning Letter.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Employee ID: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeIdCode || "—"}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
+    if (letter.type === "suspension") {
+      const incidentDate = fields.incidentDate || "—"
+      const natureOfAllegation = fields.natureOfAllegation || "—"
+      const reasonForSuspension = fields.reasonForSuspension || "—"
+      const effectiveDate = letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"
+
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                SUSPENSION PENDING INVESTIGATION
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+              <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+              <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6 leading-relaxed">
+              <p className="font-bold text-blue-600 dark:text-blue-400">Subject: Suspension Pending Investigation</p>
+              <p>Dear Mr./Ms. {employeeLastName},</p>
+              <p className="whitespace-pre-line">{letter.body}</p>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Reason for Suspension</h3>
+              <div className="space-y-1 pl-1">
+                <p className="font-semibold">Date of Incident: <span className="font-normal">{incidentDate}</span></p>
+                <p className="font-semibold">Nature of Allegation: <span className="font-normal">{natureOfAllegation}</span></p>
+                <p className="font-semibold">Reason for Suspension: <span className="font-normal">{reasonForSuspension}</span></p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Terms of Suspension</h3>
+              <ul className="list-disc pl-5 space-y-1.5 mt-1">
+                <li><span className="font-semibold">Effective Date:</span> {effectiveDate}</li>
+                <li><span className="font-semibold">Suspension Period:</span> Until further written notice or completion of the investigation.</li>
+                <li>During suspension you shall remain available to cooperate fully with the investigation.</li>
+                <li>You shall not enter Company premises or contact employees, customers or suppliers regarding this matter unless authorized.</li>
+                <li>Salary and benefits during suspension shall be administered in accordance with the Company's HR Policy and applicable laws.</li>
+              </ul>
+            </div>
+
+            <div className="text-xs space-y-2 leading-relaxed">
+              <h4 className="font-bold text-blue-600 dark:text-blue-400">Further Process</h4>
+              <p>
+                You will be informed separately if a Show Cause Notice, Domestic Inquiry Notice, or any other disciplinary proceeding is initiated. You will be given a reasonable opportunity to present your explanation before any final decision is made.
+              </p>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-6 mb-12">
+              <p>Yours faithfully,</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Human Resources"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Acknowledgement</h3>
+              <p className="leading-relaxed">
+                I acknowledge receipt of this Suspension Pending Investigation Letter.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Employee ID: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeIdCode || "—"}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
     if (letter.type === "domestic_inquiry") {
       const incidentDate = fields.incidentDate || "—"
       const incidentLocation = fields.incidentLocation || "—"

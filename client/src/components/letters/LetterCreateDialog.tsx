@@ -189,6 +189,36 @@ const letterTypes: LetterTypeConfig[] = [
     description: "Notice to attend domestic inquiry",
     templateFields: ["explanationDate", "incidentDate", "incidentLocation", "summaryOfAllegation", "inquiryDate", "inquiryTime", "inquiryVenue", "inquiryOfficer"],
   },
+  {
+    id: "suspension",
+    name: "Suspension Pending Investigation",
+    category: "discipline",
+    icon: Ban,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Suspension pending investigation letter",
+    templateFields: ["incidentDate", "natureOfAllegation", "reasonForSuspension"],
+  },
+  {
+    id: "final_warning",
+    name: "Final Written Warning",
+    category: "discipline",
+    icon: AlertTriangle,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "Final written warning letter",
+    templateFields: ["previousWarningDate", "incidentDate", "incidentLocation", "description", "verbalCounselingDate", "firstWarningDate", "employeeExplanationDate", "policyViolated"],
+  },
+  {
+    id: "first_warning",
+    name: "First Written Warning",
+    category: "discipline",
+    icon: AlertTriangle,
+    color: "text-amber-600",
+    bgColor: "bg-amber-500/10",
+    description: "First written warning letter",
+    templateFields: ["incidentDate", "incidentLocation", "description", "previousCounseling", "policyBreach"],
+  },
 ]
 
 const getLetterTypeConfig = (typeId: string): LetterTypeConfig | undefined =>
@@ -329,6 +359,15 @@ export function LetterCreateDialog({
       case "domestic_inquiry":
         defaultBody = `Following the preliminary investigation into the alleged misconduct and after consideration of your written explanation dated ${formFields.explanationDate ? new Date(formFields.explanationDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "[Explanation Date]"} (or your failure to submit an explanation within the stipulated time), Management has decided to conduct a Domestic Inquiry to determine the facts of the matter before any disciplinary decision is made.`
         break
+      case "suspension":
+        defaultBody = `Following a preliminary assessment of an alleged incident that may constitute serious misconduct, the Company has decided to place you under suspension pending completion of an investigation and/or domestic inquiry. This action is administrative in nature and shall not be construed as a finding of guilt.`
+        break
+      case "final_warning":
+        defaultBody = `Despite previous counseling and/or the First Written Warning issued on ${formFields.previousWarningDate ? new Date(formFields.previousWarningDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "[Date]"}, it has been observed that satisfactory improvement has not been achieved, or a similar incident has reoccurred. Accordingly, this letter serves as your Final Written Warning.`
+        break
+      case "first_warning":
+        defaultBody = `This letter serves as a First Written Warning regarding the matter described below.`
+        break
       case "warning":
         defaultBody = `It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.`
         break
@@ -356,6 +395,12 @@ export function LetterCreateDialog({
         setFormSubject("Appointment as Inquiry Officer / Member of Inquiry Committee")
       } else if (typeId === "domestic_inquiry") {
         setFormSubject("Notice to Attend Domestic Inquiry")
+      } else if (typeId === "suspension") {
+        setFormSubject("Suspension Pending Investigation")
+      } else if (typeId === "final_warning") {
+        setFormSubject("Final Written Warning")
+      } else if (typeId === "first_warning") {
+        setFormSubject("First Written Warning")
       } else {
         setFormSubject(`Official Correspondence: ${config.name}`)
       }
