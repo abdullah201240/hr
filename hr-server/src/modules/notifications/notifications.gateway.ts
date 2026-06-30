@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Server, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
+import { randomUUID } from 'node:crypto';
 import * as url from 'url';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../common/cache/cache.service';
@@ -30,9 +31,11 @@ export class NotificationGateway
   private readonly logger = new Logger(NotificationGateway.name);
   private localClients = new Map<string, AuthenticatedWebSocket[]>();
 
+  private readonly instanceId = randomUUID();
   private pubClient!: Redis;
   private subClient!: Redis;
   private heartbeatIntervalId!: NodeJS.Timeout;
+  private nodeHeartbeatIntervalId!: NodeJS.Timeout;
 
   @WebSocketServer()
   server!: Server;
@@ -45,7 +48,7 @@ export class NotificationGateway
   ) {}
 
   async afterInit() {
-    this.logger.log('Notifications WebSocket Gateway Initialized');
+    this.logger.log(`Notifications WebSocket Gateway Initialized (Instance: ${this.instanceId})`);
 
     this.pubClient = this.redis.duplicate();
     this.subClient = this.redis.duplicate();
@@ -63,6 +66,18 @@ export class NotificationGateway
       }
     });
 
+    // Node cluster heartbeat (expires in 45s, runs every 15s)
+    const updateHeartbeat = async () => {
+      try {
+        await this.redis.setex(`nodes:heartbeat:${this.instanceId}`, 45, 'alive');
+        await this.redis.sadd('nodes:active', this.instanceId);
+      } catch (err) {
+        this.logger.error('Failed to update node heartbeat in Redis', err);
+      }
+    };
+    await updateHeartbeat();
+    this.nodeHeartbeatIntervalId = setInterval(updateHeartbeat, 15000);
+
     // Start 30s heartbeats
     this.heartbeatIntervalId = setInterval(() => {
       this.localClients.forEach((sockets) => {
@@ -78,16 +93,69 @@ export class NotificationGateway
     }, 30000);
   }
 
-  onModuleDestroy() {
+  async onModuleDestroy() {
     if (this.heartbeatIntervalId) {
       clearInterval(this.heartbeatIntervalId);
     }
+    if (this.nodeHeartbeatIntervalId) {
+      clearInterval(this.nodeHeartbeatIntervalId);
+    }
+
+    // Graceful shutdown: remove node heartbeat and clean up local connection counts
+    try {
+      await this.redis.del(`nodes:heartbeat:${this.instanceId}`);
+      await this.redis.srem('nodes:active', this.instanceId);
+
+      const keys = await this.redis.keys('notif:nodes:*');
+      if (keys.length > 0) {
+        const pipeline = this.redis.pipeline();
+        keys.forEach(key => {
+          pipeline.hdel(key, this.instanceId);
+        });
+        await pipeline.exec();
+      }
+    } catch (err) {
+      this.logger.error('Failed to clean up notification node registry on shutdown', err);
+    }
+
     if (this.subClient) {
       this.subClient.quit();
     }
     if (this.pubClient) {
       this.pubClient.quit();
     }
+  }
+
+  /**
+   * Retrieve total notification connections across all alive nodes in the cluster
+   */
+  private async getClusterNotificationCount(employeeId: string): Promise<number> {
+    const activeKey = `notif:nodes:${employeeId}`;
+    const fields = await this.redis.hgetall(activeKey);
+    if (!fields || Object.keys(fields).length === 0) return 0;
+
+    const nodeIds = Object.keys(fields);
+    
+    const pipeline = this.redis.pipeline();
+    nodeIds.forEach(nodeId => {
+      pipeline.exists(`nodes:heartbeat:${nodeId}`);
+    });
+    const results = await pipeline.exec();
+
+    let total = 0;
+    for (let i = 0; i < nodeIds.length; i++) {
+      const nodeId = nodeIds[i];
+      const exists = results ? (results[i][1] as number) : 0;
+      if (exists === 1) {
+        total += parseInt(fields[nodeId], 10);
+      } else {
+        // Node died: clean up its orphaned field
+        await this.redis.hdel(activeKey, nodeId).catch(() => null);
+        await this.redis.srem('nodes:active', nodeId).catch(() => null);
+      }
+    }
+
+    return total;
   }
 
   async handleConnection(client: WebSocket, request: IncomingMessage) {
@@ -119,7 +187,11 @@ export class NotificationGateway
       userSockets.push(authClient);
       this.localClients.set(employeeId, userSockets);
 
-      this.logger.log(`Client connected to notifications: ${employeeId} (${userSockets.length} sockets)`);
+      // Increment cluster connection registry
+      const activeKey = `notif:nodes:${employeeId}`;
+      await this.redis.hincrby(activeKey, this.instanceId, 1);
+
+      this.logger.log(`Client connected to notifications: ${employeeId} (${userSockets.length} local sockets)`);
 
       this.sendToClient(authClient, 'connection_ack', { status: 'connected', employeeId });
 
@@ -147,16 +219,31 @@ export class NotificationGateway
 
     if (userSockets.length === 0) {
       this.localClients.delete(employeeId);
+      this.logger.log(`Client disconnected locally from notifications: ${employeeId}`);
+    } else {
+      this.localClients.set(employeeId, userSockets);
+      this.logger.log(`Tab closed for notifications client locally: ${employeeId}`);
+    }
+
+    // Decrement cluster connection registry
+    const activeKey = `notif:nodes:${employeeId}`;
+    const remainingLocal = await this.redis.hincrby(activeKey, this.instanceId, -1);
+    if (remainingLocal <= 0) {
+      await this.redis.hdel(activeKey, this.instanceId);
+    }
+
+    const countAfter = await this.getClusterNotificationCount(employeeId);
+    if (countAfter === 0) {
+      await this.redis.del(activeKey);
       // Record last seen key in Redis (expires in 7 days)
       const nowStr = new Date().toISOString();
       const existing = await this.redis.get(`notif:last_seen:${employeeId}`);
       if (!existing || new Date(nowStr) > new Date(existing)) {
         await this.redis.setex(`notif:last_seen:${employeeId}`, 604800, nowStr);
       }
-      this.logger.log(`Client fully disconnected from notifications: ${employeeId}`);
+      this.logger.log(`Client fully disconnected from notifications cluster-wide: ${employeeId}`);
     } else {
-      this.localClients.set(employeeId, userSockets);
-      this.logger.log(`Tab closed for notifications client: ${employeeId}`);
+      this.logger.log(`Client disconnected socket, but has ${countAfter} active cluster notification connections: ${employeeId}`);
     }
   }
 

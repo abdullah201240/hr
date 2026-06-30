@@ -94,7 +94,7 @@ describe('Chat Module (e2e)', () => {
 
     it('should reject missing query parameter', async () => {
       const res = await authGet(ctx, '/chat/search');
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(400);
     });
   });
 });

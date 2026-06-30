@@ -13,7 +13,7 @@ export function useTasksWebSocket() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3001/ws";
+    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3000/ws";
     let socket: WebSocket | null = null;
     let delay = 1000;
     let timeoutId: any = null;

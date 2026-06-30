@@ -95,8 +95,8 @@ describe('Tasks & Projects Module (e2e)', () => {
       const res = await authPost(ctx, '/tasks', {
         title: `E2E Test Task ${Date.now()}`,
         description: 'Test task',
-        priority: 'high',
-        status: 'todo',
+        priority: 'High',
+        status: 'Todo',
       });
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
@@ -115,12 +115,11 @@ describe('Tasks & Projects Module (e2e)', () => {
       const res = await authGet(ctx, '/tasks');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('data');
-      expect(Array.isArray(res.body.data.data)).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
     });
 
     it('should support status filter', async () => {
-      const res = await authGet(ctx, '/tasks?status=todo');
+      const res = await authGet(ctx, '/tasks?status=Todo');
       expect(res.status).toBe(200);
     });
   });
@@ -137,7 +136,7 @@ describe('Tasks & Projects Module (e2e)', () => {
   describe('PATCH /tasks/:id (update)', () => {
     it('should update task properties', async () => {
       const res = await authPatch(ctx, `/tasks/${createdTaskId}`, {
-        status: 'in_progress',
+        status: 'In Progress',
       });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -164,7 +163,8 @@ describe('Tasks & Projects Module (e2e)', () => {
       const projectId = projectRes.body.data.id;
 
       const res = await authPost(ctx, `/tasks/projects/${projectId}/milestones`, {
-        title: `E2E Milestone ${Date.now()}`,
+        projectId,
+        name: `E2E Milestone ${Date.now()}`,
         dueDate: '2026-08-01',
       });
       expect(res.status).toBe(201);
@@ -190,7 +190,7 @@ describe('Tasks & Projects Module (e2e)', () => {
   describe('PATCH /tasks/milestones/:id (update)', () => {
     it('should update a milestone', async () => {
       const res = await authPatch(ctx, `/tasks/milestones/${createdMilestoneId}`, {
-        title: 'Updated Milestone',
+        name: 'Updated Milestone',
       });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
