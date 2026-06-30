@@ -151,13 +151,13 @@ const letterTypes: LetterTypeConfig[] = [
   },
   {
     id: "relieving",
-    name: "Relieving Letter",
+    name: "Resignation Acceptance",
     category: "exit",
     icon: LogOut,
     color: "text-slate-600",
     bgColor: "bg-slate-500/10",
     description: "Resignation acceptance and relieving",
-    templateFields: ["resignationDate", "lastWorkingDay", "noticePeriod"],
+    templateFields: ["resignationDate", "noticePeriod", "lastWorkingDay", "reasonForLeaving", "reportingManager"],
   },
   {
     id: "proof_of_employment",
@@ -297,6 +297,9 @@ export function LetterCreateDialog({
       case "experience":
         defaultBody = `TO WHOM IT MAY CONCERN\n\nThis is to certify that ${employeeName} was employed with us as a ${formFields.designation || "[Designation]"} from ${formFields.joiningDate || "[Joining Date]"} to ${formFields.relievingDate || "[Relieving Date]"}.\n\nDuring their tenure, they demonstrated excellent professional commitment. We wish them success in their future endeavors.`
         break
+      case "relieving":
+        defaultBody = `We acknowledge receipt of your resignation letter dated ${formFields.resignationDate || "[Resignation Date]"}. After due consideration, Management has accepted your resignation from the position of ${formFields.designation || "[Designation]"} with effect from ${formFields.lastWorkingDay || "[Last Working Date]"}.`
+        break
       case "warning":
         defaultBody = `It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.`
         break
@@ -314,7 +317,11 @@ export function LetterCreateDialog({
     setFormFields({})
     const config = getLetterTypeConfig(typeId)
     if (config) {
-      setFormSubject(`Official Correspondence: ${config.name}`)
+      if (typeId === "relieving") {
+        setFormSubject("Acceptance of Resignation")
+      } else {
+        setFormSubject(`Official Correspondence: ${config.name}`)
+      }
     }
     if (errors.selectedType) setErrors((prev) => ({ ...prev, selectedType: "" }))
   }
@@ -606,7 +613,7 @@ export function LetterCreateDialog({
                             </div>
                           )}
                         </div>
-                      ) : field.toLowerCase().includes("date") || field.toLowerCase().includes("deadline") ? (
+                      ) : (field.toLowerCase().includes("date") || field.toLowerCase().includes("deadline")) && field !== "incidentDate" && field !== "deadline" ? (
                         <Input
                           type="date"
                           value={formFields[field] || ""}

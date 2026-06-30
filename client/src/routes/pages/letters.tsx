@@ -137,7 +137,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Salary revision notification",
-    templateFields: ["currentSalary", "newSalary", "effectiveDate", "incrementPercentage"],
+    templateFields: ["reviewPeriod", "performanceRating", "overallScore", "currentGrossSalary", "revisedGrossSalary", "monthlyIncrement", "annualIncrementPercentage", "managementRemarks"],
   },
   {
     id: "warning",
@@ -171,13 +171,13 @@ const letterTypes: LetterTypeConfig[] = [
   },
   {
     id: "relieving",
-    name: "Relieving Letter",
+    name: "Resignation Acceptance",
     category: "exit",
     icon: LogOut,
     color: "text-slate-600",
     bgColor: "bg-slate-500/10",
     description: "Resignation acceptance and relieving",
-    templateFields: ["resignationDate", "lastWorkingDay", "noticePeriod"],
+    templateFields: ["resignationDate", "noticePeriod", "lastWorkingDay", "reasonForLeaving", "reportingManager"],
   },
   {
     id: "proof_of_employment",
