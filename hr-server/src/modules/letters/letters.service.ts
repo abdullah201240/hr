@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { eq, and, or, like, desc } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
-import { issuedLetters, employees, departments } from '../../db/schema';
+import { issuedLetters, employees, departments, designations } from '../../db/schema';
 import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto } from './dto/letters.dto';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
@@ -72,8 +72,10 @@ export class LettersService {
         id: issuedLetters.id,
         type: issuedLetters.type,
         employeeId: issuedLetters.employeeId,
+        employeeIdCode: employees.employeeId,
         employeeName: employees.fullNameEnglish,
         employeeDepartment: departments.name,
+        employeeDesignation: designations.name,
         subject: issuedLetters.subject,
         issueDate: issuedLetters.issueDate,
         effectiveDate: issuedLetters.effectiveDate,
@@ -86,6 +88,7 @@ export class LettersService {
       .from(issuedLetters)
       .innerJoin(employees, eq(issuedLetters.employeeId, employees.id))
       .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(whereCondition)
       .orderBy(desc(issuedLetters.createdAt));
 
@@ -109,8 +112,10 @@ export class LettersService {
         id: issuedLetters.id,
         type: issuedLetters.type,
         employeeId: issuedLetters.employeeId,
+        employeeIdCode: employees.employeeId,
         employeeName: employees.fullNameEnglish,
         employeeDepartment: departments.name,
+        employeeDesignation: designations.name,
         subject: issuedLetters.subject,
         issueDate: issuedLetters.issueDate,
         effectiveDate: issuedLetters.effectiveDate,
@@ -123,6 +128,7 @@ export class LettersService {
       .from(issuedLetters)
       .innerJoin(employees, eq(issuedLetters.employeeId, employees.id))
       .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(issuedLetters.id, id))
       .limit(1);
 

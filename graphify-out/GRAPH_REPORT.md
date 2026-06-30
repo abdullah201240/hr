@@ -1,126 +1,132 @@
-# Graph Report - hr  (2026-06-24)
+# Graph Report - .  (2026-06-30)
 
 ## Corpus Check
-- 514 files · ~273,256 words
-- Verdict: corpus is large enough that graph structure adds value.
+- Large corpus: 571 files · ~307,687 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder, or use --no-semantic to run AST-only.
 
 ## Summary
-- 2207 nodes · 3242 edges · 271 communities (150 shown, 121 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 113 edges (avg confidence: 0.8)
+- 2431 nodes · 3566 edges · 300 communities (161 shown, 139 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 111 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
-## Graph Freshness
-- Built from commit: `494d762f`
-- Run `git rev-parse HEAD` and compare to check if the graph is stale.
-- Run `graphify update .` after code changes (no API cost).
-
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
-- [[_COMMUNITY_Task Management|Task Management]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Task Management|Task Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
 - [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Configuration|Configuration]]
+- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_Assets Management|Assets Management]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_Testing Utilities|Testing Utilities]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
 - [[_COMMUNITY_Task Management|Task Management]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Task Management|Task Management]]
+- [[_COMMUNITY_Task Management|Task Management]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_Recruitment System|Recruitment System]]
+- [[_COMMUNITY_Chat System|Chat System]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Task Management|Task Management]]
+- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_Performance Reviews|Performance Reviews]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Recruitment System|Recruitment System]]
+- [[_COMMUNITY_Letters & Documentation|Letters & Documentation]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Task Management|Task Management]]
+- [[_COMMUNITY_Performance Reviews|Performance Reviews]]
+- [[_COMMUNITY_Leave Management|Leave Management]]
+- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Office Regulations|Office Regulations]]
+- [[_COMMUNITY_Chat System|Chat System]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Chat System|Chat System]]
 - [[_COMMUNITY_Claims & Reimbursement|Claims & Reimbursement]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Caching Layer|Caching Layer]]
 - [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_UI Components|UI Components]]
+- [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
+- [[_COMMUNITY_RBAC & Permissions|RBAC & Permissions]]
+- [[_COMMUNITY_Performance Reviews|Performance Reviews]]
+- [[_COMMUNITY_File Upload|File Upload]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
 - [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
 - [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
 - [[_COMMUNITY_Notifications System|Notifications System]]
 - [[_COMMUNITY_File Upload|File Upload]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Caching Layer|Caching Layer]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
 - [[_COMMUNITY_Office Regulations|Office Regulations]]
+- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Department Management|Department Management]]
 - [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
 - [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_UI Components|UI Components]]
 - [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_Provident Fund|Provident Fund]]
+- [[_COMMUNITY_Cache Cache Service|Cache Cache Service]]
 - [[_COMMUNITY_Chat System|Chat System]]
+- [[_COMMUNITY_Provident Fund|Provident Fund]]
+- [[_COMMUNITY_Provident Fund|Provident Fund]]
 - [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
 - [[_COMMUNITY_UI Components|UI Components]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Employee Separation|Employee Separation]]
-- [[_COMMUNITY_Caching Layer|Caching Layer]]
-- [[_COMMUNITY_Caching Layer|Caching Layer]]
-- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Employee Separation|Employee Separation]]
-- [[_COMMUNITY_Performance Reviews|Performance Reviews]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Announcements|Announcements]]
-- [[_COMMUNITY_Caching Layer|Caching Layer]]
-- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
 - [[_COMMUNITY_Designation Management|Designation Management]]
 - [[_COMMUNITY_Department Management|Department Management]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Disciplinary Actions|Disciplinary Actions]]
-- [[_COMMUNITY_Community 92|Community 92]]
-- [[_COMMUNITY_E2E Tests|E2E Tests]]
-- [[_COMMUNITY_RBAC & Permissions|RBAC & Permissions]]
-- [[_COMMUNITY_Announcements|Announcements]]
-- [[_COMMUNITY_Community 98|Community 98]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Announcements|Announcements]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_Separation Separation Controller|Separation Separation Controller]]
 - [[_COMMUNITY_Performance Reviews|Performance Reviews]]
+- [[_COMMUNITY_Leave Types|Leave Types]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Hooks Useannouncements Ts|Hooks Useannouncements Ts]]
+- [[_COMMUNITY_Reports & Analytics|Reports & Analytics]]
+- [[_COMMUNITY_Designation Management|Designation Management]]
+- [[_COMMUNITY_Claims & Reimbursement|Claims & Reimbursement]]
+- [[_COMMUNITY_Employee Loans|Employee Loans]]
+- [[_COMMUNITY_Employee Loans|Employee Loans]]
+- [[_COMMUNITY_Letters & Documentation|Letters & Documentation]]
+- [[_COMMUNITY_Chat System|Chat System]]
+- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
+- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
+- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
+- [[_COMMUNITY_Designation Management|Designation Management]]
+- [[_COMMUNITY_Department Management|Department Management]]
+- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Leave Types|Leave Types]]
+- [[_COMMUNITY_Assets Management|Assets Management]]
+- [[_COMMUNITY_Assets Management|Assets Management]]
+- [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
+- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Disciplinary Actions|Disciplinary Actions]]
+- [[_COMMUNITY_Interceptors Logging Interceptor|Interceptors Logging Interceptor]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
+- [[_COMMUNITY_Letters & Documentation|Letters & Documentation]]
+- [[_COMMUNITY_Recruitment System|Recruitment System]]
+- [[_COMMUNITY_RBAC & Permissions|RBAC & Permissions]]
+- [[_COMMUNITY_Announcements Announcements Controller|Announcements Announcements Controller]]
+- [[_COMMUNITY_Org Chart Org|Org Chart Org]]
+- [[_COMMUNITY_Disciplinary Actions|Disciplinary Actions]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_Reports & Analytics|Reports & Analytics]]
+- [[_COMMUNITY_Claims & Reimbursement|Claims & Reimbursement]]
+- [[_COMMUNITY_Reports & Analytics|Reports & Analytics]]
+- [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Disciplinary Actions|Disciplinary Actions]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
 - [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Employee Separation|Employee Separation]]
 - [[_COMMUNITY_Task Management|Task Management]]
 - [[_COMMUNITY_Caching Layer|Caching Layer]]
 - [[_COMMUNITY_Office Regulations|Office Regulations]]
@@ -128,340 +134,401 @@
 - [[_COMMUNITY_Notifications System|Notifications System]]
 - [[_COMMUNITY_Task Management|Task Management]]
 - [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Dto Pagination Dto|Dto Pagination Dto]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
-- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_RBAC & Permissions|RBAC & Permissions]]
 - [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
-- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
-- [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
 - [[_COMMUNITY_Claims & Reimbursement|Claims & Reimbursement]]
 - [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
+- [[_COMMUNITY_Interceptors Audit Log|Interceptors Audit Log]]
 - [[_COMMUNITY_Caching Layer|Caching Layer]]
+- [[_COMMUNITY_Employee Loans|Employee Loans]]
+- [[_COMMUNITY_Task Management|Task Management]]
+- [[_COMMUNITY_Letters & Documentation|Letters & Documentation]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
+- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
+- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
+- [[_COMMUNITY_Dto Announcement Dto|Dto Announcement Dto]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
 - [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
-- [[_COMMUNITY_Employee Separation|Employee Separation]]
+- [[_COMMUNITY_Dto Separation Dto|Dto Separation Dto]]
 - [[_COMMUNITY_Disciplinary Actions|Disciplinary Actions]]
 - [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
 - [[_COMMUNITY_Performance Reviews|Performance Reviews]]
+- [[_COMMUNITY_Assets Management|Assets Management]]
 - [[_COMMUNITY_Notifications System|Notifications System]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Community 158|Community 158]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_UI Components|UI Components]]
-- [[_COMMUNITY_Community 165|Community 165]]
-- [[_COMMUNITY_E2E Tests|E2E Tests]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Community 168|Community 168]]
-- [[_COMMUNITY_Community 169|Community 169]]
-- [[_COMMUNITY_Configuration|Configuration]]
+- [[_COMMUNITY_Interceptors Response Interceptor|Interceptors Response Interceptor]]
+- [[_COMMUNITY_Chat System|Chat System]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Designation Management|Designation Management]]
+- [[_COMMUNITY_Department Management|Department Management]]
+- [[_COMMUNITY_Dto Org Chart|Dto Org Chart]]
+- [[_COMMUNITY_Dto Settlement Dto|Dto Settlement Dto]]
+- [[_COMMUNITY_Leave Types|Leave Types]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_Src App Module|Src App Module]]
+- [[_COMMUNITY_Db Index Databasemodule|Db Index Databasemodule]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
+- [[_COMMUNITY_Employee Loans|Employee Loans]]
 - [[_COMMUNITY_Task Management|Task Management]]
-- [[_COMMUNITY_HR Letters|HR Letters]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Settings|Settings]]
-- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
-- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
-- [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
+- [[_COMMUNITY_Letters & Documentation|Letters & Documentation]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
+- [[_COMMUNITY_Leave Application|Leave Application]]
+- [[_COMMUNITY_Chat System|Chat System]]
+- [[_COMMUNITY_Provident Fund|Provident Fund]]
+- [[_COMMUNITY_Provident Fund|Provident Fund]]
 - [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
 - [[_COMMUNITY_Authentication & Auth|Authentication & Auth]]
 - [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
-- [[_COMMUNITY_Health Checks|Health Checks]]
-- [[_COMMUNITY_Recruitment Module|Recruitment Module]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Festival Bonus|Festival Bonus]]
+- [[_COMMUNITY_Health Health Module|Health Health Module]]
+- [[_COMMUNITY_Recruitment System|Recruitment System]]
 - [[_COMMUNITY_Designation Management|Designation Management]]
 - [[_COMMUNITY_Designation Management|Designation Management]]
 - [[_COMMUNITY_RBAC & Permissions|RBAC & Permissions]]
-- [[_COMMUNITY_Announcements|Announcements]]
+- [[_COMMUNITY_Announcements Announcements Module|Announcements Announcements Module]]
 - [[_COMMUNITY_Department Management|Department Management]]
 - [[_COMMUNITY_Department Management|Department Management]]
 - [[_COMMUNITY_Attendance Tracking|Attendance Tracking]]
 - [[_COMMUNITY_Dashboard & Analytics|Dashboard & Analytics]]
-- [[_COMMUNITY_Community 195|Community 195]]
-- [[_COMMUNITY_Community 196|Community 196]]
-- [[_COMMUNITY_Employee Separation|Employee Separation]]
+- [[_COMMUNITY_Org Chart Org|Org Chart Org]]
+- [[_COMMUNITY_Queue Queue Module|Queue Queue Module]]
+- [[_COMMUNITY_Separation Separation Module|Separation Separation Module]]
 - [[_COMMUNITY_Disciplinary Actions|Disciplinary Actions]]
 - [[_COMMUNITY_Payroll & Salary|Payroll & Salary]]
 - [[_COMMUNITY_Performance Reviews|Performance Reviews]]
 - [[_COMMUNITY_Office Regulations|Office Regulations]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Leave Management|Leave Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
-- [[_COMMUNITY_Employee Management|Employee Management]]
+- [[_COMMUNITY_Leave Types|Leave Types]]
+- [[_COMMUNITY_Leave Types|Leave Types]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Employee Directory|Employee Directory]]
+- [[_COMMUNITY_Assets Management|Assets Management]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_Notifications System|Notifications System]]
+- [[_COMMUNITY_File Upload|File Upload]]
+- [[_COMMUNITY_Reports & Analytics|Reports & Analytics]]
+- [[_COMMUNITY_Claims & Reimbursement|Claims & Reimbursement]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 101 edges
-2. `Input()` - 64 edges
-3. `Badge()` - 50 edges
-4. `Label()` - 42 edges
-5. `PayrollService` - 41 edges
-6. `Select()` - 39 edges
-7. `SelectValue()` - 39 edges
-8. `SelectTrigger()` - 39 edges
-9. `SelectContent()` - 39 edges
+1. `cn()` - 104 edges
+2. `Input()` - 70 edges
+3. `Badge()` - 57 edges
+4. `Label()` - 45 edges
+5. `Dialog()` - 40 edges
+6. `Select()` - 40 edges
+7. `SelectValue()` - 40 edges
+8. `SelectTrigger()` - 40 edges
+9. `SelectContent()` - 40 edges
 10. `TasksService` - 38 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `openEditDialog()` --calls--> `String()`  [INFERRED]
-  client/src/components/organization/org-chart.tsx → client/src/routes/pages/company-attendance.tsx
+- `getDurationDays()` --calls--> `String()`  [INFERRED]
+  client/src/components/dashboard/apply-leave-dialog.tsx → client/src/routes/pages/company-attendance.tsx
 - `getLastDayOfMonth()` --calls--> `String()`  [INFERRED]
   client/src/components/payroll/DisbursementTab.tsx → client/src/routes/pages/company-attendance.tsx
+- `formatDateDMY()` --calls--> `String()`  [INFERRED]
+  client/src/components/leave/leave-details-dialog.tsx → client/src/routes/pages/company-attendance.tsx
+- `openOverrideDialog()` --calls--> `String()`  [INFERRED]
+  client/src/routes/pages/payroll-festival-bonus.tsx → client/src/routes/pages/company-attendance.tsx
 - `handleSubmit()` --calls--> `onSubmit()`  [INFERRED]
   client/src/components/attendance/OverrideAttendanceDialog.tsx → client/src/routes/pages/login.tsx
-- `getCards()` --calls--> `String()`  [INFERRED]
-  client/src/components/ceo-dashboard/kpi-metric-cards.tsx → client/src/routes/pages/company-attendance.tsx
-- `handleFormSubmit()` --calls--> `onSubmit()`  [INFERRED]
-  client/src/components/tasks/TaskCreateDialog.tsx → client/src/routes/pages/login.tsx
 
-## Communities (271 total, 121 thin omitted)
+## Communities (300 total, 139 thin omitted)
 
-### Community 0 - "Recruitment Module"
-Cohesion: 0.05
-Nodes (7): patternOf(), resolveKey(), CacheService, EmployeeService, LoginThrottleGuard, LeaveApplicationProcessor, LeaveApplicationService
-
-### Community 1 - "Notifications System"
-Cohesion: 0.05
-Nodes (34): useAddChecklistItemMutation(), useAddCommentMutation(), useBulkDeleteTasksMutation(), useCreateAttachmentMutation(), useCreateDependencyMutation(), useCreateMilestoneMutation(), useCreateProjectMutation(), useCreateTimeEntryMutation() (+26 more)
-
-### Community 2 - "Recruitment Module"
+### Community 0 - "UI Components"
 Cohesion: 0.06
 Nodes (38): goToStep(), handleValidationFailure(), markComplete(), nextStep(), prevStep(), useAddOnboardingTaskMutation(), useCandidateQuery(), useCandidatesQuery() (+30 more)
 
-### Community 3 - "Recruitment Module"
+### Community 1 - "UI Components"
+Cohesion: 0.07
+Nodes (12): useLeaveTypeOptionsQuery(), useDisburseMutation(), useCreatePolicyMutation(), useDeletePolicyMutation(), useRegulationPoliciesQuery(), useRegulationRequestsQuery(), useUpdatePolicyMutation(), getLastDayOfMonth() (+4 more)
+
+### Community 2 - "Notifications System"
 Cohesion: 0.05
-Nodes (22): useTheme(), useArchiveAllReadMutation(), useArchiveMutation(), useDeleteNotificationMutation(), useExecuteActionMutation(), useMarkAllAsReadMutation(), useMarkAsReadMutation(), useNotificationsInfiniteQuery() (+14 more)
+Nodes (21): useTheme(), useArchiveAllReadMutation(), useArchiveMutation(), useDeleteNotificationMutation(), useExecuteActionMutation(), useMarkAllAsReadMutation(), useMarkAsReadMutation(), useNotificationsInfiniteQuery() (+13 more)
 
-### Community 4 - "Employee Management"
+### Community 3 - "Assets Management"
 Cohesion: 0.05
-Nodes (19): useCreateDepartmentMutation(), useDeleteDepartmentMutation(), useDepartmentQuery(), useDepartmentsQuery(), useUpdateDepartmentMutation(), useChangeEmployeeStatusMutation(), useCreateEmployeeMutation(), useEmployeeOptionsQuery() (+11 more)
+Nodes (20): useAllocateAssetMutation(), useAssetDetailsQuery(), useAssetsQuery(), useCreateAssetMutation(), useReturnAssetMutation(), useUpdateAssetConditionMutation(), useCreateLeaveTypeMutation(), useLeaveTypesQuery() (+12 more)
 
-### Community 5 - "Recruitment Module"
-Cohesion: 0.08
-Nodes (12): useLeaveTypeOptionsQuery(), useDisburseMutation(), exportToCsv(), handleExport(), getLastDayOfMonth(), handleExport(), handleExport(), handleExport() (+4 more)
+### Community 4 - "Notifications System"
+Cohesion: 0.06
+Nodes (3): ChatGateway, NotificationService, SeparationService
 
-### Community 6 - "Notifications System"
+### Community 6 - "Testing Utilities"
 Cohesion: 0.23
 Nodes (16): authDelete(), authGet(), authHeaders(), authPatch(), authPost(), authUpload(), bootstrapApp(), clearRateLimitKeys() (+8 more)
 
-### Community 8 - "Leave Management"
+### Community 7 - "Payroll & Salary"
+Cohesion: 0.07
+Nodes (21): useAddFestivalPayoutCommentMutation(), useApproveFestivalPayoutLmMutation(), useApproveFestivalPayoutMdMutation(), useBulkApproveFestivalLmMutation(), useBulkApproveFestivalMdMutation(), useCreateFestivalCycleMutation(), useDeleteFestivalCycleMutation(), useDisburseFestivalCycleMutation() (+13 more)
+
+### Community 11 - "Task Management"
 Cohesion: 0.08
-Nodes (10): ChatService, sendWSMessage(), confirmDeleteMessage(), handleInputChange(), handleKeyDown(), handleSendMessage(), handleStartDM(), handleStopTyping() (+2 more)
+Nodes (25): useAddChecklistItemMutation(), useAddCommentMutation(), useBulkDeleteTasksMutation(), useCreateAttachmentMutation(), useCreateDependencyMutation(), useCreateMilestoneMutation(), useCreateProjectMutation(), useCreateTimeEntryMutation() (+17 more)
 
-### Community 9 - "Recruitment Module"
+### Community 12 - "Employee Directory"
+Cohesion: 0.07
+Nodes (12): useChangeEmployeeStatusMutation(), useCreateEmployeeMutation(), useEmployeeQuery(), useUpdateEmployeeMutation(), useCreateRoleMutation(), useDeleteRoleMutation(), usePermissionsQuery(), useRolesQuery() (+4 more)
+
+### Community 13 - "UI Components"
+Cohesion: 0.15
+Nodes (11): handleNidPdfChange(), handlePhotoChange(), updateFile(), useCreateDesignationMutation(), useUpdateDesignationMutation(), CreateDesignationPage(), EditDesignationPage(), Select() (+3 more)
+
+### Community 14 - "UI Components"
 Cohesion: 0.1
-Nodes (13): handleNidPdfChange(), handlePhotoChange(), updateFile(), useDepartmentOptionsQuery(), useCreateDesignationMutation(), useSaveSettlementMutation(), useSettlementQuery(), useUpdateSettlementStatusMutation() (+5 more)
+Nodes (12): convert12to24(), convert24to12(), useFestivalBonusSettingsQuery(), useUpdateFestivalBonusSettingsMutation(), useCreateRequestMutation(), handleReset(), handleSave(), RequestForm() (+4 more)
 
-### Community 12 - "Recruitment Module"
-Cohesion: 0.09
-Nodes (14): handleSubmit(), convert12to24(), convert24to12(), handleSubmit(), handleReset(), handleSave(), onSubmit(), handleFormSubmit() (+6 more)
+### Community 18 - "Task Management"
+Cohesion: 0.1
+Nodes (9): useDeleteCommentMutation(), useDeleteTimeEntryMutation(), useUpdateCommentMutation(), handleAddWatcher(), handleDescSave(), handleMetaUpdate(), handleRemoveWatcher(), handleStartTimer() (+1 more)
 
-### Community 15 - "Employee Management"
+### Community 19 - "UI Components"
 Cohesion: 0.09
 Nodes (10): useIsMobile(), useNotificationSocket(), useTasksWebSocket(), useWebSocket(), toggleSidebar(), Sheet(), SheetDescription(), handleKeyDown() (+2 more)
 
-### Community 16 - "Notifications System"
-Cohesion: 0.1
-Nodes (9): computeFinalAttendance(), mapBalances(), mapLeaveApplications(), mapRegularHolidays(), RequestCorrectionDialog(), useMyRangeAttendanceQuery(), useOverrideAttendanceMutation(), useRangeAttendanceQuery() (+1 more)
-
-### Community 17 - "Recruitment Module"
+### Community 20 - "Performance Reviews"
 Cohesion: 0.12
 Nodes (9): useAppraisalCyclesQuery(), useCreateCycleMutation(), useCreateKpiMutation(), useCycleAppraisalsQuery(), useDeleteKpiMutation(), useEmployeeAppraisalQuery(), useSubmitManagerAppraisalMutation(), useSubmitSelfAppraisalMutation() (+1 more)
 
-### Community 20 - "Configuration"
-Cohesion: 0.09
-Nodes (5): UserAvatar(), Footer(), ScrollArea(), Separator(), TooltipContent()
+### Community 21 - "Payroll & Salary"
+Cohesion: 0.12
+Nodes (9): useAssignEmployeeSalaryMutation(), useBulkSalaryRevisionMutation(), useCreateSalaryTemplateMutation(), useDeleteSalaryTemplateMutation(), useEmployeeSalariesQuery(), useEmployeeSalaryHistoryQuery(), useSalaryTemplatesQuery(), useUpdateSalaryTemplateMutation() (+1 more)
 
-### Community 21 - "Task Management"
+### Community 24 - "Letters & Documentation"
 Cohesion: 0.11
 Nodes (5): useCreateLetterMutation(), useDeleteLetterMutation(), useLetterQuery(), useLettersQuery(), useUpdateLetterStatusMutation()
 
-### Community 22 - "Claims & Reimbursement"
-Cohesion: 0.11
-Nodes (7): useApprovePayslipMutation(), useBulkApprovePayrollMutation(), useRejectPayslipMutation(), useSubmitPayrollMutation(), useSyncPayrollMutation(), useUnlockPayrollMutation(), useUpdatePayslipAdjustmentsMutation()
-
-### Community 23 - "Notifications System"
-Cohesion: 0.12
-Nodes (7): useCreatePolicyMutation(), useCreateRequestMutation(), useDeletePolicyMutation(), useRegulationPoliciesQuery(), useRegulationRequestsQuery(), useUpdatePolicyMutation(), RequestForm()
-
-### Community 24 - "Employee Management"
+### Community 26 - "Task Management"
 Cohesion: 0.1
 Nodes (19): BulkDeleteDto, BulkTaskImportDto, BulkTimeLogDto, BulkTimeLogEntryDto, CreateAttachmentDto, CreateChecklistItemDto, CreateCommentDto, CreateDependencyDto (+11 more)
 
-### Community 25 - "Attendance Tracking"
-Cohesion: 0.24
-Nodes (14): useEmployeesQuery(), usePayrollCycleQuery(), usePfBalancesQuery(), useProvidentFundSettingsQuery(), useAssignEmployeeSalaryMutation(), useEmployeeSalariesQuery(), useSalaryTemplatesQuery(), PayrollDisbursementPage() (+6 more)
-
-### Community 27 - "Employee Management"
-Cohesion: 0.12
-Nodes (4): useCreateSeparationMutation(), useSeparationRecordsQuery(), useUpdateSeparationMutation(), Checkbox()
-
-### Community 28 - "Employee Management"
-Cohesion: 0.12
-Nodes (8): formatDateDMY(), formatDateTimeDMY(), GlobalExceptionFilter, formatDateDMY(), formatDateTimeDMY(), getApprovalHistory(), String(), PayrollProcessor
-
-### Community 29 - "Payroll & Salary"
+### Community 28 - "Leave Management"
 Cohesion: 0.2
 Nodes (15): useAnnouncementsPaginated(), useMyAttendanceQuery(), useHolidaysQuery(), useApplyLeaveMutation(), useApproveLeaveMutation(), useCancelLeaveMutation(), useLeaveApplicationsQuery(), useLeaveBalancesQuery() (+7 more)
 
-### Community 33 - "Caching Layer"
-Cohesion: 0.12
-Nodes (5): useBulkSalaryRevisionMutation(), useCreateSalaryTemplateMutation(), useDeleteSalaryTemplateMutation(), useEmployeeSalaryHistoryQuery(), useUpdateSalaryTemplateMutation()
+### Community 29 - "UI Components"
+Cohesion: 0.11
+Nodes (4): Footer(), saveShifts(), timeToMinutes(), Separator()
 
-### Community 40 - "Employee Management"
-Cohesion: 0.13
+### Community 30 - "Employee Directory"
+Cohesion: 0.12
+Nodes (4): useCreateSeparationMutation(), useSeparationRecordsQuery(), useUpdateSeparationMutation(), Checkbox()
+
+### Community 35 - "Chat System"
+Cohesion: 0.16
+Nodes (8): sendWSMessage(), confirmDeleteMessage(), handleInputChange(), handleKeyDown(), handleSendMessage(), handleStopTyping(), AlertDialog(), AlertDialogCancel()
+
+### Community 36 - "Claims & Reimbursement"
+Cohesion: 0.18
+Nodes (5): useClaimsQuery(), useCreateClaimMutation(), useUpdateClaimStatusMutation(), Dialog(), DialogTrigger()
+
+### Community 37 - "Leave Management"
+Cohesion: 0.12
+Nodes (10): handleSubmit(), getDurationDays(), handleSubmit(), getLetterTypeConfig(), handleSubmitForm(), handleTypeSelect(), resetForm(), onSubmit() (+2 more)
+
+### Community 38 - "Dashboard & Analytics"
+Cohesion: 0.12
 Nodes (7): formatCurrency(), getCards(), PerformanceOverview(), QuickActions(), PageSkeleton(), useExecutiveDashboardQuery(), Skeleton()
 
-### Community 41 - "Employee Management"
-Cohesion: 0.19
-Nodes (4): useClaimsQuery(), useCreateClaimMutation(), useUpdateClaimStatusMutation(), DialogTrigger()
-
-### Community 42 - "Payroll & Salary"
+### Community 42 - "Attendance Tracking"
 Cohesion: 0.16
 Nodes (6): useAttendanceSettingsQuery(), useCreateHolidayMutation(), useUpdateAttendanceSettingsMutation(), useUpdateHolidayMutation(), calculateCapacity(), parseTimeToMinutes()
 
-### Community 44 - "Attendance Tracking"
+### Community 43 - "Employee Directory"
+Cohesion: 0.14
+Nodes (4): useDepartmentOptionsQuery(), useDeleteDesignationMutation(), useDesignationOptionsQuery(), useDesignationsQuery()
+
+### Community 44 - "Dashboard & Analytics"
+Cohesion: 0.14
+Nodes (6): formatDateDMY(), formatDateTimeDMY(), GlobalExceptionFilter, openEditDialog(), String(), PayrollProcessor
+
+### Community 46 - "Payroll & Salary"
 Cohesion: 0.18
 Nodes (7): getDaysInSelectedMonth(), getExistingAdjustmentItems(), handleAddAdjustmentItem(), handleApplyPartialPayPeriod(), openAdjustmentDialog(), parseDayInput(), parseMoneyInput()
 
-### Community 45 - "Notifications System"
-Cohesion: 0.14
-Nodes (5): useUpdateProvidentFundSettingsMutation(), getLastDayOfMonth(), handleMonthChange(), GlobalPfSetupDialog(), SalaryDisbursementDialog()
+### Community 47 - "Payroll & Salary"
+Cohesion: 0.15
+Nodes (3): useApprovePayslipMutation(), useBulkApprovePayrollMutation(), useRejectPayslipMutation()
 
-### Community 48 - "Attendance Tracking"
+### Community 52 - "File Upload"
 Cohesion: 0.15
 Nodes (3): DeleteByPrefixQueryDto, UploadController, UploadQueryDto
 
-### Community 52 - "Payroll & Salary"
-Cohesion: 0.18
-Nodes (4): useCreateLeaveTypeMutation(), useLeaveTypesQuery(), useUpdateLeaveTypeMutation(), LeaveSummaryCards()
+### Community 54 - "Attendance Tracking"
+Cohesion: 0.19
+Nodes (5): computeFinalAttendance(), mapBalances(), mapLeaveApplications(), mapRegularHolidays(), RequestCorrectionDialog()
 
-### Community 55 - "Employee Management"
+### Community 55 - "Department Management"
+Cohesion: 0.19
+Nodes (7): useCreateDepartmentMutation(), useDeleteDepartmentMutation(), useDepartmentQuery(), useDepartmentsQuery(), useUpdateDepartmentMutation(), useEmployeeOptionsQuery(), ViewDepartmentPage()
+
+### Community 56 - "Payroll & Salary"
+Cohesion: 0.17
+Nodes (4): getLastDayOfMonth(), handleMonthChange(), GlobalPfSetupDialog(), SalaryDisbursementDialog()
+
+### Community 57 - "Payroll & Salary"
+Cohesion: 0.17
+Nodes (7): useDisbursementsQuery(), useMyPayslipsQuery(), useSubmitPayrollMutation(), useSyncPayrollMutation(), useUnlockPayrollMutation(), useUpdatePayslipAdjustmentsMutation(), PayrollDisbursementLogsPage()
+
+### Community 59 - "Leave Application"
+Cohesion: 0.2
+Nodes (3): patternOf(), resolveKey(), LoginThrottleGuard
+
+### Community 62 - "Authentication & Auth"
 Cohesion: 0.17
 Nodes (4): ProtectedRoute(), PermissionGuard(), ThemeProvider(), AuthLayout()
 
-### Community 59 - "Notifications System"
+### Community 63 - "UI Components"
+Cohesion: 0.17
+Nodes (3): UserAvatar(), ScrollArea(), TooltipContent()
+
+### Community 65 - "Provident Fund"
+Cohesion: 0.21
+Nodes (6): usePfBalancesQuery(), useApplyPfWithdrawalMutation(), usePfLedgerQuery(), usePfWithdrawalsQuery(), useProcessPfWithdrawalMutation(), useUpdateProvidentFundSettingsMutation()
+
+### Community 71 - "UI Components"
 Cohesion: 0.27
 Nodes (3): buildTree(), flattenNodes(), OrgChartService
 
-### Community 64 - "Dashboard & Analytics"
+### Community 72 - "Attendance Tracking"
+Cohesion: 0.18
+Nodes (4): useMyRangeAttendanceQuery(), useOverrideAttendanceMutation(), useRangeAttendanceQuery(), useSubmitCorrectionMutation()
+
+### Community 73 - "Payroll & Salary"
+Cohesion: 0.2
+Nodes (5): exportToCsv(), handleExport(), handleExport(), handleExport(), handleExport()
+
+### Community 74 - "Payroll & Salary"
+Cohesion: 0.45
+Nodes (7): useEmployeesQuery(), usePayrollCycleQuery(), useProvidentFundSettingsQuery(), PayrollDisbursementPage(), PayrollLmApprovalsPage(), PayrollMdApprovalsPage(), DetailedPayslipDialog()
+
+### Community 79 - "Performance Reviews"
 Cohesion: 0.2
 Nodes (9): CreateCycleDto, CreateKpiDto, KpiScoreItemDto, ManagerKpiScoreItemDto, SelfKpiScoreItemDto, SubmitManagerAppraisalDto, SubmitSelfAppraisalDto, UpdateCycleStatusDto (+1 more)
 
-### Community 66 - "Attendance Tracking"
+### Community 81 - "Employee Directory"
 Cohesion: 0.2
 Nodes (3): EmployeeCreateProcessor, EmployeeStatusProcessor, EmployeeUpdateProcessor
 
-### Community 67 - "Employee Separation"
-Cohesion: 0.29
-Nodes (7): useDeleteDesignationMutation(), useDesignationOptionsQuery(), useDesignationQuery(), useDesignationsQuery(), useUpdateDesignationMutation(), EditDesignationPage(), ViewDesignationPage()
-
-### Community 69 - "Caching Layer"
+### Community 82 - "Hooks Useannouncements Ts"
 Cohesion: 0.2
 Nodes (3): useCreateAnnouncement(), useDeleteAnnouncement(), useUpdateAnnouncement()
 
-### Community 70 - "Attendance Tracking"
-Cohesion: 0.27
-Nodes (5): useMyPayslipsQuery(), usePermissions(), useUpdateRequestStatusMutation(), RequestDetail(), toLocaleDateString()
+### Community 83 - "Reports & Analytics"
+Cohesion: 0.29
+Nodes (5): useAttendanceSummaryQuery(), useLeaveUtilizationQuery(), usePayrollCostQuery(), useReportsSummaryKpisQuery(), useWorkforceHeadcountQuery()
 
-### Community 72 - "Performance Reviews"
+### Community 89 - "Chat System"
 Cohesion: 0.22
 Nodes (8): AddMemberDto, CreateChannelDto, CreateDirectRoomDto, WSDeleteMessageDto, WSEditMessageDto, WSMessageDto, WSReadReceiptDto, WSTypingDto
 
-### Community 75 - "Dashboard & Analytics"
+### Community 92 - "Payroll & Salary"
 Cohesion: 0.22
 Nodes (8): AssignEmployeeSalaryDto, BulkSalaryRevisionDto, CreateSalaryTemplateComponentDto, CreateSalaryTemplateDto, EmployeeSalaryQueryDto, UpdateEmployeeSalaryDto, UpdateSalaryTemplateComponentDto, UpdateSalaryTemplateDto
 
-### Community 82 - "Authentication & Auth"
-Cohesion: 0.25
-Nodes (3): exportAttendanceCSV(), AttendanceKPIs(), handleExportCSV()
-
-### Community 83 - "Employee Management"
-Cohesion: 0.28
-Nodes (3): useCreateDisciplinaryCaseMutation(), useDisciplinaryCasesQuery(), useUpdateDisciplinaryCaseMutation()
-
-### Community 84 - "Designation Management"
+### Community 99 - "Dashboard & Analytics"
 Cohesion: 0.25
 Nodes (5): LeaveBalanceChips(), formatDateStr(), formatFullDate(), formatMonthYear(), resolveLeaveIcon()
 
-### Community 87 - "Leave Management"
+### Community 102 - "Attendance Tracking"
+Cohesion: 0.25
+Nodes (3): exportAttendanceCSV(), AttendanceKPIs(), handleExportCSV()
+
+### Community 103 - "Disciplinary Actions"
+Cohesion: 0.28
+Nodes (3): useCreateDisciplinaryCaseMutation(), useDisciplinaryCasesQuery(), useUpdateDisciplinaryCaseMutation()
+
+### Community 107 - "Recruitment System"
 Cohesion: 0.25
 Nodes (7): CreateCandidateDto, CreateJobOpeningDto, GenerateJoiningLetterDto, GenerateOfferLetterDto, ScheduleInterviewDto, UpdateCandidateDto, UpdateJobOpeningDto
 
-### Community 100 - "Notifications System"
+### Community 120 - "Employee Directory"
 Cohesion: 0.29
 Nodes (6): BankDetailsDto, ChildDto, CreateEmployeeDto, DocumentDto, NomineeDto, SpouseDto
 
-### Community 104 - "Attendance Tracking"
+### Community 122 - "UI Components"
+Cohesion: 0.38
+Nodes (3): useSaveSettlementMutation(), useSettlementQuery(), useUpdateSettlementStatusMutation()
+
+### Community 125 - "Office Regulations"
 Cohesion: 0.33
 Nodes (5): CreatePolicyDto, CreateRequestDto, RegulationQueryDto, UpdatePolicyDto, UpdateRequestStatusDto
 
-### Community 111 - "Performance Reviews"
-Cohesion: 0.47
-Nodes (4): getLetterTypeConfig(), handleSubmitForm(), handleTypeSelect(), resetForm()
+### Community 132 - "Leave Management"
+Cohesion: 0.4
+Nodes (3): formatDateDMY(), formatDateTimeDMY(), getApprovalHistory()
 
-### Community 113 - "Employee Separation"
+### Community 134 - "Attendance Tracking"
 Cohesion: 0.4
 Nodes (4): AdminLogOverrideDto, CheckInDto, CheckOutDto, SubmitCorrectionDto
 
-### Community 117 - "Notifications System"
+### Community 137 - "Claims & Reimbursement"
 Cohesion: 0.4
 Nodes (4): ClaimAttachmentDto, ClaimQueryDto, CreateClaimDto, UpdateClaimStatusDto
 
-### Community 121 - "Task Management"
-Cohesion: 0.4
-Nodes (4): ApplyAdjustmentsToCycleDto, CreateSalaryAdjustmentDto, CrossMonthAdjustmentMetadataDto, UpdateAdjustmentStatusDto
+### Community 143 - "Employee Loans"
+Cohesion: 0.5
+Nodes (3): CreateLoanRequestDto, ProcessLoanRequestDto, RecordManualPaymentDto
 
-### Community 125 - "Attendance Tracking"
+### Community 145 - "Letters & Documentation"
 Cohesion: 0.5
 Nodes (3): CreateLetterDto, LetterQueryDto, UpdateLetterStatusDto
 
-### Community 126 - "Community 126"
+### Community 146 - "Leave Application"
 Cohesion: 0.5
 Nodes (3): CreateLeaveApplicationDto, UpdateLeaveApplicationDto, UpdateLeaveApplicationStatusDto
 
-### Community 129 - "Payroll & Salary"
+### Community 149 - "Dto Announcement Dto"
 Cohesion: 0.5
 Nodes (3): AnnouncementQueryDto, CreateAnnouncementDto, UpdateAnnouncementDto
 
-### Community 130 - "Claims & Reimbursement"
+### Community 150 - "Attendance Tracking"
 Cohesion: 0.5
 Nodes (3): CreateHolidayDto, UpdateAttendanceSettingsDto, UpdateHolidayDto
 
-### Community 132 - "UI Components"
+### Community 152 - "Dto Separation Dto"
 Cohesion: 0.5
 Nodes (3): CreateSeparationDto, SeparationQueryDto, UpdateSeparationDto
 
-### Community 133 - "UI Components"
+### Community 153 - "Disciplinary Actions"
 Cohesion: 0.5
 Nodes (3): CreateDisciplinaryCaseDto, DisciplinaryQueryDto, UpdateDisciplinaryCaseDto
 
-### Community 134 - "Leave Management"
+### Community 154 - "Payroll & Salary"
 Cohesion: 0.5
 Nodes (3): DisburseDto, PayslipAdjustmentItemDto, UpdatePayslipAdjustmentsDto
 
+### Community 156 - "Assets Management"
+Cohesion: 0.5
+Nodes (3): AllocateAssetDto, CreateAssetDto, UpdateAssetConditionDto
+
 ## Knowledge Gaps
-- **150 isolated node(s):** `AppModule`, `DatabaseModule`, `AttendanceModule`, `CheckInDto`, `CheckOutDto` (+145 more)
+- **162 isolated node(s):** `AppModule`, `DatabaseModule`, `AttendanceModule`, `CheckInDto`, `CheckOutDto` (+157 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **121 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **139 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `String()` connect `Employee Management` to `Recruitment Module`, `Recruitment Module`, `Employee Management`, `Recruitment Module`, `Notifications System`, `UI Components`, `Task Management`, `Attendance Tracking`, `Payroll & Salary`, `Employee Management`, `UI Components`, `Employee Management`, `Employee Management`, `Notifications System`, `Recruitment Module`, `Payroll & Salary`, `Employee Management`, `Employee Separation`, `Caching Layer`, `Authentication & Auth`?**
-  _High betweenness centrality (0.118) - this node is a cross-community bridge._
-- **Why does `cn()` connect `Notifications System` to `Notifications System`, `Recruitment Module`, `Recruitment Module`, `Recruitment Module`, `Leave Management`, `Task Management`, `HR Letters`, `Leave Management`, `Recruitment Module`, `Authentication & Auth`, `Announcements`, `Employee Management`, `Recruitment Module`, `Authentication & Auth`, `Recruitment Module`, `Configuration`, `Task Management`, `UI Components`, `Payroll & Salary`, `Community 154`, `Notifications System`, `Designation Management`, `Department Management`, `Employee Management`, `Employee Management`, `Caching Layer`, `Employee Management`, `Payroll & Salary`, `Attendance Tracking`, `Notifications System`, `Chat System`, `Authentication & Auth`, `Employee Management`, `Designation Management`, `Leave Management`, `Recruitment Module`, `RBAC & Permissions`, `Claims & Reimbursement`, `Attendance Tracking`, `Caching Layer`, `Disciplinary Actions`, `Employee Management`, `Notifications System`, `Task Management`, `Task Management`?**
-  _High betweenness centrality (0.086) - this node is a cross-community bridge._
-- **Why does `Input()` connect `Recruitment Module` to `Notifications System`, `Recruitment Module`, `Employee Management`, `Recruitment Module`, `Leave Management`, `Recruitment Module`, `Notifications System`, `Authentication & Auth`, `Employee Management`, `Recruitment Module`, `Task Management`, `Notifications System`, `Employee Management`, `Caching Layer`, `Employee Management`, `Payroll & Salary`, `Attendance Tracking`, `Employee Separation`, `Authentication & Auth`, `Employee Management`, `Recruitment Module`, `RBAC & Permissions`, `Performance Reviews`?**
-  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Why does `String()` connect `Dashboard & Analytics` to `UI Components`, `Assets Management`, `Notifications System`, `Leave Management`, `Payroll & Salary`, `Payroll & Salary`, `Attendance Tracking`, `Letters & Documentation`, `Leave Management`, `Claims & Reimbursement`, `Leave Management`, `Dashboard & Analytics`, `Employee Directory`, `Department Management`, `Payroll & Salary`, `Notifications System`, `Payroll & Salary`, `Claims & Reimbursement`, `Attendance Tracking`, `Reports & Analytics`?**
+  _High betweenness centrality (0.102) - this node is a cross-community bridge._
+- **Why does `cn()` connect `UI Components` to `Task Management`, `UI Components`, `Notifications System`, `UI Components`, `Task Management`, `Task Management`, `UI Components`, `Payroll & Salary`, `UI Components`, `UI Components`, `UI Components`, `UI Components`, `UI Components`, `Task Management`, `Task Management`, `UI Components`, `Performance Reviews`, `Payroll & Salary`, `Letters & Documentation`, `UI Components`, `UI Components`, `UI Components`, `Employee Directory`, `UI Components`, `UI Components`, `Chat System`, `UI Components`, `Employee Directory`, `Dashboard & Analytics`, `Attendance Tracking`, `Employee Directory`, `Dashboard & Analytics`, `UI Components`, `UI Components`, `UI Components`, `UI Components`, `Payroll & Salary`, `Payroll & Salary`, `UI Components`, `Payroll & Salary`, `Dashboard & Analytics`, `UI Components`, `UI Components`, `Disciplinary Actions`, `UI Components`, `Pages Announcements Handlesave`, `UI Components`, `UI Components`?**
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Why does `Input()` connect `UI Components` to `UI Components`, `Notifications System`, `Assets Management`, `UI Components`, `Payroll & Salary`, `Task Management`, `Employee Directory`, `UI Components`, `Task Management`, `UI Components`, `Performance Reviews`, `Payroll & Salary`, `Letters & Documentation`, `UI Components`, `Employee Directory`, `Employee Directory`, `Chat System`, `Claims & Reimbursement`, `Leave Management`, `Attendance Tracking`, `Employee Directory`, `Payroll & Salary`, `Department Management`, `Provident Fund`, `Payroll & Salary`, `Reports & Analytics`, `Designation Management`, `Attendance Tracking`, `Disciplinary Actions`, `Pages Announcements Handlesave`, `UI Components`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
 - **What connects `AppModule`, `DatabaseModule`, `AttendanceModule` to the rest of the system?**
-  _150 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Recruitment Module` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
+  _162 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `UI Components` be split into smaller, more focused modules?**
+  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
+- **Should `UI Components` be split into smaller, more focused modules?**
+  _Cohesion score 0.07 - nodes in this community are weakly interconnected._
 - **Should `Notifications System` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
-- **Should `Recruitment Module` be split into smaller, more focused modules?**
-  _Cohesion score 0.06 - nodes in this community are weakly interconnected._

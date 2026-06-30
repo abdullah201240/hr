@@ -113,17 +113,17 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Salary revision notification",
-    templateFields: ["currentSalary", "newSalary", "effectiveDate", "incrementPercentage"],
+    templateFields: ["reviewPeriod", "performanceRating", "overallScore", "currentGrossSalary", "revisedGrossSalary", "monthlyIncrement", "annualIncrementPercentage", "managementRemarks"],
   },
   {
     id: "warning",
-    name: "Warning Letter",
+    name: "Show Cause Notice",
     category: "discipline",
     icon: AlertTriangle,
     color: "text-amber-600",
     bgColor: "bg-amber-500/10",
-    description: "Disciplinary warning notice",
-    templateFields: ["violationType", "description", "actionRequired", "deadline"],
+    description: "Disciplinary show cause notice",
+    templateFields: ["incidentDate", "incidentLocation", "relevantPolicy", "description", "deadline"],
   },
   {
     id: "termination",
@@ -237,7 +237,10 @@ export function LetterCreateDialog({
         defaultBody = `TO WHOM IT MAY CONCERN\n\nThis is to certify that ${employeeName} was employed with us as a ${formFields.designation || "[Designation]"} from ${formFields.joiningDate || "[Joining Date]"} to ${formFields.relievingDate || "[Relieving Date]"}.\n\nDuring their tenure, they demonstrated excellent professional commitment. We wish them success in their future endeavors.`
         break
       case "warning":
-        defaultBody = `Dear ${employeeName},\n\nThis warning letter is issued to address the violation regarding ${formFields.violationType || "[Violation Type]"} on record.\n\nDescription: ${formFields.description || "[Description]"}\n\nPlease submit an explanation and rectify this issue by ${formFields.deadline || "[Deadline]"} to avoid formal disciplinary action.`
+        defaultBody = `It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.`
+        break
+      case "salary_increment":
+        defaultBody = `We are pleased to inform you that your Annual Performance Review for the period ${formFields.reviewPeriod || "[Review Period]"} has been completed. Based on your overall performance, achievement of assigned Key Performance Indicators (KPIs), demonstration of Company values, and Management's assessment, the Management has approved the following:`
         break
       default:
         defaultBody = `Dear ${employeeName},\n\nThis letter is to confirm official updates regarding your employment records at Sadoshima Global Corp.\n\nDetails:\n- Reference Field: ${Object.values(formFields)[0] || "Update"}\n- Effective Date: ${formEffectiveDate || "[Date]"}\n\nPlease feel free to contact HR if you have any questions.`

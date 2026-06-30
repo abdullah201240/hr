@@ -11,7 +11,7 @@ const letterTypeNames: Record<string, string> = {
   promotion: "Promotion Letter",
   transfer: "Transfer Letter",
   salary_increment: "Salary Increment Letter",
-  warning: "Warning Letter",
+  warning: "Show Cause Notice",
   termination: "Termination Letter",
   experience: "Experience Letter",
   relieving: "Relieving Letter",
@@ -48,6 +48,361 @@ export default function PrintHRLetterPage() {
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+
+  if (letter.type === "warning") {
+    const fields = letter.fields || {}
+    const employeeLastName = letter.employeeName ? letter.employeeName.trim().split(" ").pop() : "[Last Name]"
+    
+    // Support fallbacks for fields to maintain backward compatibility
+    const incidentDate = fields.incidentDate || fields.dateTime || fields.violationDate || "—"
+    const incidentLocation = fields.incidentLocation || fields.location || "—"
+    const relevantPolicy = fields.relevantPolicy || fields.violationType || "—"
+    const description = fields.description || letter.body || "—"
+    const deadline = fields.deadline || fields.actionRequired || "—"
+
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 print:bg-white print:py-0 print:px-0 font-sans">
+        {/* Control Panel (Hidden during print) */}
+        <div className="max-w-3xl mx-auto mb-6 flex items-center justify-between no-print bg-card p-4 rounded-xl border border-border/40 shadow-xs">
+          <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="gap-2 cursor-pointer">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+          <Button onClick={() => window.print()} className="gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white">
+            <Printer className="h-4 w-4" /> Print Document
+          </Button>
+        </div>
+
+        {/* Style block for printing */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            html, body, #root, .dark, [class*="dark"] {
+              background-color: white !important;
+              color: black !important;
+            }
+            .print-document, .print-document * {
+              background-color: white !important;
+              color: black !important;
+              border-color: #000000 !important;
+            }
+            @page {
+              size: A4;
+              margin: 20mm;
+            }
+          }
+        `}} />
+
+        {/* Page 1 Container */}
+        <div className="print-document max-w-3xl mx-auto bg-white dark:bg-slate-950 p-12 sm:p-16 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl print:border-0 print:shadow-none print:p-0 print:pt-4">
+          
+          {/* Header block */}
+          <div className="text-left text-xs space-y-1 mb-8 print:text-black">
+            <p className="font-bold underline text-slate-900 dark:text-slate-50 print:text-black">Private & Confidential</p>
+            <p className="text-slate-800 dark:text-slate-200 print:text-black font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+            <p className="text-slate-800 dark:text-slate-200 print:text-black font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+          </div>
+
+          {/* Letter Title */}
+          <div className="text-center mb-10">
+            <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 print:text-blue-600 uppercase tracking-wide">
+              SHOW CAUSE NOTICE
+            </h2>
+          </div>
+
+          {/* Recipient details */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-1 mb-6">
+            <p className="font-semibold">To</p>
+            <p className="font-bold text-slate-900 dark:text-slate-50 print:text-black">{letter.employeeName}</p>
+            <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+            <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+            <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+          </div>
+
+          {/* Subject & Salutation */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-4 mb-6">
+            <p className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">
+              Subject: Show Cause Notice
+            </p>
+            <p className="font-semibold">Dear Mr./Ms. {employeeLastName},</p>
+            <p className="leading-relaxed">
+              It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.
+            </p>
+          </div>
+
+          {/* Details of Alleged Misconduct */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-2 mb-6">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Details of Alleged Misconduct</h3>
+            <div className="space-y-1 pl-1">
+              <p className="font-semibold">Date & Time: <span className="font-normal">{incidentDate}</span></p>
+              <p className="font-semibold">Location: <span className="font-normal">{incidentLocation}</span></p>
+              <p className="font-semibold mt-2">Description:</p>
+              <p className="leading-relaxed whitespace-pre-wrap pl-2 border-l border-slate-200 dark:border-slate-800 print:border-black italic">
+                {description}
+              </p>
+            </div>
+          </div>
+
+          {/* Relevant Policy / Rule */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-2 mb-6">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Relevant Policy / Rule</h3>
+            <p className="leading-relaxed pl-1 whitespace-pre-line">
+              {relevantPolicy}
+            </p>
+          </div>
+
+          {/* Explanation Required */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-2">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Explanation Required</h3>
+            <p className="leading-relaxed pl-1">
+              You are hereby required to submit your written explanation as to why disciplinary action should not be taken against you regarding the above matter.
+            </p>
+            <p className="leading-relaxed pl-1">
+              Your written explanation must reach the Human Resources Department on or before <span className="font-semibold">{deadline}</span>. If you fail to submit your explanation within the stipulated time without a reasonable cause, the Company may proceed with the matter and make a decision based on the information available.
+            </p>
+          </div>
+        </div>
+
+        {/* Page 2 Container (Print layout break) */}
+        <div className="print-document max-w-3xl mx-auto bg-white dark:bg-slate-950 p-12 sm:p-16 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl mt-6 print:border-0 print:shadow-none print:p-0 print:mt-0 print:break-before-page">
+          
+          {/* No Presumption of Guilt */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-4 mb-12">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">No Presumption of Guilt</h3>
+            <p className="leading-relaxed">
+              This Show Cause Notice is issued to provide you with an opportunity to explain your position. No final decision has been made regarding this matter.
+            </p>
+            <p className="leading-relaxed">
+              You are expected to continue performing your duties and comply with all Company policies during this process unless otherwise instructed.
+            </p>
+          </div>
+
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-6 mb-16">
+            <p>Yours faithfully,</p>
+            <p className="font-semibold">For Sadoshima Corporation</p>
+            <div className="pt-12">
+              <div className="border-b border-slate-400 w-64 mb-1"></div>
+              <p className="font-bold text-slate-900 dark:text-slate-50 print:text-black">{letter.createdBy || "[Authorized Signatory]"}</p>
+              <p className="text-muted-foreground print:text-slate-600">Human Resources / Managing Director</p>
+            </div>
+          </div>
+
+          {/* Employee Acknowledgement */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-6 border-t border-slate-200 dark:border-slate-800 pt-6">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Acknowledgement of Receipt</h3>
+            <p className="leading-relaxed">
+              I acknowledge receipt of this Show Cause Notice.
+            </p>
+            <div className="pt-12">
+              <div className="border-b border-slate-400 w-64 mb-2"></div>
+              <p className="font-semibold">Signature of Employee</p>
+              <div className="space-y-1 mt-2 text-muted-foreground print:text-slate-600">
+                <p>Name: <span className="text-slate-900 dark:text-slate-100 print:text-black font-semibold">{letter.employeeName}</span></p>
+                <p>Employee ID: <span className="text-slate-900 dark:text-slate-100 print:text-black font-semibold">{letter.employeeIdCode || "—"}</span></p>
+                <p>Date: <span className="text-slate-900 dark:text-slate-100 print:text-black font-semibold">{letter.issueDate ? formatDate(letter.issueDate) : "—"}</span></p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    )
+  }
+
+  if (letter.type === "salary_increment") {
+    const fields = letter.fields || {}
+    const employeeLastName = letter.employeeName ? letter.employeeName.trim().split(" ").pop() : "[Last Name]"
+    
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 print:bg-white print:py-0 print:px-0 font-sans">
+        {/* Control Panel (Hidden during print) */}
+        <div className="max-w-3xl mx-auto mb-6 flex items-center justify-between no-print bg-card p-4 rounded-xl border border-border/40 shadow-xs">
+          <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="gap-2 cursor-pointer">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+          <Button onClick={() => window.print()} className="gap-2 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white">
+            <Printer className="h-4 w-4" /> Print Document
+          </Button>
+        </div>
+
+        {/* Style block for printing */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            html, body, #root, .dark, [class*="dark"] {
+              background-color: white !important;
+              color: black !important;
+            }
+            .print-document, .print-document * {
+              background-color: white !important;
+              color: black !important;
+              border-color: #000000 !important;
+            }
+            @page {
+              size: A4;
+              margin: 20mm;
+            }
+          }
+        `}} />
+
+        {/* Page 1 Container */}
+        <div className="print-document max-w-3xl mx-auto bg-white dark:bg-slate-950 p-12 sm:p-16 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl print:border-0 print:shadow-none print:p-0 print:pt-4">
+          
+          {/* Header block */}
+          <div className="text-left text-xs space-y-1 mb-8 print:text-black">
+            <p className="font-bold underline text-slate-900 dark:text-slate-50 print:text-black">Private & Confidential</p>
+            <p className="text-slate-800 dark:text-slate-200 print:text-black font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+            <p className="text-slate-800 dark:text-slate-200 print:text-black font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+          </div>
+
+          {/* Letter Title */}
+          <div className="text-center mb-10">
+            <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 print:text-blue-600 uppercase tracking-wide">
+              PERFORMANCE REVIEW OUTCOME & SALARY INCREMENT LETTER
+            </h2>
+          </div>
+
+          {/* Recipient details */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-1 mb-6">
+            <p className="font-semibold">To</p>
+            <p className="font-bold text-slate-900 dark:text-slate-50 print:text-black">{letter.employeeName}</p>
+            <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+            <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+            <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+          </div>
+
+          {/* Subject & Salutation */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-4 mb-6">
+            <p className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">
+              Subject: Annual Performance Review Outcome and Salary Revision
+            </p>
+            <p className="font-semibold">Dear Mr./Ms. {employeeLastName},</p>
+            <p className="leading-relaxed">
+              We are pleased to inform you that your Annual Performance Review for the period{" "}
+              <span className="font-semibold">{fields.reviewPeriod || "[Review Period]"}</span> has been completed.
+              Based on your overall performance, achievement of assigned Key Performance Indicators (KPIs),
+              demonstration of Company values, and Management's assessment, the Management has approved the following:
+            </p>
+          </div>
+
+          {/* Details Table */}
+          <div className="mb-6">
+            <table className="w-full border-collapse border border-slate-300 dark:border-slate-700 text-xs">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-900 print:bg-slate-100">
+                  <th className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-50 print:text-black w-[40%]">Particular</th>
+                  <th className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-50 print:text-black">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Performance Rating</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">{fields.performanceRating || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Overall Score</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">{fields.overallScore || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Review Period</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">{fields.reviewPeriod || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Effective Date</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Current Gross Salary</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">BDT {fields.currentGrossSalary || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Revised Gross Salary</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">BDT {fields.revisedGrossSalary || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Monthly Increment</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">BDT {fields.monthlyIncrement || "—"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold text-slate-800 dark:text-slate-200 print:text-black">Annual Increment (%)</td>
+                  <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-slate-800 dark:text-slate-200 print:text-black">{fields.annualIncrementPercentage || "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Management Remarks */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-2 mb-6">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Management Remarks</h3>
+            <p className="leading-relaxed whitespace-pre-line italic">
+              {fields.managementRemarks || "[Remarks are pending completion.]"}
+            </p>
+          </div>
+
+          {/* Future Expectations */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-2">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Future Expectations</h3>
+            <p className="leading-relaxed">
+              You are expected to continue maintaining high standards of professionalism, integrity,
+              teamwork and performance while contributing towards the achievement of departmental and
+              organizational objectives. Your performance will continue to be reviewed in accordance
+              with the Company's Performance Management System.
+            </p>
+          </div>
+        </div>
+
+        {/* Page 2 Container (Print layout break) */}
+        <div className="print-document max-w-3xl mx-auto bg-white dark:bg-slate-950 p-12 sm:p-16 border border-slate-200 dark:border-slate-800 shadow-sm rounded-xl mt-6 print:border-0 print:shadow-none print:p-0 print:mt-0 print:break-before-page">
+          {/* Salary Revision */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-4 mb-8">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Salary Revision</h3>
+            <p className="leading-relaxed">
+              The revised salary stated above shall be effective from{" "}
+              <span className="font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "[Effective Date]"}</span> and shall
+              supersede your previous salary. All other terms and conditions of your employment
+              shall remain unchanged.
+            </p>
+            <p className="leading-relaxed">
+              We appreciate your valuable contribution and congratulate you on your continued
+              commitment to Sadoshima Corporation. We wish you every success in your future
+              career with the Company.
+            </p>
+          </div>
+
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-6 mb-12">
+            <p>Yours faithfully,</p>
+            <p className="font-semibold">For Sadoshima Corporation</p>
+            <div className="pt-12">
+              <div className="border-b border-slate-400 w-64 mb-1"></div>
+              <p className="font-bold text-slate-900 dark:text-slate-50 print:text-black">[Authorized Signatory]</p>
+              <p className="text-muted-foreground print:text-slate-600">Managing Director</p>
+            </div>
+          </div>
+
+          {/* Employee Acknowledgement */}
+          <div className="text-xs text-slate-800 dark:text-slate-200 print:text-black space-y-6 border-t border-slate-200 dark:border-slate-800 pt-6">
+            <h3 className="font-bold text-blue-600 dark:text-blue-400 print:text-blue-600">Employee Acknowledgement</h3>
+            <p className="leading-relaxed">
+              I acknowledge receipt of this Performance Review Outcome and Salary Increment Letter.
+            </p>
+            <div className="pt-12">
+              <div className="border-b border-slate-400 w-64 mb-2"></div>
+              <p className="font-semibold">Signature of Employee</p>
+              <div className="space-y-1 mt-2 text-muted-foreground print:text-slate-600">
+                <p>Name: <span className="text-slate-900 dark:text-slate-100 print:text-black font-semibold">{letter.employeeName}</span></p>
+                <p>Employee ID: <span className="text-slate-900 dark:text-slate-100 print:text-black font-semibold">{letter.employeeIdCode || "—"}</span></p>
+                <p>Date: <span className="text-slate-900 dark:text-slate-100 print:text-black font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 print:bg-white print:py-0 print:px-0">

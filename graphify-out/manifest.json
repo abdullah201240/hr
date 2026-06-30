@@ -1,7 +1,7 @@
 {
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/scratch-check.ts": {
-    "mtime": 1782108801.7766094,
-    "hash": "97a42dd5fbfdef90c6aa200a9e269923"
+    "mtime": 1782547109.8000813,
+    "hash": "832ba01d9174a067680ad09a894fb7db"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/drizzle.config.ts": {
     "mtime": 1781521173.836534,
@@ -36,8 +36,8 @@
     "hash": "b3e2af83108483d772ff47cfed0f41c9"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/test/notifications.e2e-spec.ts": {
-    "mtime": 1782117319.4394126,
-    "hash": "0cf1e8096a4374119f1a7c760c7d59a3"
+    "mtime": 1782290213.9830925,
+    "hash": "5c4e921d5174be3631223a4394898a4d"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/test/leave-applications.e2e-spec.ts": {
     "mtime": 1782117318.5389163,
@@ -108,8 +108,8 @@
     "hash": "e8865a2bdc70fa0d662ba5f823317199"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/test/provident-fund.e2e-spec.ts": {
-    "mtime": 1782117320.611241,
-    "hash": "11f8c4fdd0d136185e274c7057ac6393"
+    "mtime": 1782561097.9571512,
+    "hash": "376bd974c64532e7674812777fa65d11"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/test/salary.e2e-spec.ts": {
     "mtime": 1782117318.8340366,
@@ -132,8 +132,8 @@
     "hash": "1901fc8c740b16bf32b1a887846b7ab6"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/app.module.ts": {
-    "mtime": 1782208587.834434,
-    "hash": "7de93088309377d8449b61665556b48b"
+    "mtime": 1782563939.5707283,
+    "hash": "6b444492f46eb86bb467121b84d79201"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/config/database.config.ts": {
     "mtime": 1781436327.4903932,
@@ -180,8 +180,8 @@
     "hash": "6e50b576103420fd2648124f817839df"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/common/cache/cache-keys.ts": {
-    "mtime": 1782208514.1265073,
-    "hash": "73ec84a13997942a924854b283c246cb"
+    "mtime": 1782557204.1850138,
+    "hash": "cb412482d2ed49c1209e41088c67c59a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/common/cache/cache.service.ts": {
     "mtime": 1781526123.4735987,
@@ -199,9 +199,17 @@
     "mtime": 1781605854.6341422,
     "hash": "d6fb823241cea92b71e5c697a72aa5b4"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0055_add_late_arrival.sql": {
+    "mtime": 1782539827.1058354,
+    "hash": "d99eafbe9bc48d4bbc9e68a0b3e95b25"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0013_naive_titania.sql": {
     "mtime": 1781590571.8702374,
     "hash": "d81e26efbd3fc87ec7ad3f1ef73cd062"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0060_tense_zarda.sql": {
+    "mtime": 1782563189.0915394,
+    "hash": "deea4ad6d14ad2caf04cceb3e9eea3bd"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0023_spotty_vengeance.sql": {
     "mtime": 1781932090.454472,
@@ -231,6 +239,10 @@
     "mtime": 1782024542.2624776,
     "hash": "d4a45d79cb29ac17a91065f475a675ff"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0052_certain_nextwave.sql": {
+    "mtime": 1782290128.6566885,
+    "hash": "7203d56dbe4e577a9cabdb050c1aadfb"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0044_add_task_indexes.sql": {
     "mtime": 1782046279.5370085,
     "hash": "da5f1634f0405d6d503daec455afbfc2"
@@ -243,6 +255,10 @@
     "mtime": 1781505364.745614,
     "hash": "c6d4a38872b9fee8c9eb234c196f5e2d"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0057_wet_ultimatum.sql": {
+    "mtime": 1782548346.4157412,
+    "hash": "86b72079f166ed389744915d11be56da"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0024_easy_tag.sql": {
     "mtime": 1781932595.1821136,
     "hash": "469ad9430f5fd098b73eb948618702bb"
@@ -250,6 +266,10 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0048_confused_greymalkin.sql": {
     "mtime": 1782208819.3713143,
     "hash": "373da750f3b655394abc49ea3eb4b6b4"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0051_light_sabra.sql": {
+    "mtime": 1782281173.518543,
+    "hash": "0b518b7e1dacbb775524301b6a533281"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0040_boring_zaladane.sql": {
     "mtime": 1782028792.269713,
@@ -307,6 +327,10 @@
     "mtime": 1781933484.8528295,
     "hash": "f77d175126913fc41e2d6aa9981a4970"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0056_silly_nemesis.sql": {
+    "mtime": 1782547931.1060207,
+    "hash": "aa3d701e9ae29083849971ec2035e84b"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0015_brown_nova.sql": {
     "mtime": 1781592168.579353,
     "hash": "5a94f17b7d3562698f1f5b48f5cc93b4"
@@ -331,6 +355,14 @@
     "mtime": 1782119033.830753,
     "hash": "090d2e274084da40ec20b8be0ce18835"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0058_premium_bloodscream.sql": {
+    "mtime": 1782550463.9150283,
+    "hash": "11a34996afab5fa68f1b14bfabffaa68"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0053_dizzy_cobalt_man.sql": {
+    "mtime": 1782292224.7412448,
+    "hash": "ab2b76dd307799be8b880c75f3cbd16d"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0041_remove_system_role_column.sql": {
     "mtime": 1782034110.9109774,
     "hash": "384ef72e8cb5a734b2322a217790a246"
@@ -338,6 +370,10 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0026_dusty_toxin.sql": {
     "mtime": 1781935270.9596667,
     "hash": "cbe533013b5dad493a84467d5d01d9b1"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0061_clear_proteus.sql": {
+    "mtime": 1782563835.6662297,
+    "hash": "9d95609ba73360652cc7201cd2897bd4"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0021_wandering_blonde_phantom.sql": {
     "mtime": 1781765386.506744,
@@ -347,9 +383,17 @@
     "mtime": 1782037714.6989996,
     "hash": "4b703b17dbccb96ab7b9a026c676ea3a"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0054_chief_talkback.sql": {
+    "mtime": 1782539263.0297894,
+    "hash": "5e311fb91063dd7cde5cd92b7056f1b9"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0031_rich_wendigo.sql": {
     "mtime": 1781952087.268365,
     "hash": "fc17704724087aed53e94b86c297b384"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0055_lonely_cyclops.sql": {
+    "mtime": 1782543651.8067825,
+    "hash": "1d3d8cf471ba7480774ff913fe1d91dd"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0037_strange_drax.sql": {
     "mtime": 1782022257.2608116,
@@ -362,6 +406,10 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0008_add_attendance_settings.sql": {
     "mtime": 1781513838.0145707,
     "hash": "67b8667b49deeaaca851ab8ebdde8240"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0059_abnormal_ezekiel.sql": {
+    "mtime": 1782560557.7117164,
+    "hash": "9f25e09a8942674d58aec29e5f4a816a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0033_wet_jetstream.sql": {
     "mtime": 1781956129.4350405,
@@ -386,6 +434,10 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0019_romantic_pepper_potts.sql": {
     "mtime": 1781764553.9907668,
     "hash": "d8aadfd1de49f0f9b525b1c612090df4"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0050_noisy_starbolt.sql": {
+    "mtime": 1782280199.836886,
+    "hash": "43abcc70f396c2dfba9fa65170f385d3"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0036_chief_excalibur.sql": {
     "mtime": 1782018168.4730358,
@@ -420,28 +472,40 @@
     "hash": "f967ff0d931529c4c4aae8df7bef59bb"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/provident-fund.ts": {
-    "mtime": 1781592152.629896,
-    "hash": "ac92a4af265fe1bae898b98c9406c14b"
+    "mtime": 1782560538.388883,
+    "hash": "f29d55e9b7627152c73604a411989b39"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/notifications.ts": {
-    "mtime": 1782024187.078805,
-    "hash": "33b41005bfb427ef7eed58b25cbd14c1"
+    "mtime": 1782290113.3951924,
+    "hash": "4cfe32d68729cf28714ceb7bc860726c"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/employee.ts": {
-    "mtime": 1782033945.5873077,
-    "hash": "0a9f31ad9a5f17bf245206bab7c7198e"
+    "mtime": 1782280136.7372258,
+    "hash": "c0ef175167522a28363d9968de52f489"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/salary.ts": {
     "mtime": 1782120467.7066026,
     "hash": "0e45f2587719f317f975081539187627"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/assets.ts": {
+    "mtime": 1782563816.1036665,
+    "hash": "3441f808a96cc414632ef9e96326a7e2"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/loans.ts": {
+    "mtime": 1782563173.4837453,
+    "hash": "e548e6fb47c08abddf023e7eab1cea1a"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/festival-bonus.ts": {
+    "mtime": 1782550433.943085,
+    "hash": "2558581906753c05782e41143adc12fd"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/chat.ts": {
     "mtime": 1782018153.2405238,
     "hash": "cc9d0ab7ba5f27799a3bbe4c40fb3e32"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/payroll.ts": {
-    "mtime": 1782210615.467149,
-    "hash": "07d3b9c54cb36304f5c2819c8798a8c2"
+    "mtime": 1782539207.254981,
+    "hash": "f4f13552de7ca7feab4e6ad463e989cf"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/audit-logs.ts": {
     "mtime": 1782034912.3476212,
@@ -452,16 +516,16 @@
     "hash": "6166ba79643c6777388716570fc287da"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/attendance.ts": {
-    "mtime": 1782037645.7923815,
-    "hash": "7d0908e9453f4b6c7c240d6d212b24ce"
+    "mtime": 1782539202.8537443,
+    "hash": "727c48c5f31643f1d86786ade1b1fcfa"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/roles.ts": {
     "mtime": 1782028745.8031418,
     "hash": "7654911a72b8f7d421258d0dff55a7ad"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/index.ts": {
-    "mtime": 1782278851.871923,
-    "hash": "e6fa552b5d888664726bb6b7184526b0"
+    "mtime": 1782563827.5259974,
+    "hash": "fd862ba8c2c22548855590c5d6327371"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/schema/org-chart.ts": {
     "mtime": 1781933462.7463732,
@@ -500,8 +564,8 @@
     "hash": "110271adbc15c34e894038519f5baff1"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/attendance/attendance.processor.ts": {
-    "mtime": 1781757402.1490915,
-    "hash": "26c2523c799c9c52fe3a499e5a877161"
+    "mtime": 1782558439.4499488,
+    "hash": "16c1a1b112943c8ddac0b392785867e1"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/attendance/attendance.service.ts": {
     "mtime": 1782106771.5750077,
@@ -510,6 +574,22 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/attendance/dto/attendance.dto.ts": {
     "mtime": 1781522906.2480373,
     "hash": "cb995dd8397149b140d9d0ed64f23595"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/loans/loans.service.ts": {
+    "mtime": 1782563253.502773,
+    "hash": "fc9c015292b843d84a1a9bf5eff0a682"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/loans/loans.controller.ts": {
+    "mtime": 1782563258.9429107,
+    "hash": "5de2b0c82ebbed8caf1caeee1b3cdddb"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/loans/loans.module.ts": {
+    "mtime": 1782563263.1004574,
+    "hash": "2c7e9d75feab3dfe5457d4b6db33aa9b"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/loans/dto/loans.dto.ts": {
+    "mtime": 1782563407.1566942,
+    "hash": "136568c8ae4f00105afca4ee65e4eb96"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/tasks/realtime.gateway.ts": {
     "mtime": 1781960853.7305827,
@@ -520,8 +600,8 @@
     "hash": "4ddedcdb7669a17df3fc2e47f6e7ef13"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/tasks/tasks.service.ts": {
-    "mtime": 1782046296.0067072,
-    "hash": "69aa701bbbffcae445b26233075ea2f1"
+    "mtime": 1782558759.7144928,
+    "hash": "e2e020b6022453536cf971492d38cca9"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/tasks/tasks.processor.ts": {
     "mtime": 1781955413.4917727,
@@ -552,16 +632,16 @@
     "hash": "e40cd567875efb7cafe211067c5a05fd"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/leave-application/leave-application.processor.ts": {
-    "mtime": 1782106769.8465161,
-    "hash": "98a180122bc3008fe9fa70d3272cfc40"
+    "mtime": 1782540278.681671,
+    "hash": "e441e37fbc4a28d0364a268c3e154395"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/leave-application/leave-application.controller.ts": {
-    "mtime": 1782034724.6891167,
-    "hash": "0dd92a02846c72835cf5be768c2275cc"
+    "mtime": 1782540316.0788,
+    "hash": "c3bc86e24e0518efeced1e9b15eb6def"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/leave-application/leave-application.service.ts": {
-    "mtime": 1782106770.0349882,
-    "hash": "a499779b2205412ca0d017b9e2b90edf"
+    "mtime": 1782564640.7084448,
+    "hash": "5bc2829fb6aece245111560759356413"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/leave-application/leave-application.module.ts": {
     "mtime": 1782022877.0042272,
@@ -604,16 +684,16 @@
     "hash": "453f73ef55192003a7d4b5d0454d1f8c"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/provident-fund/provident-fund.service.ts": {
-    "mtime": 1781593084.0268884,
-    "hash": "e932770915da5622ca8cdf9b7a55c1cf"
+    "mtime": 1782560598.2853727,
+    "hash": "17546913525faa0a92a576f7a5c28e84"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/provident-fund/provident-fund.module.ts": {
-    "mtime": 1781592208.3904598,
-    "hash": "f17b4c2c28bfb34f1e7745a7f3d42004"
+    "mtime": 1782560647.7313797,
+    "hash": "db4abcb01a7c3287957f9d4c98a21dcb"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/provident-fund/provident-fund.controller.ts": {
-    "mtime": 1781592204.2147467,
-    "hash": "546c2bbcc28b45f9e916039dbebfd8ad"
+    "mtime": 1782560643.0821557,
+    "hash": "ac6e3a109f4549ab4d741e198cb47051"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/provident-fund/dto/provident-fund.dto.ts": {
     "mtime": 1781592191.5208187,
@@ -640,8 +720,8 @@
     "hash": "222126cf6ede476fd6bcb69bed58c5f6"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/auth/guards/roles.guard.ts": {
-    "mtime": 1782210655.8596025,
-    "hash": "a5e77875538a71d8f99155d962c6e2ae"
+    "mtime": 1782563917.6382616,
+    "hash": "d4ca1f08f3993672d5a28cea73761113"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/auth/guards/jwt-auth.guard.ts": {
     "mtime": 1781436962.3286545,
@@ -672,8 +752,8 @@
     "hash": "4ce9a1dcd0f4aab9169d5d39d7c71202"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/salary/salary.service.ts": {
-    "mtime": 1782120538.7366369,
-    "hash": "052a4579d61afa0d62b343bdd74b8f01"
+    "mtime": 1782280190.7620018,
+    "hash": "ca1fbdd1231f6339a3112ef1d0da5c12"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/salary/salary.module.ts": {
     "mtime": 1781958651.0450335,
@@ -682,6 +762,38 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/salary/dto/salary.dto.ts": {
     "mtime": 1782120530.9509835,
     "hash": "77443b71559b196240c410bd3bcd7813"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/festival-bonus.service.ts": {
+    "mtime": 1782550956.0956407,
+    "hash": "7e2e631c4e9e5614ab7a0d727a10bbee"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/festival-bonus.controller.ts": {
+    "mtime": 1782550507.4463372,
+    "hash": "e92263a0dce3146080ef9b4d0a02ad64"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/festival-bonus.module.ts": {
+    "mtime": 1782550079.6107793,
+    "hash": "01373587ff2ddd56f7db4fbe7f9631df"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/dto/approval.dto.ts": {
+    "mtime": 1782550485.1274478,
+    "hash": "c9566dd8e2615c2c025b98ea0b0965cd"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/dto/update-payout.dto.ts": {
+    "mtime": 1782292246.5387292,
+    "hash": "b15e8e333dd2973b53f170f8994c2c78"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/dto/create-cycle.dto.ts": {
+    "mtime": 1782292241.8061244,
+    "hash": "6ee7b1b5795f1d3d87675bc4ff4bc4ac"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/dto/festival-bonus-settings.dto.ts": {
+    "mtime": 1782543690.5182197,
+    "hash": "35811f7dfad3b1d6e4539d881d366793"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/festival-bonus/dto/disburse-cycle.dto.ts": {
+    "mtime": 1782292250.9534063,
+    "hash": "b01d2021c2aa53a4fda98441839a7788"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/health/health.module.ts": {
     "mtime": 1781426658.3725843,
@@ -700,8 +812,8 @@
     "hash": "5974810d47b71845152526145229877d"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/recruitment/recruitment.service.ts": {
-    "mtime": 1782106771.3990877,
-    "hash": "7c9142d2ec0ab7189462d43785e5d503"
+    "mtime": 1782557396.6558704,
+    "hash": "d6b2db6ff4162b198bdb72a140b478db"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/recruitment/dto/recruitment.dto.ts": {
     "mtime": 1781931426.2974184,
@@ -736,8 +848,8 @@
     "hash": "4c8ade556079ed5fd85284e30706161a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/roles/roles.service.ts": {
-    "mtime": 1782210650.3251855,
-    "hash": "f059f38e56e0ad451dc2b927a7367a89"
+    "mtime": 1782564313.7129335,
+    "hash": "a4549bd32b18da7365760b30c256700b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/announcements/announcements.service.ts": {
     "mtime": 1782023050.9656484,
@@ -780,24 +892,24 @@
     "hash": "fc5e84b3e6f0ec6305cbe31905cced93"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/attendance-settings/attendance-settings.service.ts": {
-    "mtime": 1782037868.5433228,
-    "hash": "d8e016669e1ad594853c0afbff2802af"
+    "mtime": 1782539219.2451873,
+    "hash": "bb5f8e417ee0f70f3943976ccb4d6c93"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/attendance-settings/attendance-settings.module.ts": {
     "mtime": 1781514712.2733927,
     "hash": "88544c4623889aa20e2519b0d0ffa882"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/attendance-settings/dto/attendance-settings.dto.ts": {
-    "mtime": 1782037751.0180635,
-    "hash": "8fda886b5d4afd9f8382a2cf64815f8c"
+    "mtime": 1782539214.6085792,
+    "hash": "d4b05ddc043105a3f804dd755ebfe19b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/dashboard/dashboard.controller.ts": {
     "mtime": 1782105180.7139878,
     "hash": "febd4ea3738aedb039b2750b209fa6f9"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/dashboard/dashboard.service.ts": {
-    "mtime": 1782104856.8624623,
-    "hash": "09d665f600b859749abf2b3748df5bdd"
+    "mtime": 1782557150.1845,
+    "hash": "f93caea65de45d3fe60eaf3ce1b75559"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/dashboard/dashboard.module.ts": {
     "mtime": 1782104857.212354,
@@ -812,8 +924,8 @@
     "hash": "fa00377ee60ffa2212064a9fac90bd16"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/org-chart/org-chart.service.ts": {
-    "mtime": 1782043263.9022937,
-    "hash": "74703ec000dbd15547506f4d45c2ce81"
+    "mtime": 1782564949.7533648,
+    "hash": "99ee46ecbad8315ea44f907317614f3b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/org-chart/dto/org-chart.dto.ts": {
     "mtime": 1781933694.5532534,
@@ -836,8 +948,8 @@
     "hash": "8995be5fe21c8b0f7564ed23f75fef0b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/separation/separation.service.ts": {
-    "mtime": 1782120990.0109806,
-    "hash": "21b43c9f64369d19696a03bd815efe32"
+    "mtime": 1782563908.4497721,
+    "hash": "8339296a3e192261bf6a7468a158853e"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/separation/dto/settlement.dto.ts": {
     "mtime": 1781935302.1883876,
@@ -864,20 +976,20 @@
     "hash": "e453962d5d1deb344dcab631bced7248"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/payroll/payroll.module.ts": {
-    "mtime": 1782022941.5413952,
-    "hash": "ad251a11edd6cd78fb97a28f1cd1d153"
+    "mtime": 1782563289.5361674,
+    "hash": "9c51fb695f676ba1ac9987ffa5452bce"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/payroll/payroll.controller.ts": {
     "mtime": 1782278383.7581286,
     "hash": "ef87138f13c18ee1ad85e909669ba8ce"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/payroll/payroll.processor.ts": {
-    "mtime": 1781958847.78799,
-    "hash": "1c0c4256b4dcb6017cc5bc8f0815c79d"
+    "mtime": 1782290168.9657207,
+    "hash": "0470b90b37154e78a395bcbe739389e8"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/payroll/payroll.service.ts": {
-    "mtime": 1782278475.5389965,
-    "hash": "664063b25915b50d8f434c6c7843e575"
+    "mtime": 1782563417.7681298,
+    "hash": "523220097066b2c5b434a4219e2277b7"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/payroll/dto/payroll.dto.ts": {
     "mtime": 1782121406.3727515,
@@ -892,8 +1004,8 @@
     "hash": "c20f51d6ab9cbffc004de49fa9ef7419"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/performance/performance.service.ts": {
-    "mtime": 1782106770.9237146,
-    "hash": "cefb0cd97c39b777bdb0169fad6d22dc"
+    "mtime": 1782557603.278809,
+    "hash": "82ed7678539cf376dcf313fc01fca6f4"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/performance/performance.module.ts": {
     "mtime": 1782022995.6494584,
@@ -948,8 +1060,8 @@
     "hash": "e6f4f6c1544a0583fb3ff72e532a0c87"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/employee/employee.service.ts": {
-    "mtime": 1782034889.1420443,
-    "hash": "4a2818c4a404a876ba14b9e14e3fc3da"
+    "mtime": 1782549550.4374716,
+    "hash": "b9b4733359380ec7d3e931972e38ce17"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/employee/employee.module.ts": {
     "mtime": 1781516006.186583,
@@ -964,12 +1076,28 @@
     "hash": "be5c4256a66af0a7f59204f383f04175"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/employee/dto/create-employee.dto.ts": {
-    "mtime": 1782028899.4412713,
-    "hash": "c294c6a14f56847fe13acc23106e9b17"
+    "mtime": 1782280151.5776496,
+    "hash": "140a80c81af6e967a850551698fea164"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/employee/dto/employee-query.dto.ts": {
     "mtime": 1781947982.2298539,
     "hash": "9facaec6e6ad3659b8f08c8e8b783603"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/assets/assets.service.ts": {
+    "mtime": 1782563891.342208,
+    "hash": "6b3edc3738470ea95ee33b36ce3620c5"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/assets/assets.module.ts": {
+    "mtime": 1782563928.3787122,
+    "hash": "70226980d2dcfd08d03f441813969dec"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/assets/assets.controller.ts": {
+    "mtime": 1782563923.4756045,
+    "hash": "17fe19b07febe2156d94816470ea0bb3"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/assets/dto/assets.dto.ts": {
+    "mtime": 1782563883.1175332,
+    "hash": "0a6ad4435d63cb8b9c1840115641b39a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/notifications.module.ts": {
     "mtime": 1782022357.0672169,
@@ -984,32 +1112,32 @@
     "hash": "abb4f3b2eeeb2323d8bc2c320b789125"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/notifications.service.ts": {
-    "mtime": 1782033947.5856652,
-    "hash": "0181d5a564cdb65eed8b3f7317634437"
+    "mtime": 1782557379.0567567,
+    "hash": "8562a9f39c3ae69e7e7640928c6a4692"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/notifications.processor.ts": {
     "mtime": 1782024187.2205784,
     "hash": "4d514f0c4b920d56f0fe69f853d17647"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/dto/notification-query.dto.ts": {
-    "mtime": 1782024187.4840217,
-    "hash": "6d8b6eda8e2edc10a6cab50296537c75"
+    "mtime": 1782290204.8780622,
+    "hash": "71a1ac0129d3556a9f3b6169ce6b1523"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/dto/emit-notification.dto.ts": {
     "mtime": 1782023498.8759477,
     "hash": "f2b70163180320251e6d318eb5a11db6"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/dto/preferences.dto.ts": {
-    "mtime": 1782024187.3532314,
-    "hash": "21154ecc3bcb4f197fc06842517ee85c"
+    "mtime": 1782290141.8459408,
+    "hash": "a9a7b483a1efbebc4b6afe4ca7ce54b1"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/types/notification.types.ts": {
     "mtime": 1782208510.1620743,
     "hash": "44dd4176f5e2d05489bef41908bc1c29"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/services/preferences.service.ts": {
-    "mtime": 1782022473.0973737,
-    "hash": "fad504cd59ce3da379365a796ed114ee"
+    "mtime": 1782290949.7261593,
+    "hash": "c03d333a3d81dc4f47bf5cd619435133"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/notifications/guards/deduplication.guard.ts": {
     "mtime": 1782022290.914154,
@@ -1030,6 +1158,18 @@
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/upload/upload.controller.ts": {
     "mtime": 1782033945.2113132,
     "hash": "db87af007f00f8f794c07c0e93493e46"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/reports/reports.service.ts": {
+    "mtime": 1782559852.4253252,
+    "hash": "b076915acada17646441cdea24cac916"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/reports/reports.module.ts": {
+    "mtime": 1782559862.4096801,
+    "hash": "427fcc964adeb1951646f0173e5ba423"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/reports/reports.controller.ts": {
+    "mtime": 1782559857.2238731,
+    "hash": "b1be3869c211e0203c152caca6ba3c9b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/hr-server/src/modules/claims/claims.controller.ts": {
     "mtime": 1782037822.529943,
@@ -1060,8 +1200,8 @@
     "hash": "8d6d78be288a49ea53a3f5bb275adaf4"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/App.tsx": {
-    "mtime": 1782212968.1621153,
-    "hash": "09c0081becda6e80e9384f86e44288af"
+    "mtime": 1782564091.6033232,
+    "hash": "428a045d2a1d7e7f4e5741452bacb0f5"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/main.tsx": {
     "mtime": 1781503791.0163226,
@@ -1076,28 +1216,28 @@
     "hash": "c19113dc98aaf0eeb4ee1c011082e0b8"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/types/notifications.ts": {
-    "mtime": 1782022505.7671192,
-    "hash": "fdbb2ff5704347e8ea6e35a59300a26c"
+    "mtime": 1782558001.368318,
+    "hash": "eaaf069d2b9f5e92e3704b9930263a57"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/types/salary.ts": {
-    "mtime": 1782211096.2456715,
-    "hash": "f5bf809f197b763b57084b3398b4f182"
+    "mtime": 1782550572.6584165,
+    "hash": "9293be581e79d255e15559dfb14f40ff"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/types/claims.ts": {
     "mtime": 1782038088.8591306,
     "hash": "f83f901f3843da6f74f5bf21a285bc30"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/types/attendance.ts": {
-    "mtime": 1782037996.71949,
-    "hash": "4a1677258125a2e75cba2e012834959f"
+    "mtime": 1782539326.241809,
+    "hash": "d3d305693331f77dbaf970a1f7fc9b6f"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/types/index.ts": {
     "mtime": 1782120990.0137088,
     "hash": "4b48bdb23766848245d48d5ad1b44c89"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/types/org.ts": {
-    "mtime": 1782029069.582724,
-    "hash": "30f77a8ad72a84db77a108b55e7d250a"
+    "mtime": 1782549558.2562516,
+    "hash": "d802dc98a07a1b888885e374873f996c"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/theme-provider.tsx": {
     "mtime": 1781526124.429581,
@@ -1132,8 +1272,8 @@
     "hash": "c5d12eab3cca908bb26372da9f0b5429"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/organization/org-chart.tsx": {
-    "mtime": 1782043292.9020746,
-    "hash": "692a00c30e2fea605bd259309fc50a7c"
+    "mtime": 1782564977.929527,
+    "hash": "fbd30342a61c6c9d20afc3ecf40dc9bc"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/ui/aspect-ratio.tsx": {
     "mtime": 1781093179.1116724,
@@ -1360,24 +1500,28 @@
     "hash": "7f2113d5231bae7c1af818142a9301db"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/settings/access-control-tab.tsx": {
-    "mtime": 1782208622.636136,
-    "hash": "c00ca225f932596a85315acf0a6d3455"
+    "mtime": 1782564318.5687459,
+    "hash": "15ddcee68696333f96dfbae20dddf17a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/settings/office-hours.tsx": {
-    "mtime": 1782038047.5525386,
-    "hash": "00dd3b00f17b9d8c4caf60f15ffe081a"
+    "mtime": 1782539355.7577372,
+    "hash": "ab52ae576669a142383f9108a56b7c66"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/settings/salary-setup.tsx": {
     "mtime": 1782121044.5294635,
     "hash": "30e590eb0ff0f06e695ce2970fa08d46"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/components/settings/festival-bonus-setup.tsx": {
+    "mtime": 1782543781.4103026,
+    "hash": "aed348b2d81b17c13fb056a4494089d3"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/settings/theme-settings.tsx": {
     "mtime": 1781345761.3933194,
     "hash": "dd7591b096a9cbc16b9f29d30bc26431"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/ceo-dashboard/quick-actions.tsx": {
-    "mtime": 1782104858.6447375,
-    "hash": "ef5788ac194fb2e43d8631bc9ba485a3"
+    "mtime": 1782551542.8967872,
+    "hash": "6b78d80e23a1a5ff46f5315e07a54b7b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/ceo-dashboard/activity-feed.tsx": {
     "mtime": 1782104858.600671,
@@ -1388,8 +1532,8 @@
     "hash": "17d8d2465bb891f55fcbb1cfe98a62be"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/ceo-dashboard/kpi-metric-cards.tsx": {
-    "mtime": 1782108411.7936246,
-    "hash": "6741416fcdc1b72b19d41c2b09e60698"
+    "mtime": 1782551560.5282495,
+    "hash": "5e9c496f985b081a708d4f666a482870"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/ceo-dashboard/attendance-trend-chart.tsx": {
     "mtime": 1782104858.0074744,
@@ -1512,12 +1656,12 @@
     "hash": "78ad384e564676cb66bb66ae3e522655"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/navigation/nav-data.ts": {
-    "mtime": 1782277730.8527923,
-    "hash": "62e3d2c8e1f5ad46b9effaf6f06d3cbd"
+    "mtime": 1782564071.0023177,
+    "hash": "02d45a134e0273897db400e7644d05a6"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/dashboard/apply-leave-dialog.tsx": {
-    "mtime": 1781777369.1490526,
-    "hash": "7b8afcf952ac9069665610d512d2cfcd"
+    "mtime": 1782564683.9087462,
+    "hash": "b234dbf0a5da076edbf727e141ba2d22"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/dashboard/announcements-card.tsx": {
     "mtime": 1781600444.3077314,
@@ -1540,8 +1684,8 @@
     "hash": "a50ab7079222a4f777a07002af5a8de1"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/dashboard/attendance-calendar.tsx": {
-    "mtime": 1781765280.903875,
-    "hash": "fcddd90d25776c98fe179f52439fb1c6"
+    "mtime": 1782539857.4893909,
+    "hash": "b58e4263d4c0a88e55fc418975c1b3fe"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/common/user-avatar.tsx": {
     "mtime": 1782035175.1119564,
@@ -1559,9 +1703,17 @@
     "mtime": 1782212630.052446,
     "hash": "67022cdc9562074559e580230c3cf1e8"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/DisbursementFestivalBonusTab.tsx": {
+    "mtime": 1782548480.5340893,
+    "hash": "ee7ee1a07d7a290d7a78f93f8d4843b4"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/MdFestivalBonusApprovalsTab.tsx": {
+    "mtime": 1782550664.5471227,
+    "hash": "573c6da526011b702617ee77ed89eb04"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/DisbursementTab.tsx": {
-    "mtime": 1782212637.2150924,
-    "hash": "974f4a190bf065f236baf3d47eb87620"
+    "mtime": 1782543942.1734736,
+    "hash": "442b2494aee6bfb083f5d2386e657e0a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/ProvidentFundTab.tsx": {
     "mtime": 1781959116.8660288,
@@ -1583,13 +1735,21 @@
     "mtime": 1782120932.428671,
     "hash": "b2f99c857794db76efeb491cc66417a6"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/PayoutCommentsDialog.tsx": {
+    "mtime": 1782550599.418875,
+    "hash": "b65f61e481ecb6b1fff0ee32cf8c2434"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/EmployeeSalaryTab.tsx": {
     "mtime": 1782120990.0132666,
     "hash": "a47a9433e4cf0f9b16c4056dcede0806"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/LineManagerApprovalsTab.tsx": {
-    "mtime": 1782212621.7952554,
-    "hash": "af1497aed1f5e0c078113a51f5066e07"
+    "mtime": 1782549819.8211412,
+    "hash": "91d47838282fd79d91a22276a9b7f42f"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/components/payroll/LineManagerFestivalBonusApprovalsTab.tsx": {
+    "mtime": 1782550637.8808482,
+    "hash": "2d36e3dda74816e0252cbfba13b46027"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/regulations/RequestForm.tsx": {
     "mtime": 1782209065.2322702,
@@ -1620,8 +1780,8 @@
     "hash": "5e81a264601e1d1495a728d268c8614d"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/employee/employment-step.tsx": {
-    "mtime": 1781524904.8657563,
-    "hash": "c3b2718975e49e27ad4fb4305b9a1dad"
+    "mtime": 1782280240.7665992,
+    "hash": "20b8d8ad919ccdd330d8e1ef1edad55d"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/employee/personal-info-step.tsx": {
     "mtime": 1781409965.1529531,
@@ -1632,8 +1792,8 @@
     "hash": "35a937038957b909b4d4e929c5cae6db"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/employee/form-schema.ts": {
-    "mtime": 1782035768.5631032,
-    "hash": "72242a2db309c85182695f6d9f43e2e4"
+    "mtime": 1782280228.3182511,
+    "hash": "e4c8d5f5f6492d4e608c89db116dc639"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/employee/family-info-step.tsx": {
     "mtime": 1781178178.3320937,
@@ -1664,8 +1824,8 @@
     "hash": "9f2d872be4a9ca985a015b0633893010"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/notifications/notification-icon.tsx": {
-    "mtime": 1782023270.5227566,
-    "hash": "a5af486bf345596f7f4a1e0d3a51e8dc"
+    "mtime": 1782558009.7961025,
+    "hash": "f42e450592863f6d7564a2334103ff2d"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/notifications/notification-list.tsx": {
     "mtime": 1782023551.3902516,
@@ -1676,8 +1836,8 @@
     "hash": "84fda110c2edc1331f111d89fd137ab9"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/notifications/notification-preferences.tsx": {
-    "mtime": 1782023753.1576269,
-    "hash": "56fb179349b268ab2952f23e0f37a4f9"
+    "mtime": 1782290389.5755448,
+    "hash": "bca8306833b238b5b242387578b04497"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/components/leave/leave-type-dialog.tsx": {
     "mtime": 1781522883.4896069,
@@ -1704,20 +1864,24 @@
     "hash": "06dc370e3ce60f4f2fd763c3bdb10c17"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/layouts/header.tsx": {
-    "mtime": 1782043783.4694254,
-    "hash": "bbd5b9e0fd6f112de548a13c5f641335"
+    "mtime": 1782557708.6158924,
+    "hash": "3d1ca17fc93f024e632ee66e73e7db70"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/layouts/sidebar.tsx": {
-    "mtime": 1782034503.1350327,
-    "hash": "615c328ccc5388d30e28e655d043f963"
+    "mtime": 1782281800.6900344,
+    "hash": "b6c19c8448986e26a5bc8730a34f4d6a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/layouts/dashboard-layout.tsx": {
-    "mtime": 1782046363.784833,
+    "mtime": 1782281627.0056093,
     "hash": "f2585a5075a2f087057584938fabe45c"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useSeparation.ts": {
     "mtime": 1781933727.9439528,
     "hash": "3e97e7b318a0b7b5e131e1375267afa4"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useLoans.ts": {
+    "mtime": 1782563435.9925883,
+    "hash": "5cca728caefda255e8f9d4b162a3dc35"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useSettlement.ts": {
     "mtime": 1782120990.0117977,
@@ -1739,6 +1903,10 @@
     "mtime": 1781758624.8572109,
     "hash": "618ccafa6c2879d67226f56055b75542"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useReports.ts": {
+    "mtime": 1782559880.9503295,
+    "hash": "9d3a01ff54593646bc289d5f332266e9"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/use-mobile.ts": {
     "mtime": 1781093180.6248834,
     "hash": "209b5193af16624cdd89d3591480dd48"
@@ -1752,16 +1920,20 @@
     "hash": "95c8656b73e544172524a58244ff1cec"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useLeaveApplications.ts": {
-    "mtime": 1781776472.635058,
-    "hash": "c81878c41056b62325c44fd50c184a54"
+    "mtime": 1782540323.6421447,
+    "hash": "bd8d09f7641b7f03576a20349bd7feec"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useTasks.ts": {
     "mtime": 1782046406.748916,
     "hash": "96aafb9fee66dd55323566e998f1d809"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useNotificationSocket.ts": {
-    "mtime": 1782046556.1205406,
-    "hash": "3e4dea34e0a9ce2a615d92e1281ce754"
+    "mtime": 1782550972.2400014,
+    "hash": "f06f93faa211859ff644674c519a016e"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useFestivalBonus.ts": {
+    "mtime": 1782550583.0807042,
+    "hash": "7829fde54652d4adc7d306d8a295a131"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useLeaveTypes.ts": {
     "mtime": 1781517999.3358998,
@@ -1770,6 +1942,10 @@
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/usePerformance.ts": {
     "mtime": 1781952144.6731067,
     "hash": "8ae7662c9dcc5fc4cfcbdd176b1a91a1"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useAssets.ts": {
+    "mtime": 1782564061.6504755,
+    "hash": "ba49033d0ce58fb2d25a850931884a26"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useRoles.ts": {
     "mtime": 1782028987.0699973,
@@ -1808,8 +1984,8 @@
     "hash": "3c6e542cf7897811d4c4fba7f9f9ba7a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useProvidentFund.ts": {
-    "mtime": 1781592239.9442368,
-    "hash": "286a7a8a1ff8f5d3386c013314b48ec0"
+    "mtime": 1782560658.1389477,
+    "hash": "33a228b57d61b8957f90e6a72474402b"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useAttendanceSettings.ts": {
     "mtime": 1781514713.149273,
@@ -1820,8 +1996,8 @@
     "hash": "3bc85798f3dde21ae8a97e20069c3637"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/useExecutiveDashboard.ts": {
-    "mtime": 1782104857.5233393,
-    "hash": "1da0125f0f186ba1f9ddcbd667b62db3"
+    "mtime": 1782551522.9577107,
+    "hash": "543210a61f19ffc941f60a0af9226415"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/hooks/usePermissions.ts": {
     "mtime": 1782034640.3641121,
@@ -1847,17 +2023,21 @@
     "mtime": 1781959086.1655202,
     "hash": "0a971a963b7ed3b539b1f8a2d8f5184e"
   },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-festival-bonus.tsx": {
+    "mtime": 1782550697.419282,
+    "hash": "11ab20566131872156f827671fdab452"
+  },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/settings.tsx": {
-    "mtime": 1782043939.0690196,
-    "hash": "aee21530a26d31efd82422878e6667af"
+    "mtime": 1782281286.7008045,
+    "hash": "2003187c9a726ed7dc369816645ab730"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/view-department.tsx": {
     "mtime": 1781496964.069806,
     "hash": "8719baed1444e7c1d022d496ea06d514"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/reports.tsx": {
-    "mtime": 1782035417.2107043,
-    "hash": "905414e2b53ee414e74d712c0c17e01a"
+    "mtime": 1782559937.865717,
+    "hash": "782f3221bfe716f4ceafcce29d8cb389"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/view-designation.tsx": {
     "mtime": 1781496990.8779035,
@@ -1884,12 +2064,16 @@
     "hash": "3713d9dd29adc60ba4d70318e6adbab7"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/dashboard.tsx": {
-    "mtime": 1782035243.7523344,
-    "hash": "9b5c3ca3412fe56ac2ce62e605ac07cd"
+    "mtime": 1782540332.124929,
+    "hash": "04ed251feb9804b71ecc215f7c8867c1"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/employees.tsx": {
-    "mtime": 1781937197.4154124,
-    "hash": "c678df945740a513f82316803c1264be"
+    "mtime": 1782549578.2666626,
+    "hash": "afea3b751478f9629bf81dfcebd7faa6"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-loans.tsx": {
+    "mtime": 1782563555.8875709,
+    "hash": "dc3f21062aa9b14e19ce2a1c2a744b5c"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-processing.tsx": {
     "mtime": 1782277842.5750978,
@@ -1900,8 +2084,8 @@
     "hash": "148c03a9829ae6f71faf702baf38474a"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/attendance.tsx": {
-    "mtime": 1782041809.784624,
-    "hash": "c602f1b35601b9064c89398edfd3b3c6"
+    "mtime": 1782540336.560194,
+    "hash": "baa2458cb1e235e64e2878ba0c2cd420"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/company-attendance.tsx": {
     "mtime": 1781937780.2517831,
@@ -1924,16 +2108,16 @@
     "hash": "21b51685f1f9590ac26fe37483097182"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/create-employee.tsx": {
-    "mtime": 1781500467.885098,
-    "hash": "50acc105133050dcc9c552c0222963f5"
+    "mtime": 1782280249.0625288,
+    "hash": "8b745660e3bb4367394ac0021d1fb14f"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/medical-reimbursement.tsx": {
     "mtime": 1782038201.326553,
     "hash": "ebfa5e60f3d5d516c5948bd22aed8e9f"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/ceo-dashboard.tsx": {
-    "mtime": 1782105005.1851015,
-    "hash": "909e1beb7e8742460ba88292822b26e2"
+    "mtime": 1782551970.3961544,
+    "hash": "acae70eb502555074b8ea889bb3747c3"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/edit-department.tsx": {
     "mtime": 1781931285.522921,
@@ -1944,8 +2128,8 @@
     "hash": "dffb35df01a8234c0ba3f48e56d7dfde"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-md-approvals.tsx": {
-    "mtime": 1782212777.0513208,
-    "hash": "770e007d811c7f90e05f51b94f996e3d"
+    "mtime": 1782549028.015491,
+    "hash": "cc78866745063fc4d81de7997e7c25b3"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/disciplinary.tsx": {
     "mtime": 1781933822.5533016,
@@ -1954,6 +2138,10 @@
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/departments.tsx": {
     "mtime": 1781587280.4834366,
     "hash": "cbc3c7c2a7e710fdde38117f3c295187"
+  },
+  "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-assets.tsx": {
+    "mtime": 1782564200.373777,
+    "hash": "532b988c2b44e35398d58daeff359696"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/profile.tsx": {
     "mtime": 1782125009.8827372,
@@ -1980,16 +2168,16 @@
     "hash": "6e8497455bfe316fba6b7b97154a8568"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/view-employee.tsx": {
-    "mtime": 1781500429.6042137,
-    "hash": "f5a557f7eb5d3e1d9be9494b86ce6b6f"
+    "mtime": 1782280264.9850485,
+    "hash": "744c51fafa043db9669f1a693fc9f523"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/chat.tsx": {
     "mtime": 1782021839.522692,
     "hash": "cca6a2f4607852288ead5914594a353f"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-disbursement.tsx": {
-    "mtime": 1782212781.489275,
-    "hash": "e2229faa5d1532d6a6c6bc7e3b450cea"
+    "mtime": 1782549035.9609706,
+    "hash": "3f1381da3451e6c8a2f740eaaa855f39"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/leave-applications.tsx": {
     "mtime": 1782103466.4418554,
@@ -2004,12 +2192,12 @@
     "hash": "2e987425dae8ffc725882c12601dc9ef"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-lm-approvals.tsx": {
-    "mtime": 1782212772.3600924,
-    "hash": "59d0cc4db6172197dd7aab0155e23a53"
+    "mtime": 1782549018.873646,
+    "hash": "b157c9d7610acc16a52c4b2da28065c6"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/edit-employee.tsx": {
-    "mtime": 1781500475.572168,
-    "hash": "a7ea96ed3a5db78cb68fc3fc6d2519d4"
+    "mtime": 1782280258.752268,
+    "hash": "c3c41b0134b3ec90023aa529a5d161c9"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/performance.tsx": {
     "mtime": 1782035918.8859637,
@@ -2020,8 +2208,8 @@
     "hash": "f591b2a57ca5f4b9b1a80b3f70997707"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/payroll-provident-fund.tsx": {
-    "mtime": 1782213015.5778131,
-    "hash": "58e70e1a2dda8f166c5302dcd7a89bf3"
+    "mtime": 1782560948.1466403,
+    "hash": "d695239a8f8f28b3cf2eea52ac15d6ee"
   },
   "/Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/print/offer-letter.tsx": {
     "mtime": 1781934503.1921287,

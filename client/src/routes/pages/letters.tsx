@@ -140,13 +140,13 @@ const letterTypes: LetterTypeConfig[] = [
   },
   {
     id: "warning",
-    name: "Warning Letter",
+    name: "Show Cause Notice",
     category: "discipline",
     icon: AlertTriangle,
     color: "text-amber-600",
     bgColor: "bg-amber-500/10",
-    description: "Disciplinary warning notice",
-    templateFields: ["violationType", "description", "actionRequired", "deadline"],
+    description: "Disciplinary show cause notice",
+    templateFields: ["incidentDate", "incidentLocation", "relevantPolicy", "description", "deadline"],
   },
   {
     id: "termination",

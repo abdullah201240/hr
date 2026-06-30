@@ -5,8 +5,10 @@ export interface HRLetter {
   id: string;
   type: string;
   employeeId: string;
+  employeeIdCode?: string;
   employeeName: string;
   employeeDepartment?: string;
+  employeeDesignation?: string;
   subject: string;
   issueDate: string;
   effectiveDate: string;
