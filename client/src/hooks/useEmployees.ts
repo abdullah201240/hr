@@ -88,9 +88,9 @@ export function useChangeEmployeeStatusMutation(id: string) {
 }
 
 export function useEmployeeOptionsQuery() {
-  return useQuery<Array<{ id: string; fullNameEnglish: string; employeeId: string }>>({
+  return useQuery<Array<{ id: string; fullNameEnglish: string; employeeId: string; designationName?: string }>>({
     queryKey: ["employees", "options"],
-    queryFn: () => apiClient.get<Array<{ id: string; fullNameEnglish: string; employeeId: string }>>("employees/options"),
+    queryFn: () => apiClient.get<Array<{ id: string; fullNameEnglish: string; employeeId: string; designationName?: string }>>("employees/options"),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 }

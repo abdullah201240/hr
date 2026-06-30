@@ -1,5 +1,5 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { eq, and, or, like, desc } from 'drizzle-orm';
+import { eq, and, or, like, desc, sql } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../db';
 import { issuedLetters, employees, departments, designations } from '../../db/schema';
 import { CreateLetterDto, UpdateLetterStatusDto, LetterQueryDto } from './dto/letters.dto';
@@ -14,22 +14,26 @@ export class LettersService {
   ) {}
 
   async create(dto: CreateLetterDto, createdBy: string = 'HR Admin') {
-    // 1. Verify employee exists
-    const [emp] = await this.db
-      .select({ id: employees.id })
-      .from(employees)
-      .where(eq(employees.id, dto.employeeId))
-      .limit(1);
+    if (dto.employeeId) {
+      // 1. Verify employee exists
+      const [emp] = await this.db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.id, dto.employeeId))
+        .limit(1);
 
-    if (!emp) {
-      throw new NotFoundException(`Employee with ID "${dto.employeeId}" not found`);
+      if (!emp) {
+        throw new NotFoundException(`Employee with ID "${dto.employeeId}" not found`);
+      }
     }
 
     const [created] = await this.db
       .insert(issuedLetters)
       .values({
         type: dto.type,
-        employeeId: dto.employeeId,
+        employeeId: dto.employeeId || null,
+        employeeName: dto.employeeName || null,
+        employeeEmail: dto.employeeEmail || null,
         subject: dto.subject,
         issueDate: dto.issueDate,
         effectiveDate: dto.effectiveDate,
@@ -59,6 +63,7 @@ export class LettersService {
       conditions.push(
         or(
           like(employees.fullNameEnglish, `%${search}%`),
+          like(issuedLetters.employeeName, `%${search}%`),
           like(issuedLetters.subject, `%${search}%`),
           like(issuedLetters.id, `%${search}%`),
         ),
@@ -73,7 +78,7 @@ export class LettersService {
         type: issuedLetters.type,
         employeeId: issuedLetters.employeeId,
         employeeIdCode: employees.employeeId,
-        employeeName: employees.fullNameEnglish,
+        employeeName: sql<string | null>`COALESCE(${employees.fullNameEnglish}, ${issuedLetters.employeeName})`,
         employeeDepartment: departments.name,
         employeeDesignation: designations.name,
         subject: issuedLetters.subject,
@@ -86,7 +91,7 @@ export class LettersService {
         createdAt: issuedLetters.createdAt,
       })
       .from(issuedLetters)
-      .innerJoin(employees, eq(issuedLetters.employeeId, employees.id))
+      .leftJoin(employees, eq(issuedLetters.employeeId, employees.id))
       .leftJoin(departments, eq(employees.departmentId, departments.id))
       .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(whereCondition)
@@ -113,7 +118,7 @@ export class LettersService {
         type: issuedLetters.type,
         employeeId: issuedLetters.employeeId,
         employeeIdCode: employees.employeeId,
-        employeeName: employees.fullNameEnglish,
+        employeeName: sql<string | null>`COALESCE(${employees.fullNameEnglish}, ${issuedLetters.employeeName})`,
         employeeDepartment: departments.name,
         employeeDesignation: designations.name,
         subject: issuedLetters.subject,
@@ -126,7 +131,7 @@ export class LettersService {
         createdAt: issuedLetters.createdAt,
       })
       .from(issuedLetters)
-      .innerJoin(employees, eq(issuedLetters.employeeId, employees.id))
+      .leftJoin(employees, eq(issuedLetters.employeeId, employees.id))
       .leftJoin(departments, eq(employees.departmentId, departments.id))
       .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(issuedLetters.id, id))

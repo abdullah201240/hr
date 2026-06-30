@@ -47,7 +47,7 @@ const letterTypes: LetterTypeConfig[] = [
   { id: "promotion", name: "Promotion Letter", category: "Employment", icon: TrendingUp, color: "text-violet-600", bgColor: "bg-violet-500/10" },
   { id: "transfer", name: "Transfer Letter", category: "Employment", icon: ArrowRightLeft, color: "text-blue-600", bgColor: "bg-blue-500/10" },
   { id: "salary_increment", name: "Salary Increment", category: "Employment", icon: Coins, color: "text-emerald-600", bgColor: "bg-emerald-500/10" },
-  { id: "warning", name: "Warning Letter", category: "Discipline", icon: AlertTriangle, color: "text-amber-600", bgColor: "bg-amber-500/10" },
+  { id: "warning", name: "Show Cause Notice", category: "Discipline", icon: AlertTriangle, color: "text-amber-600", bgColor: "bg-amber-500/10" },
   { id: "termination", name: "Termination Letter", category: "Discipline", icon: Ban, color: "text-red-600", bgColor: "bg-red-500/10" },
   { id: "experience", name: "Experience Letter", category: "Exit", icon: Award, color: "text-indigo-600", bgColor: "bg-indigo-500/10" },
   { id: "relieving", name: "Relieving Letter", category: "Exit", icon: LogOut, color: "text-slate-600", bgColor: "bg-slate-500/10" },
@@ -116,6 +116,534 @@ export default function ViewLetterPage() {
     )
   }
 
+  const renderLetterContent = () => {
+    const fields = letter.fields || {}
+    const employeeLastName = letter.employeeName ? letter.employeeName.trim().split(" ").pop() : "[Last Name]"
+    
+    const formatDate = (dateStr: string) =>
+      new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+
+    if (letter.type === "salary_increment") {
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                PERFORMANCE REVIEW OUTCOME & SALARY INCREMENT LETTER
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+              <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+              <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6">
+              <p className="font-bold text-blue-600 dark:text-blue-400">
+                Subject: Annual Performance Review Outcome and Salary Revision
+              </p>
+              <p className="font-semibold">Dear Mr./Ms. {employeeLastName},</p>
+              <p className="leading-relaxed">
+                We are pleased to inform you that your Annual Performance Review for the period{" "}
+                <span className="font-semibold">{fields.reviewPeriod || "[Review Period]"}</span> has been completed.
+                Based on your overall performance, achievement of assigned Key Performance Indicators (KPIs),
+                demonstration of Company values, and Management's assessment, the Management has approved the following:
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <table className="w-full border-collapse border border-slate-300 dark:border-slate-700 text-xs">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-900">
+                    <th className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-50 w-[40%]">Particular</th>
+                    <th className="border border-slate-300 dark:border-slate-700 py-2 px-3 text-left font-bold text-slate-900 dark:text-slate-50">Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Performance Rating</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.performanceRating || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Overall Score</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.overallScore || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Review Period</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.reviewPeriod || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Effective Date</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Current Gross Salary</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">BDT {fields.currentGrossSalary || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Revised Gross Salary</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">BDT {fields.revisedGrossSalary || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Monthly Increment</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">BDT {fields.monthlyIncrement || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3 font-semibold">Annual Increment (%)</td>
+                    <td className="border border-slate-300 dark:border-slate-700 py-2 px-3">{fields.annualIncrementPercentage || "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Management Remarks</h3>
+              <p className="leading-relaxed whitespace-pre-line italic">
+                {fields.managementRemarks || "[Remarks are pending completion.]"}
+              </p>
+            </div>
+
+            <div className="text-xs space-y-2">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Future Expectations</h3>
+              <p className="leading-relaxed">
+                You are expected to continue maintaining high standards of professionalism, integrity,
+                teamwork and performance while contributing towards the achievement of departmental and
+                organizational objectives. Your performance will continue to be reviewed in accordance
+                with the Company's Performance Management System.
+              </p>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-4 mb-8">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Salary Revision</h3>
+              <p className="leading-relaxed">
+                The revised salary stated above shall be effective from{" "}
+                <span className="font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "[Effective Date]"}</span> and shall
+                supersede your previous salary. All other terms and conditions of your employment
+                shall remain unchanged.
+              </p>
+              <p className="leading-relaxed">
+                We appreciate your valuable contribution and congratulate you on your continued
+                commitment to Sadoshima Corporation. We wish you every success in your future
+                career with the Company.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-6 mb-12">
+              <p>Yours faithfully,</p>
+              <p className="font-semibold">For Sadoshima Corporation</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Managing Director"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-6 border-t border-slate-200 dark:border-slate-800 pt-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Acknowledgement</h3>
+              <p className="leading-relaxed">
+                I acknowledge receipt of this Performance Review Outcome and Salary Increment Letter.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
+    if (letter.type === "warning") {
+      const incidentDate = fields.incidentDate || fields.dateTime || fields.violationDate || "—"
+      const incidentLocation = fields.incidentLocation || fields.location || "—"
+      const relevantPolicy = fields.relevantPolicy || fields.violationType || "—"
+      const description = fields.description || letter.body || "—"
+      const deadline = fields.deadline || fields.actionRequired || "—"
+
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                SHOW CAUSE NOTICE
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+              <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.designation || "—"}</span></p>
+              <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6">
+              <p className="font-bold text-blue-600 dark:text-blue-400">
+                Subject: Show Cause Notice
+              </p>
+              <p className="font-semibold">Dear Mr./Ms. {employeeLastName},</p>
+              <p className="leading-relaxed">
+                It has been reported that you were allegedly involved in the following incident(s), which, if established, may constitute misconduct and/or a breach of the Company's HR Policy, Code of Conduct and/or your terms of employment.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Details of Alleged Misconduct</h3>
+              <div className="space-y-1 pl-1">
+                <p className="font-semibold">Date & Time: <span className="font-normal">{incidentDate}</span></p>
+                <p className="font-semibold">Location: <span className="font-normal">{incidentLocation}</span></p>
+                <p className="font-semibold mt-2">Description:</p>
+                <p className="leading-relaxed whitespace-pre-wrap pl-2 border-l border-slate-200 dark:border-slate-800 italic">
+                  {description}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-2 mb-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Relevant Policy / Rule</h3>
+              <p className="leading-relaxed pl-1 whitespace-pre-line">
+                {relevantPolicy}
+              </p>
+            </div>
+
+            <div className="text-xs space-y-2">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Explanation Required</h3>
+              <p className="leading-relaxed pl-1">
+                You are hereby required to submit your written explanation as to why disciplinary action should not be taken against you regarding the above matter.
+              </p>
+              <p className="leading-relaxed pl-1">
+                Your written explanation must reach the Human Resources Department on or before <span className="font-semibold">{deadline}</span>. If you fail to submit your explanation within the stipulated time without a reasonable cause, the Company may proceed with the matter and make a decision based on the information available.
+              </p>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-4 mb-12">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">No Presumption of Guilt</h3>
+              <p className="leading-relaxed">
+                This Show Cause Notice is issued to provide you with an opportunity to explain your position. No final decision has been made regarding this matter.
+              </p>
+              <p className="leading-relaxed">
+                You are expected to continue performing your duties and comply with all Company policies during this process unless otherwise instructed.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-6 mb-16">
+              <p>Yours faithfully,</p>
+              <p className="font-semibold">For Sadoshima Corporation</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Human Resources / Managing Director"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Acknowledgement of Receipt</h3>
+              <p className="leading-relaxed">
+                I acknowledge receipt of this Show Cause Notice.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.issueDate ? formatDate(letter.issueDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
+    if (letter.type === "appointment") {
+      const presentAddress = fields.presentAddress || "—"
+      const designation = fields.designation || letter.employeeDesignation || "—"
+      const department = fields.department || letter.employeeDepartment || "—"
+      const startDate = fields.startDate || (letter.effectiveDate ? formatDate(letter.effectiveDate) : "—")
+      const offerLetterDate = fields.offerLetterDate || "—"
+      const reportingManager = fields.reportingManager || "—"
+      const officeLocation = fields.officeLocation || "—"
+      const salary = fields.salary || "—"
+
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                APPOINTMENT LETTER
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Present Address: <span className="font-normal">{presentAddress}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6">
+              <p className="font-bold text-blue-600 dark:text-blue-400">
+                Subject: Appointment as {designation}
+              </p>
+              <p className="font-semibold">Dear Mr./Ms. {employeeLastName},</p>
+              <p className="leading-relaxed">
+                We are pleased to appoint you as <span className="font-semibold">{designation}</span> in the <span className="font-semibold">{department}</span> of Sadoshima Corporation – Bangladesh Liaison Office effective from <span className="font-semibold">{startDate}</span>. Your appointment is made based on your acceptance of our Offer Letter dated <span className="font-semibold">{offerLetterDate}</span> and is governed by the following terms and conditions.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-4">
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">1. Position</h3>
+                <p className="leading-relaxed mt-1">
+                  You are appointed as <span className="font-semibold">{designation}</span> and will report to <span className="font-semibold">{reportingManager}</span> or any other person designated by the Company from time to time.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">2. Place of Posting</h3>
+                <p className="leading-relaxed mt-1">
+                  Your initial duty station shall be <span className="font-semibold">{officeLocation}</span>. The Company reserves the right to transfer you to any office, project site, or affiliated organization within Bangladesh whenever business requirements so demand.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">3. Probation</h3>
+                <p className="leading-relaxed mt-1">
+                  You will remain on probation for six (6) months from your date of joining. Upon satisfactory completion of probation and subject to Management approval, your employment may be confirmed in writing. The Company reserves the right to extend the probation period or discontinue your employment during probation in accordance with the Company's HR Policy and applicable laws.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">4. Working Hours</h3>
+                <p className="leading-relaxed mt-1">
+                  Your working hours shall be in accordance with the Company's office schedule. You may be required to work beyond normal office hours whenever business requirements so necessitate.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-4">
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">5. Compensation</h3>
+                <p className="leading-relaxed mt-1">
+                  You shall receive a Gross Monthly Salary of BDT <span className="font-semibold">{salary}</span>. Salary shall be paid through bank transfer in accordance with the Company's payroll schedule.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">6. Leave</h3>
+                <p className="leading-relaxed mt-1">
+                  You shall be entitled to leave and holidays in accordance with the Company's HR Policy and applicable laws of Bangladesh.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">7. Performance Evaluation</h3>
+                <p className="leading-relaxed mt-1">
+                  Your performance shall be evaluated periodically under the Company's Performance Management System. Confirmation, salary revision, promotion and other employment benefits shall be based on performance, organizational requirements and Management approval.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">8. Provident Fund and Gratuity</h3>
+                <p className="leading-relaxed mt-1">
+                  The Employee may become eligible to participate in the Company's Provident Fund and Gratuity Schemes in accordance with the respective approved Trust Deeds, Company Policies, applicable laws of Bangladesh, and the eligibility criteria prescribed therein. The Company reserves the right to amend, revise, suspend, or discontinue such schemes to the extent permitted by applicable laws. Detailed provisions governing these schemes shall be communicated separately upon their implementation and as they become applicable to the Employee.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">9. Confidentiality</h3>
+                <p className="leading-relaxed mt-1">
+                  You shall maintain strict confidentiality regarding all confidential information acquired during your employment, both during and after separation from the Company.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">10. Code of Conduct</h3>
+                <p className="leading-relaxed mt-1">
+                  You shall comply with the Company's HR Policy, Code of Conduct and all other policies, procedures and lawful instructions issued from time to time.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">11. Company Property</h3>
+                <p className="leading-relaxed mt-1">
+                  All Company property issued to you shall remain the property of the Company and must be returned upon request or upon cessation of employment.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">12. Separation from Employment</h3>
+                <p className="leading-relaxed mt-1">
+                  Either party may terminate this employment in accordance with the Company's HR Policy and applicable laws of Bangladesh.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-4 mb-8">
+              <div>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400">13. Governing Policies</h3>
+                <p className="leading-relaxed mt-1">
+                  Your employment shall be governed by the Company's HR Policy, Rules & Regulations and applicable laws of Bangladesh.
+                </p>
+              </div>
+
+              <p className="leading-relaxed pt-2">
+                We welcome you to Sadoshima Corporation and wish you a successful and rewarding career with us.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-6 mb-12">
+              <p>Yours faithfully,</p>
+              <p className="font-semibold">For Sadoshima Corporation</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Managing Director"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee's Acceptance</h3>
+              <p className="leading-relaxed text-slate-700 dark:text-slate-300">
+                I, <span className="font-semibold">{letter.employeeName}</span>, hereby acknowledge that I have read, understood and accepted the terms and conditions of this Appointment Letter and agree to comply with the Company's policies, rules and regulations.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.issueDate ? formatDate(letter.issueDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
+    return (
+      <Card className="shadow-xs border-border/40 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+        <CardContent className="p-8">
+          <div className="flex justify-between items-start border-b-2 border-slate-900 dark:border-slate-100 pb-6 mb-8">
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight uppercase text-slate-900 dark:text-slate-50">
+                Sadoshima
+              </h1>
+              <p className="text-xs text-muted-foreground mt-1">
+                123 Innovation Boulevard, Suite 500<br />
+                Dhaka, Bangladesh • contact@sadoshima.com
+              </p>
+            </div>
+            <div className="text-right text-xs text-muted-foreground">
+              <p className="font-bold text-slate-800 dark:text-slate-200 uppercase">{typeConfig?.name || "HR Letter"}</p>
+              <p className="mt-1">Date: {formatDate(letter.issueDate)}</p>
+              <p className="mt-0.5">Ref: {letter.id}</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+            <div>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="text-muted-foreground">{letter.employeeDepartment} Department</p>
+            </div>
+
+            <div className="pt-2">
+              <p className="font-bold text-base text-slate-900 dark:text-slate-50">
+                Subject: {letter.subject}
+              </p>
+            </div>
+
+            <p>Dear {letter.employeeName},</p>
+
+            {letter.body.split("\n").filter(Boolean).map((paragraph, idx) => (
+              <p key={idx}>{paragraph}</p>
+            ))}
+
+            {Object.keys(fields).length > 0 && (
+              <div className="pt-2">
+                <table className="w-full border-collapse text-xs">
+                  <tbody>
+                    {Object.entries(fields).map(([key, value]) => (
+                      <tr key={key}>
+                        <td className="py-2 px-3 border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-muted-foreground capitalize w-[40%]">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </td>
+                        <td className="py-2 px-3 border border-slate-300 dark:border-slate-700 font-semibold text-slate-900 dark:text-slate-50">
+                          {value || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {letter.effectiveDate && (
+              <p className="text-xs text-muted-foreground">
+                Effective Date: <strong className="text-slate-900 dark:text-slate-50">{formatDate(letter.effectiveDate)}</strong>
+              </p>
+            )}
+
+            <div className="pt-12 grid grid-cols-2 gap-8">
+              <div>
+                <p className="text-muted-foreground">Sincerely,</p>
+                <div className="h-16 flex items-end">
+                  <span className="font-serif italic text-slate-400 dark:text-slate-700">{fields.signatoryName || letter.createdBy}</span>
+                </div>
+                <div className="border-t border-slate-300 dark:border-slate-700 pt-2 w-48">
+                  <p className="font-bold text-xs text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy}</p>
+                  <p className="text-[10px] text-muted-foreground">{fields.signatoryDesignation || "Human Resources Department"}</p>
+                  <p className="text-[10px] text-muted-foreground">Sadoshima HR Management</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-end items-end text-right">
+                <p className="text-muted-foreground">Acknowledged By:</p>
+                <div className="h-16"></div>
+                <div className="border-t border-slate-300 dark:border-slate-700 pt-2 w-48 text-left">
+                  <p className="font-bold text-xs text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+                  <p className="text-[10px] text-muted-foreground">Employee Signature & Date</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header - Hidden on print */}
@@ -159,57 +687,7 @@ export default function ViewLetterPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Letter Preview - Takes 2 columns */}
         <div className="lg:col-span-2">
-          <Card className="print:shadow-none print:border-none">
-            <CardContent className="p-8 print:p-0">
-              {/* Company Letterhead */}
-              <div className="border-b-2 border-primary pb-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-primary">Sadoshima HR</h1>
-                    <p className="text-xs text-muted-foreground">Management System</p>
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground">
-                    <p>123 Business Avenue</p>
-                    <p>New York, NY 10001</p>
-                    <p>contact@sadoshimahr.com</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Letter Header Info */}
-              <div className="mb-6 space-y-1 text-sm">
-                <p><span className="text-muted-foreground">Date:</span> {new Date(letter.issueDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-                <p><span className="text-muted-foreground">Ref:</span> {letter.id}</p>
-              </div>
-
-              {/* Subject */}
-              <div className="mb-6">
-                <p className="font-bold text-base">Subject: {letter.subject}</p>
-              </div>
-
-              {/* Recipient */}
-              <div className="mb-6">
-                <p className="font-medium">To: {letter.employeeName}</p>
-                <p className="text-sm text-muted-foreground">{letter.employeeDepartment} Department</p>
-              </div>
-
-              {/* Letter Body */}
-              <div className="prose prose-sm max-w-none mb-8">
-                {letter.body.split("\n\n").map((paragraph, idx) => (
-                  <p key={idx} className="mb-4 text-sm leading-relaxed whitespace-pre-line">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-
-              {/* Signature */}
-              <div className="mt-12 pt-6 border-t border-border">
-                <p className="text-sm font-medium">{letter.createdBy}</p>
-                <p className="text-xs text-muted-foreground">Human Resources Department</p>
-                <p className="text-xs text-muted-foreground">Sadoshima HR Management</p>
-              </div>
-            </CardContent>
-          </Card>
+          {renderLetterContent()}
         </div>
 
         {/* Sidebar - Letter Details */}

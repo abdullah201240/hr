@@ -549,8 +549,10 @@ export class EmployeeService {
         id: employees.id,
         fullNameEnglish: employees.fullNameEnglish,
         employeeId: employees.employeeId,
+        designationName: designations.name,
       })
       .from(employees)
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(employees.status, 'active'))
       .orderBy(asc(employees.fullNameEnglish));
 

@@ -8,10 +8,20 @@ export class CreateLetterDto {
   @IsNotEmpty()
   type!: string;
 
-  @ApiProperty({ description: 'Target employee UUID' })
+  @ApiProperty({ description: 'Target employee UUID', required: false })
   @IsUUID()
-  @IsNotEmpty()
-  employeeId!: string;
+  @IsOptional()
+  employeeId?: string;
+
+  @ApiProperty({ description: 'Custom Employee Name', required: false })
+  @IsString()
+  @IsOptional()
+  employeeName?: string;
+
+  @ApiProperty({ description: 'Custom Employee Email', required: false })
+  @IsString()
+  @IsOptional()
+  employeeEmail?: string;
 
   @ApiProperty({ description: 'Subject line' })
   @IsString()

@@ -33,6 +33,10 @@ import {
   ShieldCheck,
 } from "lucide-react"
 
+import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
+import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
+import { useEmployeeQuery } from "@/hooks/useEmployees"
+
 interface LetterTypeConfig {
   id: string
   name: string
@@ -63,7 +67,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-sky-600",
     bgColor: "bg-sky-500/10",
     description: "Official appointment confirmation",
-    templateFields: ["designation", "department", "salary", "startDate", "reportingManager"],
+    templateFields: ["presentAddress", "designation", "department", "startDate", "offerLetterDate", "reportingManager", "officeLocation", "salary"],
   },
   {
     id: "confirmation",
@@ -197,6 +201,11 @@ export function LetterCreateDialog({
 }: LetterCreateDialogProps) {
   const [selectedType, setSelectedType] = useState<string>("")
   const [formEmployeeId, setFormEmployeeId] = useState("")
+  const [formEmployeeName, setFormEmployeeName] = useState("")
+  const [formEmployeeEmail, setFormEmployeeEmail] = useState("")
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false)
+  const [showManagerDropdown, setShowManagerDropdown] = useState(false)
+  const [formSignatoryId, setFormSignatoryId] = useState("")
   const [formSubject, setFormSubject] = useState("")
   const [formIssueDate, setFormIssueDate] = useState("")
   const [formEffectiveDate, setFormEffectiveDate] = useState("")
@@ -205,9 +214,31 @@ export function LetterCreateDialog({
   const [formStatus, setFormStatus] = useState<"Draft" | "Sent" | "Signed">("Draft")
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  const { data: departments = [] } = useDepartmentOptionsQuery()
+  const { data: designations = [] } = useDesignationOptionsQuery()
+  const { data: employeeDetails } = useEmployeeQuery(formEmployeeId)
+
+  // Autofill fields when employee is selected
+  useEffect(() => {
+    if (employeeDetails) {
+      setFormFields((prev) => ({
+        ...prev,
+        department: employeeDetails.departmentName || "",
+        designation: employeeDetails.designationName || "",
+        presentAddress: employeeDetails.currentAddress || "",
+        startDate: employeeDetails.joinDate ? new Date(employeeDetails.joinDate).toISOString().split('T')[0] : "",
+      }))
+    }
+  }, [employeeDetails])
+
   const resetForm = () => {
     setSelectedType("")
     setFormEmployeeId("")
+    setFormEmployeeName("")
+    setFormEmployeeEmail("")
+    setShowEmployeeDropdown(false)
+    setShowManagerDropdown(false)
+    setFormSignatoryId("")
     setFormSubject("")
     setFormIssueDate("")
     setFormEffectiveDate("")
@@ -223,12 +254,15 @@ export function LetterCreateDialog({
     const config = getLetterTypeConfig(selectedType)
     if (!config) return
 
-    const employeeName = employeeOptions.find((e) => e.id === formEmployeeId)?.fullNameEnglish || "[Employee Name]"
+    const employeeName = formEmployeeName || "[Employee Name]"
     
     let defaultBody = ""
     switch (selectedType) {
       case "offer":
         defaultBody = `Dear ${employeeName},\n\nWe are pleased to offer you employment at Sadoshima Global Corp. Details of your offer are as follows:\n- Designation: ${formFields.designation || "[Designation]"}\n- Salary: ৳${formFields.salary || "[Salary]"}/month\n- Start Date: ${formFields.startDate || "[Start Date]"}\n\nPlease review and sign to confirm your acceptance.`
+        break
+      case "appointment":
+        defaultBody = `We are pleased to appoint you as ${formFields.designation || "[Designation]"} in the ${formFields.department || "[Department Name]"} of Sadoshima Corporation – Bangladesh Liaison Office effective from ${formFields.startDate || "[Joining Date]"}. Your appointment is made based on your acceptance of our Offer Letter dated ${formFields.offerLetterDate || "[Offer Letter Date]"} and is governed by the following terms and conditions.`
         break
       case "promotion":
         defaultBody = `Dear ${employeeName},\n\nCongratulations! We are delighted to promote you to the position of ${formFields.newDesignation || "[New Designation]"} effective from ${formFields.effectiveDate || "[Effective Date]"}. Your revised monthly salary will be ৳${formFields.salaryChange || "[Salary]"}.\n\nThank you for your valuable contributions.`
@@ -246,7 +280,7 @@ export function LetterCreateDialog({
         defaultBody = `Dear ${employeeName},\n\nThis letter is to confirm official updates regarding your employment records at Sadoshima Global Corp.\n\nDetails:\n- Reference Field: ${Object.values(formFields)[0] || "Update"}\n- Effective Date: ${formEffectiveDate || "[Date]"}\n\nPlease feel free to contact HR if you have any questions.`
     }
     setFormBody(defaultBody)
-  }, [selectedType, formEmployeeId, formFields, formEffectiveDate, employeeOptions])
+  }, [selectedType, formEmployeeName, formFields, formEffectiveDate])
 
   const handleTypeSelect = (typeId: string) => {
     setSelectedType(typeId)
@@ -262,7 +296,7 @@ export function LetterCreateDialog({
     e.preventDefault()
     const newErrors: Record<string, string> = {}
     if (!selectedType) newErrors.selectedType = "Please select a letter type"
-    if (!formEmployeeId) newErrors.formEmployeeId = "Please select a recipient employee"
+    if (!formEmployeeName.trim()) newErrors.formEmployeeName = "Employee name is required"
     if (!formSubject.trim()) newErrors.formSubject = "Subject is required"
     if (!formIssueDate) newErrors.formIssueDate = "Issue date is required"
     if (!formEffectiveDate) newErrors.formEffectiveDate = "Effective date is required"
@@ -273,11 +307,10 @@ export function LetterCreateDialog({
       return
     }
 
-    const employee = employeeOptions.find((e) => e.id === formEmployeeId)
     await onSubmit({
-      employeeId: formEmployeeId,
-      employeeName: employee?.fullNameEnglish || "",
-      employeeEmail: employee?.email || "",
+      employeeId: formEmployeeId || undefined,
+      employeeName: formEmployeeName.trim(),
+      employeeEmail: formEmployeeEmail.trim() || undefined,
       type: selectedType,
       subject: formSubject,
       issueDate: formIssueDate,
@@ -337,26 +370,49 @@ export function LetterCreateDialog({
             <>
               {/* Employee + Subject */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 relative">
                   <Label className="text-xs font-semibold">Employee Name *</Label>
-                  <select
-                    value={formEmployeeId}
+                  <Input
+                    placeholder="Enter Employee / Candidate Name"
+                    value={formEmployeeName}
                     onChange={(e) => {
-                      setFormEmployeeId(e.target.value)
-                      if (errors.formEmployeeId) setErrors(prev => ({ ...prev, formEmployeeId: "" }))
+                      const val = e.target.value
+                      setFormEmployeeName(val)
+                      setShowEmployeeDropdown(true)
+                      setFormEmployeeId("")
+                      if (errors.formEmployeeName) setErrors(prev => ({ ...prev, formEmployeeName: "" }))
+                    }}
+                    onFocus={() => setShowEmployeeDropdown(true)}
+                    onBlur={() => {
+                      setTimeout(() => setShowEmployeeDropdown(false), 200)
                     }}
                     required
-                    className="w-full bg-background border border-border hover:border-primary transition-colors text-xs h-9 rounded-md px-2"
-                  >
-                    <option value="">Select Employee</option>
-                    {employeeOptions.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.fullNameEnglish} ({emp.employeeId})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.formEmployeeId && (
-                    <p className="text-[10px] text-destructive mt-0.5">{errors.formEmployeeId}</p>
+                    className="text-xs h-9"
+                  />
+                  {showEmployeeDropdown && employeeOptions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-md max-h-48 overflow-y-auto">
+                      {employeeOptions
+                        .filter(emp => emp.fullNameEnglish.toLowerCase().includes(formEmployeeName.toLowerCase()))
+                        .map((emp) => (
+                          <button
+                            key={emp.id}
+                            type="button"
+                            onClick={() => {
+                              setFormEmployeeId(emp.id)
+                              setFormEmployeeName(emp.fullNameEnglish)
+                              setFormEmployeeEmail(emp.email || "")
+                              setShowEmployeeDropdown(false)
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                          >
+                            {emp.fullNameEnglish} ({emp.employeeId})
+                          </button>
+                        ))
+                      }
+                    </div>
+                  )}
+                  {errors.formEmployeeName && (
+                    <p className="text-[10px] text-destructive mt-0.5">{errors.formEmployeeName}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
@@ -413,6 +469,44 @@ export function LetterCreateDialog({
                 </div>
               </div>
 
+              {/* Signatory Selection */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Signatory / Signed By *</Label>
+                  <select
+                    value={formSignatoryId}
+                    onChange={(e) => {
+                      const id = e.target.value
+                      setFormSignatoryId(id)
+                      const emp = employeeOptions.find(o => o.id === id)
+                      if (emp) {
+                        setFormFields(prev => ({
+                          ...prev,
+                          signatoryName: emp.fullNameEnglish,
+                          signatoryDesignation: emp.designationName || "Authorized Signatory",
+                        }))
+                      } else {
+                        setFormFields(prev => {
+                          const updated = { ...prev }
+                          delete updated.signatoryName
+                          delete updated.signatoryDesignation
+                          return updated
+                        })
+                      }
+                    }}
+                    required
+                    className="w-full bg-background border border-border hover:border-primary transition-colors text-xs h-9 rounded-md px-2"
+                  >
+                    <option value="">Select Signatory</option>
+                    {employeeOptions.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.fullNameEnglish} ({emp.designationName || "Staff"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               {/* Dynamic Fields based on letter type */}
               <div className="space-y-3">
                 <Label className="text-xs font-semibold">Letter Details</Label>
@@ -422,12 +516,84 @@ export function LetterCreateDialog({
                       <Label className="text-[10px] text-muted-foreground font-medium capitalize">
                         {field.replace(/([A-Z])/g, " $1").trim()}
                       </Label>
-                      <Input
-                        placeholder={`Enter ${field.replace(/([A-Z])/g, " $1").trim().toLowerCase()}`}
-                        value={formFields[field] || ""}
-                        onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
-                        className="text-xs h-8"
-                      />
+                      {field === "department" ? (
+                        <select
+                          value={formFields[field] || ""}
+                          onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
+                          className="w-full bg-background border border-border hover:border-primary transition-colors text-xs h-8 rounded-md px-2"
+                        >
+                          <option value="">Select Department</option>
+                          {departments.map((dept) => (
+                            <option key={dept.id} value={dept.name}>
+                              {dept.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : ["designation", "confirmedDesignation", "oldDesignation", "newDesignation", "fromRole", "toRole"].includes(field) ? (
+                        <select
+                          value={formFields[field] || ""}
+                          onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
+                          className="w-full bg-background border border-border hover:border-primary transition-colors text-xs h-8 rounded-md px-2"
+                        >
+                          <option value="">Select Designation</option>
+                          {designations.map((desg) => (
+                            <option key={desg.id} value={desg.name}>
+                              {desg.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field === "reportingManager" ? (
+                        <div className="relative">
+                          <Input
+                            placeholder="Enter Reporting Manager Name"
+                            value={formFields[field] || ""}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setFormFields({ ...formFields, [field]: val })
+                              setShowManagerDropdown(true)
+                            }}
+                            onFocus={() => setShowManagerDropdown(true)}
+                            onBlur={() => {
+                              setTimeout(() => setShowManagerDropdown(false), 200)
+                            }}
+                            className="text-xs h-8"
+                          />
+                          {showManagerDropdown && employeeOptions.length > 0 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-md max-h-48 overflow-y-auto">
+                              {employeeOptions
+                                .filter(emp => emp.fullNameEnglish.toLowerCase().includes((formFields[field] || "").toLowerCase()))
+                                .map((emp) => (
+                                  <button
+                                    key={emp.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setFormFields({ ...formFields, [field]: emp.fullNameEnglish })
+                                      setShowManagerDropdown(false)
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                                  >
+                                    {emp.fullNameEnglish} ({emp.employeeId})
+                                  </button>
+                                ))
+                              }
+                            </div>
+                          )}
+                        </div>
+                      ) : field.toLowerCase().includes("date") || field.toLowerCase().includes("deadline") ? (
+                        <Input
+                          type="date"
+                          value={formFields[field] || ""}
+                          onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
+                          className="text-xs h-8"
+                        />
+                      ) : (
+                        <Input
+                          placeholder={`Enter ${field.replace(/([A-Z])/g, " $1").trim().toLowerCase()}`}
+                          value={formFields[field] || ""}
+                          onChange={(e) => setFormFields({ ...formFields, [field]: e.target.value })}
+                          className="text-xs h-8"
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

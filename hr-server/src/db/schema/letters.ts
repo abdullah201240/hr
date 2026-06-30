@@ -17,8 +17,9 @@ export const issuedLetters = pgTable(
     ...baseTable,
     type: varchar('type', { length: 50 }).notNull(), // 'offer' | 'appointment' | 'confirmation' | etc.
     employeeId: uuid('employee_id')
-      .notNull()
       .references(() => employees.id, { onDelete: 'cascade' }),
+    employeeName: varchar('employee_name', { length: 255 }),
+    employeeEmail: varchar('employee_email', { length: 255 }),
     subject: varchar('subject', { length: 255 }).notNull(),
     issueDate: date('issue_date').notNull(),
     effectiveDate: date('effective_date').notNull(),

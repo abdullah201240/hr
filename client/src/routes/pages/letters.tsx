@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LetterCreateDialog } from "@/components/letters/LetterCreateDialog"
-import { LetterPreviewDialog } from "@/components/letters/LetterPreviewDialog"
 import {
   Table,
   TableBody,
@@ -86,7 +85,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-sky-600",
     bgColor: "bg-sky-500/10",
     description: "Official appointment confirmation",
-    templateFields: ["designation", "department", "salary", "startDate", "reportingManager"],
+    templateFields: ["presentAddress", "designation", "department", "startDate", "offerLetterDate", "reportingManager", "officeLocation", "salary"],
   },
   {
     id: "confirmation",
@@ -243,9 +242,6 @@ export default function LettersPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  // Preview state
-  const [previewLetter, setPreviewLetter] = useState<HRLetter | null>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
 
   // Stats
   const lettersList = lettersData?.data || []
@@ -291,8 +287,7 @@ export default function LettersPage() {
 
   // Open preview
   const openPreview = (letter: HRLetter) => {
-    setPreviewLetter(letter)
-    setPreviewOpen(true)
+    navigate(`/letters/view/${letter.id}`)
   }
 
   // Print letter - navigate to dedicated print page
@@ -526,13 +521,7 @@ export default function LettersPage() {
         </CardContent>
       </Card>
 
-      {/* Detailed Document Preview Dialog */}
-      <LetterPreviewDialog
-        isOpen={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        previewLetter={previewLetter}
-        onPrint={handlePrintLetter}
-      />
+
     </div>
   )
 }
