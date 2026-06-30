@@ -77,7 +77,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Post-probation employment confirmation",
-    templateFields: ["probationStart", "probationEnd", "confirmedDesignation"],
+    templateFields: ["confirmedDesignation", "department", "reportingTo", "workLocation"],
   },
   {
     id: "probation_extension",
@@ -291,6 +291,9 @@ export function LetterCreateDialog({
       case "appointment":
         defaultBody = `We are pleased to appoint you as ${formFields.designation || "[Designation]"} in the ${formFields.department || "[Department Name]"} of Sadoshima Corporation – Bangladesh Liaison Office effective from ${formFields.startDate || "[Joining Date]"}. Your appointment is made based on your acceptance of our Offer Letter dated ${formFields.offerLetterDate || "[Offer Letter Date]"} and is governed by the following terms and conditions.`
         break
+      case "confirmation":
+        defaultBody = `We are pleased to inform you that, following the successful completion of your probationary period and a satisfactory performance evaluation, your employment with Sadoshima Corporation – Bangladesh Liaison Office is hereby confirmed.`
+        break
       case "promotion":
         defaultBody = `Dear ${employeeName},\n\nCongratulations! We are delighted to promote you to the position of ${formFields.newDesignation || "[New Designation]"} effective from ${formFields.effectiveDate || "[Effective Date]"}. Your revised monthly salary will be ৳${formFields.salaryChange || "[Salary]"}.\n\nThank you for your valuable contributions.`
         break
@@ -319,6 +322,8 @@ export function LetterCreateDialog({
     if (config) {
       if (typeId === "relieving") {
         setFormSubject("Acceptance of Resignation")
+      } else if (typeId === "confirmation") {
+        setFormSubject("Confirmation of Employment")
       } else {
         setFormSubject(`Official Correspondence: ${config.name}`)
       }
@@ -576,7 +581,7 @@ export function LetterCreateDialog({
                             </option>
                           ))}
                         </select>
-                      ) : field === "reportingManager" ? (
+                      ) : field === "reportingManager" || field === "reportingTo" ? (
                         <div className="relative">
                           <Input
                             placeholder="Enter Reporting Manager Name"

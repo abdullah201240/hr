@@ -97,7 +97,7 @@ const letterTypes: LetterTypeConfig[] = [
     color: "text-emerald-600",
     bgColor: "bg-emerald-500/10",
     description: "Post-probation employment confirmation",
-    templateFields: ["probationStart", "probationEnd", "confirmedDesignation"],
+    templateFields: ["confirmedDesignation", "department", "reportingTo", "workLocation"],
   },
   {
     id: "probation_extension",

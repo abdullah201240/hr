@@ -252,6 +252,142 @@ export default function ViewLetterPage() {
       )
     }
 
+    if (letter.type === "confirmation") {
+      const effectiveDateOfConfirmation = letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"
+      const confirmedDesignation = fields.confirmedDesignation || "—"
+      const department = fields.department || "—"
+      const reportingTo = fields.reportingTo || "—"
+      const workLocation = fields.workLocation || "—"
+
+      return (
+        <div className="space-y-6">
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-left text-xs space-y-1 mb-8">
+              <p className="font-bold underline text-slate-900 dark:text-slate-50">Private & Confidential</p>
+              <p className="font-semibold">Ref. No.: <span className="font-normal">{letter.id}</span></p>
+              <p className="font-semibold">Date: <span className="font-normal">{formatDate(letter.issueDate)}</span></p>
+            </div>
+
+            <div className="text-center mb-10">
+              <h2 className="text-sm sm:text-base font-bold underline text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                CONFIRMATION LETTER
+              </h2>
+            </div>
+
+            <div className="text-xs space-y-1 mb-6">
+              <p className="font-semibold">To</p>
+              <p className="font-bold text-slate-900 dark:text-slate-50">{letter.employeeName}</p>
+              <p className="font-semibold">Employee ID: <span className="font-normal">{letter.employeeIdCode || "—"}</span></p>
+              <p className="font-semibold">Designation: <span className="font-normal">{letter.employeeDesignation || fields.confirmedDesignation || "—"}</span></p>
+              <p className="font-semibold">Department: <span className="font-normal">{letter.employeeDepartment || fields.department || "—"}</span></p>
+            </div>
+
+            <div className="text-xs space-y-4 mb-6 leading-relaxed">
+              <p className="font-bold text-blue-600 dark:text-blue-400">Subject: Confirmation of Employment</p>
+              <p>Dear Mr./Ms. {employeeLastName},</p>
+              <p className="whitespace-pre-line">{letter.body}</p>
+              <p className="mt-2">Your employment particulars are as follows:</p>
+            </div>
+
+            <div className="text-xs space-y-2 mb-8">
+              <div className="border rounded-md overflow-hidden border-slate-200 dark:border-slate-800">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-2 font-bold w-1/3">Particular</th>
+                      <th className="p-2 font-bold">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-900">
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Effective Date of Confirmation</td>
+                      <td className="p-2">{effectiveDateOfConfirmation}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Designation</td>
+                      <td className="p-2">{confirmedDesignation}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Department</td>
+                      <td className="p-2">{department}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Reporting To</td>
+                      <td className="p-2">{reportingTo}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2 font-semibold bg-slate-50/50 dark:bg-slate-900/30">Work Location</td>
+                      <td className="p-2">{workLocation}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-4 mb-8 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-blue-600 dark:text-blue-400">Terms of Employment</h4>
+                <p className="mt-1">
+                  From the effective date of this confirmation, your employment shall continue as a confirmed employee subject to the Company's HR Policy, rules, regulations and applicable laws of Bangladesh.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold text-blue-600 dark:text-blue-400">Performance Expectations</h4>
+                <p className="mt-1">
+                  You are expected to continue maintaining high standards of integrity, discipline, attendance, professionalism and performance in the discharge of your duties.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold text-blue-600 dark:text-blue-400">Provident Fund & Gratuity</h4>
+                <p className="mt-1">
+                  The Employee may become eligible to participate in the Company's Provident Fund and Gratuity Schemes in accordance with the respective approved Trust Deeds, Company Policies, applicable laws of Bangladesh, and the eligibility criteria prescribed therein. Detailed provisions shall be communicated separately as and when the schemes become effective and applicable to the Employee.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="shadow-xs border-border/40 p-8 sm:p-12 bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+            <div className="text-xs space-y-4 mb-8 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-blue-600 dark:text-blue-400">Other Benefits</h4>
+                <p className="mt-1">
+                  You shall continue to enjoy employee benefits in accordance with the Company's HR Policy and any amendments made from time to time.
+                </p>
+              </div>
+              <p className="pt-2 font-semibold text-blue-600 dark:text-blue-400">
+                Congratulations on your confirmation. We appreciate your contribution and look forward to your continued commitment and success with Sadoshima Corporation.
+              </p>
+            </div>
+
+            <div className="text-xs space-y-6 mb-12">
+              <p>Yours faithfully,</p>
+              <p className="font-semibold">For Sadoshima Corporation</p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-1"></div>
+                <p className="font-bold text-slate-900 dark:text-slate-50">{fields.signatoryName || letter.createdBy || "[Authorized Signatory]"}</p>
+                <p className="text-muted-foreground">{fields.signatoryDesignation || "Managing Director"}</p>
+              </div>
+            </div>
+
+            <div className="text-xs border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              <h3 className="font-bold text-blue-600 dark:text-blue-400">Employee Acknowledgement</h3>
+              <p className="leading-relaxed">
+                I acknowledge receipt of this Confirmation Letter and accept the terms stated herein.
+              </p>
+              <div className="pt-12">
+                <div className="border-b border-slate-400 w-64 mb-2"></div>
+                <p className="font-semibold">Signature of Employee</p>
+                <div className="space-y-1 mt-2 text-muted-foreground">
+                  <p>Name: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.employeeName}</span></p>
+                  <p>Date: <span className="text-slate-900 dark:text-slate-100 font-semibold">{letter.effectiveDate ? formatDate(letter.effectiveDate) : "—"}</span></p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )
+    }
+
     if (letter.type === "salary_increment") {
       return (
         <div className="space-y-6">
