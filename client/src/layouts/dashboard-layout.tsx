@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/common/page-skeleton"
 import { useWebSocket } from "@/hooks/useWebSocket"
 import { useNotificationSocket } from "@/hooks/useNotificationSocket"
 import { useTasksWebSocket } from "@/hooks/useTasksWebSocket"
+import { CallOverlay } from "@/components/chat/CallOverlay"
 
 export function DashboardLayout() {
   useWebSocket()
@@ -25,6 +26,7 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-background">
+      <CallOverlay />
       {/* Desktop Sidebar */}
       <div
         className={cn(

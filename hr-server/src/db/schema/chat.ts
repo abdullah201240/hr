@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, varchar, timestamp, index, primaryKey, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, varchar, timestamp, index, primaryKey, boolean, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
 import { employees } from './employee';
@@ -61,11 +61,36 @@ export const chatMessages = pgTable(
   ]
 );
 
+// ─── Call Logs ───────────────────────────────────────────────────────────────
+export const callLogs = pgTable(
+  'call_logs',
+  {
+    ...baseTable,
+    roomId: uuid('room_id')
+      .notNull()
+      .references(() => chatRooms.id, { onDelete: 'cascade' }),
+    callerId: uuid('caller_id')
+      .notNull()
+      .references(() => employees.id, { onDelete: 'cascade' }),
+    calleeId: uuid('callee_id')
+      .notNull()
+      .references(() => employees.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 20 }).notNull(), // 'audio' | 'video'
+    status: varchar('status', { length: 20 }).notNull(), // 'missed' | 'rejected' | 'completed' | 'cancelled'
+    duration: integer('duration').default(0), // in seconds
+  },
+  (table) => [
+    index('call_logs_room_idx').on(table.roomId),
+    index('call_logs_caller_idx').on(table.callerId),
+    index('call_logs_callee_idx').on(table.calleeId),
+  ]
+);
 
 // ─── Relations ──────────────────────────────────────────────────────────────
 export const chatRoomsRelations = relations(chatRooms, ({ many, one }) => ({
   members: many(chatRoomMembers),
   messages: many(chatMessages),
+  callLogs: many(callLogs),
   createdBy: one(employees, {
     fields: [chatRooms.createdById],
     references: [employees.id],
@@ -90,6 +115,21 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
   sender: one(employees, {
     fields: [chatMessages.senderId],
+    references: [employees.id],
+  }),
+}));
+
+export const callLogsRelations = relations(callLogs, ({ one }) => ({
+  room: one(chatRooms, {
+    fields: [callLogs.roomId],
+    references: [chatRooms.id],
+  }),
+  caller: one(employees, {
+    fields: [callLogs.callerId],
+    references: [employees.id],
+  }),
+  callee: one(employees, {
+    fields: [callLogs.calleeId],
     references: [employees.id],
   }),
 }));

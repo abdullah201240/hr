@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { eq, and, or, sql, desc, lt, count, inArray } from 'drizzle-orm';
 import { DB_CONNECTION, type Database } from '../../../db';
-import { chatRooms, chatRoomMembers, chatMessages, employees } from '../../../db/schema';
+import { chatRooms, chatRoomMembers, chatMessages, employees, callLogs } from '../../../db/schema';
 
 @Injectable()
 export class ChatRepository {
@@ -442,5 +442,30 @@ export class ChatRepository {
       )
       .orderBy(desc(chatMessages.createdAt))
       .limit(limit);
+  }
+
+  /**
+   * Persist a call history log in PostgreSQL
+   */
+  async saveCallLog(
+    roomId: string,
+    callerId: string,
+    calleeId: string,
+    type: 'audio' | 'video',
+    status: 'missed' | 'rejected' | 'completed' | 'cancelled',
+    duration = 0
+  ) {
+    const [log] = await this.db
+      .insert(callLogs)
+      .values({
+        roomId,
+        callerId,
+        calleeId,
+        type,
+        status,
+        duration,
+      })
+      .returning();
+    return log;
   }
 }

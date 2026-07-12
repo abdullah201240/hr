@@ -24,6 +24,12 @@ import {
   WSReadReceiptDto,
   WSEditMessageDto,
   WSDeleteMessageDto,
+  WSCallInitiateDto,
+  WSCallAcceptDto,
+  WSCallRejectDto,
+  WSCallCancelDto,
+  WSCallHangupDto,
+  WSWebRTCSignalDto,
 } from './dto/create-room.dto';
 
 interface AuthenticatedWebSocket extends WebSocket {
@@ -266,6 +272,44 @@ export class ChatGateway
       await this.chatService.setUserOffline(employeeId);
       this.broadcastPresenceEvent(employeeId, 'offline');
       this.logger.log(`Client fully offline cluster-wide: ${employeeId}`);
+
+      // Auto-hangup active calls when user goes offline cluster-wide
+      try {
+        const activeCallId = await this.chatService.getUserActiveCall(employeeId);
+        if (activeCallId) {
+          const callData = await this.chatService.getActiveCall(activeCallId);
+          if (callData) {
+            const peerId = employeeId === callData.callerId ? callData.calleeId : callData.callerId;
+            const status = callData.status === 'connected' ? 'completed' : 'cancelled';
+            const duration = status === 'completed' ? Math.max(0, Math.round((Date.now() - Number(callData.connectedAt)) / 1000)) : 0;
+            const eventType = callData.status === 'connected' ? 'CALL_HANGUP' : (employeeId === callData.callerId ? 'CALL_CANCEL' : 'CALL_REJECT');
+
+            await this.pubClient.publish(
+              'chat_events',
+              JSON.stringify({
+                type: eventType,
+                members: [peerId],
+                callId: activeCallId,
+                targetUserId: peerId,
+                calleeId: employeeId,
+              })
+            );
+
+            await this.chatService.logCallHistory(
+              callData.roomId,
+              callData.callerId,
+              callData.calleeId,
+              callData.type as 'audio' | 'video',
+              status,
+              duration
+            );
+
+            await this.chatService.clearActiveCall(activeCallId);
+          }
+        }
+      } catch (err) {
+        this.logger.error(`Failed to handle call cleanup on disconnect for user ${employeeId}`, err);
+      }
     } else {
       this.logger.log(`Client disconnected socket, but has ${countAfter} active cluster connections: ${employeeId}`);
     }
@@ -491,6 +535,215 @@ export class ChatGateway
     }
   }
 
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('call:initiate')
+  async onCallInitiate(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSCallInitiateDto) {
+    const callerId = client.employeeId;
+    await this.chatService.setUserOnline(callerId);
+
+    try {
+      const members = await this.chatService.getRoomMembers(data.roomId);
+      const recipient = members.find((m: any) => m.id !== callerId);
+
+      if (!recipient) {
+        this.sendToClient(client, 'error', { message: 'Recipient not found in room' });
+        return;
+      }
+
+      const isOnline = await this.chatService.getUserPresence(recipient.id);
+      if (isOnline !== 'online') {
+        this.sendToClient(client, 'call_rejected', {
+          callId: `offline_${Date.now()}`,
+          reason: 'offline'
+        });
+        return;
+      }
+
+      const callId = `call_${randomUUID()}`;
+      const caller = members.find((m: any) => m.id === callerId);
+
+      // Track active call in Redis (active window cache)
+      await this.chatService.trackActiveCall(callId, callerId, recipient.id, data.roomId, data.type);
+
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'CALL_INITIATE',
+          members: [recipient.id],
+          senderId: callerId,
+          callId,
+          callType: data.type,
+          callerName: caller?.fullNameEnglish || 'Someone',
+          callerPhotoUrl: caller?.employeePhotoUrl || null,
+          roomId: data.roomId,
+        })
+      );
+
+      this.sendToClient(client, 'call_initiated', {
+        callId,
+        type: data.type,
+        peerId: recipient.id,
+        peerName: recipient.fullNameEnglish,
+        peerPhotoUrl: recipient.employeePhotoUrl || null,
+      });
+
+    } catch (err) {
+      this.logger.error('Failed to initiate call', err);
+      this.sendToClient(client, 'error', { message: 'Failed to initiate call' });
+    }
+  }
+
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('call:accept')
+  async onCallAccept(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSCallAcceptDto) {
+    const calleeId = client.employeeId;
+    await this.chatService.setUserOnline(calleeId);
+
+    try {
+      // Update active call state in Redis to connected and log connection timestamp
+      await this.chatService.updateActiveCallStatus(data.callId, 'connected');
+
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'CALL_ACCEPT',
+          members: [data.targetUserId],
+          callId: data.callId,
+          calleeId,
+        })
+      );
+    } catch (err) {
+      this.logger.error('Failed to accept call', err);
+    }
+  }
+
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('call:reject')
+  async onCallReject(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSCallRejectDto) {
+    const calleeId = client.employeeId;
+    await this.chatService.setUserOnline(calleeId);
+
+    try {
+      // Save call reject log and clean cache
+      const callData = await this.chatService.getActiveCall(data.callId);
+      if (callData) {
+        await this.chatService.logCallHistory(
+          callData.roomId,
+          callData.callerId,
+          callData.calleeId,
+          callData.type as 'audio' | 'video',
+          'rejected',
+          0
+        );
+        await this.chatService.clearActiveCall(data.callId);
+      }
+
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'CALL_REJECT',
+          members: [data.targetUserId],
+          callId: data.callId,
+          calleeId,
+        })
+      );
+    } catch (err) {
+      this.logger.error('Failed to reject call', err);
+    }
+  }
+
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('call:cancel')
+  async onCallCancel(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSCallCancelDto) {
+    const callerId = client.employeeId;
+    await this.chatService.setUserOnline(callerId);
+
+    try {
+      // Save call cancel log and clean cache
+      const callData = await this.chatService.getActiveCall(data.callId);
+      if (callData) {
+        await this.chatService.logCallHistory(
+          callData.roomId,
+          callData.callerId,
+          callData.calleeId,
+          callData.type as 'audio' | 'video',
+          'cancelled',
+          0
+        );
+        await this.chatService.clearActiveCall(data.callId);
+      }
+
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'CALL_CANCEL',
+          members: [data.targetUserId],
+          callId: data.callId,
+        })
+      );
+    } catch (err) {
+      this.logger.error('Failed to cancel call', err);
+    }
+  }
+
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('call:hangup')
+  async onCallHangup(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSCallHangupDto) {
+    const senderId = client.employeeId;
+    await this.chatService.setUserOnline(senderId);
+
+    try {
+      // Calculate call duration and save to SQL history
+      const callData = await this.chatService.getActiveCall(data.callId);
+      if (callData) {
+        const status = callData.status === 'connected' ? 'completed' : 'cancelled';
+        const duration = status === 'completed' ? Math.max(0, Math.round((Date.now() - Number(callData.connectedAt)) / 1000)) : 0;
+        await this.chatService.logCallHistory(
+          callData.roomId,
+          callData.callerId,
+          callData.calleeId,
+          callData.type as 'audio' | 'video',
+          status,
+          duration
+        );
+        await this.chatService.clearActiveCall(data.callId);
+      }
+
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'CALL_HANGUP',
+          members: [data.targetUserId],
+          callId: data.callId,
+        })
+      );
+    } catch (err) {
+      this.logger.error('Failed to hangup call', err);
+    }
+  }
+
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('webrtc:signal')
+  async onWebRTCSignal(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSWebRTCSignalDto) {
+    const senderId = client.employeeId;
+    await this.chatService.setUserOnline(senderId);
+
+    try {
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'WEBRTC_SIGNAL',
+          members: [data.targetUserId],
+          callId: data.callId,
+          senderId,
+          signal: data.signal,
+        })
+      );
+    } catch (err) {
+      this.logger.error('Failed to forward WebRTC signal', err);
+    }
+  }
+
   // ─── Redis Events Processor ───
 
   /**
@@ -552,6 +805,38 @@ export class ChatGateway
                 this.sendToClient(ws, 'readReceipt', {
                   roomId,
                   employeeId: payload.employeeId,
+                });
+              } else if (type === 'CALL_INITIATE') {
+                this.sendToClient(ws, 'call_incoming', {
+                  callId: payload.callId,
+                  callerId: payload.senderId,
+                  callerName: payload.callerName,
+                  callerPhotoUrl: payload.callerPhotoUrl,
+                  type: payload.callType,
+                  roomId: payload.roomId,
+                });
+              } else if (type === 'CALL_ACCEPT') {
+                this.sendToClient(ws, 'call_accepted', {
+                  callId: payload.callId,
+                  calleeId: payload.calleeId,
+                });
+              } else if (type === 'CALL_REJECT') {
+                this.sendToClient(ws, 'call_rejected', {
+                  callId: payload.callId,
+                });
+              } else if (type === 'CALL_CANCEL') {
+                this.sendToClient(ws, 'call_cancelled', {
+                  callId: payload.callId,
+                });
+              } else if (type === 'CALL_HANGUP') {
+                this.sendToClient(ws, 'call_hungup', {
+                  callId: payload.callId,
+                });
+              } else if (type === 'WEBRTC_SIGNAL') {
+                this.sendToClient(ws, 'webrtc_signal', {
+                  callId: payload.callId,
+                  senderId: payload.senderId,
+                  signal: payload.signal,
                 });
               }
             });

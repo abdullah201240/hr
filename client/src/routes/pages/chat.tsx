@@ -19,12 +19,15 @@ import {
   ArrowLeft,
   Check,
   CheckCheck,
-  Clock
+  Clock,
+  Phone,
+  Video
 } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
 import type { ChatMessage } from '../../store/useChatStore';
 import { sendWSMessage } from '../../hooks/useWebSocket';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useCallStore } from '../../store/useCallStore';
 import { apiClient } from '../../lib/api';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -557,6 +560,49 @@ export default function ChatPage() {
               </div>
 
               <div className="flex items-center gap-1.5">
+                {activeRoom.type === 'direct' && (() => {
+                  const otherMember = activeRoom.members.find(m => m.id !== user?.id) || activeRoom.members[0];
+                  if (!otherMember) return null;
+                  return (
+                    <>
+                      <Button
+                        onClick={() => useCallStore.getState().initiateCall(
+                          activeRoom.id,
+                          {
+                            id: otherMember.id,
+                            name: otherMember.fullNameEnglish,
+                            photoUrl: otherMember.employeePhotoUrl || null,
+                          },
+                          'audio'
+                        )}
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg"
+                        title="Voice Call"
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => useCallStore.getState().initiateCall(
+                          activeRoom.id,
+                          {
+                            id: otherMember.id,
+                            name: otherMember.fullNameEnglish,
+                            photoUrl: otherMember.employeePhotoUrl || null,
+                          },
+                          'video'
+                        )}
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg"
+                        title="Video Call"
+                      >
+                        <Video className="h-4 w-4" />
+                      </Button>
+                    </>
+                  );
+                })()}
+
                 <Button 
                   onClick={() => setShowInfoModal(true)}
                   variant="ghost" 

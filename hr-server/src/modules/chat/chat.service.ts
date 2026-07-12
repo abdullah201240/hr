@@ -438,4 +438,101 @@ export class ChatService {
       );
     }
   }
+
+  // ─── Active Call Tracking (Redis + DB Logs) ──────────────────────────────────
+
+  /**
+   * Track a new initiated call in Redis (active window cache)
+   */
+  async trackActiveCall(callId: string, callerId: string, calleeId: string, roomId: string, type: 'audio' | 'video') {
+    const callKey = `chat:active_call:${callId}`;
+    const now = Date.now().toString();
+
+    // Map call metadata in Redis
+    await this.redis.hset(callKey, {
+      callerId,
+      calleeId,
+      roomId,
+      type,
+      status: 'initiated',
+      createdAt: now,
+      connectedAt: '0',
+    });
+    // Set 5-minute expire timeout in case of client crash during initiation phase
+    await this.redis.expire(callKey, 300);
+
+    // Map users to this call
+    await this.redis.setex(`chat:user_call:${callerId}`, 300, callId);
+    await this.redis.setex(`chat:user_call:${calleeId}`, 300, callId);
+  }
+
+  /**
+   * Update active call state to connected
+   */
+  async updateActiveCallStatus(callId: string, status: 'connected') {
+    const callKey = `chat:active_call:${callId}`;
+    const exists = await this.redis.exists(callKey);
+    if (!exists) return;
+
+    await this.redis.hset(callKey, {
+      status,
+      connectedAt: Date.now().toString(),
+    });
+    // Extend expiry on connection state to 2 hours for longer calls
+    await this.redis.expire(callKey, 7200);
+
+    // Get active call metadata to extend user mappings expiration
+    const callData = await this.redis.hgetall(callKey);
+    if (callData.callerId && callData.calleeId) {
+      await this.redis.expire(`chat:user_call:${callData.callerId}`, 7200);
+      await this.redis.expire(`chat:user_call:${callData.calleeId}`, 7200);
+    }
+  }
+
+  /**
+   * Retrieve active call metadata by ID
+   */
+  async getActiveCall(callId: string): Promise<Record<string, string> | null> {
+    const callKey = `chat:active_call:${callId}`;
+    const data = await this.redis.hgetall(callKey);
+    if (!data || Object.keys(data).length === 0) return null;
+    return data;
+  }
+
+  /**
+   * Retrieve callId for user's active call if it exists
+   */
+  async getUserActiveCall(employeeId: string): Promise<string | null> {
+    return this.redis.get(`chat:user_call:${employeeId}`);
+  }
+
+  /**
+   * Clear active call keys from Redis cache
+   */
+  async clearActiveCall(callId: string) {
+    const callData = await this.getActiveCall(callId);
+    if (callData) {
+      await this.redis.del(`chat:active_call:${callId}`);
+      if (callData.callerId) await this.redis.del(`chat:user_call:${callData.callerId}`);
+      if (callData.calleeId) await this.redis.del(`chat:user_call:${callData.calleeId}`);
+    }
+  }
+
+  /**
+   * Save a call log to PostgreSQL history
+   */
+  async logCallHistory(
+    roomId: string,
+    callerId: string,
+    calleeId: string,
+    type: 'audio' | 'video',
+    status: 'missed' | 'rejected' | 'completed' | 'cancelled',
+    duration = 0
+  ) {
+    try {
+      await this.chatRepository.saveCallLog(roomId, callerId, calleeId, type, status, duration);
+    } catch (err) {
+      this.logger.error('Failed to log call history', err);
+    }
+  }
 }

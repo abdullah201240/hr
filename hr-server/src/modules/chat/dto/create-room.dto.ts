@@ -77,3 +77,67 @@ export class WSDeleteMessageDto {
   @IsNotEmpty()
   messageId!: string;
 }
+
+export class WSCallInitiateDto {
+  @IsUUID()
+  @IsNotEmpty()
+  roomId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  type!: 'audio' | 'video';
+}
+
+export class WSCallAcceptDto {
+  @IsString()
+  @IsNotEmpty()
+  callId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  targetUserId!: string;
+}
+
+export class WSCallRejectDto {
+  @IsString()
+  @IsNotEmpty()
+  callId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  targetUserId!: string;
+}
+
+export class WSCallCancelDto {
+  @IsString()
+  @IsNotEmpty()
+  callId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  targetUserId!: string;
+}
+
+export class WSCallHangupDto {
+  @IsString()
+  @IsNotEmpty()
+  callId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  targetUserId!: string;
+}
+
+export class WSWebRTCSignalDto {
+  @IsString()
+  @IsNotEmpty()
+  callId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  targetUserId!: string;
+
+  @IsNotEmpty()
+  signal!: any;
+}
+

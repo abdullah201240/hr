@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
+import { useCallStore } from '../store/useCallStore';
 
 let socketInstance: WebSocket | null = null;
 let reconnectTimeoutId: any = null;
@@ -170,6 +171,34 @@ export function useWebSocket() {
 
       case 'room_deleted':
         removeIncomingRoom(data.roomId);
+        break;
+
+      case 'call_incoming':
+        useCallStore.getState().handleIncomingCall(data);
+        break;
+
+      case 'call_initiated':
+        useCallStore.getState().handleCallInitiated(data);
+        break;
+
+      case 'call_accepted':
+        useCallStore.getState().handleCallAccepted(data);
+        break;
+
+      case 'call_rejected':
+        useCallStore.getState().handleCallRejected(data);
+        break;
+
+      case 'call_cancelled':
+        useCallStore.getState().handleCallCancelled(data);
+        break;
+
+      case 'call_hungup':
+        useCallStore.getState().handleCallHungup(data);
+        break;
+
+      case 'webrtc_signal':
+        useCallStore.getState().handleWebRTCSignal(data);
         break;
 
       case 'error':
