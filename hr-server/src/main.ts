@@ -14,35 +14,18 @@ import multipart from '@fastify/multipart';
 import compression from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import { randomUUID } from 'node:crypto';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
-  // Check if HTTPS should be enabled (for development with camera/mic features)
-  const enableHttps = process.env.NODE_ENV === 'development' && process.env.ENABLE_HTTPS === 'true';
-  
-  let httpsOptions: any = null;
-  if (enableHttps) {
-    const certsDir = path.join(process.cwd(), 'certs');
-    httpsOptions = {
-      https: {
-        key: fs.readFileSync(path.join(certsDir, 'key.pem')),
-        cert: fs.readFileSync(path.join(certsDir, 'cert.pem')),
-      },
-    };
-  }
-
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
       logger: false,
       requestIdHeader: 'x-request-id',
       genReqId: () => randomUUID(),
-      ...(httpsOptions || {}),
     }),
     { bufferLogs: true },
   );
