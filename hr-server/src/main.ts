@@ -57,9 +57,10 @@ async function bootstrap() {
   // ── Security ──────────────────────────────────────────────────
   await app.register(helmet, {
     contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
-    crossOriginOpenerPolicy: nodeEnv === 'production' ? undefined : false,
-    crossOriginResourcePolicy: nodeEnv === 'production' ? undefined : false,
-    originAgentCluster: nodeEnv === 'production' ? undefined : false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    originAgentCluster: false,
+    crossOriginEmbedderPolicy: false,
   });
 
   // ── Cookies ───────────────────────────────────────────────────

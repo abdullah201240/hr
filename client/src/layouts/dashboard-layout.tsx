@@ -1,5 +1,5 @@
 import { useState, Suspense } from "react"
-import { Outlet } from "react-router"
+import { Outlet, useLocation } from "react-router"
 import { Sidebar } from "@/layouts/sidebar"
 import { Header } from "@/layouts/header"
 import { Footer } from "@/layouts/footer"
@@ -23,6 +23,9 @@ export function DashboardLayout() {
   const toggleSidebar = () => {
     setSidebarSize(sidebarSize === "small" ? "large" : "small")
   }
+
+  const location = useLocation()
+  const isChatPage = location.pathname === "/chat"
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,20 +62,22 @@ export function DashboardLayout() {
           sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"
         )}
       >
-        <Header
-          sidebarCollapsed={sidebarCollapsed}
-          onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
-        />
+        {!isChatPage && (
+          <Header
+            sidebarCollapsed={sidebarCollapsed}
+            onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+          />
+        )}
 
-        <main className="flex-1 p-3 pb-12 lg:p-5 lg:pb-14">
-          <div className="mx-auto w-full">
+        <main className={cn("flex-1 p-3 pb-12 lg:p-5 lg:pb-14", isChatPage && "p-0 pb-0 lg:p-0 lg:pb-0")}>
+          <div className={cn("mx-auto w-full", isChatPage && "max-w-none h-screen")}>
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>
           </div>
         </main>
 
-        <Footer />
+        {!isChatPage && <Footer />}
       </div>
     </div>
   )

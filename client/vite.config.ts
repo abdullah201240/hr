@@ -16,6 +16,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    allowedHosts: ['seekers-finals-tubes-plate.trycloudflare.com'],
+  },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 600,
