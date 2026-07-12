@@ -81,7 +81,7 @@ export function CallOverlay() {
             <Avatar className="h-24 w-24 border-4 border-background relative z-10 shadow-lg">
               <AvatarImage src={peerInfo?.photoUrl || undefined} />
               <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
-                {peerInfo?.name.charAt(0).toUpperCase()}
+                {peerInfo?.name?.charAt(0)?.toUpperCase() || '?'}
               </AvatarFallback>
             </Avatar>
           </div>
@@ -154,7 +154,7 @@ export function CallOverlay() {
                   <Avatar className="h-20 w-20 mb-3 border border-zinc-800">
                     <AvatarImage src={peerInfo?.photoUrl || undefined} />
                     <AvatarFallback className="text-xl font-semibold bg-zinc-900 text-zinc-400">
-                      {peerInfo?.name.charAt(0).toUpperCase()}
+                      {peerInfo?.name?.charAt(0)?.toUpperCase() || '?'}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-xs">Connecting camera feed...</span>
@@ -186,7 +186,7 @@ export function CallOverlay() {
                 <Avatar className="h-28 w-28 border-4 border-zinc-800/40 relative z-10 shadow-xl">
                   <AvatarImage src={peerInfo?.photoUrl || undefined} />
                   <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">
-                    {peerInfo?.name.charAt(0).toUpperCase()}
+                    {peerInfo?.name?.charAt(0)?.toUpperCase() || '?'}
                   </AvatarFallback>
                 </Avatar>
               </div>

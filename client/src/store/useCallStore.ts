@@ -339,6 +339,7 @@ export const useCallStore = create<CallState>((set, get) => ({
     const { callId, callState } = get();
     if (callId === data.callId && callState === 'calling') {
       set({ callState: 'ringing' });
+      soundManager.playRingTone();
     }
   },
 
@@ -456,9 +457,9 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
 
   handleCallAccepted: async (data) => {
-    const { peerInfo, localStream, callState } = get();
+    const { peerInfo, localStream, callState, direction } = get();
     
-    if (callState === 'ringing') {
+    if (direction === 'incoming' && callState === 'ringing') {
       soundManager.stop();
       get().cleanupCallState();
       return;
@@ -523,7 +524,7 @@ export const useCallStore = create<CallState>((set, get) => ({
     soundManager.playEndTone();
     
     const state = get().callState;
-    if (state === 'calling' || state === 'connected') {
+    if (state === 'calling' || state === 'ringing' || state === 'connected') {
       if (data && data.reason === 'offline') {
         toast.error('User is offline');
       } else if (data && data.reason === 'busy') {
