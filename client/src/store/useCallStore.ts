@@ -178,6 +178,11 @@ const getIceServers = (): RTCIceServer[] => {
 };
 
 const getUserMediaWithFallback = async (constraints: { audio: boolean; video: boolean }) => {
+  // Check if we're in a secure context (HTTPS or localhost)
+  if (!window.isSecureContext) {
+    throw new Error('SECURE_CONTEXT_REQUIRED');
+  }
+  
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     throw new Error('SECURE_CONTEXT_REQUIRED');
   }
@@ -312,7 +317,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       let errMsg = 'Failed to access microphone or camera';
       
       if (err.message === 'SECURE_CONTEXT_REQUIRED') {
-        errMsg = 'Microphone/Camera access requires a secure connection (HTTPS or localhost).';
+        errMsg = 'Camera/Microphone features are only available via HTTPS or localhost. Please access the app from localhost or use HTTPS.';
       } else if (err.name === 'NotAllowedError') {
         errMsg = 'Microphone/Camera permission denied. Please enable permission in browser settings.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
@@ -387,7 +392,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       let errMsg = 'Permission denied to access media devices.';
       
       if (err.message === 'SECURE_CONTEXT_REQUIRED') {
-        errMsg = 'Microphone/Camera access requires a secure connection (HTTPS or localhost).';
+        errMsg = 'Camera/Microphone features are only available via HTTPS or localhost. Please access the app from localhost or use HTTPS.';
       } else if (err.name === 'NotAllowedError') {
         errMsg = 'Microphone/Camera permission denied. Please enable permission in browser settings.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
