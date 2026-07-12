@@ -13,6 +13,7 @@ export function CallOverlay() {
     remoteStream,
     isMuted,
     isCameraOff,
+    direction,
     acceptCall,
     rejectCall,
     cancelCall,
@@ -86,12 +87,14 @@ export function CallOverlay() {
           </div>
 
           <h3 className="text-xl font-bold text-foreground mb-1">{peerInfo?.name}</h3>
-          <p className="text-xs text-muted-foreground mb-8 capitalize">
-            {callState === 'calling' ? `Calling (${callType} call)...` : `Incoming ${callType} call...`}
+          <p className="text-xs text-muted-foreground mb-8 capitalize font-medium tracking-wide">
+            {direction === 'outgoing'
+              ? (callState === 'calling' ? `Calling (${callType} call)...` : `Ringing...`)
+              : `Incoming ${callType} call...`}
           </p>
 
           <div className="flex items-center justify-center gap-6">
-            {callState === 'ringing' ? (
+            {direction === 'incoming' ? (
               <>
                 {/* Accept Call Button */}
                 <Button

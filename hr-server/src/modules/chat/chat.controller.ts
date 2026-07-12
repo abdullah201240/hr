@@ -40,6 +40,13 @@ export class ChatController {
     return this.chatService.getUserRooms(req.user.id);
   }
 
+  @Get('call-logs')
+  @ApiOperation({ summary: 'Get call history logs for the logged-in employee' })
+  @ApiResponse({ status: 200, description: 'List of call logs.' })
+  async getCallLogs(@Req() req: AuthenticatedRequest) {
+    return this.chatService.getCallLogs(req.user.id);
+  }
+
   @Post('rooms/direct')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get or create a direct message conversation room' })

@@ -106,6 +106,10 @@ export class WSCallRejectDto {
   @IsUUID()
   @IsNotEmpty()
   targetUserId!: string;
+
+  @IsString()
+  @IsOptional()
+  reason?: string;
 }
 
 export class WSCallCancelDto {
@@ -139,5 +143,15 @@ export class WSWebRTCSignalDto {
 
   @IsNotEmpty()
   signal!: any;
+}
+
+export class WSCallRingingDto {
+  @IsString()
+  @IsNotEmpty()
+  callId!: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  targetUserId!: string;
 }
 

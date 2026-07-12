@@ -30,6 +30,7 @@ import {
   WSCallCancelDto,
   WSCallHangupDto,
   WSWebRTCSignalDto,
+  WSCallRingingDto,
 } from './dto/create-room.dto';
 
 interface AuthenticatedWebSocket extends WebSocket {
@@ -550,15 +551,6 @@ export class ChatGateway
         return;
       }
 
-      const isOnline = await this.chatService.getUserPresence(recipient.id);
-      if (isOnline !== 'online') {
-        this.sendToClient(client, 'call_rejected', {
-          callId: `offline_${Date.now()}`,
-          reason: 'offline'
-        });
-        return;
-      }
-
       const callId = `call_${randomUUID()}`;
       const caller = members.find((m: any) => m.id === callerId);
 
@@ -607,7 +599,7 @@ export class ChatGateway
         'chat_events',
         JSON.stringify({
           type: 'CALL_ACCEPT',
-          members: [data.targetUserId],
+          members: [data.targetUserId, calleeId],
           callId: data.callId,
           calleeId,
         })
@@ -642,13 +634,34 @@ export class ChatGateway
         'chat_events',
         JSON.stringify({
           type: 'CALL_REJECT',
-          members: [data.targetUserId],
+          members: [data.targetUserId, calleeId],
           callId: data.callId,
           calleeId,
+          reason: data.reason || 'declined',
         })
       );
     } catch (err) {
       this.logger.error('Failed to reject call', err);
+    }
+  }
+
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @SubscribeMessage('call:ringing')
+  async onCallRinging(@ConnectedSocket() client: AuthenticatedWebSocket, @MessageBody() data: WSCallRingingDto) {
+    const calleeId = client.employeeId;
+    await this.chatService.setUserOnline(calleeId);
+
+    try {
+      await this.pubClient.publish(
+        'chat_events',
+        JSON.stringify({
+          type: 'CALL_RINGING',
+          members: [data.targetUserId],
+          callId: data.callId,
+        })
+      );
+    } catch (err) {
+      this.logger.error('Failed to publish call ringing event', err);
     }
   }
 
@@ -667,7 +680,7 @@ export class ChatGateway
           callData.callerId,
           callData.calleeId,
           callData.type as 'audio' | 'video',
-          'cancelled',
+          'missed',
           0
         );
         await this.chatService.clearActiveCall(data.callId);
@@ -815,6 +828,10 @@ export class ChatGateway
                   type: payload.callType,
                   roomId: payload.roomId,
                 });
+              } else if (type === 'CALL_RINGING') {
+                this.sendToClient(ws, 'call_ringing', {
+                  callId: payload.callId,
+                });
               } else if (type === 'CALL_ACCEPT') {
                 this.sendToClient(ws, 'call_accepted', {
                   callId: payload.callId,
@@ -823,6 +840,7 @@ export class ChatGateway
               } else if (type === 'CALL_REJECT') {
                 this.sendToClient(ws, 'call_rejected', {
                   callId: payload.callId,
+                  reason: payload.reason,
                 });
               } else if (type === 'CALL_CANCEL') {
                 this.sendToClient(ws, 'call_cancelled', {

@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { eq, and, or, sql, desc, lt, count, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { DB_CONNECTION, type Database } from '../../../db';
 import { chatRooms, chatRoomMembers, chatMessages, employees, callLogs } from '../../../db/schema';
 
@@ -467,5 +468,41 @@ export class ChatRepository {
       })
       .returning();
     return log;
+  }
+
+  /**
+   * Retrieve call logs for a user (caller or callee)
+   */
+  async getCallLogs(userId: string) {
+    const callerAlias = alias(employees, 'caller');
+    const calleeAlias = alias(employees, 'callee');
+
+    return this.db
+      .select({
+        id: callLogs.id,
+        roomId: callLogs.roomId,
+        callerId: callLogs.callerId,
+        calleeId: callLogs.calleeId,
+        type: callLogs.type,
+        status: callLogs.status,
+        duration: callLogs.duration,
+        createdAt: callLogs.createdAt,
+        caller: {
+          id: callerAlias.id,
+          fullNameEnglish: callerAlias.fullNameEnglish,
+          employeePhotoUrl: callerAlias.employeePhotoUrl,
+        },
+        callee: {
+          id: calleeAlias.id,
+          fullNameEnglish: calleeAlias.fullNameEnglish,
+          employeePhotoUrl: calleeAlias.employeePhotoUrl,
+        },
+      })
+      .from(callLogs)
+      .innerJoin(callerAlias, eq(callerAlias.id, callLogs.callerId))
+      .innerJoin(calleeAlias, eq(calleeAlias.id, callLogs.calleeId))
+      .where(or(eq(callLogs.callerId, userId), eq(callLogs.calleeId, userId)))
+      .orderBy(desc(callLogs.createdAt))
+      .limit(50);
   }
 }

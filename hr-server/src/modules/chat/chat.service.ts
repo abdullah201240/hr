@@ -535,4 +535,8 @@ export class ChatService {
       this.logger.error('Failed to log call history', err);
     }
   }
+
+  async getCallLogs(userId: string) {
+    return this.chatRepository.getCallLogs(userId);
+  }
 }

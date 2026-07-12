@@ -21,7 +21,11 @@ import {
   CheckCheck,
   Clock,
   Phone,
-  Video
+  Video,
+  ArrowUpRight,
+  ArrowDownLeft,
+  PhoneOff,
+  RefreshCw
 } from 'lucide-react';
 import { useChatStore } from '../../store/useChatStore';
 import type { ChatMessage } from '../../store/useChatStore';
@@ -61,8 +65,11 @@ export default function ChatPage() {
     addOptimisticMessage
   } = useChatStore();
 
+  const { callLogs, fetchCallLogs } = useCallStore();
+
   const { user } = useAuthStore();
 
+  const [activeTab, setActiveTab] = useState<'chats' | 'calls'>('chats');
   const [inputVal, setInputVal] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showChannelModal, setShowChannelModal] = useState(false);
@@ -99,7 +106,8 @@ export default function ChatPage() {
   useEffect(() => {
     fetchRooms();
     fetchEmployees();
-  }, []);
+    fetchCallLogs();
+  }, [fetchRooms, fetchCallLogs]);
 
   // Fetch messages when active room changes
   useEffect(() => {
@@ -371,7 +379,6 @@ export default function ChatPage() {
     );
   }, [employeesList, inviteSearchText, activeRoom]);
 
-  // Compute active typing indicators
   const activeTypers = useMemo(() => {
     if (!activeRoomId || !typingStatus[activeRoomId]) return [];
     const now = Date.now();
@@ -379,6 +386,19 @@ export default function ChatPage() {
       .filter((typer) => now - typer.timestamp < 3500)
       .map((typer) => typer.senderName);
   }, [activeRoomId, typingStatus]);
+
+  const handleCallFromLog = async (roomId: string, peer: any, type: 'audio' | 'video') => {
+    if (!peer) return;
+    await useCallStore.getState().initiateCall(
+      roomId,
+      {
+        id: peer.id,
+        name: peer.fullNameEnglish,
+        photoUrl: peer.employeePhotoUrl || null,
+      },
+      type
+    );
+  };
 
   return (
     <div className="flex h-[calc(100vh-140px)] md:h-[calc(100vh-80px)] overflow-hidden rounded-xl border border-border/40 bg-card shadow-lg">
@@ -388,7 +408,7 @@ export default function ChatPage() {
         
         <div className="p-3 border-b border-border/20 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Conversations</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Chat System</span>
             <div className="flex items-center gap-1.5">
               {isWsConnected ? (
                 <>
@@ -403,114 +423,230 @@ export default function ChatPage() {
               )}
             </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground/60" />
-            <Input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search chat rooms..." 
-              className="h-8 pl-7 bg-background/50 text-xs shadow-none border-border/40 focus-visible:ring-1 focus-visible:ring-primary"
-            />
+
+          <div className="grid grid-cols-2 gap-1 bg-muted/50 p-0.5 rounded-lg">
+            <button
+              onClick={() => setActiveTab('chats')}
+              className={`py-1 text-[11px] font-semibold rounded-md transition-all ${
+                activeTab === 'chats'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Chats
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('calls');
+                fetchCallLogs();
+              }}
+              className={`py-1 text-[11px] font-semibold rounded-md transition-all ${
+                activeTab === 'calls'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Calls
+            </button>
           </div>
+
+          {activeTab === 'chats' && (
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground/60" />
+              <Input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search chat rooms..." 
+                className="h-8 pl-7 bg-background/50 text-xs shadow-none border-border/40 focus-visible:ring-1 focus-visible:ring-primary"
+              />
+            </div>
+          )}
         </div>
 
         <ScrollArea className="flex-1 px-2 py-3">
-          <div className="space-y-4">
-            
-            {/* Channels */}
-            <div>
-              <div className="flex items-center justify-between px-2 mb-1.5">
-                <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wide">Channels</span>
-                <Button 
-                  onClick={() => setShowChannelModal(true)}
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-5 w-5 hover:bg-muted text-muted-foreground hover:text-foreground rounded"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
+          {activeTab === 'chats' ? (
+            <div className="space-y-4">
+              
+              {/* Channels */}
+              <div>
+                <div className="flex items-center justify-between px-2 mb-1.5">
+                  <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wide">Channels</span>
+                  <Button 
+                    onClick={() => setShowChannelModal(true)}
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 hover:bg-muted text-muted-foreground hover:text-foreground rounded"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-0.5">
+                  {filteredRooms.filter(r => r.type === 'channel').map((room) => {
+                    const isActive = room.id === activeRoomId;
+                    return (
+                      <button
+                        key={room.id}
+                        onClick={() => setActiveRoomId(room.id)}
+                        className={`group flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-all ${
+                          isActive 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                        }`}
+                      >
+                        <Hash className={`h-3.5 w-3.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <span className="truncate flex-1">{room.displayName}</span>
+                        {room.unreadCount > 0 && (
+                          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+                            {room.unreadCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="space-y-0.5">
-                {filteredRooms.filter(r => r.type === 'channel').map((room) => {
-                  const isActive = room.id === activeRoomId;
-                  return (
-                    <button
-                      key={room.id}
-                      onClick={() => setActiveRoomId(room.id)}
-                      className={`group flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-all ${
-                        isActive 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
-                      }`}
-                    >
-                      <Hash className={`h-3.5 w-3.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className="truncate flex-1">{room.displayName}</span>
-                      {room.unreadCount > 0 && (
-                        <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
-                          {room.unreadCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              {/* Direct Messages */}
+              <div>
+                <div className="flex items-center justify-between px-2 mb-1.5">
+                  <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wide">Direct Messages</span>
+                  <Button 
+                    onClick={() => setShowDMModal(true)}
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 hover:bg-muted text-muted-foreground hover:text-foreground rounded"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-0.5">
+                  {filteredRooms.filter(r => r.type === 'direct').map((room) => {
+                    const isActive = room.id === activeRoomId;
+                    const otherUser = room.members.find(m => m.id !== user?.id) || room.members[0];
+                    const isOnline = otherUser?.presence === 'online';
+
+                    return (
+                      <button
+                        key={room.id}
+                        onClick={() => setActiveRoomId(room.id)}
+                        className={`group flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-all ${
+                          isActive 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                        }`}
+                      >
+                        <div className="relative">
+                          <Avatar className="h-5 w-5 border border-border/20">
+                            <AvatarImage src={room.displayPhotoUrl || undefined} />
+                            <AvatarFallback className="text-[9px] font-bold bg-primary/10 text-primary">
+                              {room.displayName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className={`absolute bottom-[-1px] right-[-1px] h-2 w-2 rounded-full border border-background ${
+                            isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+                          }`} />
+                        </div>
+                        <span className="truncate flex-1">{room.displayName}</span>
+                        {room.unreadCount > 0 && (
+                          <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
+                            {room.unreadCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
             </div>
-
-            {/* Direct Messages */}
-            <div>
-              <div className="flex items-center justify-between px-2 mb-1.5">
-                <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wide">Direct Messages</span>
+          ) : (
+            <div className="space-y-3">
+              <div className="px-2 mb-1.5 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-wide">Call History</span>
                 <Button 
-                  onClick={() => setShowDMModal(true)}
+                  onClick={() => fetchCallLogs()}
                   variant="ghost" 
                   size="icon" 
                   className="h-5 w-5 hover:bg-muted text-muted-foreground hover:text-foreground rounded"
+                  title="Refresh"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <RefreshCw className="h-3 w-3" />
                 </Button>
               </div>
 
-              <div className="space-y-0.5">
-                {filteredRooms.filter(r => r.type === 'direct').map((room) => {
-                  const isActive = room.id === activeRoomId;
-                  const otherUser = room.members.find(m => m.id !== user?.id) || room.members[0];
-                  const isOnline = otherUser?.presence === 'online';
+              {callLogs.length === 0 ? (
+                <div className="text-center py-8 text-xs text-muted-foreground">
+                  No call history
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {callLogs.map((log: any) => {
+                    const isOutgoing = log.callerId === user?.id;
+                    const peer = isOutgoing ? log.callee : log.caller;
+                    const dateStr = new Date(log.createdAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
 
-                  return (
-                    <button
-                      key={room.id}
-                      onClick={() => setActiveRoomId(room.id)}
-                      className={`group flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium transition-all ${
-                        isActive 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
-                      }`}
-                    >
-                      <div className="relative">
-                        <Avatar className="h-5 w-5 border border-border/20">
-                          <AvatarImage src={room.displayPhotoUrl || undefined} />
-                          <AvatarFallback className="text-[9px] font-bold bg-primary/10 text-primary">
-                            {room.displayName.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className={`absolute bottom-[-1px] right-[-1px] h-2 w-2 rounded-full border border-background ${
-                          isOnline ? 'bg-emerald-500' : 'bg-muted-foreground/40'
-                        }`} />
+                    return (
+                      <div 
+                        key={log.id}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-sidebar-accent/30 transition-all border border-transparent hover:border-border/10"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Avatar className="h-9 w-9 border border-border/10">
+                            <AvatarImage src={peer?.employeePhotoUrl || undefined} />
+                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                              {peer?.fullNameEnglish?.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-bold text-foreground truncate">{peer?.fullNameEnglish}</h4>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {log.status === 'missed' ? (
+                                <PhoneOff className="h-3 w-3 text-red-500" />
+                              ) : isOutgoing ? (
+                                <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <ArrowDownLeft className="h-3 w-3 text-blue-500" />
+                              )}
+                              <span className="text-[10px] text-muted-foreground truncate">{dateStr}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] text-muted-foreground mr-1">
+                            {log.status === 'completed' 
+                              ? `${Math.floor(log.duration / 60)}m ${log.duration % 60}s`
+                              : log.status === 'rejected'
+                                ? 'Declined'
+                                : log.status === 'missed'
+                                  ? 'Missed'
+                                  : 'Cancelled'}
+                          </span>
+                          
+                          <Button
+                            onClick={() => handleCallFromLog(log.roomId, peer, log.type)}
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
+                            title="Call back"
+                          >
+                            {log.type === 'video' ? <Video className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
+                          </Button>
+                        </div>
                       </div>
-                      <span className="truncate flex-1">{room.displayName}</span>
-                      {room.unreadCount > 0 && (
-                        <span className="rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-primary-foreground">
-                          {room.unreadCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-
-          </div>
+          )}
         </ScrollArea>
       </div>
 

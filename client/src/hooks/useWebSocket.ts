@@ -181,6 +181,10 @@ export function useWebSocket() {
         useCallStore.getState().handleCallInitiated(data);
         break;
 
+      case 'call_ringing':
+        useCallStore.getState().handleCallRinging(data);
+        break;
+
       case 'call_accepted':
         useCallStore.getState().handleCallAccepted(data);
         break;

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { sendWSMessage } from '../hooks/useWebSocket';
 import { toast } from 'sonner';
+import { apiClient } from '../lib/api';
 
 // Programmatic Audio Synthesizer for Call Tones
 class CallSoundManager {
@@ -222,9 +223,13 @@ interface CallState {
   isMuted: boolean;
   isCameraOff: boolean;
   errorMessage: string | null;
+  direction: 'incoming' | 'outgoing' | null;
+  callLogs: any[];
+  fetchCallLogs: () => Promise<void>;
 
   initiateCall: (roomId: string, recipient: PeerInfo, type: 'audio' | 'video') => Promise<void>;
   handleCallInitiated: (data: { callId: string }) => void;
+  handleCallRinging: (data: { callId: string }) => void;
   handleIncomingCall: (data: { callId: string; callerId: string; callerName: string; callerPhotoUrl: string | null; type: 'audio' | 'video'; roomId: string }) => void;
   acceptCall: () => Promise<void>;
   rejectCall: () => void;
@@ -233,7 +238,7 @@ interface CallState {
   toggleMute: () => void;
   toggleCamera: () => void;
   handleCallAccepted: (data: { callId: string; calleeId: string }) => Promise<void>;
-  handleCallRejected: (data: { callId: string }) => void;
+  handleCallRejected: (data: { callId: string; reason?: string }) => void;
   handleCallCancelled: (data: { callId: string }) => void;
   handleCallHungup: (data: { callId: string }) => void;
   handleWebRTCSignal: (data: { callId: string; senderId: string; signal: any }) => Promise<void>;
@@ -250,6 +255,17 @@ export const useCallStore = create<CallState>((set, get) => ({
   isMuted: false,
   isCameraOff: false,
   errorMessage: null,
+  direction: null,
+  callLogs: [],
+
+  fetchCallLogs: async () => {
+    try {
+      const logs = await apiClient.get<any[]>('chat/call-logs');
+      set({ callLogs: logs });
+    } catch (err) {
+      console.error('Failed to fetch call logs:', err);
+    }
+  },
 
   initiateCall: async (roomId, recipient, type) => {
     if (get().callState !== 'idle') return;
@@ -258,6 +274,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       callState: 'calling',
       callType: type,
       peerInfo: recipient,
+      direction: 'outgoing',
       errorMessage: null,
       isMuted: false,
       isCameraOff: false,
@@ -313,10 +330,17 @@ export const useCallStore = create<CallState>((set, get) => ({
     set({ callId: data.callId });
   },
 
+  handleCallRinging: (data) => {
+    const { callId, callState } = get();
+    if (callId === data.callId && callState === 'calling') {
+      set({ callState: 'ringing' });
+    }
+  },
+
   handleIncomingCall: (data) => {
     // If already in a call, automatically decline incoming call (send busy signal)
     if (get().callState !== 'idle') {
-      sendWSMessage('call:reject', { callId: data.callId, targetUserId: data.callerId });
+      sendWSMessage('call:reject', { callId: data.callId, targetUserId: data.callerId, reason: 'busy' });
       return;
     }
 
@@ -329,11 +353,13 @@ export const useCallStore = create<CallState>((set, get) => ({
         name: data.callerName,
         photoUrl: data.callerPhotoUrl,
       },
+      direction: 'incoming',
       errorMessage: null,
       isMuted: false,
       isCameraOff: false,
     });
 
+    sendWSMessage('call:ringing', { callId: data.callId, targetUserId: data.callerId });
     soundManager.playRingTone();
   },
 
@@ -379,7 +405,7 @@ export const useCallStore = create<CallState>((set, get) => ({
   rejectCall: () => {
     const { callId, peerInfo } = get();
     if (callId && peerInfo) {
-      sendWSMessage('call:reject', { callId, targetUserId: peerInfo.id });
+      sendWSMessage('call:reject', { callId, targetUserId: peerInfo.id, reason: 'declined' });
     }
     soundManager.stop();
     get().cleanupCallState();
@@ -425,7 +451,14 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
 
   handleCallAccepted: async (data) => {
-    const { peerInfo, localStream } = get();
+    const { peerInfo, localStream, callState } = get();
+    
+    if (callState === 'ringing') {
+      soundManager.stop();
+      get().cleanupCallState();
+      return;
+    }
+
     if (!peerInfo || !localStream) return;
 
     if (callTimeoutId) {
@@ -480,10 +513,21 @@ export const useCallStore = create<CallState>((set, get) => ({
     }
   },
 
-  handleCallRejected: (_data) => {
+  handleCallRejected: (data) => {
     soundManager.stop();
     soundManager.playEndTone();
-    toast.error('Call rejected or user busy');
+    
+    const state = get().callState;
+    if (state === 'calling' || state === 'connected') {
+      if (data && data.reason === 'offline') {
+        toast.error('User is offline');
+      } else if (data && data.reason === 'busy') {
+        toast.error('User is busy');
+      } else {
+        toast.error('Call declined');
+      }
+    }
+    
     get().cleanupCallState();
   },
 
@@ -608,6 +652,9 @@ export const useCallStore = create<CallState>((set, get) => ({
       isMuted: false,
       isCameraOff: false,
       errorMessage: null,
+      direction: null,
     });
+
+    get().fetchCallLogs();
   },
 }));
