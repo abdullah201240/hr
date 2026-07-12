@@ -551,6 +551,27 @@ export class ChatGateway
         return;
       }
 
+      // Check call rate limiting
+      const canCall = await this.checkCallRateLimit(callerId);
+      if (!canCall) {
+        this.sendToClient(client, 'error', { message: 'Too many calls. Please wait a minute.' });
+        return;
+      }
+
+      // Check if caller is already in an active call
+      const callerActiveCall = await this.chatService.getUserActiveCall(callerId);
+      if (callerActiveCall) {
+        this.sendToClient(client, 'error', { message: 'You are already in an active call' });
+        return;
+      }
+
+      // Check if recipient is already in an active call
+      const recipientActiveCall = await this.chatService.getUserActiveCall(recipient.id);
+      if (recipientActiveCall) {
+        this.sendToClient(client, 'call_rejected', { reason: 'busy' });
+        return;
+      }
+
       const callId = `call_${randomUUID()}`;
       const caller = members.find((m: any) => m.id === callerId);
 
@@ -887,6 +908,18 @@ export class ChatGateway
       await this.redis.expire(limitKey, 60);
     }
     return count <= 30;
+  }
+
+  /**
+   * Enforce a sliding-window call initiation rate limit per employee (Max 5 calls/min)
+   */
+  private async checkCallRateLimit(employeeId: string): Promise<boolean> {
+    const limitKey = `chat:call_ratelimit:${employeeId}`;
+    const count = await this.redis.incr(limitKey);
+    if (count === 1) {
+      await this.redis.expire(limitKey, 60);
+    }
+    return count <= 5;
   }
 
   /**

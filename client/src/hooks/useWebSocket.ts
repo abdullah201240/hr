@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
 import { useCallStore } from '../store/useCallStore';
+import { apiClient } from '../lib/api';
+import { toast } from 'sonner';
 
 let socketInstance: WebSocket | null = null;
 let reconnectTimeoutId: any = null;
@@ -55,10 +57,16 @@ export function useWebSocket() {
   function connect() {
     if (disconnectRef.current) return;
     
-    // Construct the WSS/WS connection URL dynamically
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-    const wsBase = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '');
-    const wsUrl = `${wsBase}/chat?token=${accessToken}`;
+    const VITE_WS_URL = import.meta.env.VITE_WS_URL;
+    let wsUrl = '';
+    if (VITE_WS_URL) {
+      const cleanWs = VITE_WS_URL.replace(/\/ws$/, '').replace(/\/$/, '');
+      wsUrl = `${cleanWs}/chat?token=${accessToken}`;
+    } else {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+      const wsBase = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '');
+      wsUrl = `${wsBase}/chat?token=${accessToken}`;
+    }
 
     cleanupSocket();
 
@@ -70,6 +78,24 @@ export function useWebSocket() {
         reconnectAttempts = 0;
         setWsConnected(true);
         console.log('WebSocket successfully connected');
+
+        // Re-sync call state if client is mid-call
+        const currentCall = useCallStore.getState();
+        if (currentCall.callState !== 'idle') {
+          apiClient.get<{ active: boolean; callId?: string }>('chat/active-call')
+            .then((res) => {
+              if (!res.active || res.callId !== currentCall.callId) {
+                console.log('Active call no longer matches on server. Cleaning up call state.');
+                currentCall.cleanupCallState();
+                toast.info('Call ended due to connection drop');
+              } else {
+                console.log('Active call successfully verified on server after websocket reconnect.');
+              }
+            })
+            .catch((err) => {
+              console.warn('Failed to verify active call on server:', err);
+            });
+        }
       };
 
       socket.onmessage = (event) => {

@@ -162,6 +162,10 @@ class CallSoundManager {
       } catch {}
     });
     this.activeOscillators = [];
+    if (this.ctx) {
+      this.ctx.close().catch(() => {});
+      this.ctx = null;
+    }
   }
 }
 
@@ -174,7 +178,57 @@ const getIceServers = (): RTCIceServer[] => {
       console.warn('Failed to parse VITE_ICE_SERVERS environment variable, using default STUN:', e);
     }
   }
-  return [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+
+  const servers: RTCIceServer[] = [
+    {
+      urls: [
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+        'stun:stun.services.mozilla.com',
+        'stun:stun.xten.com',
+        'stun:stun.l.google.com:19305'
+      ]
+    }
+  ];
+
+  const turnUrl = import.meta.env.VITE_TURN_URL;
+  const turnUser = import.meta.env.VITE_TURN_USERNAME;
+  const turnPass = import.meta.env.VITE_TURN_CREDENTIAL;
+
+  if (turnUrl) {
+    // Extract domain host cleanly (e.g. turn:openrelay.metered.ca:443 -> openrelay.metered.ca)
+    const parts = turnUrl.split(':');
+    let host = parts[1] || '';
+    host = host.replace(/^\/\//, '');
+    const cleanHost = host.split('?')[0];
+
+    const protocol = turnUrl.startsWith('turns:') ? 'turns' : 'turn';
+
+    servers.push({
+      urls: [
+        turnUrl,
+        `${protocol}:${cleanHost}:80`,
+        `${protocol}:${cleanHost}:443`,
+        `${protocol}:${cleanHost}:443?transport=tcp`
+      ],
+      username: turnUser || undefined,
+      credential: turnPass || undefined,
+    });
+  } else {
+    // Provide a default public TURN server from Metered OpenRelay to ensure traversal on cellular networks/NATs
+    servers.push({
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp'
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    });
+  }
+
+  return servers;
 };
 
 const getUserMediaWithFallback = async (constraints: { audio: boolean; video: boolean }) => {
@@ -209,6 +263,7 @@ const soundManager = new CallSoundManager();
 // Module-level WebRTC objects (avoids Zustand React proxy re-render bottlenecks)
 let peerConnection: RTCPeerConnection | null = null;
 let localMediaStream: MediaStream | null = null;
+let screenMediaStream: MediaStream | null = null;
 let callTimeoutId: any = null;
 let candidateQueue: RTCIceCandidateInit[] = [];
 
@@ -218,6 +273,79 @@ interface PeerInfo {
   photoUrl: string | null;
 }
 
+const setupPeerConnectionListeners = (
+  pc: RTCPeerConnection,
+  callId: string,
+  peerId: string,
+  set: any,
+  get: any
+) => {
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      sendWSMessage('webrtc:signal', {
+        callId,
+        targetUserId: peerId,
+        signal: { candidate: event.candidate },
+      });
+    }
+  };
+
+  pc.ontrack = (event) => {
+    let stream = get().remoteStream;
+    if (!stream) {
+      stream = new MediaStream();
+    }
+    
+    const exists = stream.getTracks().some(t => t.id === event.track.id);
+    if (!exists) {
+      stream.addTrack(event.track);
+      const updatedStream = new MediaStream(stream.getTracks());
+      set({ remoteStream: updatedStream });
+    }
+
+    if (event.track.kind === 'video' && get().callType === 'audio') {
+      set({ callType: 'video' });
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+    console.log("ICE Connection State changed:", state);
+    
+    let quality: 'connecting' | 'excellent' | 'poor' | 'disconnected' = 'connecting';
+    if (state === 'connected' || state === 'completed') {
+      quality = 'excellent';
+    } else if (state === 'disconnected') {
+      quality = 'poor';
+    } else if (state === 'failed') {
+      quality = 'disconnected';
+    } else if (state === 'checking') {
+      quality = 'connecting';
+    }
+    
+    set({ connectionQuality: quality });
+
+    // Auto ICE Restart if peer connection detects disconnection
+    if (state === 'disconnected') {
+      console.log("Attempting ICE Restart...");
+      pc.createOffer({ iceRestart: true })
+        .then(async (offer) => {
+          await pc.setLocalDescription(offer);
+          sendWSMessage('webrtc:signal', {
+            callId,
+            targetUserId: peerId,
+            signal: { offer },
+          });
+        })
+        .catch((e) => console.warn("Failed to create ICE restart offer:", e));
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.log("Connection State changed:", pc.connectionState);
+  };
+};
+
 interface CallState {
   callState: 'idle' | 'calling' | 'ringing' | 'connected' | 'ended';
   callType: 'audio' | 'video';
@@ -225,10 +353,14 @@ interface CallState {
   peerInfo: PeerInfo | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
+  screenStream: MediaStream | null;
   isMuted: boolean;
   isCameraOff: boolean;
+  isSpeaker: boolean;
+  isScreenSharing: boolean;
   errorMessage: string | null;
   direction: 'incoming' | 'outgoing' | null;
+  connectionQuality: 'connecting' | 'excellent' | 'poor' | 'disconnected' | null;
   callLogs: any[];
   fetchCallLogs: () => Promise<void>;
 
@@ -241,7 +373,9 @@ interface CallState {
   cancelCall: () => void;
   hangUp: () => void;
   toggleMute: () => void;
-  toggleCamera: () => void;
+  toggleSpeaker: () => void;
+  toggleCamera: () => void | Promise<void>;
+  toggleScreenShare: () => Promise<void>;
   handleCallAccepted: (data: { callId: string; calleeId: string }) => Promise<void>;
   handleCallRejected: (data: { callId: string; reason?: string }) => void;
   handleCallCancelled: (data: { callId: string }) => void;
@@ -257,10 +391,14 @@ export const useCallStore = create<CallState>((set, get) => ({
   peerInfo: null,
   localStream: null,
   remoteStream: null,
+  screenStream: null,
   isMuted: false,
   isCameraOff: false,
+  isSpeaker: true,
+  isScreenSharing: false,
   errorMessage: null,
   direction: null,
+  connectionQuality: null,
   callLogs: [],
 
   fetchCallLogs: async () => {
@@ -295,6 +433,16 @@ export const useCallStore = create<CallState>((set, get) => ({
       };
       const stream = await getUserMediaWithFallback(constraints);
       localMediaStream = stream;
+
+      // Apply initial mute/camera states
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !get().isMuted;
+      }
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !get().isCameraOff;
+      }
 
       // Determine final type (if camera fallback occurred, update to audio)
       const actualType = stream.getVideoTracks().length > 0 ? type : 'audio';
@@ -383,6 +531,16 @@ export const useCallStore = create<CallState>((set, get) => ({
       const stream = await getUserMediaWithFallback(constraints);
       localMediaStream = stream;
 
+      // Apply user pre-selected mute/camera choices
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !get().isMuted;
+      }
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !get().isCameraOff;
+      }
+
       const actualType = stream.getVideoTracks().length > 0 ? callType : 'audio';
       set({ localStream: stream, callType: actualType, callState: 'connected' });
 
@@ -437,21 +595,133 @@ export const useCallStore = create<CallState>((set, get) => ({
   },
 
   toggleMute: () => {
+    const nextMuted = !get().isMuted;
+    set({ isMuted: nextMuted });
     if (localMediaStream) {
       const audioTrack = localMediaStream.getAudioTracks()[0];
       if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        set({ isMuted: !audioTrack.enabled });
+        audioTrack.enabled = !nextMuted;
       }
     }
   },
 
-  toggleCamera: () => {
-    if (localMediaStream && get().callType === 'video') {
-      const videoTrack = localMediaStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        set({ isCameraOff: !videoTrack.enabled });
+  toggleSpeaker: () => {
+    set((state) => ({ isSpeaker: !state.isSpeaker }));
+  },
+
+  toggleCamera: async () => {
+    const { callType, callId, peerInfo, isCameraOff } = get();
+    const nextCameraOff = !isCameraOff;
+    
+    if (callType === 'audio') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack && localMediaStream) {
+          localMediaStream.addTrack(videoTrack);
+          set({ localStream: localMediaStream, callType: 'video', isCameraOff: false });
+          
+          if (peerConnection) {
+            const senders = peerConnection.getSenders();
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            if (videoSender) {
+              await videoSender.replaceTrack(videoTrack);
+            } else {
+              peerConnection.addTrack(videoTrack, localMediaStream);
+            }
+            
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            if (callId && peerInfo) {
+              sendWSMessage('webrtc:signal', {
+                callId,
+                targetUserId: peerInfo.id,
+                signal: { offer },
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to open camera:', err);
+        toast.error('Failed to open camera. Make sure camera is not in use.');
+      }
+    } else {
+      set({ isCameraOff: nextCameraOff });
+      if (localMediaStream) {
+        const videoTrack = localMediaStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = !nextCameraOff;
+        }
+      }
+    }
+  },
+
+  toggleScreenShare: async () => {
+    const { isScreenSharing, callState, callType } = get();
+    if (callState !== 'connected') return;
+
+    if (isScreenSharing) {
+      // Stop screen sharing and revert to camera
+      try {
+        if (screenMediaStream) {
+          screenMediaStream.getTracks().forEach(t => t.stop());
+          screenMediaStream = null;
+        }
+
+        if (peerConnection && localMediaStream) {
+          const cameraTrack = localMediaStream.getVideoTracks()[0];
+          if (cameraTrack) {
+            const senders = peerConnection.getSenders();
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            if (videoSender) {
+              await videoSender.replaceTrack(cameraTrack);
+            }
+            cameraTrack.enabled = !get().isCameraOff;
+          }
+        }
+        
+        set({ isScreenSharing: false, screenStream: null });
+      } catch (err) {
+        console.error("Failed to stop screen share:", err);
+      }
+    } else {
+      // Start screen sharing
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenMediaStream = stream;
+        const screenTrack = stream.getVideoTracks()[0];
+
+        if (screenTrack) {
+          screenTrack.onended = () => {
+            get().toggleScreenShare();
+          };
+
+          if (peerConnection) {
+            const senders = peerConnection.getSenders();
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            if (videoSender) {
+              await videoSender.replaceTrack(screenTrack);
+            } else {
+              peerConnection.addTrack(screenTrack, localMediaStream || new MediaStream([screenTrack]));
+            }
+          }
+
+          if (localMediaStream) {
+            const cameraTrack = localMediaStream.getVideoTracks()[0];
+            if (cameraTrack) {
+              cameraTrack.enabled = false;
+            }
+          }
+
+          set({ isScreenSharing: true, screenStream: stream });
+
+          if (callType === 'audio') {
+            set({ callType: 'video' });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to start screen share:", err);
+        toast.error("Failed to start screen share.");
       }
     }
   },
@@ -462,6 +732,11 @@ export const useCallStore = create<CallState>((set, get) => ({
     if (direction === 'incoming' && callState === 'ringing') {
       soundManager.stop();
       get().cleanupCallState();
+      return;
+    }
+
+    if (direction === 'incoming') {
+      // Callee does not initiate WebRTC connection, caller does.
       return;
     }
 
@@ -481,27 +756,13 @@ export const useCallStore = create<CallState>((set, get) => ({
         iceServers: getIceServers(),
       });
 
+      setupPeerConnectionListeners(peerConnection, data.callId, peerInfo.id, set, get);
+
       localStream.getTracks().forEach((track) => {
         if (peerConnection && localStream) {
           peerConnection.addTrack(track, localStream);
         }
       });
-
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate && peerConnection) {
-          sendWSMessage('webrtc:signal', {
-            callId: data.callId,
-            targetUserId: peerInfo.id,
-            signal: { candidate: event.candidate },
-          });
-        }
-      };
-
-      peerConnection.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          set({ remoteStream: event.streams[0] });
-        }
-      };
 
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
@@ -512,9 +773,9 @@ export const useCallStore = create<CallState>((set, get) => ({
         signal: { offer },
       });
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to set up caller RTCPeerConnection:', err);
-      toast.error('Failed to establish media connection.');
+      toast.error(`Failed to establish media connection: ${err?.message || err}`);
       get().hangUp();
     }
   },
@@ -560,39 +821,35 @@ export const useCallStore = create<CallState>((set, get) => ({
 
       if (offer) {
         // Callee initializes RTCPeerConnection upon receiving the offer from caller
-        peerConnection = new RTCPeerConnection({
-          iceServers: getIceServers(),
-        });
+        if (!peerConnection) {
+          peerConnection = new RTCPeerConnection({
+            iceServers: getIceServers(),
+          });
+
+          setupPeerConnectionListeners(peerConnection, data.callId, peerInfo.id, set, get);
+        }
 
         if (localStream) {
           localStream.getTracks().forEach((track) => {
             if (peerConnection && localStream) {
-              peerConnection.addTrack(track, localStream);
+              const senders = peerConnection.getSenders();
+              const exists = senders.some(s => s.track && s.track.id === track.id);
+              if (!exists) {
+                peerConnection.addTrack(track, localStream);
+              }
             }
           });
         }
-
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate && peerConnection) {
-            sendWSMessage('webrtc:signal', {
-              callId: data.callId,
-              targetUserId: peerInfo.id,
-              signal: { candidate: event.candidate },
-            });
-          }
-        };
-
-        peerConnection.ontrack = (event) => {
-          if (event.streams && event.streams[0]) {
-            set({ remoteStream: event.streams[0] });
-          }
-        };
 
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
         // Flush any buffered candidates received before remote description was set
         for (const cand of candidateQueue) {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+          try {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.warn('Failed to add buffered ICE candidate:', e);
+          }
         }
         candidateQueue = [];
 
@@ -612,7 +869,11 @@ export const useCallStore = create<CallState>((set, get) => ({
 
           // Flush any buffered candidates
           for (const cand of candidateQueue) {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+            try {
+              await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+            } catch (e) {
+              console.warn('Failed to add buffered ICE candidate:', e);
+            }
           }
           candidateQueue = [];
         }
@@ -626,8 +887,9 @@ export const useCallStore = create<CallState>((set, get) => ({
         }
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error handling WebRTC signaling:', err);
+      toast.error(`Signaling error: ${err?.message || err}`);
     }
   },
 
@@ -640,6 +902,11 @@ export const useCallStore = create<CallState>((set, get) => ({
     if (localMediaStream) {
       localMediaStream.getTracks().forEach((track) => track.stop());
       localMediaStream = null;
+    }
+
+    if (screenMediaStream) {
+      screenMediaStream.getTracks().forEach((track) => track.stop());
+      screenMediaStream = null;
     }
 
     if (peerConnection) {
@@ -655,10 +922,14 @@ export const useCallStore = create<CallState>((set, get) => ({
       peerInfo: null,
       localStream: null,
       remoteStream: null,
+      screenStream: null,
       isMuted: false,
       isCameraOff: false,
+      isSpeaker: true,
+      isScreenSharing: false,
       errorMessage: null,
       direction: null,
+      connectionQuality: null,
     });
 
     get().fetchCallLogs();

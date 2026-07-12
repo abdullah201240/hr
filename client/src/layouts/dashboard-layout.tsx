@@ -28,7 +28,7 @@ export function DashboardLayout() {
   const isChatPage = location.pathname === "/chat"
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("bg-background", !isChatPage && "min-h-screen", isChatPage && "h-[100dvh] min-h-[100dvh] max-h-[100dvh] overflow-hidden")}>
       <CallOverlay />
       {/* Desktop Sidebar */}
       <div
@@ -58,8 +58,10 @@ export function DashboardLayout() {
       {/* Main Content Area */}
       <div
         className={cn(
-          "flex min-h-screen flex-col transition-all duration-300 ease-in-out",
-          sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]"
+          "flex flex-col transition-all duration-300 ease-in-out",
+          !isChatPage && "min-h-screen",
+          sidebarCollapsed ? "lg:ml-[60px]" : "lg:ml-[240px]",
+          isChatPage && "h-[100dvh] min-h-[100dvh] max-h-[100dvh] overflow-hidden"
         )}
       >
         {!isChatPage && (
@@ -69,8 +71,8 @@ export function DashboardLayout() {
           />
         )}
 
-        <main className={cn("flex-1 p-3 pb-12 lg:p-5 lg:pb-14", isChatPage && "p-0 pb-0 lg:p-0 lg:pb-0")}>
-          <div className={cn("mx-auto w-full", isChatPage && "max-w-none h-screen")}>
+        <main className={cn("flex-1 p-3 pb-12 lg:p-5 lg:pb-14", isChatPage && "p-0 pb-0 lg:p-0 lg:pb-0 h-full overflow-hidden")}>
+          <div className={cn("mx-auto w-full", isChatPage && "max-w-none h-full")}>
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>

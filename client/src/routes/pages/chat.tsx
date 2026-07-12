@@ -401,7 +401,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-card">
+    <div className="flex h-full w-full overflow-hidden bg-card">
       <style>{`
         .whatsapp-bg {
           background-color: #efeae2;

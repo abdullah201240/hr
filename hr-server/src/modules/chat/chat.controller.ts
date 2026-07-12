@@ -47,6 +47,16 @@ export class ChatController {
     return this.chatService.getCallLogs(req.user.id);
   }
 
+  @Get('active-call')
+  @ApiOperation({ summary: 'Get current active call details if any' })
+  @ApiResponse({ status: 200, description: 'Active call details.' })
+  async getActiveCall(@Req() req: AuthenticatedRequest) {
+    const activeCallId = await this.chatService.getUserActiveCall(req.user.id);
+    if (!activeCallId) return { active: false };
+    const callData = await this.chatService.getActiveCall(activeCallId);
+    return { active: true, callId: activeCallId, ...callData };
+  }
+
   @Post('rooms/direct')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get or create a direct message conversation room' })
