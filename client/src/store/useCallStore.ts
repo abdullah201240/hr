@@ -231,6 +231,26 @@ const getIceServers = (): RTCIceServer[] => {
   return servers;
 };
 
+const fetchMeteredIceServers = async (): Promise<RTCIceServer[] | null> => {
+  const domain = import.meta.env.VITE_METERED_DOMAIN;
+  const apiKey = import.meta.env.VITE_METERED_API_KEY;
+  if (!domain || !apiKey) return null;
+  
+  try {
+    const response = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        console.log("Successfully fetched dynamic Metered ICE servers:", data.length);
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to fetch Metered TURN servers, using default config:", e);
+  }
+  return null;
+};
+
 const getUserMediaWithFallback = async (constraints: { audio: boolean; video: boolean }) => {
   // Check if we're in a secure context (HTTPS or localhost)
   if (!window.isSecureContext) {
@@ -265,6 +285,7 @@ let peerConnection: RTCPeerConnection | null = null;
 let localMediaStream: MediaStream | null = null;
 let screenMediaStream: MediaStream | null = null;
 let callTimeoutId: any = null;
+let iceTimeoutId: any = null;
 let candidateQueue: RTCIceCandidateInit[] = [];
 
 interface PeerInfo {
@@ -315,6 +336,10 @@ const setupPeerConnectionListeners = (
     let quality: 'connecting' | 'excellent' | 'poor' | 'disconnected' = 'connecting';
     if (state === 'connected' || state === 'completed') {
       quality = 'excellent';
+      if (iceTimeoutId) {
+        clearTimeout(iceTimeoutId);
+        iceTimeoutId = null;
+      }
     } else if (state === 'disconnected') {
       quality = 'poor';
     } else if (state === 'failed') {
@@ -362,7 +387,9 @@ interface CallState {
   direction: 'incoming' | 'outgoing' | null;
   connectionQuality: 'connecting' | 'excellent' | 'poor' | 'disconnected' | null;
   callLogs: any[];
+  iceServers: RTCIceServer[] | null;
   fetchCallLogs: () => Promise<void>;
+  loadIceServers: () => Promise<void>;
 
   initiateCall: (roomId: string, recipient: PeerInfo, type: 'audio' | 'video') => Promise<void>;
   handleCallInitiated: (data: { callId: string }) => void;
@@ -400,6 +427,15 @@ export const useCallStore = create<CallState>((set, get) => ({
   direction: null,
   connectionQuality: null,
   callLogs: [],
+  iceServers: null,
+
+  loadIceServers: async () => {
+    if (get().iceServers) return;
+    const servers = await fetchMeteredIceServers();
+    if (servers) {
+      set({ iceServers: servers });
+    }
+  },
 
   fetchCallLogs: async () => {
     try {
@@ -412,6 +448,8 @@ export const useCallStore = create<CallState>((set, get) => ({
 
   initiateCall: async (roomId, recipient, type) => {
     if (get().callState !== 'idle') return;
+
+    get().loadIceServers();
 
     set({
       callState: 'calling',
@@ -515,6 +553,8 @@ export const useCallStore = create<CallState>((set, get) => ({
 
     sendWSMessage('call:ringing', { callId: data.callId, targetUserId: data.callerId });
     soundManager.playRingTone();
+
+    get().loadIceServers();
   },
 
   acceptCall: async () => {
@@ -543,6 +583,17 @@ export const useCallStore = create<CallState>((set, get) => ({
 
       const actualType = stream.getVideoTracks().length > 0 ? callType : 'audio';
       set({ localStream: stream, callType: actualType, callState: 'connected' });
+
+      // Start ICE Connection watchdog timeout (callee)
+      if (iceTimeoutId) clearTimeout(iceTimeoutId);
+      iceTimeoutId = setTimeout(() => {
+        const currentStore = get();
+        if (currentStore.callState === 'connected' && currentStore.connectionQuality !== 'excellent') {
+          console.warn("ICE connection timed out on callee side.");
+          toast.error("Failed to connect media channel. Please check your firewall or configure a TURN server.");
+          currentStore.hangUp();
+        }
+      }, 25000);
 
       sendWSMessage('call:accept', { callId, targetUserId: peerInfo.id });
 
@@ -750,10 +801,21 @@ export const useCallStore = create<CallState>((set, get) => ({
     soundManager.stop();
     set({ callState: 'connected', callId: data.callId });
 
+    // Start ICE Connection watchdog timeout (caller)
+    if (iceTimeoutId) clearTimeout(iceTimeoutId);
+    iceTimeoutId = setTimeout(() => {
+      const currentStore = get();
+      if (currentStore.callState === 'connected' && currentStore.connectionQuality !== 'excellent') {
+        console.warn("ICE connection timed out on caller side.");
+        toast.error("Failed to connect media channel. Please check your firewall or configure a TURN server.");
+        currentStore.hangUp();
+      }
+    }, 25000);
+
     // Initiate WebRTC Connection
     try {
       peerConnection = new RTCPeerConnection({
-        iceServers: getIceServers(),
+        iceServers: get().iceServers || getIceServers(),
       });
 
       setupPeerConnectionListeners(peerConnection, data.callId, peerInfo.id, set, get);
@@ -823,7 +885,7 @@ export const useCallStore = create<CallState>((set, get) => ({
         // Callee initializes RTCPeerConnection upon receiving the offer from caller
         if (!peerConnection) {
           peerConnection = new RTCPeerConnection({
-            iceServers: getIceServers(),
+            iceServers: get().iceServers || getIceServers(),
           });
 
           setupPeerConnectionListeners(peerConnection, data.callId, peerInfo.id, set, get);
@@ -899,6 +961,11 @@ export const useCallStore = create<CallState>((set, get) => ({
       callTimeoutId = null;
     }
 
+    if (iceTimeoutId) {
+      clearTimeout(iceTimeoutId);
+      iceTimeoutId = null;
+    }
+
     if (localMediaStream) {
       localMediaStream.getTracks().forEach((track) => track.stop());
       localMediaStream = null;
@@ -930,6 +997,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       errorMessage: null,
       direction: null,
       connectionQuality: null,
+      iceServers: null,
     });
 
     get().fetchCallLogs();
