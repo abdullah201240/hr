@@ -80,9 +80,9 @@ async function bootstrap() {
   // cross-origin CSRF protections (e.g. @fastify/csrf) must be implemented.
   const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim());
   app.enableCors({
-    origin: corsOrigins && corsOrigins.length > 0
+    origin: nodeEnv === 'production' && corsOrigins && corsOrigins.length > 0 && corsOrigins[0] !== ''
       ? corsOrigins
-      : ['http://localhost:5173'],
+      : (origin, callback) => callback(null, true),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],

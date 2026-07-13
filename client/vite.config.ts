@@ -17,7 +17,7 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ['seekers-finals-tubes-plate.trycloudflare.com'],
+    allowedHosts: true,
   },
   build: {
     target: 'es2022',

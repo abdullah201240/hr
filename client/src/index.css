@@ -487,4 +487,169 @@ body:has(.swal2-container) [data-slot="dialog-content"] {
   }
 }
 
+/* ── Antigravity Premium Dark Mode, Sidebar, & Responsive Layout overrides ── */
+
+/* Global Dark Mode Overrides for Hardcoded Light Tailwind Colors */
+.dark :not([class*="dark:bg-"]).bg-white {
+  background-color: var(--card) !important;
+}
+.dark :not([class*="dark:bg-"]).bg-slate-50,
+.dark :not([class*="dark:bg-"]).bg-zinc-50,
+.dark :not([class*="dark:bg-"]).bg-gray-50,
+.dark :not([class*="dark:bg-"]).bg-neutral-50,
+.dark :not([class*="dark:bg-"]).bg-slate-100,
+.dark :not([class*="dark:bg-"]).bg-zinc-100,
+.dark :not([class*="dark:bg-"]).bg-gray-100,
+.dark :not([class*="dark:bg-"]).bg-neutral-100 {
+  background-color: var(--muted) !important;
+}
+
+/* Text color overrides */
+.dark :not([class*="dark:text-"]).text-slate-900,
+.dark :not([class*="dark:text-"]).text-zinc-900,
+.dark :not([class*="dark:text-"]).text-gray-900,
+.dark :not([class*="dark:text-"]).text-neutral-900,
+.dark :not([class*="dark:text-"]).text-slate-800,
+.dark :not([class*="dark:text-"]).text-zinc-800,
+.dark :not([class*="dark:text-"]).text-gray-800,
+.dark :not([class*="dark:text-"]).text-neutral-800 {
+  color: var(--foreground) !important;
+}
+
+.dark :not([class*="dark:text-"]).text-slate-700,
+.dark :not([class*="dark:text-"]).text-zinc-700,
+.dark :not([class*="dark:text-"]).text-gray-700,
+.dark :not([class*="dark:text-"]).text-neutral-700,
+.dark :not([class*="dark:text-"]).text-slate-600,
+.dark :not([class*="dark:text-"]).text-zinc-600,
+.dark :not([class*="dark:text-"]).text-gray-600,
+.dark :not([class*="dark:text-"]).text-neutral-600 {
+  color: var(--muted-foreground) !important;
+}
+
+.dark :not([class*="dark:text-"]).text-slate-500,
+.dark :not([class*="dark:text-"]).text-zinc-500,
+.dark :not([class*="dark:text-"]).text-gray-500,
+.dark :not([class*="dark:text-"]).text-neutral-500 {
+  color: var(--muted-foreground) !important;
+}
+
+/* Border overrides */
+.dark :not([class*="dark:border-"]).border-slate-200,
+.dark :not([class*="dark:border-"]).border-zinc-200,
+.dark :not([class*="dark:border-"]).border-gray-200,
+.dark :not([class*="dark:border-"]).border-neutral-200,
+.dark :not([class*="dark:border-"]).border-slate-100,
+.dark :not([class*="dark:border-"]).border-zinc-100,
+.dark :not([class*="dark:border-"]).border-gray-100,
+.dark :not([class*="dark:border-"]).border-neutral-100 {
+  border-color: var(--border) !important;
+}
+
+/* Dropdown selections & input elements */
+.dark option {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+}
+
+/* Sidebar Dark Mode Text Visibility Fix */
+.dark aside,
+.dark aside a,
+.dark aside button,
+.dark aside span,
+.dark aside p,
+.dark aside svg {
+  color: #ffffff !important;
+}
+
+/* Retain primary color highlight for the active menu items */
+.dark aside .text-primary,
+.dark aside .text-primary * {
+  color: var(--primary) !important;
+}
+
+/* Global Sidebar Font Size Scaling (Scales everything up by ~2px) */
+aside a,
+aside button {
+  font-size: 0.875rem !important; /* text-sm (14px) instead of text-xs (12px) for main items */
+}
+
+aside button[type="button"] span {
+  font-size: 0.75rem !important; /* text-xs (12px) instead of 10px for category headers */
+}
+
+aside .pl-9, 
+aside .pl-9 span {
+  font-size: 0.8125rem !important; /* 13px instead of 11px for sub-menu items */
+}
+
+aside p.text-sidebar-foreground,
+aside p.text-xs {
+  font-size: 0.875rem !important; /* 14px instead of 12px for profile name */
+}
+
+aside p.text-[10px] {
+  font-size: 0.75rem !important; /* 12px instead of 10px for profile email */
+}
+
+/* Mobile Responsive Global Enhancements */
+@media (max-width: 768px) {
+  /* Tables scrolling */
+  table, [data-slot="table"] {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent dialogs from overflowing viewport */
+  [data-slot="dialog-content"] {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0.5rem auto !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Padding adjustments to maximize screen space */
+  .p-5, .p-6, .p-8, .p-10 {
+    padding: 1rem !important;
+  }
+  .px-5, .px-6, .px-8, .px-10 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .py-5, .py-6, .py-8, .py-10 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  /* Tabs auto wrap/scroll */
+  [data-slot="tabs-list"] {
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-slot="tabs-list"] button {
+    flex-shrink: 0 !important;
+  }
+}
+
+/* Responsive Charts */
+[data-slot="chart"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 640px) {
+  [data-slot="chart"] {
+    aspect-ratio: auto !important;
+    height: 180px !important;
+  }
+}
+
+
 

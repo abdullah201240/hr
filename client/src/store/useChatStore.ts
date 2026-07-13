@@ -77,7 +77,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   rooms: [],
   messages: {},
   typingStatus: {},
-  activeRoomId: null,
+  activeRoomId: typeof window !== 'undefined' ? localStorage.getItem('activeRoomId') : null,
   isWsConnected: false,
   isLoadingRooms: false,
   isLoadingMessages: false,
@@ -86,6 +86,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setActiveRoomId: (roomId) => {
     set({ activeRoomId: roomId });
+    if (typeof window !== 'undefined') {
+      if (roomId) {
+        localStorage.setItem('activeRoomId', roomId);
+      } else {
+        localStorage.removeItem('activeRoomId');
+      }
+    }
     if (roomId) {
       set((state) => ({
         rooms: state.rooms.map((room) =>
@@ -358,10 +365,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   removeIncomingRoom: (roomId) => {
-    set((state) => ({
-      rooms: state.rooms.filter((r) => r.id !== roomId),
-      activeRoomId: state.activeRoomId === roomId ? null : state.activeRoomId,
-    }));
+    set((state) => {
+      const nextActiveRoomId = state.activeRoomId === roomId ? null : state.activeRoomId;
+      if (typeof window !== 'undefined') {
+        if (nextActiveRoomId) {
+          localStorage.setItem('activeRoomId', nextActiveRoomId);
+        } else {
+          localStorage.removeItem('activeRoomId');
+        }
+      }
+      return {
+        rooms: state.rooms.filter((r) => r.id !== roomId),
+        activeRoomId: nextActiveRoomId,
+      };
+    });
   },
 
   addOptimisticMessage: (roomId, message) => {
