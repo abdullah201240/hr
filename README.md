@@ -1,6 +1,6 @@
 # HR Management System
 
-Enterprise-grade Human Resource Management System built with a full-stack TypeScript architecture — **NestJS + Fastify** backend and **React 19 + Vite** frontend, powered by PostgreSQL, Redis, and WebSocket real-time communication.
+Enterprise-grade Human Resource Management System built with a full-stack TypeScript architecture — **NestJS + Fastify** backend and **React 19 + Vite** frontend, powered by **PostgreSQL** (Neon), **Redis** caching, **BullMQ** job queues, **WebRTC** voice/video calling, **WebSocket** real-time messaging, and **Cloudinary** file storage — featuring employee management, attendance tracking, payroll processing, leave management, recruitment, performance reviews, task management, chat, and a pure custom RBAC permission system.
 
 ---
 
