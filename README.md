@@ -27,7 +27,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | Feature | Description |
 |---------|-------------|
 | **Employee Management** | Full CRUD with 7-step form: personal info, employment, family, nominees, banking, documents, review |
-| **Employee Profile** | View/edit employee details, status changes (active/inactive/terminated), password reset |
+| **Employee Profile** | Self-service profile with 8 tabs: Personal, Employment, Family, Nominee, Banking, Documents, Payslips (with detailed payslip dialog), Security (change password) |
 | **Department Management** | CRUD with hierarchy views, employee count tracking |
 | **Designation Management** | CRUD with department linkage |
 | **Organization Chart** | Visual tree view of reporting structure with drag-and-drop hierarchy |
@@ -123,6 +123,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 |---------|-------------|
 | **Roles & Permissions** | Pure custom RBAC — create roles, assign granular permissions |
 | **Settings: Attendance** | Office hours, holidays, auto-action config |
+| **Settings: Leave Management** | Leave type CRUD with color-coded badges, carry-forward rules, active toggle |
 | **Settings: Salary** | Salary template management, component configuration |
 | **Settings: Festival Bonus** | Bonus cycle settings |
 | **Settings: Access Control** | Role CRUD with permission assignment |
@@ -131,6 +132,17 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | **Audit Logs** | Trail of all state-changing operations (POST, PATCH, PUT, DELETE) |
 | **Office Regulations** | Policy creation and request management |
 | **Reports** | Workforce headcount, attendance summary, leave utilization, payroll cost analytics |
+| **CSV Export** | Export data to CSV files via built-in `exportToCsv()` utility |
+
+### Employee Dashboard
+| Feature | Description |
+|---------|-------------|
+| **Attendance Calendar** | Monthly calendar view with check-in/out status and daily details |
+| **Apply Leave Dialog** | Quick leave application directly from dashboard with leave type selection |
+| **Day Detail Dialog** | Click any calendar day to see attendance logs, leave details, or holiday info |
+| **My Tasks Card** | Live assigned tasks with create, update, delete, and status toggle — inline task management |
+| **Announcements Card** | Latest published announcements with paginated feed |
+| **Leave Balance Overview** | Leave balance chips showing utilization per leave type |
 
 ### Executive Dashboard
 | Feature | Description |
@@ -614,7 +626,7 @@ hr/
 │   │   │   │                            # useTasksWebSocket, useWebSocket
 │   │   │   │                            # + use-mobile, use-theme
 │   │   ├── layouts/                     # auth-layout, dashboard-layout, footer, header, sidebar
-│   │   ├── lib/                         # api.ts (axios + interceptors), export.ts (CSV/PDF), utils.ts (cn)
+│   │   ├── lib/                         # api.ts (axios + interceptors), export.ts (CSV export), utils.ts (cn)
 │   │   ├── routes/pages/                # 50 page components + print/ directory
 │   │   │   ├── print/                   # 4 print templates: joining-letter, offer-letter, hr-letter, payslip
 │   │   │   └── *.tsx                    # All route pages (lazy loaded in App.tsx)
@@ -639,7 +651,7 @@ hr/
 │   │   │   ├── interceptors/            # ResponseInterceptor (unwrap), LoggingInterceptor (Pino),
 │   │   │   │                            # AuditLogInterceptor (state-change trail)
 │   │   │   └── guards/                  # LoginThrottleGuard (per-IP rate limit on login)
-│   │   ├── config/                      # 5 typed configs: app, database, redis, cloudinary, jwt
+│   │   ├── config/                      # 6 typed configs: app, database, redis, cloudinary, jwt, bullmq (in queue module)
 │   │   ├── db/
 │   │   │   ├── schema/                  # 27 schema files → 61 PostgreSQL tables
 │   │   │   │   ├── _base.ts             # Shared base columns (id, createdAt, updatedAt)
@@ -743,7 +755,7 @@ skeleton, slider, sonner, spinner, switch, table, tabs, textarea, toggle,
 toggle-group, tooltip
 ```
 
-### All 50+ Routes
+### All 50+ Routes (48 pages + 2 redirects + 4 print templates)
 
 | Route | Component | Permission |
 |-------|-----------|-----------|
@@ -794,6 +806,8 @@ toggle-group, tooltip
 | `/designations/create` | CreateDesignationPage | employees:create + more |
 | `/designations/edit/:id` | EditDesignationPage | employees:create + more |
 | `/settings` | SettingsPage | settings:read/update |
+| `/attendance/setup` | → Redirect to `/settings?tab=attendance` | Authenticated |
+| `/claims` | → Redirect to `/claims/medical` | Authenticated |
 | `/recruitment/print/:id` | PrintJoiningLetterPage | recruitment:read/letters:read |
 | `/recruitment/print-offer/:id` | PrintOfferLetterPage | recruitment:read/letters:read |
 | `/letters/print/:id` | PrintHRLetterPage | recruitment:read/letters:read |
