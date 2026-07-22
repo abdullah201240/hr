@@ -1,4 +1,3 @@
-/Users/abdullahalsakib/Documents/my/hr/hr-server/scratch-check.ts
 /Users/abdullahalsakib/Documents/my/hr/hr-server/drizzle.config.ts
 /Users/abdullahalsakib/Documents/my/hr/hr-server/eslint.config.mjs
 /Users/abdullahalsakib/Documents/my/hr/hr-server/test/separation.e2e-spec.ts
@@ -88,6 +87,7 @@
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0046_known_ben_urich.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0045_previous_sphinx.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0058_premium_bloodscream.sql
+/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0062_greedy_triathlon.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0053_dizzy_cobalt_man.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0041_remove_system_role_column.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0026_dusty_toxin.sql
@@ -107,6 +107,7 @@
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0016_plain_ironclad.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0035_giant_christian_walker.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0019_romantic_pepper_potts.sql
+/Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0063_warm_carlie_cooper.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0050_noisy_starbolt.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0036_chief_excalibur.sql
 /Users/abdullahalsakib/Documents/my/hr/hr-server/src/db/migrations/0029_regular_marrow.sql
@@ -401,6 +402,22 @@
 /Users/abdullahalsakib/Documents/my/hr/client/src/components/tasks/details/TaskPropertiesGrid.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/LetterPreviewDialog.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/LetterCreateDialog.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/LetterPrintComponents.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/types.ts
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintRelieving.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintFinalWarning.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintDefaultLetter.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintSuspension.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintSalaryRevision.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintInquiryCommittee.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintWarning.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintOffer.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintDomesticInquiry.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintConfirmation.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintFirstWarning.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintPromotion.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/letters/print/templates/PrintAppointment.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/components/chat/CallOverlay.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/components/auth/protected-route.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/components/auth/authorized.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/components/auth/role-guard.tsx
@@ -555,6 +572,7 @@
 /Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/print/hr-letter.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/print/payslip.tsx
 /Users/abdullahalsakib/Documents/my/hr/client/src/routes/pages/print/joining-letter.tsx
+/Users/abdullahalsakib/Documents/my/hr/client/src/store/useCallStore.ts
 /Users/abdullahalsakib/Documents/my/hr/client/src/store/useChatStore.ts
 /Users/abdullahalsakib/Documents/my/hr/client/src/store/useNotificationStore.ts
 /Users/abdullahalsakib/Documents/my/hr/client/src/store/useAuthStore.ts
