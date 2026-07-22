@@ -590,8 +590,8 @@ hr/
 │   │   │   ├── auth/                    # 3 files: login-form, protected-route, role-guard (PermissionGuard)
 │   │   │   ├── ceo-dashboard/           # 8 files: activity-feed, attendance-trend, KPI cards, leave-analytics,
 │   │   │   │                            #          performance-overview, quick-actions, recruitment-pipeline, workforce-charts
-│   │   │   ├── chat/                    # Chat overlay component
-│   │   │   ├── common/                  # UserAvatar, shared utilities
+│   │   │   ├── chat/                    # CallOverlay (voice/video call UI overlay)
+│   │   │   ├── common/                  # UserAvatar, PageSkeleton (loading placeholder)
 │   │   │   ├── dashboard/               # 7 files: announcements-card, apply-leave-dialog, attendance-calendar,
 │   │   │   │                            #          day-detail-dialog, leave-balance-chips, my-tasks-card, types
 │   │   │   ├── employee/                # 11 files: add-employee-form (7 steps), form-schema, form-ui,
@@ -606,7 +606,7 @@ hr/
 │   │   │   │                            #          ActionDialogs, PayoutComments
 │   │   │   ├── recruitment/             # 8 files: AnalyticsTab, JobsTab, PipelineTab, KPIs, Dialogs, Onboarding, utils
 │   │   │   ├── regulations/             # 6 files: policy/request forms, detail views, list
-│   │   │   ├── separation/              # Separation records component
+│   │   │   ├── separation/              # SettlementCalculatorModal (final settlement computation dialog)
 │   │   │   ├── settings/                # 6 files: access-control, attendance-setup, festival-bonus-setup,
 │   │   │   │                            #          office-hours, salary-setup, theme-settings
 │   │   │   ├── tasks/                   # 7+ files: Board, Create, Gantt, List, ListView, ProjectCreate,
@@ -650,7 +650,8 @@ hr/
 │   │   │   ├── filters/                 # GlobalExceptionFilter (standardized error responses)
 │   │   │   ├── interceptors/            # ResponseInterceptor (unwrap), LoggingInterceptor (Pino),
 │   │   │   │                            # AuditLogInterceptor (state-change trail)
-│   │   │   └── guards/                  # LoginThrottleGuard (per-IP rate limit on login)
+│   │   │   ├── enums/                   # Shared enum constants
+│   │   │   └── pipes/                   # Shared validation pipes
 │   │   ├── config/                      # 6 typed configs: app, database, redis, cloudinary, jwt, bullmq (in queue module)
 │   │   ├── db/
 │   │   │   ├── schema/                  # 27 schema files → 61 PostgreSQL tables
