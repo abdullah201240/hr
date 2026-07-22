@@ -18,6 +18,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 - [Testing](#testing)
 - [Knowledge Graph](#knowledge-graph)
 - [Architecture Decisions](#architecture-decisions)
+- [Future Roadmap](#future-roadmap)
 
 ---
 
@@ -1110,3 +1111,260 @@ This project maintains a navigable knowledge graph of the entire codebase using 
 | **WebRTC peer-to-peer calls** | No media server needed — browser-native P2P audio/video with WebSocket signaling |
 | **Programmatic audio tones** | Web Audio API oscillators instead of audio files — zero network cost, instant playback |
 | **Redis-tracked active calls** | Prevents duplicate calls, enables cross-instance signaling via Pub/Sub, auto-cleanup on disconnect |
+
+---
+
+## Future Roadmap
+
+> Planned features to evolve this platform into a complete A-to-Z software company management system — covering recruitment, collaboration, productivity, communication, health, analytics, and more.
+
+### 1. Recruitment & Interview Pipeline
+
+| Feature | Description |
+|---------|-------------|
+| **Job Requisition** | Department-wise job request with approval workflow (HOD → HR → CEO) |
+| **Career Portal** | Public-facing job listing page with apply functionality (resume upload, cover letter) |
+| **Applicant Tracking System (ATS)** | Kanban-style pipeline: Applied → Screening → Technical → HR → Offer → Hired |
+| **Interview Scheduling** | Calendar-based slot booking with email invitations to candidates and panel members |
+| **Interview Feedback Scorecard** | Structured per-round evaluation (technical, communication, problem-solving, culture fit) with panel comments |
+| **Coding Playground / Technical Assessment** | Built-in code editor (JS/Python/Java/C++/Go/Rust) with real-time compilation, test case execution, auto-scoring, and plagiarism detection |
+| **Take-Home Assignment** | Timed coding tasks with file upload, deadline tracking, and reviewer evaluation |
+| **Offer Letter Generator** | Template-based offer creation with e-signature and candidate acceptance workflow |
+| **Candidate Portal** | Login for candidates to check status, schedule interviews, download documents |
+| **Bulk Candidate Import** | CSV upload for mass candidate entry from job fairs or referral programs |
+| **Referral Tracking** | Employee referral submission with reward status tracking upon hiring |
+| **Interview Calendar View** | Day/week/month calendar showing all scheduled interviews across panels |
+| **Rejection Reason Analytics** | Track and visualize most common rejection reasons by stage |
+
+### 2. Meeting & Collaboration System
+
+| Feature | Description |
+|---------|-------------|
+| **Video Conferencing** | Full meeting rooms (extends WebRTC) with host controls, waiting room, lobby, and breakout rooms |
+| **Screen Sharing** | Share screen / application window / browser tab with remote cursor visibility |
+| **Meeting Scheduling** | Calendar-based meeting creation with participant availability detection and conflict resolution |
+| **Meeting Minutes & Transcription** | Auto-generated notes with AI transcription and action item extraction |
+| **Meeting Room Booking** | Reserve physical/virtual rooms with conflict detection and recurring meeting support |
+| **Live Polls & Q&A** | In-meeting polling, upvoting, and Q&A for town halls |
+| **Collaborative Whiteboard** | Real-time drawing/writing board for brainstorming |
+| **Meeting Recording & Playback** | Server-side recording with searchable transcript |
+| **Meeting Attendance Log** | Auto-track who joined, duration, and late arrivals |
+| **Recurring Meeting Templates** | Save meeting formats (daily standup, weekly review) with auto-scheduling |
+| **Meeting Cost Calculator** | Estimate meeting cost based on attendee count × average salary per hour |
+| **Focus Mode / Do Not Disturb** | Block notifications and auto-reject meeting invites during deep work hours |
+
+### 3. Employee Live Work Tracking
+
+| Feature | Description |
+|---------|-------------|
+| **Activity Monitoring** | Real-time active application/window tracking with productivity scoring (productive / neutral / unproductive) |
+| **Time Tracker** | Manual and automatic time logging per task/project with start/stop/pause and billable classification |
+| **Daily Work Log** | End-of-day structured summary (done / blockers / tomorrow's plan) with manager review |
+| **Screenshot Capture** | Periodic random screenshots during work hours with privacy controls and employee consent |
+| **Desk Time Analytics** | Login/logout patterns, idle time detection, break tracking, overtime alerts |
+| **Sprint Burndown Tracking** | Real-time sprint progress linked to task completion and time logged |
+| **GPS Check-in/Check-out** | Location-based attendance for field teams with geofencing |
+| **Focus Time Tracking** | Track uninterrupted work blocks and flag fragmentation from meetings/notifications |
+| **Employee Availability Status** | Real-time status: Available / In Meeting / Deep Work / On Break / Away / OOO |
+| **Work Pattern Heatmap** | Visual heatmap showing peak productivity hours across the team |
+| **Overtime Prediction** | AI-based early warning when an employee is trending toward excessive overtime |
+| **Field Visit Logging** | Track client site visits with check-in time, purpose, and travel distance calculation |
+
+### 4. Internal Email System
+
+| Feature | Description |
+|---------|-------------|
+| **Internal Mailbox** | Full email client (inbox, sent, drafts, starred, trash, archive) |
+| **Rich Text Composer** | Compose with formatting, attachments, @mentions, CC/BCC, scheduling, and templates |
+| **Email Threads** | Conversation-view threading with reply/forward/reply-all |
+| **Smart Notifications** | Digest mode (immediate / hourly / daily) with priority detection |
+| **Department/Team Broadcast** | Send announcements to departments or custom groups |
+| **Email Templates** | Pre-built HR templates (offer letters, policy updates, warnings, appreciation) |
+| **Search & Labels** | Full-text search with custom labels, filters, and saved searches |
+| **External Email Sync** | SMTP/IMAP bridge for Gmail/Outlook unified inbox |
+| **Read Receipts & Tracking** | Know when emails are opened with timestamp |
+| **Email Rules & Auto-Filter** | Auto-categorize incoming emails with custom rules |
+| **Scheduled Send** | Compose now, send later at a scheduled time |
+| **Email Signature Builder** | Company-branded email signatures with logo, designation, and contact info |
+
+### 5. Employee Health & Wellness
+
+| Feature | Description |
+|---------|-------------|
+| **Health Profile** | Medical history, blood group, allergies, chronic conditions, emergency contacts |
+| **Health Check-up Scheduling** | Annual/bi-annual screening appointment booking with partner hospitals |
+| **Health Reports Upload** | Secure upload of medical reports with doctor notes |
+| **Mental Wellness** | Stress self-assessment, meditation reminders, confidential counselor booking |
+| **Sick Leave Analytics** | Pattern detection for frequent absences with wellness check-in triggers |
+| **Ergonomic Reminders** | Periodic stretch/exercise/break reminders based on continuous desk time |
+| **Health Insurance Tracking** | Policy details, coverage, dependents, and claim history |
+| **Vaccination & Fitness Drives** | Health camps, vaccination schedules, step-count challenges |
+| **Wellness Score** | Composite health score based on activity, sick days, self-assessments, and check-up compliance |
+| **Employee Assistance Program (EAP)** | Confidential helpline access, financial counseling, legal aid referrals |
+| **Maternity/Paternity Wellness** | Pre and post-natal health tracking, flexible return-to-work scheduling |
+| **Blood Donation Drive** | Volunteer registration, camp organization, donor recognition |
+
+### 6. Advanced Task & Project Management
+
+| Feature | Description |
+|---------|-------------|
+| **Gantt Charts** | Visual project timeline with dependency mapping, milestones, drag-to-reschedule |
+| **Workload Management** | Per-employee task load visualization with capacity planning and overallocation alerts |
+| **Time Estimation** | Estimated vs actual time per task with variance analysis |
+| **Project Budgeting** | Budget allocation with expense tracking and cost-per-task analysis |
+| **Sprint Management** | Scrum board with sprint planning, backlog grooming, velocity tracking, retrospectives |
+| **Task Dependencies** | Blocker/linked-task with automatic status cascade |
+| **Automated Task Assignment** | AI-suggested assignment based on skill, workload, and past performance |
+| **Client Portal** | External client view for progress, milestone approval, and feedback |
+| **Kanban Board** | Customizable columns with WIP limits, swimlanes, and card aging |
+| **Task Templates** | Reusable task templates for recurring work (deployment checklist, onboarding tasks) |
+| **Sub-tasks & Checklists** | Nested task breakdown with independent assignment and tracking |
+| **Task Comments & Activity Log** | Threaded discussions and full audit trail per task |
+| **File Attachments per Task** | Attach documents, designs, and links directly to tasks |
+| **Priority Matrix (Eisenhower)** | Urgent/Important quadrant view for task prioritization |
+| **Milestone Tracking** | Define project milestones with deliverables, deadlines, and completion criteria |
+| **Project Wiki** | Per-project documentation space with rich text editor and file attachments |
+
+### 7. Performance & Growth
+
+| Feature | Description |
+|---------|-------------|
+| **360° Feedback** | Peer, subordinate, manager, and self-evaluation with anonymized aggregation |
+| **OKR Framework** | Company → Department → Individual goal cascade with quarterly tracking |
+| **Skill Matrix** | Employee skill inventory with proficiency levels, gap analysis, training recommendations |
+| **Learning & Development** | Course catalog, training calendar, completion tracking, certification management |
+| **Promotion Workflow** | Promotion request → review → approval with compensation adjustment |
+| **PIP (Performance Improvement Plan)** | Structured PIP with milestone tracking and outcome documentation |
+| **Continuous Feedback** | Real-time peer-to-peer feedback (not just annual review) with manager visibility |
+| **Career Path Visualization** | Visual career progression map showing possible roles and required skills |
+| **Training Needs Analysis** | AI-identified skill gaps based on role requirements vs current proficiency |
+| **Mentorship Program** | Mentor-mentee matching, session scheduling, and progress tracking |
+| **Certification Tracking** | Professional certifications with expiry dates and renewal reminders |
+| **Performance Calibration** | Cross-team manager calibration sessions to ensure fair rating distribution |
+
+### 8. Compensation & Benefits Expansion
+
+| Feature | Description |
+|---------|-------------|
+| **Expense Management** | Expense submission with receipt upload, approval workflow, reimbursement tracking |
+| **Travel & Accommodation** | Business trip request, booking approval, per-diem, post-trip settlement |
+| **Loan & Advance** | Loan application with EMI calculation, approval chain, salary deduction scheduling |
+| **Festival Bonus** | Automated bonus calculation based on salary, tenure, and company policy |
+| **Tax Computation** | Annual tax estimation, TDS tracking, tax certificate generation |
+| **Salary Benchmarking** | Market rate comparison by role/experience to ensure competitive compensation |
+| **Compensation Review Cycle** | Annual/semi-annual salary review with merit increase recommendations |
+| **Stock/Equity Tracking** | ESOP allocation, vesting schedule, and exercise tracking |
+| **Flexible Benefits Platform** | Choose-your-own-benefits within a budget (health upgrade, gym, transport) |
+
+### 9. Asset & Infrastructure Management
+
+| Feature | Description |
+|---------|-------------|
+| **Asset Lifecycle** | Asset assignment (laptop, phone, accessories) with serial tracking, condition logging, return workflow |
+| **Software License Management** | License allocation, renewal tracking, usage monitoring, compliance reporting |
+| **IT Support Ticketing** | Internal helpdesk with ticket creation, priority routing, SLA tracking, resolution logging |
+| **Visitor Management** | Visitor registration, host notification, badge printing, visit log |
+| **Inventory Management** | Office supplies tracking with reorder alerts and consumption analytics |
+| **Workspace/Seat Management** | Desk booking, hot-desking, floor plan visualization |
+| **Vehicle Management** | Company vehicle allocation, fuel logs, maintenance scheduling, trip tracking |
+
+### 10. Compliance & Legal
+
+| Feature | Description |
+|---------|-------------|
+| **Document Management System (DMS)** | Policy/procedure repository with version control and acknowledgment tracking |
+| **Grievance Management** | Confidential complaint submission, investigation workflow, resolution tracking |
+| **Disciplinary Workflow** | Show-cause → inquiry → warning → suspension → termination with full audit trail |
+| **Visa & Immigration** | Work permit/visa expiry alerts, renewal reminders, travel document management |
+| **Policy Acknowledgment** | Mandatory policy read-and-accept with digital signature and compliance reporting |
+| **Audit Trail** | Immutable log of all system actions (who changed what, when, from where) |
+| **GDPR/Data Privacy Compliance** | Data retention policies, right-to-deletion workflows, consent management |
+
+### 11. Dashboards & Analytics
+
+| Feature | Description |
+|---------|-------------|
+| **CEO Dashboard** | Company-wide KPIs: headcount, revenue per employee, attrition, cost center analysis, org health score |
+| **HR Dashboard** | Recruitment pipeline, onboarding status, leave trends, compliance alerts, employee lifecycle metrics |
+| **Engineering Manager Dashboard** | Sprint velocity, code review turnaround, deployment frequency, bug resolution time, team capacity utilization |
+| **Finance Dashboard** | Payroll cost breakdown, budget vs actual by department, tax liabilities, expense trends, cash flow projection |
+| **Employee Self-Service Dashboard** | Personal KPIs: attendance score, leave balance, task completion rate, learning progress, performance rating trend |
+| **Recruitment Dashboard** | Time-to-hire, cost-per-hire, source effectiveness, pipeline funnel, offer acceptance rate |
+| **Attendance & Punctuality Dashboard** | Late arrivals, early departures, absenteeism rate, overtime distribution by department |
+| **Project Health Dashboard** | On-track / at-risk / delayed projects with budget burn, resource allocation, and milestone status |
+| **Employee Engagement Dashboard** | eNPS score, feedback participation, recognition frequency, wellness program adoption |
+| **Diversity & Inclusion Dashboard** | Gender/age/ethnicity distribution, pay equity analysis, promotion rate by demographic |
+| **Learning & Development Dashboard** | Training hours per employee, course completion rate, skill coverage gap, certification status |
+| **IT & Asset Dashboard** | Ticket resolution time, asset utilization, license compliance, support satisfaction score |
+| **Custom Dashboard Builder** | Drag-and-drop widget-based dashboard creator with 30+ widget types (charts, tables, KPI cards, gauges, heatmaps) |
+| **Real-time Data Widgets** | Live-updating dashboard widgets via WebSocket (no manual refresh) |
+| **Scheduled Report Delivery** | Auto-generate and email reports on configurable schedule (daily/weekly/monthly) |
+| **Drill-Down Analytics** | Click any dashboard metric to see detailed breakdown (e.g., click "Attrition 12%" → see who, when, why) |
+| **Comparative Analytics** | Side-by-side department/team/quarter comparisons with trend lines |
+| **Export & Embed** | Export any dashboard as PDF/PNG/CSV, or embed dashboard widgets in other pages |
+| **Role-Based Dashboard Views** | Different users see different dashboards based on their role and permissions |
+| **Anomaly Detection** | AI-flagged unusual patterns (sudden spike in leave requests, drop in productivity, unusual login patterns) |
+
+### 12. Communication & Notifications
+
+| Feature | Description |
+|---------|-------------|
+| **Team Chat Channels** | Persistent topic-based channels (like Slack) with threading and file sharing |
+| **Direct Messages** | 1-on-1 private messaging with read receipts and typing indicators |
+| **Announcement Board** | Company-wide and department-wide pinned announcements with read tracking |
+| **Push Notifications** | Browser push for urgent updates (leave approval, interview reminder, task deadline) |
+| **SMS Integration** | OTP, critical alerts, and optional SMS notifications for employees without app access |
+| **Notification Preferences** | Granular per-channel, per-event notification control (email only / push only / mute) |
+| **Auto-Reply / Out of Office** | Set automatic replies for chat and email during leave or focus time |
+
+### 13. Employee Engagement & Culture
+
+| Feature | Description |
+|---------|-------------|
+| **Recognition & Rewards** | Peer-to-peer kudos, spot awards, points-based reward system with redemption catalog |
+| **Employee NPS (eNPS)** | Pulse surveys and annual engagement surveys with trend tracking |
+| **Birthday & Work Anniversary** | Auto-celebration with team notifications and customizable greetings |
+| **Team Building Activities** | Event creation, RSVP tracking, photo uploads, and feedback collection |
+| **Idea Box / Suggestion Portal** | Anonymous or named idea submission with voting and management response |
+| **Employee Clubs & Interest Groups** | Self-organize around interests (sports, book club, gaming, tech talks) |
+| **Internal Job Board** | Open positions visible to current employees for internal mobility |
+| **Work Anniversary Milestones** | Auto-recognized at 1, 3, 5, 10 years with customizable rewards |
+
+### 14. Onboarding & Offboarding
+
+| Feature | Description |
+|---------|-------------|
+| **Onboarding Checklist** | Configurable pre-joining and Day 1 task lists (IT setup, access provisioning, buddy assignment) |
+| **Onboarding Timeline** | Visual new-hire journey: offer accepted → documents submitted → first day → 30/60/90 day check-ins |
+| **Buddy/Mentor Assignment** | Auto-assign onboarding buddy with scheduled check-in reminders |
+| **New Hire Portal** | Pre-joining document upload, form filling, company handbook access |
+| **Offboarding Checklist** | Automated exit process: knowledge transfer, asset return, access revocation, full & final settlement |
+| **Exit Interview** | Structured exit interview form with anonymized aggregation and trend analysis |
+| **Alumni Network** | Former employee directory for boomerang hires and referrals |
+
+### 15. Security & Administration
+
+| Feature | Description |
+|---------|-------------|
+| **Audit Logs** | Complete action history: who did what, when, from which IP |
+| **Session Management** | Active session view, force logout, concurrent session limits |
+| **IP Whitelisting** | Restrict access to specific IP ranges for office-only access |
+| **Two-Factor Authentication (2FA)** | TOTP (Google Authenticator) and SMS-based 2FA |
+| **Single Sign-On (SSO)** | SAML/OAuth2 integration with corporate identity providers (Azure AD, Okta, Google Workspace) |
+| **Data Export & Backup** | Automated data backup with point-in-time recovery and full data export |
+| **Role Permission Audit** | Periodic review of who has what permissions with staleness detection |
+| **API Rate Limiting** | Configurable per-user and per-endpoint rate limits |
+
+### 16. Platform & Integration
+
+| Feature | Description |
+|---------|-------------|
+| **Slack/Microsoft Teams Bot** | Notifications, leave approval, meeting join links from within Slack/Teams |
+| **GitHub/GitLab Integration** | Developer activity tracking, PR/commit linking to tasks, code review metrics |
+| **Calendar Sync (Google/Outlook)** | Two-way sync for meetings, leave, and deadlines |
+| **Public REST API** | OAuth2 API for third-party integrations and partner access |
+| **Webhook System** | Event-driven webhooks for external system notifications |
+| **Zapier/Make Integration** | No-code automation connector for 1000+ third-party apps |
+| **Multi-Tenant Support** | SaaS-ready architecture for multiple organizations on one instance |
+| **White-Label / Custom Branding** | Per-organization logo, color scheme, and domain customization |
+| **Localization (i18n)** | Multi-language support (English, Bengali, Hindi, Arabic, etc.) with RTL support |
