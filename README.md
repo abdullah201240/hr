@@ -1368,3 +1368,45 @@ This project maintains a navigable knowledge graph of the entire codebase using 
 | **Multi-Tenant Support** | SaaS-ready architecture for multiple organizations on one instance |
 | **White-Label / Custom Branding** | Per-organization logo, color scheme, and domain customization |
 | **Localization (i18n)** | Multi-language support (English, Bengali, Hindi, Arabic, etc.) with RTL support |
+
+### 17. GPS Tracking & Location Intelligence
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time Employee Location** | Live map view showing field employee locations with status (available / in transit / at client site) |
+| **GPS-Based Attendance** | Auto check-in/check-out when employee enters/leaves defined office geofence boundary |
+| **Geofence Configuration** | Draw custom office boundaries (radius/polygon) per office location with multiple geofence support |
+| **Geo-tagged Attendance** | Every punch-in/out captures GPS coordinates with map verification and photo proof option |
+| **Field Visit Tracking** | Track client site visits with route path, distance calculation, and visit duration logging |
+| **Route History & Replay** | View daily travel path of field employees on map with stop points and time spent at each location |
+| **Trip Management** | Assign field trips with start/end points, expected route, and actual vs planned comparison |
+| **Offline GPS Sync** | Track location even without internet; auto-sync data when connectivity is restored |
+| **SOS / Panic Button** | Emergency button that instantly shares live location with HR/manager for safety situations |
+| **Location-Based Notifications** | Auto-trigger reminders when near office (e.g., "Don't forget to check in") |
+| **Attendance Anomaly Detection** | Flag impossible locations (e.g., checked in at two distant offices within minutes — buddy punch detection) |
+| **Travel Distance Report** | Auto-calculate daily/weekly/monthly travel distance per employee for reimbursement |
+
+### 18. AI & Intelligent Automation
+
+| Feature | Description |
+|---------|-------------|
+| **AI Resume Screening** | Auto-rank and shortlist candidates based on job requirements, skills match, and experience scoring |
+| **Attrition Risk Prediction** | ML model that flags employees at risk of leaving based on engagement, attendance, performance trends |
+| **Smart Task Assignment** | AI recommends task assignees based on current workload, skill match, past performance, and availability |
+| **Sentiment Analysis** | Analyze employee feedback, surveys, and chat tone to gauge team morale and flag concerns |
+| **Overtime Prediction** | Early warning when an employee's work pattern trends toward excessive overtime |
+| **Anomaly Detection** | Flag unusual patterns: sudden leave spikes, login irregularities, productivity drops, duplicate claims |
+| **AI HR Assistant (Chatbot)** | Natural language bot for employee self-service: "How many leave days do I have?", "Show my payslip" |
+| **Meeting Transcript & Action Items** | AI-generated meeting summaries with extracted action items, decisions, and deadlines |
+| **Performance Trend Forecasting** | Predict end-of-quarter performance ratings based on current trajectory and historical patterns |
+| **Skill Gap Analysis** | AI compares current team skills vs project requirements and recommends hiring or training |
+| **Automated Policy Q&A** | AI answers employee questions about company policies, leave rules, and benefits from the handbook |
+| **Smart Scheduling** | AI finds optimal meeting times by analyzing all participants' calendars and focus time preferences |
+| **Leave Pattern Analysis** | Detect suspicious leave patterns (e.g., always Monday/Friday) and flag for manager review |
+| **Payroll Anomaly Detection** | Auto-flag unusual salary changes, duplicate payments, or off-cycle adjustments before approval |
+| **Candidate-Job Fit Score** | Percentage match score between candidate profile and job requirements with explainability |
+| **Workload Balancing Suggestion** | Recommend task redistribution when team workload is unevenly distributed |
+| **Auto-Generated Job Descriptions** | AI drafts job postings based on role title, department, and required skills |
+| **Employee Career Path Recommendation** | Suggest next career moves based on performance, skills, and company growth areas |
+| **Intelligent Report Generation** | Ask questions in natural language ("Show me top performers in Engineering last quarter") and get instant charts |
+| **Compliance Auto-Check** | AI scans HR actions for policy violations (e.g., working on holiday without approval, overtime limit breach) |
