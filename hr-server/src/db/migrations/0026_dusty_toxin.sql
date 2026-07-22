@@ -1,0 +1,32 @@
+CREATE TABLE "final_settlements" (
+	"id" varchar(50) PRIMARY KEY NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"separation_record_id" varchar(50) NOT NULL,
+	"employee_email" varchar(255) NOT NULL,
+	"separation_type" varchar(50) NOT NULL,
+	"service_years" numeric NOT NULL,
+	"payable_days" numeric NOT NULL,
+	"encashable_al_days" numeric NOT NULL,
+	"salary_payable" numeric NOT NULL,
+	"separation_benefit" numeric NOT NULL,
+	"leave_encashment" numeric NOT NULL,
+	"festival_bonus_adjustment" numeric NOT NULL,
+	"employee_pf_balance" numeric NOT NULL,
+	"employer_pf_balance" numeric NOT NULL,
+	"pf_interest" numeric NOT NULL,
+	"medical_reimbursement" numeric NOT NULL,
+	"wellness_allowance" numeric NOT NULL,
+	"other_reimbursements" numeric NOT NULL,
+	"salary_advance_recovery" numeric NOT NULL,
+	"loan_recovery" numeric NOT NULL,
+	"notice_pay_recovery" numeric NOT NULL,
+	"asset_recovery" numeric NOT NULL,
+	"tax_adjustment" numeric NOT NULL,
+	"other_company_dues" numeric NOT NULL,
+	"net_settlement_amount" numeric NOT NULL,
+	"status" varchar(50) DEFAULT 'Draft' NOT NULL,
+	"payment_details" text DEFAULT ''
+);
+--> statement-breakpoint
+ALTER TABLE "final_settlements" ADD CONSTRAINT "final_settlements_separation_record_id_separation_records_id_fk" FOREIGN KEY ("separation_record_id") REFERENCES "public"."separation_records"("id") ON DELETE cascade ON UPDATE no action;

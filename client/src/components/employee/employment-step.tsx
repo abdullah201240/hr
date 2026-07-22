@@ -9,15 +9,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, EyeOff, FileText, X, Briefcase, Lock, FileCheck, UserCheck } from "lucide-react"
+import { Eye, EyeOff, FileText, X, Briefcase, Lock, FileCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Field, SectionTitle, SectionCard, StepHeader } from "./form-ui"
+import { Switch } from "@/components/ui/switch"
 import type { EmployeeFormInput } from "./form-schema"
+import { useDepartmentOptionsQuery } from "@/hooks/useDepartments"
+import { useDesignationOptionsQuery } from "@/hooks/useDesignations"
+import { useEmployeesQuery } from "@/hooks/useEmployees"
+import type { Employee } from "@/types"
 
 interface EmploymentStepProps {
   nidPdfName: string | null
   setNidPdfName: React.Dispatch<React.SetStateAction<string | null>>
   isView?: boolean
+  isEdit?: boolean
 }
 
 function PasswordStrength({ password }: { password: string }) {
@@ -59,7 +65,7 @@ function PasswordStrength({ password }: { password: string }) {
   )
 }
 
-export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = false }: EmploymentStepProps) {
+export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = false, isEdit = false }: EmploymentStepProps) {
   const { register, control, setValue, watch, formState: { errors } } =
     useFormContext<EmployeeFormInput>()
 
@@ -68,6 +74,11 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
   const [showTin, setShowTin] = useState(false)
 
   const passwordValue = watch("password") || ""
+
+  // Fetch real list options
+  const { data: deptOptions } = useDepartmentOptionsQuery()
+  const { data: desigOptions } = useDesignationOptionsQuery()
+  const { data: employeesData } = useEmployeesQuery({ limit: 100, status: "active" })
 
   const handleNidPdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -96,46 +107,38 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Designation" required error={errors.designation?.message}>
             <Controller name="designation" control={control} render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
                 <SelectTrigger className={cn("w-full", errors.designation && "border-destructive")}><SelectValue placeholder="Select designation" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                  <SelectItem value="Senior Software Engineer">Senior Software Engineer</SelectItem>
-                  <SelectItem value="Tech Lead">Tech Lead</SelectItem>
-                  <SelectItem value="Engineering Manager">Engineering Manager</SelectItem>
-                  <SelectItem value="Product Manager">Product Manager</SelectItem>
-                  <SelectItem value="Designer">Designer</SelectItem>
-                  <SelectItem value="HR Specialist">HR Specialist</SelectItem>
-                  <SelectItem value="Finance Analyst">Finance Analyst</SelectItem>
-                  <SelectItem value="Marketing Lead">Marketing Lead</SelectItem>
-                  <SelectItem value="Sales Rep">Sales Rep</SelectItem>
+                  {desigOptions?.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )} />
           </Field>
           <Field label="Department" required error={errors.department?.message}>
             <Controller name="department" control={control} render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
                 <SelectTrigger className={cn("w-full", errors.department && "border-destructive")}><SelectValue placeholder="Select department" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                  <SelectItem value="Product">Product</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="Sales">Sales</SelectItem>
+                  {deptOptions?.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )} />
           </Field>
           <Field label="Employee Type" required error={errors.employeeType?.message}>
             <Controller name="employeeType" control={control} render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
                 <SelectTrigger className={cn("w-full", errors.employeeType && "border-destructive")}><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Probation">Probation</SelectItem>
                   <SelectItem value="Permanent">Permanent</SelectItem>
-                  <SelectItem value="Contractual">Contractual</SelectItem>
+                  <SelectItem value="Full-time">Full-time</SelectItem>
+                  <SelectItem value="Part-time">Part-time</SelectItem>
+                  <SelectItem value="Contract">Contract</SelectItem>
                   <SelectItem value="Intern">Intern</SelectItem>
                 </SelectContent>
               </Select>
@@ -143,7 +146,7 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
           </Field>
           <Field label="Blood Group">
             <Controller name="bloodGroup" control={control} render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Not Specified">Not Specified</SelectItem>
@@ -161,69 +164,81 @@ export default function EmploymentStep({ nidPdfName, setNidPdfName, isView = fal
           </Field>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <Field label="Line Manager" hint="Reporting manager name (optional)">
-            <div className="relative">
-              <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="lineManager"
-                placeholder="Enter line manager name"
-                className="pl-9"
-                disabled={isView}
-                {...register("lineManager")}
-              />
-            </div>
+          <Field label="Line Manager" hint="Reporting manager (optional)">
+            <Controller name="lineManager" control={control} render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value} disabled={isView}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Select reporting manager" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Manager</SelectItem>
+                  {employeesData?.data?.map((emp: Employee) => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.fullNameEnglish} ({emp.employeeId})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )} />
           </Field>
+          <div className="flex items-center space-x-3 mt-6">
+            <Controller name="isSalary" control={control} render={({ field }) => (
+              <Switch checked={field.value} onCheckedChange={field.onChange} disabled={isView} />
+            )} />
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">Eligible for Salary?</Label>
+              <p className="text-[11px] text-muted-foreground">Include in monthly payroll cycles.</p>
+            </div>
+          </div>
         </div>
       </SectionCard>
 
       {/* Account Credentials */}
-      <SectionCard>
-        <SectionTitle icon={Lock}>Account Credentials</SectionTitle>
-        <p className="text-[11px] text-muted-foreground -mt-2">
-          Set up login credentials for the employee portal. Password must meet all security requirements.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Field label="Password" required error={errors.password?.message}>
+      {!isEdit && !isView && (
+        <SectionCard>
+          <SectionTitle icon={Lock}>Account Credentials</SectionTitle>
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            Set up login credentials for the employee portal. Password must meet all security requirements.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Field label="Password" required error={errors.password?.message}>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    className={cn("pr-10", errors.password && "border-destructive")}
+                    {...register("password")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </Field>
+              <PasswordStrength password={passwordValue} />
+            </div>
+            <Field label="Confirm Password" required error={errors.confirmPassword?.message}>
               <div className="relative">
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter password"
-                  className={cn("pr-10", errors.password && "border-destructive")}
-                  {...register("password")}
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm password"
+                  className={cn("pr-10", errors.confirmPassword && "border-destructive")}
+                  {...register("confirmPassword")}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </Field>
-            <PasswordStrength password={passwordValue} />
           </div>
-          <Field label="Confirm Password" required error={errors.confirmPassword?.message}>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm password"
-                className={cn("pr-10", errors.confirmPassword && "border-destructive")}
-                {...register("confirmPassword")}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </Field>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
 
       {/* Documents & Tax */}
       <SectionCard>

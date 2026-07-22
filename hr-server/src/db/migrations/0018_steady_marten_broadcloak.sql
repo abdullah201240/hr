@@ -1,0 +1,1 @@
+ALTER TABLE "leave_applications" DROP COLUMN "attachments";

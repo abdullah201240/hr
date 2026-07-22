@@ -11,7 +11,10 @@ import { DB_CONNECTION, type Database } from '../../db';
 import { designations, employees } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
-import type { CreateDesignationDto, UpdateDesignationDto } from './dto/create-designation.dto';
+import type {
+  CreateDesignationDto,
+  UpdateDesignationDto,
+} from './dto/create-designation.dto';
 import type { DesignationQueryDto } from './dto/designation-query.dto';
 
 @Injectable()
@@ -32,10 +35,7 @@ export class DesignationService {
         .select({ id: designations.id })
         .from(designations)
         .where(
-          or(
-            eq(designations.name, dto.name),
-            eq(designations.code, dto.code),
-          ),
+          or(eq(designations.name, dto.name), eq(designations.code, dto.code)),
         )
         .limit(1);
 
@@ -57,8 +57,10 @@ export class DesignationService {
 
       await this.invalidateListCache();
 
-      this.logger.log(`Designation created: ${designation!.name} (${designation!.code})`);
-      return designation!;
+      this.logger.log(
+        `Designation created: ${designation.name} (${designation.code})`,
+      );
+      return designation;
     });
   }
 
@@ -92,14 +94,15 @@ export class DesignationService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Build a deterministic cache key from query params
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${isActive ?? ''}:${sortBy}:${sortOrder}`;
+    const cached = await this.cache.getByKey<any>(
+      CacheKeys.designationListPaginated,
+      cacheKeyParts,
+    );
+    if (cached) return cached;
+
     // Total count
-    const [totalRow] = await this.db
-      .select({ count: count() })
-      .from(designations)
-      .where(where);
-
-    const total = totalRow?.count ?? 0;
-
     // Sort
     const sortColumns: Record<string, any> = {
       name: designations.name,
@@ -110,26 +113,34 @@ export class DesignationService {
     const sortCol = sortColumns[sortBy] ?? designations.name;
     const orderFn = sortOrder === 'asc' ? asc : desc;
 
-    // Paginated query
+    // Paginated query — run count + data in parallel for faster response
     const offset = (page - 1) * limit;
-    const data = await this.db
-      .select({
-        id: designations.id,
-        name: designations.name,
-        code: designations.code,
-        description: designations.description,
-        grade: designations.grade,
-        isActive: designations.isActive,
-        createdAt: designations.createdAt,
-        updatedAt: designations.updatedAt,
-      })
-      .from(designations)
-      .where(where)
-      .orderBy(orderFn(sortCol))
-      .limit(limit)
-      .offset(offset);
+    const [[totalRow], data] = await Promise.all([
+      this.db
+        .select({ count: count() })
+        .from(designations)
+        .where(where),
+      this.db
+        .select({
+          id: designations.id,
+          name: designations.name,
+          code: designations.code,
+          description: designations.description,
+          grade: designations.grade,
+          isActive: designations.isActive,
+          createdAt: designations.createdAt,
+          updatedAt: designations.updatedAt,
+        })
+        .from(designations)
+        .where(where)
+        .orderBy(orderFn(sortCol))
+        .limit(limit)
+        .offset(offset),
+    ]);
 
-    return {
+    const total = totalRow?.count ?? 0;
+
+    const result = {
       data,
       meta: {
         total,
@@ -138,11 +149,22 @@ export class DesignationService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    await this.cache.setByKey(
+      CacheKeys.designationListPaginated,
+      result,
+      cacheKeyParts,
+    );
+
+    return result;
   }
 
   // ─── Find one ────────────────────────────────────────────────────────────
 
   async findOne(id: string) {
+    const cached = await this.cache.getByKey<any>(CacheKeys.designationById, id);
+    if (cached) return cached;
+
     const [designation] = await this.db
       .select()
       .from(designations)
@@ -159,10 +181,13 @@ export class DesignationService {
       .from(employees)
       .where(eq(employees.designationId, designation.id));
 
-    return {
+    const result = {
       ...designation,
       employeeCount: empCount?.count ?? 0,
     };
+
+    await this.cache.setByKey(CacheKeys.designationById, result, id);
+    return result;
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────
@@ -194,7 +219,7 @@ export class DesignationService {
           )
           .limit(1);
 
-        if (conflict.length > 0 && conflict[0]!.id !== id) {
+        if (conflict.length > 0 && conflict[0].id !== id) {
           throw new ConflictException(
             `Another designation already uses this name or code`,
           );
@@ -205,7 +230,8 @@ export class DesignationService {
 
       if (dto.name !== undefined) updateData.name = dto.name;
       if (dto.code !== undefined) updateData.code = dto.code;
-      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.description !== undefined)
+        updateData.description = dto.description;
       if (dto.grade !== undefined) updateData.grade = dto.grade;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
@@ -215,10 +241,10 @@ export class DesignationService {
         .where(eq(designations.id, id))
         .returning();
 
-      await this.invalidateListCache();
+      await this.invalidateListCache(id);
 
-      this.logger.log(`Designation updated: ${updated!.name} (${updated!.code})`);
-      return updated!;
+      this.logger.log(`Designation updated: ${updated.name} (${updated.code})`);
+      return updated;
     });
   }
 
@@ -248,7 +274,7 @@ export class DesignationService {
 
     if ((empCount?.count ?? 0) > 0) {
       throw new BadRequestException(
-        `Cannot deactivate designation "${existing.name}": ${empCount!.count} active employee(s) hold it. Reassign them first.`,
+        `Cannot deactivate designation "${existing.name}": ${empCount.count} active employee(s) hold it. Reassign them first.`,
       );
     }
 
@@ -257,7 +283,7 @@ export class DesignationService {
       .set({ isActive: false })
       .where(eq(designations.id, id));
 
-    await this.invalidateListCache();
+    await this.invalidateListCache(id);
 
     this.logger.log(`Designation deactivated: ${existing.name}`);
     return { message: `Designation "${existing.name}" has been deactivated` };
@@ -286,7 +312,14 @@ export class DesignationService {
 
   // ─── Cache helpers ────────────────────────────────────────────────────────
 
-  private async invalidateListCache() {
-    await this.cache.delByPattern(CacheKeys.designationList);
+  private async invalidateListCache(id?: string) {
+    const promises: Promise<void>[] = [
+      this.cache.delByPattern(CacheKeys.designationList),
+      this.cache.delByPattern(CacheKeys.designationListPaginated),
+    ];
+    if (id) {
+      promises.push(this.cache.delByKey(CacheKeys.designationById, id));
+    }
+    await Promise.all(promises);
   }
 }

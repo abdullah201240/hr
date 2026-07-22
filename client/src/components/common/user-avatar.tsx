@@ -1,13 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { User } from "@/types"
 
-export const currentUser: User = {
-  name: "Alex Johnson",
-  email: "alex.johnson@sadoshima.com",
-  avatar: "",
-  role: "HR Manager",
-}
-
 export function UserAvatar({
   user,
   size = "md",

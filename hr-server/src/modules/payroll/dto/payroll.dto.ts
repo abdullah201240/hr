@@ -1,0 +1,73 @@
+import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class PayslipAdjustmentItemDto {
+  @ApiProperty({ description: 'Adjustment title shown in the payslip summary' })
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @ApiProperty({ description: 'Adjustment amount' })
+  @IsNumber()
+  amount!: number;
+
+  @ApiProperty({ description: 'Adjustment type', enum: ['addition', 'deduction'] })
+  @IsString()
+  @IsIn(['addition', 'deduction'])
+  type!: 'addition' | 'deduction';
+}
+
+export class UpdatePayslipAdjustmentsDto {
+  @ApiProperty({ description: 'Manual adjustment items for this draft payslip', required: false, type: [PayslipAdjustmentItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @IsOptional()
+  adjustments?: PayslipAdjustmentItemDto[];
+
+  @ApiProperty({ description: 'Additional earning amount for this payroll cycle', required: false })
+  @IsNumber()
+  @IsOptional()
+  additionalAmount?: number;
+
+  @ApiProperty({ description: 'Additional earning description', required: false })
+  @IsString()
+  @IsOptional()
+  additionalDescription?: string;
+
+  @ApiProperty({ description: 'Amount to reduce/waive from generated deductions', required: false })
+  @IsNumber()
+  @IsOptional()
+  deductionReductionAmount?: number;
+
+  @ApiProperty({ description: 'Extra deduction amount, such as advance recovery or next-month adjustment', required: false })
+  @IsNumber()
+  @IsOptional()
+  extraDeductionAmount?: number;
+
+  @ApiProperty({ description: 'Deduction adjustment description', required: false })
+  @IsString()
+  @IsOptional()
+  deductionDescription?: string;
+}
+
+export class DisburseDto {
+  @ApiProperty({ description: 'Month key (e.g. 2026-06)' })
+  @IsString()
+  @IsNotEmpty()
+  monthKey!: string;
+
+  @ApiProperty({ description: 'Payment method (e.g. Bank Transfer)' })
+  @IsString()
+  @IsNotEmpty()
+  paymentMethod!: string;
+
+  @ApiProperty({ description: 'Payment reference ID' })
+  @IsString()
+  @IsNotEmpty()
+  referenceId!: string;
+
+  @ApiProperty({ description: 'Disbursement date (YYYY-MM-DD)' })
+  @IsString()
+  @IsNotEmpty()
+  disbursementDate!: string;
+}

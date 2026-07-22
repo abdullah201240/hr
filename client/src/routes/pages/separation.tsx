@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,8 +40,15 @@ import {
   CreditCard,
   Key,
   ShieldAlert,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  useSeparationRecordsQuery,
+  useCreateSeparationMutation,
+  useUpdateSeparationMutation,
+} from "@/hooks/useSeparation"
+import { SettlementCalculatorModal } from "@/components/separation/SettlementCalculatorModal"
 
 export interface SeparationRecord {
   id: string
@@ -66,65 +73,42 @@ export interface SeparationRecord {
   handoverCompleted: boolean
 }
 
-const defaultSeparations: SeparationRecord[] = [
-  {
-    id: "SEP-001",
-    employeeName: "David Kim",
-    employeeEmail: "david.kim@sadoshima.com",
-    department: "Engineering",
-    lastWorkingDay: "2026-06-30",
-    reason: "Career growth / New opportunities",
-    status: "Clearance",
-    clearances: { it: true, finance: false, hr: true, manager: false },
-    assetsReturned: { laptop: true, accessCard: false, keys: true, other: false },
-    handoverCompleted: true,
-  },
-  {
-    id: "SEP-002",
-    employeeName: "Sara Chen",
-    employeeEmail: "sara.chen@sadoshima.com",
-    department: "Marketing",
-    lastWorkingDay: "2026-07-15",
-    reason: "Relocating abroad",
-    status: "Notice Period",
-    clearances: { it: false, finance: false, hr: false, manager: false },
-    assetsReturned: { laptop: false, accessCard: false, keys: false, other: false },
-    handoverCompleted: false,
-  },
-  {
-    id: "SEP-003",
-    employeeName: "Marcus Brown",
-    employeeEmail: "marcus.brown@sadoshima.com",
-    department: "Sales",
-    lastWorkingDay: "2026-05-31",
-    reason: "Personal reasons",
-    status: "Cleared",
-    clearances: { it: true, finance: true, hr: true, manager: true },
-    assetsReturned: { laptop: true, accessCard: true, keys: true, other: true },
-    handoverCompleted: true,
-  },
-]
+const clearanceFieldName = {
+  it: "clearanceIt" as const,
+  finance: "clearanceFinance" as const,
+  hr: "clearanceHr" as const,
+  manager: "clearanceManager" as const,
+}
+
+const assetFieldName = {
+  laptop: "assetLaptop" as const,
+  accessCard: "assetAccessCard" as const,
+  keys: "assetKeys" as const,
+  other: "assetOther" as const,
+}
 
 export default function SeparationPage() {
-  const [separations, setSeparations] = useState<SeparationRecord[]>(() => {
-    const saved = localStorage.getItem("hr_separations")
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { console.error(e) }
-    }
-    return defaultSeparations
-  })
-
-  useEffect(() => {
-    localStorage.setItem("hr_separations", JSON.stringify(separations))
-  }, [separations])
-
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+
+  // API Queries & Mutations
+  const { data: dbRecords = [], isLoading } = useSeparationRecordsQuery({
+    search,
+    status: statusFilter,
+  })
+
+  const createMutation = useCreateSeparationMutation()
+  const updateMutation = useUpdateSeparationMutation()
 
   // Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [currentSep, setCurrentSep] = useState<SeparationRecord | null>(null)
+
+  // F&F Modal States
+  const [isSettlementOpen, setIsSettlementOpen] = useState(false)
+  const [selectedSepId, setSelectedSepId] = useState<string | null>(null)
+  const [selectedSepName, setSelectedSepName] = useState<string>("")
 
   // Form States
   const [newEmpName, setNewEmpName] = useState("")
@@ -133,88 +117,104 @@ export default function SeparationPage() {
   const [newLWD, setNewLWD] = useState("")
   const [newReason, setNewReason] = useState("")
 
+  const mapBackendRecord = (rec: any): SeparationRecord => ({
+    id: rec.id,
+    employeeName: rec.employeeName,
+    employeeEmail: rec.employeeEmail,
+    department: rec.department,
+    lastWorkingDay: rec.lastWorkingDay,
+    reason: rec.reason,
+    status: rec.status,
+    clearances: {
+      it: rec.clearanceIt,
+      finance: rec.clearanceFinance,
+      hr: rec.clearanceHr,
+      manager: rec.clearanceManager,
+    },
+    assetsReturned: {
+      laptop: rec.assetLaptop,
+      accessCard: rec.assetAccessCard,
+      keys: rec.assetKeys,
+      other: rec.assetOther,
+    },
+    handoverCompleted: rec.handoverCompleted,
+  })
+
+  const separations = dbRecords.map(mapBackendRecord)
+
   const handleCreate = () => {
     if (!newEmpName.trim() || !newEmpEmail.trim() || !newLWD) return
-    const newRecord: SeparationRecord = {
-      id: "SEP-" + Math.floor(100 + Math.random() * 900),
-      employeeName: newEmpName.trim(),
-      employeeEmail: newEmpEmail.trim(),
-      department: newDept,
-      lastWorkingDay: newLWD,
-      reason: newReason.trim() || "Resignation",
-      status: "Notice Period",
-      clearances: { it: false, finance: false, hr: false, manager: false },
-      assetsReturned: { laptop: false, accessCard: false, keys: false, other: false },
-      handoverCompleted: false,
-    }
-    setSeparations([newRecord, ...separations])
-    setIsCreateOpen(false)
-    // reset form
-    setNewEmpName("")
-    setNewEmpEmail("")
-    setNewLWD("")
-    setNewReason("")
+    createMutation.mutate(
+      {
+        employeeName: newEmpName.trim(),
+        employeeEmail: newEmpEmail.trim(),
+        department: newDept,
+        lastWorkingDay: newLWD,
+        reason: newReason.trim(),
+      },
+      {
+        onSuccess: () => {
+          setIsCreateOpen(false)
+          setNewEmpName("")
+          setNewEmpEmail("")
+          setNewLWD("")
+          setNewReason("")
+        },
+      }
+    )
   }
 
   const handleUpdateClearance = (sepId: string, department: keyof SeparationRecord["clearances"], val: boolean) => {
-    setSeparations(prev =>
-      prev.map(s => {
-        if (s.id === sepId) {
-          const clearances = { ...s.clearances, [department]: val }
-          const allCleared = Object.values(clearances).every(v => v)
-          const status = allCleared ? "Cleared" as const : "Clearance" as const
-          return { ...s, clearances, status }
-        }
-        return s
-      })
+    const dbField = clearanceFieldName[department]
+    updateMutation.mutate(
+      { id: sepId, [dbField]: val },
+      {
+        onSuccess: (updated) => {
+          if (currentSep && currentSep.id === sepId) {
+            setCurrentSep(mapBackendRecord(updated))
+          }
+        },
+      }
     )
-    if (currentSep && currentSep.id === sepId) {
-      setCurrentSep(prev => {
-        if (!prev) return null
-        const clearances = { ...prev.clearances, [department]: val }
-        const allCleared = Object.values(clearances).every(v => v)
-        const status = allCleared ? "Cleared" as const : "Clearance" as const
-        return { ...prev, clearances, status }
-      })
-    }
   }
 
   const handleUpdateAsset = (sepId: string, asset: keyof SeparationRecord["assetsReturned"], val: boolean) => {
-    setSeparations(prev =>
-      prev.map(s => {
-        if (s.id === sepId) {
-          const assetsReturned = { ...s.assetsReturned, [asset]: val }
-          return { ...s, assetsReturned }
-        }
-        return s
-      })
+    const dbField = assetFieldName[asset]
+    updateMutation.mutate(
+      { id: sepId, [dbField]: val },
+      {
+        onSuccess: (updated) => {
+          if (currentSep && currentSep.id === sepId) {
+            setCurrentSep(mapBackendRecord(updated))
+          }
+        },
+      }
     )
-    if (currentSep && currentSep.id === sepId) {
-      setCurrentSep(prev => {
-        if (!prev) return null
-        const assetsReturned = { ...prev.assetsReturned, [asset]: val }
-        return { ...prev, assetsReturned }
-      })
-    }
   }
 
   const handleUpdateHandover = (sepId: string, val: boolean) => {
-    setSeparations(prev =>
-      prev.map(s => (s.id === sepId ? { ...s, handoverCompleted: val } : s))
+    updateMutation.mutate(
+      { id: sepId, handoverCompleted: val },
+      {
+        onSuccess: (updated) => {
+          if (currentSep && currentSep.id === sepId) {
+            setCurrentSep(mapBackendRecord(updated))
+          }
+        },
+      }
     )
-    if (currentSep && currentSep.id === sepId) {
-      setCurrentSep(prev => (prev ? { ...prev, handoverCompleted: val } : null))
-    }
   }
 
-  const filtered = separations.filter(s => {
-    const matchesSearch =
-      s.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-      s.employeeEmail.toLowerCase().includes(search.toLowerCase()) ||
-      s.department.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === "all" || s.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const filtered = separations // Handled by backend filters
+
+  if (isLoading) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading offboarding records...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -320,7 +320,7 @@ export default function SeparationPage() {
                   <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Last Working Day</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Clearance Checklist</TableHead>
                   <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent">Status</TableHead>
-                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-24">Actions</TableHead>
+                  <TableHead className="font-semibold text-xs text-muted-foreground border-b-0 hover:bg-transparent text-right w-[200px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -359,17 +359,31 @@ export default function SeparationPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 text-xs font-medium"
-                            onClick={() => {
-                              setCurrentSep(sep)
-                              setIsDetailOpen(true)
-                            }}
-                          >
-                            Manage Exit
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs font-medium"
+                              onClick={() => {
+                                setCurrentSep(sep)
+                                setIsDetailOpen(true)
+                              }}
+                            >
+                              Manage Exit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs font-semibold border-primary/20 text-primary hover:bg-primary/5 transition-colors"
+                              onClick={() => {
+                                setSelectedSepId(sep.id)
+                                setSelectedSepName(sep.employeeName)
+                                setIsSettlementOpen(true)
+                              }}
+                            >
+                              F&F Settlement
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -532,6 +546,21 @@ export default function SeparationPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* F&F Settlement Modal */}
+      {selectedSepId && (
+        <SettlementCalculatorModal
+          isOpen={isSettlementOpen}
+          onClose={() => {
+            setIsSettlementOpen(false)
+            setSelectedSepId(null)
+          }}
+          separationId={selectedSepId}
+          employeeName={selectedSepName}
+        />
+      )}
     </div>
   )
 }
+
+

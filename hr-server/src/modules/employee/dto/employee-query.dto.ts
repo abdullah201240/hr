@@ -10,12 +10,12 @@ export class EmployeeQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 20, maximum: 100 })
+  @ApiPropertyOptional({ default: 20, maximum: 1000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(1000)
   limit?: number = 20;
 
   @ApiPropertyOptional({ description: 'Search by name, email, or employee ID' })
@@ -38,12 +38,16 @@ export class EmployeeQueryDto {
   @IsString()
   status?: string;
 
-  @ApiPropertyOptional({ enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'] })
+  @ApiPropertyOptional({
+    enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'],
+  })
   @IsOptional()
   @IsString()
   employeeType?: string;
 
-  @ApiPropertyOptional({ enum: ['joinDate', 'fullNameEnglish', 'employeeId', 'createdAt'] })
+  @ApiPropertyOptional({
+    enum: ['joinDate', 'fullNameEnglish', 'employeeId', 'createdAt'],
+  })
   @IsOptional()
   @IsString()
   sortBy?: string = 'createdAt';

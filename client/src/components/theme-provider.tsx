@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ThemeProviderContext, type Theme, type SidebarSize } from "@/hooks/use-theme"
 
 interface ThemeProviderProps {
@@ -62,18 +62,22 @@ export function ThemeProvider({
     return () => mediaQuery.removeEventListener("change", handleChange)
   }, [theme])
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
     localStorage.setItem(storageKey, newTheme)
     setThemeState(newTheme)
-  }
+  }, [storageKey])
 
-  const setSidebarSize = (newSize: SidebarSize) => {
+  const setSidebarSize = useCallback((newSize: SidebarSize) => {
     localStorage.setItem(sidebarStorageKey, newSize)
     setSidebarSizeState(newSize)
-  }
+  }, [sidebarStorageKey])
+
+  const contextValue = useMemo(() => ({
+    theme, setTheme, resolvedTheme, sidebarSize, setSidebarSize
+  }), [theme, setTheme, resolvedTheme, sidebarSize, setSidebarSize])
 
   return (
-    <ThemeProviderContext.Provider value={{ theme, setTheme, resolvedTheme, sidebarSize, setSidebarSize }}>
+    <ThemeProviderContext.Provider value={contextValue}>
       {children}
     </ThemeProviderContext.Provider>
   )

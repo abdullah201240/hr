@@ -15,6 +15,7 @@ import { employees } from '../../db/schema';
 import { TokenBlacklistService } from './token-blacklist.service';
 import type { LoginDto } from './dto/login.dto';
 import type { ChangePasswordDto } from './dto/change-password.dto';
+import { RolesService } from '../roles/roles.service';
 
 export interface TokenPair {
   accessToken: string;
@@ -28,12 +29,25 @@ export interface LoginResponse {
   user: {
     id: string;
     email: string;
-    role: string;
     fullNameEnglish: string;
     employeePhotoUrl: string | null;
+    departmentId: string | null;
+    customRoleId: string | null;
+    permissions: string[];
   };
 }
 
+/**
+ * AuthService handles user authentication, session tokens, and passwords.
+ * 
+ * SECURITY DESIGN NOTE: 
+ * Access tokens contain a unique `jti` (JWT ID), but the Redis blacklist is only populated during
+ * explicit logouts or token invalidations. On normal access token expiry (15m), the expired token
+ * is rejected by signature validation anyway. While a stolen access token remains valid until its natural 
+ * 15m expiration, this is an acceptable trade-off to keep Redis memory footprint minimal and avoid
+ * checking Redis for validation on every single API request. If stricter requirements arise, consider
+ * reducing accessTokenExpiry to 5m or implementing an active jti verification filter.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -43,6 +57,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly tokenBlacklist: TokenBlacklistService,
+    private readonly rolesService: RolesService,
   ) {}
 
   // ─── Login ──────────────────────────────────────────────────────────────
@@ -52,9 +67,10 @@ export class AuthService {
       .select({
         id: employees.id,
         email: employees.email,
-        role: employees.role,
         fullNameEnglish: employees.fullNameEnglish,
         employeePhotoUrl: employees.employeePhotoUrl,
+        departmentId: employees.departmentId,
+        customRoleId: employees.customRoleId,
         status: employees.status,
         passwordHash: employees.passwordHash,
         refreshTokenVersion: employees.refreshTokenVersion,
@@ -69,20 +85,33 @@ export class AuthService {
     }
 
     if (user.status !== 'active') {
-      throw new UnauthorizedException('Account is not active. Contact your administrator.');
+      throw new UnauthorizedException(
+        'Account is not active. Contact your administrator.',
+      );
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Block login if no custom role has been assigned
+    if (!user.customRoleId) {
+      throw new UnauthorizedException(
+        'No role has been assigned to your account. Please contact your administrator to assign a role before logging in.',
+      );
     }
 
     // Generate token pair
     const tokens = await this.generateTokens(
       user.id,
       user.email,
-      user.role,
       user.refreshTokenVersion,
+      user.departmentId ?? undefined,
+      user.customRoleId ?? undefined,
     );
 
     // Update last login
@@ -93,14 +122,18 @@ export class AuthService {
 
     this.logger.log(`User logged in: ${user.email} (${user.id})`);
 
+    const userPermissions = await this.rolesService.getUserPermissions(user.customRoleId!);
+
     return {
       tokens,
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
         fullNameEnglish: user.fullNameEnglish,
         employeePhotoUrl: user.employeePhotoUrl,
+        departmentId: user.departmentId ?? null,
+        customRoleId: user.customRoleId ?? null,
+        permissions: Array.from(userPermissions),
       },
     };
   }
@@ -115,7 +148,9 @@ export class AuthService {
       });
     } catch (error: any) {
       if (error.name === 'TokenExpiredError') {
-        throw new UnauthorizedException('Refresh token has expired. Please login again.');
+        throw new UnauthorizedException(
+          'Refresh token has expired. Please login again.',
+        );
       }
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -125,7 +160,6 @@ export class AuthService {
       .select({
         id: employees.id,
         email: employees.email,
-        role: employees.role,
         refreshTokenVersion: employees.refreshTokenVersion,
         status: employees.status,
       })
@@ -153,7 +187,6 @@ export class AuthService {
     const tokens = await this.generateTokens(
       user.id,
       user.email,
-      user.role,
       user.refreshTokenVersion,
     );
 
@@ -163,10 +196,13 @@ export class AuthService {
 
   // ─── Logout ─────────────────────────────────────────────────────────────
 
-  async logout(accessToken: string, refreshToken?: string): Promise<{ message: string }> {
+  async logout(
+    accessToken: string,
+    refreshToken?: string,
+  ): Promise<{ message: string }> {
     try {
       // Decode access token (don't verify — it might be expired but we still want to blacklist)
-      const accessPayload = this.jwtService.decode(accessToken) as any;
+      const accessPayload = this.jwtService.decode(accessToken);
       if (accessPayload?.jti) {
         const ttl = accessPayload.exp - Math.floor(Date.now() / 1000);
         if (ttl > 0) {
@@ -211,8 +247,8 @@ export class AuthService {
         fullNameBangla: employees.fullNameBangla,
         phone: employees.phone,
         gender: employees.gender,
-        role: employees.role,
         departmentId: employees.departmentId,
+        customRoleId: employees.customRoleId,
         designationId: employees.designationId,
         employeeType: employees.employeeType,
         employeePhotoUrl: employees.employeePhotoUrl,
@@ -230,7 +266,12 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    const userPermissions = await this.rolesService.getUserPermissions(user.customRoleId!);
+
+    return {
+      ...user,
+      permissions: Array.from(userPermissions),
+    };
   }
 
   // ─── Change Password ────────────────────────────────────────────────────
@@ -240,7 +281,10 @@ export class AuthService {
     dto: ChangePasswordDto,
   ): Promise<{ message: string }> {
     const [user] = await this.db
-      .select({ passwordHash: employees.passwordHash, refreshTokenVersion: employees.refreshTokenVersion })
+      .select({
+        passwordHash: employees.passwordHash,
+        refreshTokenVersion: employees.refreshTokenVersion,
+      })
       .from(employees)
       .where(eq(employees.id, userId))
       .limit(1);
@@ -249,7 +293,10 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const isValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    const isValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
     if (!isValid) {
       throw new BadRequestException('Current password is incorrect');
     }
@@ -266,7 +313,10 @@ export class AuthService {
       .where(eq(employees.id, userId));
 
     this.logger.log(`Password changed for user: ${userId}`);
-    return { message: 'Password changed successfully. All sessions have been invalidated.' };
+    return {
+      message:
+        'Password changed successfully. All sessions have been invalidated.',
+    };
   }
 
   // ─── Token Generation ───────────────────────────────────────────────────
@@ -274,37 +324,44 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
-    role: string,
     version: number,
+    departmentId?: string,
+    customRoleId?: string,
   ): Promise<TokenPair> {
-    const accessExpiry = this.configService.get<string>('jwt.accessTokenExpiry', '15m') as any;
-    const refreshExpiry = this.configService.get<string>('jwt.refreshTokenExpiry', '7d') as any;
+    const accessExpiry = this.configService.get<string>(
+      'jwt.accessTokenExpiry',
+      '15m',
+    ) as any;
+    const refreshExpiry = this.configService.get<string>(
+      'jwt.refreshTokenExpiry',
+      '7d',
+    ) as any;
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
           email,
-          role,
+          departmentId: departmentId ?? null,
+          customRoleId: customRoleId ?? null,
           ver: version,
           jti: randomUUID(),
         },
         {
           secret: this.configService.get<string>('jwt.accessTokenSecret')!,
-          expiresIn: accessExpiry as any,
+          expiresIn: accessExpiry,
         },
       ),
       this.jwtService.signAsync(
         {
           sub: userId,
           email,
-          role,
           ver: version,
           jti: randomUUID(),
         },
         {
           secret: this.configService.get<string>('jwt.refreshTokenSecret')!,
-          expiresIn: refreshExpiry as any,
+          expiresIn: refreshExpiry,
         },
       ),
     ]);

@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarOff, Plus } from "lucide-react"
+import { CalendarOff, Plus, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "react-router"
 import { LeaveSummaryCards } from "@/components/leave/leave-summary-cards"
 import { LeaveTypesList } from "@/components/leave/leave-types-list"
@@ -11,149 +11,65 @@ import { AttendanceSetup } from "@/components/settings/attendance-setup"
 import { OfficeHours } from "@/components/settings/office-hours"
 import { ThemeSettings } from "@/components/settings/theme-settings"
 import { SalarySetup } from "@/components/settings/salary-setup"
-
-// ─── Leave Type Interface ─────────────────────────────────────────────────────
-interface LeaveType {
-  id: string
-  name: string
-  icon: any
-  color: string
-  days: number
-  paid: boolean
-  carryForward: boolean
-  maxCarryOver: number
-  requiresApproval: boolean
-  requiresDocument: boolean
-  description: string
-}
+import { FestivalBonusSetup } from "@/components/settings/festival-bonus-setup"
+import Swal from "sweetalert2"
+import {
+  useLeaveTypesQuery,
+  useCreateLeaveTypeMutation,
+  useUpdateLeaveTypeMutation,
+} from "@/hooks/useLeaveTypes"
+import type { LeaveType } from "@/types"
+import { NotificationPreferences } from "@/components/notifications/notification-preferences"
+import { AccessControlTab } from "@/components/settings/access-control-tab"
+import { usePermissions } from "@/hooks/usePermissions"
 
 export default function SettingsPage() {
-  // Leave Management States
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([
-    {
-      id: "annual",
-      name: "Annual Leave",
-      icon: "Plane",
-      color: "bg-sky-500",
-      days: 18,
-      paid: true,
-      carryForward: true,
-      maxCarryOver: 5,
-      requiresApproval: true,
-      requiresDocument: false,
-      description: "Paid time off for vacation and personal rest"
-    },
-    {
-      id: "sick",
-      name: "Sick Leave",
-      icon: "Heart",
-      color: "bg-rose-500",
-      days: 10,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for illness or medical appointments"
-    },
-    {
-      id: "casual",
-      name: "Casual Leave",
-      icon: "CalendarOff",
-      color: "bg-amber-500",
-      days: 5,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: false,
-      description: "Short-term leave for personal matters"
-    },
-    {
-      id: "maternity",
-      name: "Maternity Leave",
-      icon: "Baby",
-      color: "bg-pink-500",
-      days: 90,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for new mothers (ILO standard)"
-    },
-    {
-      id: "paternity",
-      name: "Paternity Leave",
-      icon: "Users",
-      color: "bg-blue-500",
-      days: 15,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for new fathers"
-    },
-    {
-      id: "training",
-      name: "Training Leave",
-      icon: "GraduationCap",
-      color: "bg-violet-500",
-      days: 3,
-      paid: true,
-      carryForward: true,
-      maxCarryOver: 3,
-      requiresApproval: true,
-      requiresDocument: true,
-      description: "Paid leave for professional development"
-    },
-    {
-      id: "bereavement",
-      name: "Bereavement Leave",
-      icon: "AlertCircle",
-      color: "bg-gray-500",
-      days: 5,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: false,
-      requiresDocument: false,
-      description: "Paid leave for loss of immediate family member"
-    },
-    {
-      id: "remote",
-      name: "Work From Home",
-      icon: "Home",
-      color: "bg-emerald-500",
-      days: 12,
-      paid: true,
-      carryForward: false,
-      maxCarryOver: 0,
-      requiresApproval: true,
-      requiresDocument: false,
-      description: "Remote work days per year"
-    }
-  ])
-
   const [editingLeave, setEditingLeave] = useState<LeaveType | null>(null)
   const [showAddLeave, setShowAddLeave] = useState(false)
 
+  // TanStack Query
+  const { data: leaveTypesData, isLoading: isLoadingLeaveTypes } = useLeaveTypesQuery({
+    page: 1,
+    limit: 100, // Fetch all leave types for listing
+  })
+
+  const createLeaveMutation = useCreateLeaveTypeMutation()
+  const updateLeaveMutation = useUpdateLeaveTypeMutation()
+
+  const leaveTypes = leaveTypesData?.data || []
+
   const handleSaveLeaveType = (leaveType: LeaveType) => {
-    const exists = leaveTypes.find(l => l.id === leaveType.id)
-    if (exists) {
-      setLeaveTypes(leaveTypes.map(l => l.id === leaveType.id ? leaveType : l))
-      toast.success("Leave type updated!", {
-        description: `${leaveType.name} configuration saved.`
+    if (editingLeave) {
+      // Update — strip id, createdAt, updatedAt before sending
+      const { id, createdAt, updatedAt, ...updatePayload } = leaveType
+      updateLeaveMutation.mutate({ id, payload: updatePayload }, {
+        onSuccess: () => {
+          toast.success("Leave type updated!", {
+            description: `${leaveType.name} configuration saved.`
+          })
+          setEditingLeave(null)
+          setShowAddLeave(false)
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to update leave type")
+        }
       })
     } else {
-      setLeaveTypes([...leaveTypes, leaveType])
-      toast.success("Leave type added!", {
-        description: `${leaveType.name} is now available.`
+      // Create
+      const { id, ...createPayload } = leaveType
+      createLeaveMutation.mutate(createPayload, {
+        onSuccess: () => {
+          toast.success("Leave type added!", {
+            description: `${leaveType.name} is now available.`
+          })
+          setEditingLeave(null)
+          setShowAddLeave(false)
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to add leave type")
+        }
       })
     }
-    setEditingLeave(null)
-    setShowAddLeave(false)
   }
 
   const handleOpenEdit = (leave: LeaveType) => {
@@ -161,20 +77,111 @@ export default function SettingsPage() {
     setShowAddLeave(true)
   }
 
-  const handleDeleteLeaveType = (id: string) => {
-    const leaveType = leaveTypes.find(l => l.id === id)
-    setLeaveTypes(leaveTypes.filter(l => l.id !== id))
-    toast.success("Leave type removed", {
-      description: `${leaveType?.name} has been deleted.`
+  const handleToggleActive = (leave: LeaveType) => {
+    const newIsActive = !leave.isActive
+    const statusText = newIsActive ? "activated" : "deactivated"
+
+    Swal.fire({
+      title: `${newIsActive ? "Activate" : "Deactivate"} Leave Type?`,
+      text: `"${leave.name}" will be ${statusText}. ${newIsActive ? "It will become available for leave applications." : "It will no longer be available for new leave applications."}`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: newIsActive ? "Activate" : "Deactivate",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: `swal2-confirm swal2-styled ${newIsActive ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600'} text-white font-semibold rounded-md px-4 py-2 mr-2`,
+        cancelButton: "swal2-cancel swal2-styled bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-md px-4 py-2"
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        updateLeaveMutation.mutate(
+          { id: leave.id, payload: { isActive: newIsActive } },
+          {
+            onSuccess: () => {
+              toast.success(`Leave type ${statusText}!`)
+            },
+            onError: (err: any) => {
+              toast.error(err.message || `Failed to ${statusText} leave type`)
+            }
+          }
+        )
+      }
     })
   }
+
+  const { hasAnyPermission } = usePermissions()
+
+  const tabsConfig = [
+    {
+      value: "leave",
+      label: "Leave Management",
+      permissions: ["leave:create", "leave:update", "leave:delete"],
+    },
+    {
+      value: "attendance",
+      label: "Attendance Setup",
+      permissions: ["attendance:create", "attendance:update", "attendance:delete"],
+    },
+    {
+      value: "office",
+      label: "Office Hours",
+      permissions: ["attendance:create", "attendance:update", "attendance:delete"],
+    },
+    {
+      value: "salary",
+      label: "Salary Structure",
+      permissions: ["payroll:create", "payroll:process", "payroll:read"],
+    },
+    {
+      value: "bonus",
+      label: "Festival Bonus Settings",
+      permissions: ["payroll:create", "payroll:process", "payroll:read"],
+    },
+    {
+      value: "appearance",
+      label: "Theme",
+    },
+    {
+      value: "notifications",
+      label: "Notification Settings",
+    },
+    {
+      value: "access",
+      label: "Access Control",
+      permissions: ["settings:read", "settings:update"],
+    },
+  ]
+
+  const visibleTabs = tabsConfig.filter(
+    (t) => !t.permissions || hasAnyPermission(t.permissions)
+  )
 
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get("tab") || "leave"
 
+  const isTabVisible = visibleTabs.some((t) => t.value === activeTab)
+  const currentTab = isTabVisible ? activeTab : (visibleTabs[0]?.value || "")
+
+  useEffect(() => {
+    if (visibleTabs.length > 0 && !isTabVisible) {
+      setSearchParams({ tab: visibleTabs[0].value }, { replace: true })
+    }
+  }, [visibleTabs, isTabVisible, setSearchParams])
+
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value }, { replace: true })
   }
+
+  const gridColsClass = {
+    1: "grid-cols-1",
+    2: "grid-cols-2",
+    3: "grid-cols-3",
+    4: "grid-cols-4",
+    5: "grid-cols-5",
+    6: "grid-cols-6",
+    7: "grid-cols-7",
+  }[visibleTabs.length] || "grid-cols-7"
 
   return (
     <div className="space-y-6">
@@ -183,66 +190,101 @@ export default function SettingsPage() {
         <p className="text-muted-foreground">Manage your account and application preferences</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 shadow-none border border-border/40">
-          <TabsTrigger value="leave" className="text-xs">Leave Management</TabsTrigger>
-          <TabsTrigger value="attendance" className="text-xs">Attendance Setup</TabsTrigger>
-          <TabsTrigger value="office" className="text-xs">Office Hours</TabsTrigger>
-          <TabsTrigger value="salary" className="text-xs">Salary Structure</TabsTrigger>
-          <TabsTrigger value="appearance" className="text-xs">Theme</TabsTrigger>
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className={`grid w-full ${gridColsClass} shadow-none border border-border/40`}>
+          {visibleTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        <TabsContent value="leave">
-          <div className="space-y-6">
-            {/* Header with Add Button */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold flex items-center gap-2">
-                  <CalendarOff className="h-5 w-5 text-primary" />
-                  Leave Types & Policies
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Configure international-standard leave types with flexible policies
-                </p>
+        {visibleTabs.some((t) => t.value === "leave") && (
+          <TabsContent value="leave">
+            <div className="space-y-6">
+              {/* Header with Add Button */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold flex items-center gap-2">
+                    <CalendarOff className="h-5 w-5 text-primary" />
+                    Leave Types & Policies
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Configure international-standard leave types with flexible policies
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setEditingLeave(null)
+                    setShowAddLeave(true)
+                  }}
+                  className="gap-2 h-9"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Leave Type
+                </Button>
               </div>
-              <Button
-                onClick={() => {
-                  setEditingLeave(null)
-                  setShowAddLeave(true)
-                }}
-                className="gap-2 h-9"
-              >
-                <Plus className="h-4 w-4" />
-                Add Leave Type
-              </Button>
+
+              {isLoadingLeaveTypes ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  {/* Use Leave Components */}
+                  <LeaveSummaryCards leaveTypes={leaveTypes} />
+                  <LeaveTypesList
+                    leaveTypes={leaveTypes}
+                    onEdit={handleOpenEdit}
+                    onToggleActive={handleToggleActive}
+                  />
+                </>
+              )}
             </div>
+          </TabsContent>
+        )}
 
-            {/* Use Leave Components */}
-            <LeaveSummaryCards leaveTypes={leaveTypes} />
-            <LeaveTypesList
-              leaveTypes={leaveTypes}
-              onEdit={handleOpenEdit}
-              onDelete={handleDeleteLeaveType}
-            />
+        {visibleTabs.some((t) => t.value === "attendance") && (
+          <TabsContent value="attendance">
+            <AttendanceSetup />
+          </TabsContent>
+        )}
 
-          </div>
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "office") && (
+          <TabsContent value="office">
+            <OfficeHours />
+          </TabsContent>
+        )}
 
-        <TabsContent value="attendance">
-          <AttendanceSetup />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "salary") && (
+          <TabsContent value="salary">
+            <SalarySetup />
+          </TabsContent>
+        )}
 
-        <TabsContent value="office">
-          <OfficeHours />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "bonus") && (
+          <TabsContent value="bonus">
+            <FestivalBonusSetup />
+          </TabsContent>
+        )}
 
-        <TabsContent value="salary">
-          <SalarySetup />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "appearance") && (
+          <TabsContent value="appearance">
+            <ThemeSettings />
+          </TabsContent>
+        )}
 
-        <TabsContent value="appearance">
-          <ThemeSettings />
-        </TabsContent>
+        {visibleTabs.some((t) => t.value === "notifications") && (
+          <TabsContent value="notifications">
+            <NotificationPreferences />
+          </TabsContent>
+        )}
+
+        {visibleTabs.some((t) => t.value === "access") && (
+          <TabsContent value="access">
+            <AccessControlTab />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Leave Type Dialog */}

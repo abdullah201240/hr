@@ -1,8 +1,19 @@
-import { Injectable, OnModuleInit, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from 'cloudinary';
 import { Readable } from 'node:stream';
 import type { CloudinaryConfig } from '../../config/cloudinary.config';
+import { CacheService } from '../../common/cache/cache.service';
+import { CacheKeys } from '../../common/cache/cache-keys';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -79,7 +90,10 @@ export class CloudinaryService implements OnModuleInit {
   private readonly logger = new Logger(CloudinaryService.name);
   private readonly config: CloudinaryConfig;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cache: CacheService,
+  ) {
     this.config = this.configService.get<CloudinaryConfig>('cloudinary')!;
   }
 
@@ -103,7 +117,10 @@ export class CloudinaryService implements OnModuleInit {
     this.validateMimeType(mimeType);
     this.validateFileSize(buffer.length);
 
-    const resourceType = this.resolveResourceType(mimeType, options.resourceType);
+    const resourceType = this.resolveResourceType(
+      mimeType,
+      options.resourceType,
+    );
 
     return new Promise<UploadResult>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -117,7 +134,10 @@ export class CloudinaryService implements OnModuleInit {
             transformation: this.buildTransformation(options.transformation),
           }),
         },
-        (error: UploadApiErrorResponse | undefined, result?: UploadApiResponse) => {
+        (
+          error: UploadApiErrorResponse | undefined,
+          result?: UploadApiResponse,
+        ) => {
           if (error) {
             this.logger.error(`Upload failed: ${error.message}`);
             return reject(error);
@@ -138,7 +158,10 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Upload from URL ─────────────────────────────────────────────────────────
 
-  async uploadUrl(url: string, options: UploadOptions = {}): Promise<UploadResult> {
+  async uploadUrl(
+    url: string,
+    options: UploadOptions = {},
+  ): Promise<UploadResult> {
     const result = await cloudinary.uploader.upload(url, {
       resource_type: options.resourceType ?? 'auto',
       folder: options.folder ?? this.config.defaultFolder,
@@ -152,28 +175,47 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Delete ──────────────────────────────────────────────────────────────────
 
-  async delete(publicId: string, resourceType: 'image' | 'raw' | 'video' = 'image'): Promise<boolean> {
+  async delete(
+    publicId: string,
+    resourceType: 'image' | 'raw' | 'video' = 'image',
+  ): Promise<boolean> {
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
+    
+    // Invalidate cache
+    if (result.result === 'ok') {
+      await this.cache.delByKey(CacheKeys.uploadMeta, publicId);
+    }
+    
     return result.result === 'ok';
   }
 
   // ── Bulk delete by prefix ───────────────────────────────────────────────────
 
-  async deleteByPrefix(prefix: string, resourceType: 'image' | 'raw' | 'video' = 'image'): Promise<number> {
+  async deleteByPrefix(
+    prefix: string,
+    resourceType: 'image' | 'raw' | 'video' = 'image',
+  ): Promise<number> {
     const result = await cloudinary.api.delete_resources_by_prefix(prefix, {
       type: 'upload',
       resource_type: resourceType,
     });
     const deleted = Object.keys(result.deleted ?? {}).length;
     this.logger.debug(`Deleted ${deleted} resources with prefix "${prefix}"`);
+    
+    // Invalidate folder cache
+    await this.cache.delByPattern(CacheKeys.uploadFolderList);
+    
     return deleted;
   }
 
   // ── Generate signed URL (private resources) ─────────────────────────────────
 
-  generateSignedUrl(publicId: string, expiresInSeconds = 3600): SignedUrlResult {
+  generateSignedUrl(
+    publicId: string,
+    expiresInSeconds = 3600,
+  ): SignedUrlResult {
     const expiresAt = Math.round(Date.now() / 1000) + expiresInSeconds;
     const url = cloudinary.utils.private_download_url(publicId, '', {
       expires_at: expiresAt,
@@ -185,10 +227,21 @@ export class CloudinaryService implements OnModuleInit {
 
   // ── Get resource info ───────────────────────────────────────────────────────
 
-  async getResourceInfo(publicId: string, resourceType: 'image' | 'raw' | 'video' = 'image') {
-    return cloudinary.api.resource(publicId, {
+  async getResourceInfo(
+    publicId: string,
+    resourceType: 'image' | 'raw' | 'video' = 'image',
+  ) {
+    // Check cache first
+    const cached = await this.cache.getByKey(CacheKeys.uploadMeta, publicId);
+    if (cached) return cached;
+
+    const result = await cloudinary.api.resource(publicId, {
       resource_type: resourceType,
     });
+
+    // Cache the result
+    await this.cache.setByKey(CacheKeys.uploadMeta, result, publicId);
+    return result;
   }
 
   // ── List resources by folder ────────────────────────────────────────────────
@@ -196,27 +249,60 @@ export class CloudinaryService implements OnModuleInit {
   async listResources(
     folder: string,
     maxResults = 30,
-  ): Promise<{ resources: Array<{ publicId: string; url: string; format: string; bytes: number }> }> {
+  ): Promise<{
+    resources: Array<{
+      publicId: string;
+      url: string;
+      format: string;
+      bytes: number;
+    }>;
+  }> {
+    // Check cache first
+    const cached = await this.cache.getByKey<{
+      resources: Array<{
+        publicId: string;
+        url: string;
+        format: string;
+        bytes: number;
+      }>;
+    }>(CacheKeys.uploadFolderList, folder);
+    if (cached) return cached;
+
     const result = await cloudinary.api.resources({
       type: 'upload',
       prefix: folder,
       max_results: maxResults,
     });
 
-    return {
-      resources: (result.resources ?? []).map((r: { public_id: string; secure_url: string; format: string; bytes: number }) => ({
-        publicId: r.public_id,
-        url: r.secure_url,
-        format: r.format,
-        bytes: r.bytes,
-      })),
+    const formatted = {
+      resources: (result.resources ?? []).map(
+        (r: {
+          public_id: string;
+          secure_url: string;
+          format: string;
+          bytes: number;
+        }) => ({
+          publicId: r.public_id,
+          url: r.secure_url,
+          format: r.format,
+          bytes: r.bytes,
+        }),
+      ),
     };
+
+    // Cache the result
+    await this.cache.setByKey(CacheKeys.uploadFolderList, formatted, folder);
+    return formatted;
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   private validateMimeType(mimeType: string): void {
-    const allowed = new Set([...IMAGE_MIMES, ...DOCUMENT_MIMES, ...VIDEO_MIMES]);
+    const allowed = new Set([
+      ...IMAGE_MIMES,
+      ...DOCUMENT_MIMES,
+      ...VIDEO_MIMES,
+    ]);
     if (!allowed.has(mimeType)) {
       throw new BadRequestException(`File type "${mimeType}" is not allowed`);
     }
@@ -225,7 +311,9 @@ export class CloudinaryService implements OnModuleInit {
   private validateFileSize(size: number): void {
     if (size > this.config.maxFileSize) {
       const maxMB = (this.config.maxFileSize / 1048576).toFixed(1);
-      throw new BadRequestException(`File size exceeds the maximum allowed (${maxMB} MB)`);
+      throw new BadRequestException(
+        `File size exceeds the maximum allowed (${maxMB} MB)`,
+      );
     }
     if (size === 0) {
       throw new BadRequestException('File is empty');
@@ -242,7 +330,9 @@ export class CloudinaryService implements OnModuleInit {
     return 'raw';
   }
 
-  private buildTransformation(t: TransformationOptions): Record<string, unknown>[] {
+  private buildTransformation(
+    t: TransformationOptions,
+  ): Record<string, unknown>[] {
     const transform: Record<string, unknown> = {};
     if (t.width) transform.width = t.width;
     if (t.height) transform.height = t.height;

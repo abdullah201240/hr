@@ -33,8 +33,10 @@ describe('Auth Module (e2e)', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.tokens).toHaveProperty('accessToken');
-      expect(res.body.data.tokens).toHaveProperty('refreshToken');
+      expect(res.body.data.tokens).not.toHaveProperty('refreshToken');
+      expect(res.headers.get('set-cookie')).toContain('refresh_token=');
       expect(res.body.data.tokens).toHaveProperty('tokenType', 'Bearer');
+
       expect(res.body.data.user).toHaveProperty('email');
       expect(res.body.data.user).toHaveProperty('role');
     });
@@ -79,12 +81,16 @@ describe('Auth Module (e2e)', () => {
       });
       expect(loginRes.status).toBe(200);
 
-      const refreshToken = loginRes.body.data.tokens.refreshToken;
+      const setCookie = loginRes.headers.get('set-cookie') || '';
+      const match = setCookie.match(/refresh_token=([^;]+)/);
+      const refreshToken = match ? decodeURIComponent(match[1]) : '';
       const res = await publicPost(ctx, '/auth/refresh', { refreshToken });
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('accessToken');
-      expect(res.body.data).toHaveProperty('refreshToken');
+      expect(res.body.data.tokens).toHaveProperty('accessToken');
+      expect(res.body.data.tokens).not.toHaveProperty('refreshToken');
+      expect(res.headers.get('set-cookie')).toContain('refresh_token=');
+
     });
 
     it('should reject invalid refresh token', async () => {
@@ -96,7 +102,8 @@ describe('Auth Module (e2e)', () => {
 
     it('should reject expired refresh token', async () => {
       const res = await publicPost(ctx, '/auth/refresh', {
-        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJleHAiOjF9.expired',
+        refreshToken:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJleHAiOjF9.expired',
       });
       expect(res.status).toBe(401);
     });
@@ -142,7 +149,10 @@ describe('Auth Module (e2e)', () => {
       expect(loginRes.status).toBe(200);
 
       const accessToken = loginRes.body.data.tokens.accessToken;
-      const refreshToken = loginRes.body.data.tokens.refreshToken;
+      const setCookie = loginRes.headers.get('set-cookie') || '';
+      const match = setCookie.match(/refresh_token=([^;]+)/);
+      const refreshToken = match ? decodeURIComponent(match[1]) : '';
+
 
       const res = await fetch(`${ctx.baseUrl}/${ctx.apiPrefix}/auth/logout`, {
         method: 'POST',

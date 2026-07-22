@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,9 +20,11 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { DepartmentService } from './department.service';
-import { CreateDepartmentDto, UpdateDepartmentDto } from './dto/create-department.dto';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dto/create-department.dto';
 import { DepartmentQueryDto } from './dto/department-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Departments')
 @ApiBearerAuth()
@@ -29,19 +32,17 @@ import { Roles } from '../auth/guards/roles.decorator';
 export class DepartmentController {
   constructor(private readonly departmentService: DepartmentService) {}
 
-  // ─── Create ────────────────────────────────────────────────────────────
+  // ─── Create ───────────────────────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
-  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new department' })
   @ApiResponse({ status: 201, description: 'Department created' })
-  @ApiResponse({ status: 409, description: 'Name or code already exists' })
+  @ApiResponse({ status: 409, description: 'Department code already exists' })
   async create(@Body() dto: CreateDepartmentDto) {
     return this.departmentService.create(dto);
   }
 
-  // ─── List ──────────────────────────────────────────────────────────────
+  // ─── List with filters ────────────────────────────────────────────────
 
   @Get()
   @ApiOperation({ summary: 'List departments with pagination and filters' })
@@ -53,8 +54,12 @@ export class DepartmentController {
   // ─── Dropdown options (for select inputs) ──────────────────────────────
 
   @Get('options')
+  @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active departments as dropdown options' })
-  @ApiResponse({ status: 200, description: 'Department options for select inputs' })
+  @ApiResponse({
+    status: 200,
+    description: 'Department options for select inputs',
+  })
   async getOptions() {
     return this.departmentService.getDropdownOptions();
   }
@@ -73,7 +78,6 @@ export class DepartmentController {
   // ─── Update ────────────────────────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a department' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Department updated' })
@@ -89,7 +93,6 @@ export class DepartmentController {
   // ─── Soft delete (deactivate) ──────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a department (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

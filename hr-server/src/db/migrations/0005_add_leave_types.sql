@@ -1,0 +1,1 @@
+-- Empty migration placeholder (applied previously as empty)

@@ -1,0 +1,15 @@
+CREATE INDEX IF NOT EXISTS "task_projects_dept_idx" ON "task_projects" USING btree ("department_id");
+CREATE INDEX IF NOT EXISTS "task_projects_owner_idx" ON "task_projects" USING btree ("owner_id");
+CREATE INDEX IF NOT EXISTS "task_milestones_project_idx" ON "task_milestones" USING btree ("project_id");
+CREATE INDEX IF NOT EXISTS "tasks_project_idx" ON "tasks" USING btree ("project_id");
+CREATE INDEX IF NOT EXISTS "tasks_assignee_idx" ON "tasks" USING btree ("assignee_id");
+CREATE INDEX IF NOT EXISTS "tasks_milestone_idx" ON "tasks" USING btree ("milestone_id");
+CREATE INDEX IF NOT EXISTS "task_checklists_task_idx" ON "task_checklists" USING btree ("task_id");
+CREATE INDEX IF NOT EXISTS "task_comments_task_idx" ON "task_comments" USING btree ("task_id");
+CREATE INDEX IF NOT EXISTS "task_comments_user_idx" ON "task_comments" USING btree ("user_id");
+CREATE INDEX IF NOT EXISTS "task_activities_task_idx" ON "task_activities" USING btree ("task_id");
+CREATE INDEX IF NOT EXISTS "task_dependencies_task_idx" ON "task_dependencies" USING btree ("task_id");
+CREATE INDEX IF NOT EXISTS "task_dependencies_depends_on_idx" ON "task_dependencies" USING btree ("depends_on_task_id");
+CREATE INDEX IF NOT EXISTS "task_attachments_task_idx" ON "task_attachments" USING btree ("task_id");
+CREATE INDEX IF NOT EXISTS "time_entries_task_idx" ON "time_entries" USING btree ("task_id");
+CREATE INDEX IF NOT EXISTS "time_entries_employee_idx" ON "time_entries" USING btree ("employee_id");

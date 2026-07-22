@@ -1,36 +1,38 @@
-import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router"
 import { Button } from "@/components/ui/button"
 import { SectionCard, SectionTitle, StepHeader, ReviewItem } from "@/components/employee/form-ui"
-import { Building2, ArrowLeft } from "lucide-react"
+import { Building2, ArrowLeft, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
-
-const initialDepartments = [
-  { name: "Engineering", head: "Michael Torres", count: 64, openRoles: 5, color: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  { name: "Product", head: "Sarah Chen", count: 32, openRoles: 2, color: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
-  { name: "Marketing", head: "Anna Williams", count: 28, openRoles: 3, color: "bg-pink-500/10 text-pink-600 dark:text-pink-400" },
-  { name: "Sales", head: "Robert Davis", count: 45, openRoles: 8, color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
-  { name: "Human Resources", head: "Patricia Lee", count: 12, openRoles: 1, color: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  { name: "Finance", head: "Thomas Wright", count: 18, openRoles: 2, color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" },
-]
+import { useDepartmentQuery } from "@/hooks/useDepartments"
+import { useQuery } from "@tanstack/react-query"
+import { apiClient } from "@/lib/api"
 
 export default function ViewDepartmentPage() {
   const navigate = useNavigate()
-  const { name: paramName } = useParams()
-  const [dept, setDept] = useState<any>(null)
+  const { id } = useParams()
 
-  useEffect(() => {
-    const stored = localStorage.getItem("departments_list")
-    const currentList = stored ? JSON.parse(stored) : initialDepartments
-    const found = currentList.find((d: any) => d.name === decodeURIComponent(paramName || ""))
-    if (found) {
-      setDept(found)
-    } else {
-      Swal.fire("Error", "Department not found", "error").then(() => navigate("/departments"))
-    }
-  }, [paramName, navigate])
+  // Fetch department details
+  const { data: dept, isLoading, isError } = useDepartmentQuery(id || "")
 
-  if (!dept) return null
+  // Fetch head employee name if headEmployeeId exists
+  const { data: headEmployee } = useQuery<any>({
+    queryKey: ["employees", dept?.headEmployeeId],
+    queryFn: () => apiClient.get<any>(`employees/${dept?.headEmployeeId}`),
+    enabled: !!dept?.headEmployeeId,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (isError || !dept) {
+    Swal.fire("Error", "Department not found", "error").then(() => navigate("/departments"))
+    return null
+  }
 
   return (
     <div className="space-y-6 w-full">
@@ -50,9 +52,14 @@ export default function ViewDepartmentPage() {
           <SectionTitle icon={Building2}>Department Information</SectionTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4">
             <ReviewItem label="Department Name" value={dept.name} />
-            <ReviewItem label="Head of Department" value={dept.head} />
-            <ReviewItem label="Total Members" value={`${dept.count || 0} members`} />
-            <ReviewItem label="Open Vacancies" value={`${dept.openRoles || 0} positions`} />
+            <ReviewItem label="Department Code" value={dept.code} />
+            <ReviewItem 
+              label="Head of Department" 
+              value={headEmployee ? `${headEmployee.fullNameEnglish} (${headEmployee.employeeId})` : "Not Assigned"} 
+            />
+            <ReviewItem label="Total Members" value={`${dept.employeeCount || 0} members`} />
+            <ReviewItem label="Status" value={dept.isActive ? "Active" : "Inactive"} />
+            <ReviewItem label="Description" value={dept.description || "No description provided"} />
           </div>
         </SectionCard>
 

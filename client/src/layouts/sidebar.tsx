@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Link, useLocation } from "react-router"
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,8 +11,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { navGroups } from "@/components/navigation/nav-data"
-import { currentUser, UserAvatar } from "@/components/common/user-avatar"
+import { UserAvatar } from "@/components/common/user-avatar"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/store/useAuthStore"
+import { useNotificationStore } from "@/store/useNotificationStore"
+import { usePermissions } from "@/hooks/usePermissions"
 
 interface SidebarProps {
   collapsed: boolean
@@ -23,6 +26,17 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, onLinkClick, className }: SidebarProps) {
   const location = useLocation()
+  const { user } = useAuthStore()
+  const unreadCount = useNotificationStore((state) => state.unreadCount)
+  const { canAccessNavItem } = usePermissions()
+
+  const mappedUser = useMemo(() => ({
+    name: user?.fullNameEnglish || "Employee",
+    email: user?.email || "",
+    avatar: user?.employeePhotoUrl || "",
+    permissions: user?.permissions || [],
+  }), [user?.fullNameEnglish, user?.email, user?.employeePhotoUrl, user?.permissions])
+
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(() => {
     // Auto-expand menus that contain the current route
     const initial = new Set<string>()
@@ -35,6 +49,15 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     })
     return initial
   })
+
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(() => {
+    // Default to the first group
+    return navGroups[0]?.label || null
+  })
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroup(prev => (prev === label ? null : label))
+  }
 
   const toggleMenu = (href: string) => {
     setExpandedMenus(prev => {
@@ -57,18 +80,18 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex h-full w-full flex-col bg-sidebar transition-all duration-300 ease-in-out shadow-none",
+          "flex h-full w-full flex-col bg-sidebar transition-all duration-300 ease-in-out shadow-none overflow-hidden",
           className
         )}
       >
         {/* Logo Section */}
         <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border/30 px-4">
           <Link to="/" onClick={onLinkClick} className="flex items-center gap-2.5 min-w-0">
-            <img src="/logo.png" alt="Sadoshima HR" className="h-8 w-8 shrink-0 rounded object-contain" />
+            <img src="/logo.jpeg" alt="Sadoshima HR" className="h-8 w-8 shrink-0 rounded object-contain" />
             {!collapsed && (
               <div className="flex flex-col overflow-hidden">
                 <span className="text-xs font-semibold text-sidebar-foreground truncate tracking-wide">
-                  Sadoshima HR
+                  ASG HR
                 </span>
                 <span className="text-[10px] text-muted-foreground truncate">
                   Management System
@@ -86,16 +109,36 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                 {groupIndex > 0 && (
                   <Separator className="my-1.5 bg-sidebar-border/20 mx-2" />
                 )}
-                {!collapsed && (
-                  <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    {group.label}
-                  </p>
-                )}
-                {group.items.map((item) => {
+                {!collapsed ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.label)}
+                    className="flex w-full items-center justify-between mb-1 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/90 hover:text-sidebar-foreground transition-colors"
+                  >
+                    <span>{group.label}</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3 w-3 transition-transform duration-200 text-muted-foreground/90",
+                        expandedGroup === group.label ? "rotate-0" : "-rotate-90"
+                      )}
+                    />
+                  </button>
+                ) : null}
+                {(collapsed || expandedGroup === group.label) && group.items.filter(item => {
+                  // Check permissions if defined
+                  if (item.permissions && item.permissions.length > 0) {
+                    return canAccessNavItem(item)
+                  }
+                  return true
+                }).map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
                   const hasSubItems = item.items && item.items.length > 0
                   const isExpanded = expandedMenus.has(item.href)
+
+                  const badgeValue = item.title === "Notifications"
+                    ? (unreadCount > 0 ? String(unreadCount) : undefined)
+                    : item.badge
 
                   // Collapsed sidebar: show tooltip, no sub-menus
                   if (collapsed) {
@@ -127,9 +170,9 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                         <TooltipContent side="right" className="flex items-center gap-1.5 text-xs py-1 px-2.5 border-border/50 shadow-none">
                           <span>{item.title}</span>
-                          {item.badge && (
+                          {badgeValue && (
                             <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium">
-                              {item.badge}
+                              {badgeValue}
                             </span>
                           )}
                         </TooltipContent>
@@ -181,7 +224,13 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         </button>
                         {isExpanded && (
                           <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-sidebar-border/30 pl-2">
-                            {item.items!.map((subItem) => {
+                            {item.items!.filter(subItem => {
+                              // Check permissions if defined
+                              if (subItem.permissions && subItem.permissions.length > 0) {
+                                return canAccessNavItem(subItem)
+                              }
+                              return true
+                            }).map((subItem) => {
                               const SubIcon = subItem.icon
                               const subActive = isActive(subItem.href)
                               return (
@@ -236,7 +285,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                         )}
                       />
                       <span className="truncate">{item.title}</span>
-                      {item.badge && (
+                      {badgeValue && (
                         <span
                           className={cn(
                             "ml-auto inline-flex h-4.5 min-w-[18px] items-center justify-center rounded-full px-1.5 text-[9px] font-medium",
@@ -245,7 +294,7 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
                               : "bg-muted text-muted-foreground"
                           )}
                         >
-                          {item.badge}
+                          {badgeValue}
                         </span>
                       )}
                     </Link>
@@ -262,14 +311,14 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
         <div className="border-t border-sidebar-border/30 p-2">
           {!collapsed ? (
             <div className="flex items-center gap-2 rounded-md bg-sidebar-accent/30 p-1.5">
-              <Link to="/settings" onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
-                <UserAvatar user={currentUser} size="sm" />
+              <Link to={user?.permissions?.includes('settings:read') ? "/settings" : "/profile"} onClick={onLinkClick} className="flex items-center gap-2 flex-1 min-w-0">
+                <UserAvatar user={mappedUser} size="sm" />
                 <div className="flex-1 overflow-hidden">
                   <p className="truncate text-xs font-medium text-sidebar-foreground">
-                    {currentUser.name}
+                    {mappedUser.name}
                   </p>
                   <p className="truncate text-[10px] text-muted-foreground">
-                    {currentUser.role}
+                    {user?.email}
                   </p>
                 </div>
               </Link>
@@ -286,13 +335,13 @@ export function Sidebar({ collapsed, onToggle, onLinkClick, className }: Sidebar
             <div className="flex flex-col items-center gap-1.5 py-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link to="/settings" onClick={onLinkClick}>
-                    <UserAvatar user={currentUser} size="sm" />
+                  <Link to={user?.permissions?.includes('settings:read') ? "/settings" : "/profile"} onClick={onLinkClick}>
+                    <UserAvatar user={mappedUser} size="sm" />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="text-xs border-border/50 shadow-none">
-                  <p>{currentUser.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{currentUser.role}</p>
+                  <p>{mappedUser.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{user?.email}</p>
                 </TooltipContent>
               </Tooltip>
               <Button

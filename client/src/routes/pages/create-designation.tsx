@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,60 +10,33 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { SectionCard, SectionTitle, Field, StepHeader } from "@/components/employee/form-ui"
-import { Briefcase, ArrowLeft } from "lucide-react"
+import { Briefcase, ArrowLeft, Loader2 } from "lucide-react"
 import Swal from "sweetalert2"
 import { z } from "zod"
-
-const initialDepartments = [
-  { name: "Engineering", head: "Michael Torres", count: 64, openRoles: 5 },
-  { name: "Product", head: "Sarah Chen", count: 32, openRoles: 2 },
-  { name: "Marketing", head: "Anna Williams", count: 28, openRoles: 3 },
-  { name: "Sales", head: "Robert Davis", count: 45, openRoles: 8 },
-  { name: "Human Resources", head: "Patricia Lee", count: 12, openRoles: 1 },
-  { name: "Finance", head: "Thomas Wright", count: 18, openRoles: 2 },
-]
-
-const initialDesignations = [
-  { name: "Software Engineer", grade: "L1", department: "Engineering", count: 24, openRoles: 2 },
-  { name: "Senior Software Engineer", grade: "L2", department: "Engineering", count: 18, openRoles: 1 },
-  { name: "Tech Lead", grade: "L3", department: "Engineering", count: 8, openRoles: 1 },
-  { name: "Engineering Manager", grade: "L4", department: "Engineering", count: 4, openRoles: 1 },
-  { name: "Product Manager", grade: "L3", department: "Product", count: 12, openRoles: 1 },
-  { name: "Designer", grade: "L2", department: "Product", count: 14, openRoles: 2 },
-  { name: "HR Specialist", grade: "L2", department: "HR", count: 6, openRoles: 0 },
-  { name: "Finance Analyst", grade: "L2", department: "Finance", count: 8, openRoles: 1 },
-  { name: "Marketing Lead", grade: "L3", department: "Marketing", count: 10, openRoles: 2 },
-  { name: "Sales Rep", grade: "L1", department: "Sales", count: 20, openRoles: 5 },
-]
+import { useCreateDesignationMutation } from "@/hooks/useDesignations"
 
 const designationSchema = z.object({
   name: z.string().trim().min(1, "Designation Title is required"),
+  code: z.string().trim().min(2, "Code must be at least 2 characters").max(50, "Code cannot exceed 50 characters"),
   grade: z.string().trim().min(1, "Pay Grade is required"),
-  department: z.string().trim().min(1, "Department is required"),
-  count: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Count must be 0 or more")),
-  openRoles: z.preprocess((val) => Number(val) || 0, z.number().min(0, "Open roles must be 0 or more")),
+  description: z.string().trim().optional(),
 })
 
 export default function CreateDesignationPage() {
   const navigate = useNavigate()
   const [name, setName] = useState("")
+  const [code, setCode] = useState("")
   const [grade, setGrade] = useState("")
-  const [department, setDepartment] = useState("")
-  const [count, setCount] = useState("0")
-  const [openRoles, setOpenRoles] = useState("0")
-  const [depts, setDepts] = useState<any[]>([])
+  const [description, setDescription] = useState("")
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
-  useEffect(() => {
-    const stored = localStorage.getItem("departments_list")
-    setDepts(stored ? JSON.parse(stored) : initialDepartments)
-  }, [])
+  const createMutation = useCreateDesignationMutation()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     // Zod validation
-    const result = designationSchema.safeParse({ name, grade, department, count, openRoles })
+    const result = designationSchema.safeParse({ name, code, grade, description })
     
     if (!result.success) {
       const fieldErrors: { [key: string]: string } = {}
@@ -78,42 +51,53 @@ export default function CreateDesignationPage() {
 
     const data = result.data
 
-    const newDesg = {
-      name: data.name,
-      grade: data.grade,
-      department: data.department,
-      count: data.count,
-      openRoles: data.openRoles,
-    }
-
-    const stored = localStorage.getItem("designations_list")
-    const currentList = stored ? JSON.parse(stored) : initialDesignations
-    const updatedList = [newDesg, ...currentList]
-    localStorage.setItem("designations_list", JSON.stringify(updatedList))
-
-    Swal.fire({
-      title: "Created!",
-      text: "Designation has been created successfully.",
-      icon: "success",
-      confirmButtonText: "Done",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal2-confirm swal2-styled"
+    createMutation.mutate(
+      {
+        name: data.name,
+        code: data.code,
+        grade: data.grade,
+        description: data.description || "",
+      },
+      {
+        onSuccess: () => {
+          Swal.fire({
+            title: "Created!",
+            text: "Designation has been created successfully.",
+            icon: "success",
+            confirmButtonText: "Done",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary hover:bg-primary/90 text-white font-semibold rounded-md px-4 py-2"
+            }
+          }).then(() => {
+            navigate("/departments?tab=designations")
+          })
+        },
+        onError: (err: any) => {
+          Swal.fire({
+            title: "Error",
+            text: err.message || "Failed to create designation",
+            icon: "error",
+            confirmButtonText: "Ok",
+            buttonsStyling: false,
+            customClass: {
+              confirmButton: "swal2-confirm swal2-styled bg-primary hover:bg-primary/90 text-white font-semibold rounded-md px-4 py-2"
+            }
+          })
+        }
       }
-    }).then(() => {
-      navigate("/departments")
-    })
+    )
   }
 
   return (
     <div className="space-y-6 w-full">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => navigate("/departments")}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => navigate("/departments?tab=designations")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <StepHeader 
           title="Create Designation" 
-          description="Create a new designation/title with custom grading and department mapping."
+          description="Create a new designation/title with custom grading."
           icon={Briefcase}
         />
       </div>
@@ -133,67 +117,51 @@ export default function CreateDesignationPage() {
               />
             </Field>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Department" required error={errors.department}>
-                <Select onValueChange={(val) => {
-                  setDepartment(val)
-                  if (errors.department) setErrors(prev => ({ ...prev, department: "" }))
-                }} value={department}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {depts.map(d => (
-                      <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+            <Field label="Designation Code" required error={errors.code}>
+              <Input 
+                value={code} 
+                onChange={(e) => {
+                  setCode(e.target.value)
+                  if (errors.code) setErrors(prev => ({ ...prev, code: "" }))
+                }}
+                placeholder="e.g. LQE" 
+              />
+            </Field>
 
-              <Field label="Pay Grade" required error={errors.grade}>
-                <Select onValueChange={(val) => {
-                  setGrade(val)
-                  if (errors.grade) setErrors(prev => ({ ...prev, grade: "" }))
-                }} value={grade}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="L1">L1 - Junior / Entry</SelectItem>
-                    <SelectItem value="L2">L2 - Mid / Intermediate</SelectItem>
-                    <SelectItem value="L3">L3 - Senior / Lead</SelectItem>
-                    <SelectItem value="L4">L4 - Principal / Manager</SelectItem>
-                    <SelectItem value="L5">L5 - Director / Executive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
+            <Field label="Pay Grade" required error={errors.grade}>
+              <Select onValueChange={(val) => {
+                setGrade(val)
+                if (errors.grade) setErrors(prev => ({ ...prev, grade: "" }))
+              }} value={grade}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="L1">L1 - Junior / Entry</SelectItem>
+                  <SelectItem value="L2">L2 - Mid / Intermediate</SelectItem>
+                  <SelectItem value="L3">L3 - Senior / Lead</SelectItem>
+                  <SelectItem value="L4">L4 - Principal / Manager</SelectItem>
+                  <SelectItem value="L5">L5 - Director / Executive</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Active Occupants" hint="Number of employees with this role">
-                <Input 
-                  type="number" 
-                  value={count} 
-                  onChange={(e) => setCount(e.target.value)} 
-                />
-              </Field>
-
-              <Field label="Open Vacancies" hint="Number of open recruitment openings">
-                <Input 
-                  type="number" 
-                  value={openRoles} 
-                  onChange={(e) => setOpenRoles(e.target.value)} 
-                />
-              </Field>
-            </div>
+            <Field label="Description">
+              <Input 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                placeholder="Brief details about the designation responsibilities..."
+              />
+            </Field>
           </div>
         </SectionCard>
 
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => navigate("/departments")}>
+          <Button type="button" variant="outline" onClick={() => navigate("/departments?tab=designations")} disabled={createMutation.isPending}>
             Cancel
           </Button>
-          <Button type="submit">
+          <Button type="submit" disabled={createMutation.isPending}>
+            {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Designation
           </Button>
         </div>

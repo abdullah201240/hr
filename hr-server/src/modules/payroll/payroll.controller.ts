@@ -1,0 +1,125 @@
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { PayrollService } from './payroll.service';
+import { DisburseDto, UpdatePayslipAdjustmentsDto } from './dto/payroll.dto';
+
+@ApiTags('Payroll')
+@ApiBearerAuth()
+@Controller('payroll')
+export class PayrollController {
+  constructor(private readonly payrollService: PayrollService) {}
+
+  @Get('cycles/:monthKey')
+  @ApiOperation({ summary: 'Get or initialize a payroll cycle for a given month' })
+  async getOrCreateCycle(@Param('monthKey') monthKey: string) {
+    return this.payrollService.getOrCreateCycle(monthKey);
+  }
+
+  @Post('cycles/:monthKey/sync')
+  @ApiOperation({ summary: 'Synchronize and recalculate active draft cycle' })
+  async syncDraftCycle(@Param('monthKey') monthKey: string) {
+    return this.payrollService.syncDraftCycle(monthKey);
+  }
+
+  @Post('cycles/:monthKey/adjustments/:payslipId')
+  @ApiOperation({ summary: 'Update draft payslip manual additions and deductions' })
+  async updatePayslipAdjustments(
+    @Param('monthKey') monthKey: string,
+    @Param('payslipId') payslipId: string,
+    @Body() dto: UpdatePayslipAdjustmentsDto,
+  ) {
+    return this.payrollService.updatePayslipAdjustments(monthKey, payslipId, dto);
+  }
+
+  @Post('cycles/:monthKey/process')
+  @ApiOperation({ summary: 'Lock and process a payroll cycle' })
+  async processCycle(@Param('monthKey') monthKey: string) {
+    return this.payrollService.processCycle(monthKey);
+  }
+
+  @Post('cycles/:monthKey/unlock')
+  @ApiOperation({ summary: 'Unlock a processed payroll cycle and revert to Draft status' })
+  async unlockCycle(@Param('monthKey') monthKey: string) {
+    return this.payrollService.unlockCycle(monthKey);
+  }
+
+  @Post('cycles/:monthKey/distribute')
+  @ApiOperation({ summary: 'Distribute payslips for a processed payroll cycle' })
+  async distributeCycle(@Param('monthKey') monthKey: string) {
+    return this.payrollService.distributeCycle(monthKey);
+  }
+
+  @Post('disburse')
+  @ApiOperation({ summary: 'Execute disbursement and record payment detail' })
+  async recordDisbursement(@Body() dto: DisburseDto, @Req() req: any) {
+    const userId = req.user.id;
+    return this.payrollService.recordDisbursement(dto, userId);
+  }
+
+  @Get('disbursements')
+  @ApiOperation({ summary: 'Get all historical disbursements records' })
+  async getDisbursements() {
+    return this.payrollService.getDisbursements();
+  }
+
+  @Get('my-payslips')
+  @ApiOperation({ summary: 'Get all finalized/distributed payslips for the logged-in employee' })
+  async getMyPayslips(@Req() req: any) {
+    const employeeId = req.user.id;
+    return this.payrollService.getMyPayslips(employeeId);
+  }
+
+  @Get('pf-balances')
+  @ApiOperation({ summary: 'Get accumulated PF balances for all employees' })
+  async getPfBalances() {
+    return this.payrollService.getPfBalances();
+  }
+
+  @Get('cycles/:monthKey/status')
+  @ApiOperation({ summary: 'Get payroll cycle processing status' })
+  async getCycleStatus(@Param('monthKey') monthKey: string) {
+    return this.payrollService.getCycleStatus(monthKey);
+  }
+
+  @Post('cycles/:monthKey/submit-for-approval')
+  @ApiOperation({ summary: 'Submit draft payroll cycle for approval' })
+  async submitForApproval(
+    @Param('monthKey') monthKey: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.submitForApproval(monthKey, userId);
+  }
+
+  @Post('payslips/:id/approve')
+  @ApiOperation({ summary: 'Approve a payslip at the current workflow stage' })
+  async approvePayslip(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.approvePayslip(id, userId);
+  }
+
+  @Post('payslips/:id/reject')
+  @ApiOperation({ summary: 'Reject a payslip and return it to draft/rejected status' })
+  async rejectPayslip(
+    @Param('id') id: string,
+    @Body() dto: { comment: string },
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.rejectPayslip(id, dto.comment, userId);
+  }
+
+  @Post('cycles/:monthKey/bulk-approve')
+  @ApiOperation({ summary: 'Bulk approve pending payslips in the cycle' })
+  async bulkApprove(
+    @Param('monthKey') monthKey: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    return this.payrollService.bulkApprove(monthKey, userId);
+  }
+}
+

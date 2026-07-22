@@ -1,0 +1,67 @@
+export interface LateRule {
+  minMinutes: number;
+  maxMinutes: number;
+  penalty: string;
+}
+
+export interface AttendanceSettings {
+  id: string;
+  startTime: string;
+  endTime: string;
+  breakStart: string;
+  breakEnd: string;
+  lateThreshold: number;
+  halfDayThreshold: number;
+  weeklyHolidays: string[];
+  lateRules: LateRule[];
+  twoStepLeaveThresholdDays: number;
+  twoStepClaimThresholdAmount: number | string;
+  earlyOutThreshold: number;
+  maxLateAllowedPerMonth: number;
+  lateToDayDeductionRate: number;
+  maxEarlyOutAllowedPerMonth: number;
+  earlyOutToDayDeductionRate: number;
+  enableLateDeduction: boolean;
+  enableEarlyOutDeduction: boolean;
+}
+
+export interface Holiday {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateAttendanceSettingsPayload {
+  startTime?: string;
+  endTime?: string;
+  breakStart?: string;
+  breakEnd?: string;
+  lateThreshold?: number;
+  halfDayThreshold?: number;
+  weeklyHolidays?: string[];
+  lateRules?: LateRule[];
+  twoStepLeaveThresholdDays?: number;
+  twoStepClaimThresholdAmount?: number;
+  earlyOutThreshold?: number;
+  maxLateAllowedPerMonth?: number;
+  lateToDayDeductionRate?: number;
+  maxEarlyOutAllowedPerMonth?: number;
+  earlyOutToDayDeductionRate?: number;
+  enableLateDeduction?: boolean;
+  enableEarlyOutDeduction?: boolean;
+}
+
+export interface CreateHolidayPayload {
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface UpdateHolidayPayload {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+}

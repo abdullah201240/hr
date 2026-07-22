@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
@@ -22,7 +23,10 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeQueryDto } from './dto/employee-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
+import { ChangeStatusDto } from './dto/change-status.dto';
+import { ResetEmployeePasswordDto } from './dto/reset-password.dto';
+import { Permissions } from '../auth/guards/roles.decorator';
+import { OwnerOnly } from '../auth/guards/owner.decorator';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -33,11 +37,14 @@ export class EmployeeController {
   // ─── Create (async via queue) ─────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
+  @Permissions('employees:create')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Create a new employee (queued)' })
   @ApiResponse({ status: 202, description: 'Employee creation job enqueued' })
-  @ApiResponse({ status: 409, description: 'Employee ID or email already exists' })
+  @ApiResponse({
+    status: 409,
+    description: 'Employee ID or email already exists',
+  })
   async create(@Body() dto: CreateEmployeeDto) {
     return this.employeeService.createAsync(dto);
   }
@@ -45,7 +52,7 @@ export class EmployeeController {
   // ─── Update (async via queue) ────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
+  @Permissions('employees:update')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Update an employee (queued)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -61,15 +68,24 @@ export class EmployeeController {
   // ─── List with filters ────────────────────────────────────────────────
 
   @Get()
+  @Permissions('employees:view_all', 'employees:view_team')
   @ApiOperation({ summary: 'List employees with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Paginated employee list' })
-  async findAll(@Query() query: EmployeeQueryDto) {
-    return this.employeeService.findAll(query);
+  async findAll(@Query() query: EmployeeQueryDto, @Req() req: any) {
+    return this.employeeService.findAll(query, req.user);
+  }
+
+  @Get('options')
+  @ApiOperation({ summary: 'Get a simple list of active employees for dropdown options' })
+  @ApiResponse({ status: 200, description: 'Simplified list of active employees' })
+  async getOptions() {
+    return this.employeeService.getDropdownOptions();
   }
 
   // ─── Single employee ──────────────────────────────────────────────────
 
   @Get(':id')
+  @OwnerOnly()  // ← Gap G6 fix: employees can only view their own profile
   @ApiOperation({ summary: 'Get employee by ID with all nested data' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Employee details' })
@@ -81,7 +97,7 @@ export class EmployeeController {
   // ─── Job status ───────────────────────────────────────────────────────
 
   @Get('jobs/:jobId')
-  @Roles('admin', 'hr')
+  @Permissions('employees:read')
   @ApiOperation({ summary: 'Check employee processing job status' })
   @ApiParam({ name: 'jobId', type: 'string' })
   @ApiResponse({ status: 200, description: 'Job status details' })
@@ -92,10 +108,42 @@ export class EmployeeController {
     return this.employeeService.getJobStatus(queue, jobId);
   }
 
+  // ─── Change status (active/inactive with optional scheduled date) ──────
+
+  @Patch(':id/status')
+  @Permissions('employees:update')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change employee status (active/inactive) with optional scheduled date' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Status changed (or scheduled)' })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  async changeStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeStatusDto,
+  ) {
+    return this.employeeService.changeStatus(id, dto);
+  }
+
+  // ─── Reset Password (Admin/HR only) ────────────────────────────────────
+
+  @Patch(':id/password')
+  @Permissions('employees:reset_password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset employee password (Admin/HR only)' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Password reset successful' })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  async resetPassword(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResetEmployeePasswordDto,
+  ) {
+    return this.employeeService.resetPassword(id, dto.password);
+  }
+
   // ─── Soft delete ──────────────────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
+  @Permissions('employees:delete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Soft delete (terminate) an employee' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })

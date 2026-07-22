@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,9 +20,11 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { DesignationService } from './designation.service';
-import { CreateDesignationDto, UpdateDesignationDto } from './dto/create-designation.dto';
+import {
+  CreateDesignationDto,
+  UpdateDesignationDto,
+} from './dto/create-designation.dto';
 import { DesignationQueryDto } from './dto/designation-query.dto';
-import { Roles } from '../auth/guards/roles.decorator';
 
 @ApiTags('Designations')
 @ApiBearerAuth()
@@ -32,7 +35,6 @@ export class DesignationController {
   // ─── Create ────────────────────────────────────────────────────────────
 
   @Post()
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new designation' })
   @ApiResponse({ status: 201, description: 'Designation created' })
@@ -53,8 +55,12 @@ export class DesignationController {
   // ─── Dropdown options (for select inputs) ──────────────────────────────
 
   @Get('options')
+  @Header('Cache-Control', 'public, max-age=60')
   @ApiOperation({ summary: 'Get active designations as dropdown options' })
-  @ApiResponse({ status: 200, description: 'Designation options for select inputs' })
+  @ApiResponse({
+    status: 200,
+    description: 'Designation options for select inputs',
+  })
   async getOptions() {
     return this.designationService.getDropdownOptions();
   }
@@ -73,7 +79,6 @@ export class DesignationController {
   // ─── Update ────────────────────────────────────────────────────────────
 
   @Patch(':id')
-  @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Update a designation' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Designation updated' })
@@ -89,12 +94,14 @@ export class DesignationController {
   // ─── Soft delete (deactivate) ──────────────────────────────────────────
 
   @Delete(':id')
-  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Deactivate a designation (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Designation deactivated' })
-  @ApiResponse({ status: 400, description: 'Active employees still hold this designation' })
+  @ApiResponse({
+    status: 400,
+    description: 'Active employees still hold this designation',
+  })
   @ApiResponse({ status: 404, description: 'Designation not found' })
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.designationService.remove(id);

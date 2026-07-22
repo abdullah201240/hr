@@ -11,7 +11,10 @@ import { DB_CONNECTION, type Database } from '../../db';
 import { departments, employees } from '../../db/schema';
 import { CacheService } from '../../common/cache/cache.service';
 import { CacheKeys } from '../../common/cache/cache-keys';
-import type { CreateDepartmentDto, UpdateDepartmentDto } from './dto/create-department.dto';
+import type {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dto/create-department.dto';
 import type { DepartmentQueryDto } from './dto/department-query.dto';
 
 @Injectable()
@@ -32,10 +35,7 @@ export class DepartmentService {
         .select({ id: departments.id })
         .from(departments)
         .where(
-          or(
-            eq(departments.name, dto.name),
-            eq(departments.code, dto.code),
-          ),
+          or(eq(departments.name, dto.name), eq(departments.code, dto.code)),
         )
         .limit(1);
 
@@ -72,8 +72,10 @@ export class DepartmentService {
 
       await this.invalidateListCache();
 
-      this.logger.log(`Department created: ${department!.name} (${department!.code})`);
-      return department!;
+      this.logger.log(
+        `Department created: ${department.name} (${department.code})`,
+      );
+      return department;
     });
   }
 
@@ -106,13 +108,13 @@ export class DepartmentService {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Total count
-    const [totalRow] = await this.db
-      .select({ count: count() })
-      .from(departments)
-      .where(where);
-
-    const total = totalRow?.count ?? 0;
+    // Build a deterministic cache key from query params
+    const cacheKeyParts = `${page}:${limit}:${search ?? ''}:${isActive ?? ''}:${sortBy}:${sortOrder}`;
+    const cached = await this.cache.getByKey<any>(
+      CacheKeys.departmentListPaginated,
+      cacheKeyParts,
+    );
+    if (cached) return cached;
 
     // Sort
     const sortColumns: Record<string, any> = {
@@ -125,24 +127,31 @@ export class DepartmentService {
 
     // Paginated query
     const offset = (page - 1) * limit;
-    const data = await this.db
-      .select({
-        id: departments.id,
-        name: departments.name,
-        code: departments.code,
-        description: departments.description,
-        headEmployeeId: departments.headEmployeeId,
-        isActive: departments.isActive,
-        createdAt: departments.createdAt,
-        updatedAt: departments.updatedAt,
-      })
-      .from(departments)
-      .where(where)
-      .orderBy(orderFn(sortCol))
-      .limit(limit)
-      .offset(offset);
 
-    return {
+    // Run count + data in parallel for faster response
+    const [[totalRow], data] = await Promise.all([
+      this.db.select({ count: count() }).from(departments).where(where),
+      this.db
+        .select({
+          id: departments.id,
+          name: departments.name,
+          code: departments.code,
+          description: departments.description,
+          headEmployeeId: departments.headEmployeeId,
+          isActive: departments.isActive,
+          createdAt: departments.createdAt,
+          updatedAt: departments.updatedAt,
+        })
+        .from(departments)
+        .where(where)
+        .orderBy(orderFn(sortCol))
+        .limit(limit)
+        .offset(offset),
+    ]);
+
+    const total = totalRow?.count ?? 0;
+
+    const result = {
       data,
       meta: {
         total,
@@ -151,11 +160,22 @@ export class DepartmentService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    await this.cache.setByKey(
+      CacheKeys.departmentListPaginated,
+      result,
+      cacheKeyParts,
+    );
+
+    return result;
   }
 
   // ─── Find one ────────────────────────────────────────────────────────────
 
   async findOne(id: string) {
+    const cached = await this.cache.getByKey<any>(CacheKeys.departmentById, id);
+    if (cached) return cached;
+
     const [department] = await this.db
       .select()
       .from(departments)
@@ -172,10 +192,13 @@ export class DepartmentService {
       .from(employees)
       .where(eq(employees.departmentId, department.id));
 
-    return {
+    const result = {
       ...department,
       employeeCount: empCount?.count ?? 0,
     };
+
+    await this.cache.setByKey(CacheKeys.departmentById, result, id);
+    return result;
   }
 
   // ─── Update ──────────────────────────────────────────────────────────────
@@ -208,7 +231,7 @@ export class DepartmentService {
           .limit(1);
 
         // Filter out self-match
-        if (conflict.length > 0 && conflict[0]!.id !== id) {
+        if (conflict.length > 0 && conflict[0].id !== id) {
           throw new ConflictException(
             `Another department already uses this name or code`,
           );
@@ -234,8 +257,10 @@ export class DepartmentService {
 
       if (dto.name !== undefined) updateData.name = dto.name;
       if (dto.code !== undefined) updateData.code = dto.code;
-      if (dto.description !== undefined) updateData.description = dto.description;
-      if (dto.headEmployeeId !== undefined) updateData.headEmployeeId = dto.headEmployeeId || null;
+      if (dto.description !== undefined)
+        updateData.description = dto.description;
+      if (dto.headEmployeeId !== undefined)
+        updateData.headEmployeeId = dto.headEmployeeId || null;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
       const [updated] = await tx
@@ -244,10 +269,10 @@ export class DepartmentService {
         .where(eq(departments.id, id))
         .returning();
 
-      await this.invalidateListCache();
+      await this.invalidateListCache(id);
 
-      this.logger.log(`Department updated: ${updated!.name} (${updated!.code})`);
-      return updated!;
+      this.logger.log(`Department updated: ${updated.name} (${updated.code})`);
+      return updated;
     });
   }
 
@@ -277,7 +302,7 @@ export class DepartmentService {
 
     if ((empCount?.count ?? 0) > 0) {
       throw new BadRequestException(
-        `Cannot deactivate department "${existing.name}": ${empCount!.count} active employee(s) assigned. Reassign them first.`,
+        `Cannot deactivate department "${existing.name}": ${empCount.count} active employee(s) assigned. Reassign them first.`,
       );
     }
 
@@ -286,7 +311,7 @@ export class DepartmentService {
       .set({ isActive: false })
       .where(eq(departments.id, id));
 
-    await this.invalidateListCache();
+    await this.invalidateListCache(id);
 
     this.logger.log(`Department deactivated: ${existing.name}`);
     return { message: `Department "${existing.name}" has been deactivated` };
@@ -314,7 +339,14 @@ export class DepartmentService {
 
   // ─── Cache helpers ────────────────────────────────────────────────────────
 
-  private async invalidateListCache() {
-    await this.cache.delByPattern(CacheKeys.departmentList);
+  private async invalidateListCache(id?: string) {
+    const promises: Promise<void>[] = [
+      this.cache.delByPattern(CacheKeys.departmentList),
+      this.cache.delByPattern(CacheKeys.departmentListPaginated),
+    ];
+    if (id) {
+      promises.push(this.cache.delByKey(CacheKeys.departmentById, id));
+    }
+    await Promise.all(promises);
   }
 }

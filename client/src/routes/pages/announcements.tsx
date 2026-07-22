@@ -37,52 +37,20 @@ import {
   Edit,
   Calendar,
   User,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import { z } from "zod"
-
-export interface Announcement {
-  id: string
-  title: string
-  content: string
-  category: "info" | "warning" | "event" | "policy"
-  department: string
-  date: string
-  author: string
-  status: "Published" | "Draft"
-}
-
-const defaultAnnouncements: Announcement[] = [
-  {
-    id: "ann-1",
-    title: "Annual Company Picnic scheduled for June 29",
-    content: "We are excited to announce that our Annual Company Picnic will be held on Monday, June 29th at Golden Gate Park. The picnic will feature food trucks, team-building activities, and live music. Families are welcome! Please RSVP by June 20th.",
-    category: "event",
-    department: "All Departments",
-    date: "2026-06-10",
-    author: "Alex Johnson",
-    status: "Published",
-  },
-  {
-    id: "ann-2",
-    title: "Updated Remote Work & Hybrid Schedule Policy",
-    content: "Starting next month, all employees are requested to sync their core working days (Tuesday & Thursday) in the office. Remote work request configurations can be managed in the settings area. Please read the document in the Policies folder for further details.",
-    category: "policy",
-    department: "All Departments",
-    date: "2026-06-08",
-    author: "Alex Johnson",
-    status: "Published",
-  },
-  {
-    id: "ann-3",
-    title: "Scheduled Server Maintenance: Saturday Night",
-    content: "The internal IT systems and HR portal will be offline for scheduled database maintenance this Saturday, June 20th, from 10:00 PM to 2:00 AM. Please ensure you save all pending tasks and reports before then.",
-    category: "warning",
-    department: "All Departments",
-    date: "2026-06-12",
-    author: "IT Infrastructure Team",
-    status: "Published",
-  },
-]
+import {
+  useAnnouncementsPaginated,
+  useCreateAnnouncement,
+  useUpdateAnnouncement,
+  useDeleteAnnouncement,
+  type Announcement,
+} from "@/hooks/useAnnouncements"
+import { useAuthStore } from "@/store/useAuthStore"
+import Swal from "sweetalert2"
 
 const announcementSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -91,24 +59,46 @@ const announcementSchema = z.object({
 })
 
 export default function AnnouncementsPage() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>(() => {
-    const saved = localStorage.getItem("hr_announcements")
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    return defaultAnnouncements
-  })
-
-  useEffect(() => {
-    localStorage.setItem("hr_announcements", JSON.stringify(announcements))
-  }, [announcements])
-
+  const { user } = useAuthStore()
+  
+  // Pagination state
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [cursorHistory, setCursorHistory] = useState<string[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [limit] = useState(20)
+  
+  // Filter state
   const [search, setSearch] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setCursor(null) // Reset cursor when search changes
+      setCursorHistory([])
+      setCurrentPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+  
+  // Fetch paginated announcements
+  const { data: pageData, isLoading } = useAnnouncementsPaginated({
+    cursor: cursor || undefined,
+    limit,
+    status: selectedStatus as any,
+    search: debouncedSearch || undefined,
+  })
+  
+  const announcements = pageData?.data || []
+  const hasNextPage = pageData?.hasNextPage || false
+  const nextCursor = pageData?.nextCursor || null
+  
+  // Mutations
+  const createMutation = useCreateAnnouncement()
+  const updateMutation = useUpdateAnnouncement()
+  const deleteMutation = useDeleteAnnouncement()
   
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -152,7 +142,7 @@ export default function AnnouncementsPage() {
     setIsViewOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setErrors({})
     const result = announcementSchema.safeParse({
       title: formTitle,
@@ -171,53 +161,101 @@ export default function AnnouncementsPage() {
       return
     }
 
-    if (editMode && currentAnnouncement) {
-      setAnnouncements(prev =>
-        prev.map(a =>
-          a.id === currentAnnouncement.id
-            ? {
-                ...a,
-                title: formTitle.trim(),
-                content: formContent.trim(),
-                category: formCategory,
-                department: formDepartment,
-                status: formStatus,
-              }
-            : a
-        )
-      )
-    } else {
-      const newAnn: Announcement = {
-        id: "ann-" + Math.random().toString(36).substring(2, 9),
-        title: formTitle.trim(),
-        content: formContent.trim(),
-        category: formCategory,
-        department: formDepartment,
-        date: new Date().toISOString().split("T")[0],
-        author: "Alex Johnson",
-        status: formStatus,
+    try {
+      if (editMode && currentAnnouncement) {
+        await updateMutation.mutateAsync({
+          id: currentAnnouncement.id,
+          data: {
+            title: formTitle.trim(),
+            content: formContent.trim(),
+            category: formCategory,
+            department: formDepartment,
+            status: formStatus,
+          }
+        })
+        Swal.fire({
+          icon: 'success',
+          title: 'Updated!',
+          text: 'Announcement has been updated.',
+          timer: 1500,
+          showConfirmButton: false,
+        })
+      } else {
+        await createMutation.mutateAsync({
+          title: formTitle.trim(),
+          content: formContent.trim(),
+          category: formCategory,
+          department: formDepartment,
+          status: formStatus,
+          authorId: user?.id,
+          authorName: user?.fullNameEnglish || 'HR Admin',
+        })
+        Swal.fire({
+          icon: 'success',
+          title: 'Created!',
+          text: 'New announcement has been published.',
+          timer: 1500,
+          showConfirmButton: false,
+        })
       }
-      setAnnouncements(prev => [newAnn, ...prev])
-    }
-
-    setIsFormOpen(false)
-  }
-
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this announcement?")) {
-      setAnnouncements(prev => prev.filter(a => a.id !== id))
+      setIsFormOpen(false)
+    } catch (error: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error?.response?.data?.message || 'Something went wrong',
+      })
     }
   }
 
-  const filteredAnnouncements = announcements.filter(ann => {
-    const matchesSearch =
-      ann.title.toLowerCase().includes(search.toLowerCase()) ||
-      ann.content.toLowerCase().includes(search.toLowerCase()) ||
-      ann.author.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || ann.status === selectedStatus
-    return matchesSearch && matchesStatus
-  })
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!"
+    })
 
+    if (result.isConfirmed) {
+      try {
+        await deleteMutation.mutateAsync(id)
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'Announcement has been deleted.',
+          timer: 1500,
+          showConfirmButton: false,
+        })
+      } catch (error: any) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error?.response?.data?.message || 'Failed to delete announcement',
+        })
+      }
+    }
+  }
+
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (nextCursor) {
+      setCursorHistory([...cursorHistory, cursor || ''])
+      setCursor(nextCursor)
+      setCurrentPage(prev => prev + 1)
+    }
+  }
+
+  const handlePrevPage = () => {
+    if (cursorHistory.length > 0) {
+      const prevCursor = cursorHistory[cursorHistory.length - 1]
+      setCursorHistory(cursorHistory.slice(0, -1))
+      setCursor(prevCursor || null)
+      setCurrentPage(prev => prev - 1)
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -280,8 +318,15 @@ export default function AnnouncementsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAnnouncements.length > 0 ? (
-                  filteredAnnouncements.map(ann => {
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
+                      <p className="text-sm font-semibold">Loading announcements...</p>
+                    </TableCell>
+                  </TableRow>
+                ) : announcements.length > 0 ? (
+                  announcements.map((ann: any) => {
                     return (
                       <TableRow key={ann.id} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
                         <TableCell className="py-3">
@@ -344,6 +389,42 @@ export default function AnnouncementsPage() {
         </CardContent>
       </Card>
 
+      {/* Pagination Controls */}
+      {announcements.length > 0 && (
+        <Card className="shadow-none border-border/40">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                Showing <span className="font-semibold text-foreground">{announcements.length}</span> results
+                {cursorHistory.length > 0 && ` (Page ${currentPage})`}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={cursorHistory.length === 0}
+                  className="text-xs gap-1"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={!hasNextPage}
+                  className="text-xs gap-1"
+                >
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Form Dialog for Create/Edit */}
       <Dialog open={isFormOpen} onOpenChange={(val) => {
         setIsFormOpen(val)
@@ -389,25 +470,44 @@ export default function AnnouncementsPage() {
               />
               {errors.content && <p className="text-[10px] text-red-500">{errors.content}</p>}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="status" className="text-xs font-semibold">Status</Label>
-              <Select value={formStatus} onValueChange={(v: any) => setFormStatus(v)}>
-                <SelectTrigger id="status" className="text-xs h-9">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Published" className="text-xs">Published</SelectItem>
-                  <SelectItem value="Draft" className="text-xs">Draft</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && <p className="text-[10px] text-red-500">{errors.status}</p>}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="category" className="text-xs font-semibold">Category</Label>
+                <Select value={formCategory} onValueChange={(v: any) => setFormCategory(v)}>
+                  <SelectTrigger id="category" className="text-xs h-9">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="info" className="text-xs">Information</SelectItem>
+                    <SelectItem value="warning" className="text-xs">Warning</SelectItem>
+                    <SelectItem value="event" className="text-xs">Event</SelectItem>
+                    <SelectItem value="policy" className="text-xs">Policy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="status" className="text-xs font-semibold">Status</Label>
+                <Select value={formStatus} onValueChange={(v: any) => setFormStatus(v)}>
+                  <SelectTrigger id="status" className="text-xs h-9">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Published" className="text-xs">Published</SelectItem>
+                    <SelectItem value="Draft" className="text-xs">Draft</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.status && <p className="text-[10px] text-red-500">{errors.status}</p>}
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setIsFormOpen(false)} className="text-xs">
+            <Button variant="outline" size="sm" onClick={() => setIsFormOpen(false)} className="text-xs" disabled={createMutation.isPending || updateMutation.isPending}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} className="text-xs">
+            <Button size="sm" onClick={handleSave} className="text-xs" disabled={createMutation.isPending || updateMutation.isPending}>
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
               Save Announcement
             </Button>
           </DialogFooter>
@@ -420,7 +520,15 @@ export default function AnnouncementsPage() {
           {currentAnnouncement && (
             <>
               <DialogHeader className="space-y-3">
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-between">
+                  <Badge className={cn("text-[9px] font-bold border-none uppercase",
+                    currentAnnouncement.category === "warning" ? "bg-amber-500/10 text-amber-600" :
+                    currentAnnouncement.category === "event" ? "bg-violet-500/10 text-violet-600" :
+                    currentAnnouncement.category === "policy" ? "bg-sky-500/10 text-sky-600" :
+                    "bg-emerald-500/10 text-emerald-600"
+                  )}>
+                    {currentAnnouncement.category}
+                  </Badge>
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1.5 font-medium">
                     <Calendar className="h-3.5 w-3.5" />
                     Published: {currentAnnouncement.date}

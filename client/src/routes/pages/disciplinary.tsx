@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,57 +35,16 @@ import {
   Send,
   CheckCircle2,
   FileText,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { z } from "zod"
-
-export interface DisciplinaryCase {
-  id: string
-  employeeName: string
-  employeeEmail: string
-  offenseType: string
-  dateReported: string
-  status: "Under Investigation" | "Show Cause Issued" | "Explanation Received" | "Inquiry Hearing" | "Action Taken"
-  showCauseNotice: string
-  employeeExplanation: string
-  finalAction: string
-}
-
-const defaultCases: DisciplinaryCase[] = [
-  {
-    id: "DSC-001",
-    employeeName: "Marcus Brown",
-    employeeEmail: "marcus.brown@sadoshima.com",
-    offenseType: "Attendance policy violation",
-    dateReported: "2026-06-05",
-    status: "Action Taken",
-    showCauseNotice: "Please explain the repeated unexcused absences in May 2026.",
-    employeeExplanation: "I experienced emergency medical concerns in my family.",
-    finalAction: "Issued First Written Warning.",
-  },
-  {
-    id: "DSC-002",
-    employeeName: "Sara Chen",
-    employeeEmail: "sara.chen@sadoshima.com",
-    offenseType: "Information Security Breach",
-    dateReported: "2026-06-12",
-    status: "Show Cause Issued",
-    showCauseNotice: "Accessing sensitive customer records outside working shifts without authorization.",
-    employeeExplanation: "",
-    finalAction: "",
-  },
-  {
-    id: "DSC-003",
-    employeeName: "David Kim",
-    employeeEmail: "david.kim@sadoshima.com",
-    offenseType: "Insubordination",
-    dateReported: "2026-06-14",
-    status: "Explanation Received",
-    showCauseNotice: "Repeated refusal to carry out assigned tasks by reporting manager.",
-    employeeExplanation: "I felt that the timeline was unfeasible and requested adjustments which were ignored.",
-    finalAction: "",
-  },
-]
+import {
+  useDisciplinaryCasesQuery,
+  useCreateDisciplinaryCaseMutation,
+  useUpdateDisciplinaryCaseMutation,
+  type DisciplinaryCase,
+} from "@/hooks/useDisciplinary"
 
 const disciplinaryCaseSchema = z.object({
   employeeName: z.string().min(1, "Employee name is required"),
@@ -95,20 +54,17 @@ const disciplinaryCaseSchema = z.object({
 })
 
 export default function DisciplinaryPage() {
-  const [cases, setCases] = useState<DisciplinaryCase[]>(() => {
-    const saved = localStorage.getItem("hr_disciplinary")
-    if (saved) {
-      try { return JSON.parse(saved) } catch (e) { console.error(e) }
-    }
-    return defaultCases
-  })
-
-  useEffect(() => {
-    localStorage.setItem("hr_disciplinary", JSON.stringify(cases))
-  }, [cases])
-
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+
+  // API Queries & Mutations
+  const { data: cases = [], isLoading } = useDisciplinaryCasesQuery({
+    search,
+    status: statusFilter,
+  })
+
+  const createMutation = useCreateDisciplinaryCaseMutation()
+  const updateMutation = useUpdateDisciplinaryCaseMutation()
 
   // Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -147,22 +103,22 @@ export default function DisciplinaryPage() {
       return
     }
 
-    const newRecord: DisciplinaryCase = {
-      id: "DSC-" + Math.floor(100 + Math.random() * 900),
-      employeeName: newEmpName.trim(),
-      employeeEmail: newEmpEmail.trim(),
-      offenseType: newOffense,
-      dateReported: new Date().toISOString().split("T")[0],
-      status: newShowCause.trim() ? "Show Cause Issued" : "Under Investigation",
-      showCauseNotice: newShowCause.trim(),
-      employeeExplanation: "",
-      finalAction: "",
-    }
-    setCases([newRecord, ...cases])
-    setIsCreateOpen(false)
-    setNewEmpName("")
-    setNewEmpEmail("")
-    setNewShowCause("")
+    createMutation.mutate(
+      {
+        employeeName: newEmpName.trim(),
+        employeeEmail: newEmpEmail.trim(),
+        offenseType: newOffense,
+        showCauseNotice: newShowCause,
+      },
+      {
+        onSuccess: () => {
+          setIsCreateOpen(false)
+          setNewEmpName("")
+          setNewEmpEmail("")
+          setNewShowCause("")
+        },
+      }
+    )
   }
 
   const handleOpenDetail = (c: DisciplinaryCase) => {
@@ -175,29 +131,31 @@ export default function DisciplinaryPage() {
 
   const handleSaveResolution = () => {
     if (!currentCase) return
-    setCases(prev =>
-      prev.map(c =>
-        c.id === currentCase.id
-          ? {
-              ...c,
-              employeeExplanation: tempExplanation,
-              finalAction: tempFinalAction,
-              status: tempStatus,
-            }
-          : c
-      )
+    updateMutation.mutate(
+      {
+        id: currentCase.id,
+        status: tempStatus,
+        employeeExplanation: tempExplanation,
+        finalAction: tempFinalAction,
+      },
+      {
+        onSuccess: () => {
+          setIsDetailOpen(false)
+        },
+      }
     )
-    setIsDetailOpen(false)
   }
 
-  const filtered = cases.filter(c => {
-    const matchesSearch =
-      c.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-      c.employeeEmail.toLowerCase().includes(search.toLowerCase()) ||
-      c.offenseType.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === "all" || c.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const filtered = cases // Handled completely by backend query params
+
+  if (isLoading) {
+    return (
+      <div className="h-[400px] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading disciplinary ledger...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

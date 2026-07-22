@@ -9,10 +9,17 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiConsumes, ApiBearerAuth, ApiOperation, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiConsumes,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumberString } from 'class-validator';
 import type { FastifyRequest } from 'fastify';
 import { CloudinaryService, UploadResult } from './cloudinary.service';
+import { Permissions } from '../auth/guards/roles.decorator';
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
@@ -68,19 +75,35 @@ export class UploadController {
     });
 
     if (!file) {
-      throw new BadRequestException('No file provided. Send a file in the "file" field.');
+      throw new BadRequestException(
+        'No file provided. Send a file in the "file" field.',
+      );
     }
 
     const buffer = await file.toBuffer();
-    const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
+    const tags = query.tags
+      ? query.tags.split(',').map((t) => t.trim())
+      : undefined;
+
+    const isImage = file.mimetype.startsWith('image/');
 
     const result = await this.cloudinary.uploadBuffer(buffer, file.mimetype, {
       folder: query.folder,
       tags,
       publicId: query.publicId,
+      ...(isImage && {
+        transformation: {
+          quality: 'auto',
+          format: 'auto',
+          crop: 'limit',
+          width: 1600,
+        },
+      }),
     });
 
-    this.logger.log(`Uploaded: ${result.publicId} (${result.format}, ${result.bytes} bytes)`);
+    this.logger.log(
+      `Uploaded: ${result.publicId} (${result.format}, ${result.bytes} bytes)`,
+    );
     return result;
   }
 
@@ -97,29 +120,41 @@ export class UploadController {
       limits: { fileSize: 10 * 1024 * 1024 },
     });
 
-    const results: UploadResult[] = [];
-    const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
-    let count = 0;
+    // Collect all file buffers first, then upload in parallel
+    const buffers: { buffer: Buffer; mimetype: string }[] = [];
+    const tags = query.tags
+      ? query.tags.split(',').map((t) => t.trim())
+      : undefined;
 
     for await (const part of parts) {
       if (part.type !== 'file') continue;
-      if (count >= 5) {
+      if (buffers.length >= 5) {
         throw new BadRequestException('Maximum 5 files per batch upload');
       }
-
-      const buffer = await part.toBuffer();
-      const result = await this.cloudinary.uploadBuffer(buffer, part.mimetype, {
-        folder: query.folder,
-        tags,
-      });
-
-      results.push(result);
-      count++;
+      buffers.push({ buffer: await part.toBuffer(), mimetype: part.mimetype });
     }
 
-    if (results.length === 0) {
+    if (buffers.length === 0) {
       throw new BadRequestException('No files provided');
     }
+
+    const results = await Promise.all(
+      buffers.map(({ buffer, mimetype }) => {
+        const isImage = mimetype.startsWith('image/');
+        return this.cloudinary.uploadBuffer(buffer, mimetype, {
+          folder: query.folder,
+          tags,
+          ...(isImage && {
+            transformation: {
+              quality: 'auto',
+              format: 'auto',
+              crop: 'limit',
+              width: 1600,
+            },
+          }),
+        });
+      }),
+    );
 
     this.logger.log(`Batch uploaded: ${results.length} files`);
     return results;
@@ -140,7 +175,9 @@ export class UploadController {
     // SSRF protection: only allow https and block private IPs
     this.validateUrl(url);
 
-    const tags = query.tags ? query.tags.split(',').map((t) => t.trim()) : undefined;
+    const tags = query.tags
+      ? query.tags.split(',').map((t) => t.trim())
+      : undefined;
 
     const result = await this.cloudinary.uploadUrl(url, {
       folder: query.folder,
@@ -168,12 +205,24 @@ export class UploadController {
   // ── Delete by prefix ───────────────────────────────────────────────────────
 
   @Delete()
-  @ApiOperation({ summary: 'Delete all files matching a prefix' })
-  async deleteByPrefix(@Query() query: DeleteByPrefixQueryDto): Promise<{ deleted: number }> {
+  @Permissions('upload:delete')
+  @ApiOperation({ summary: 'Delete all files matching a prefix (Admin only)' })
+  async deleteByPrefix(
+    @Query() query: DeleteByPrefixQueryDto,
+  ): Promise<{ deleted: number }> {
     if (!query.prefix) {
       throw new BadRequestException('prefix query parameter is required');
     }
-    const deleted = await this.cloudinary.deleteByPrefix(query.prefix, query.resourceType);
+    const cleanPrefix = query.prefix.trim();
+    if (cleanPrefix.length < 4 || cleanPrefix === 'hr-system' || cleanPrefix === 'hr-system/') {
+      throw new BadRequestException(
+        'Prefix is too short or generic. Deleting root folders is prohibited for safety.',
+      );
+    }
+    const deleted = await this.cloudinary.deleteByPrefix(
+      cleanPrefix,
+      query.resourceType,
+    );
     return { deleted };
   }
 
@@ -204,7 +253,9 @@ export class UploadController {
   // ── Generate signed URL ────────────────────────────────────────────────────
 
   @Get(':publicId/signed-url')
-  @ApiOperation({ summary: 'Generate a time-limited signed URL for a private resource' })
+  @ApiOperation({
+    summary: 'Generate a time-limited signed URL for a private resource',
+  })
   async getSignedUrl(
     @Param('publicId') publicId: string,
     @Query('expiresIn') expiresIn?: number,
@@ -245,7 +296,9 @@ export class UploadController {
 
     for (const pattern of blockedPatterns) {
       if (pattern.test(hostname)) {
-        throw new BadRequestException('URLs pointing to private or reserved addresses are not allowed');
+        throw new BadRequestException(
+          'URLs pointing to private or reserved addresses are not allowed',
+        );
       }
     }
   }

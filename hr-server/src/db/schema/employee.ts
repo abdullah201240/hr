@@ -9,9 +9,11 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { baseTable } from './_base';
+import { customRoles } from './roles';
 
 // ─── Departments ────────────────────────────────────────────────────────────
 
@@ -25,7 +27,7 @@ export const departments = pgTable(
     description: text('description').default(''),
 
     /** Optional head of department (reference to an employee) */
-    headEmployeeId: uuid('head_employee_id'),
+    headEmployeeId: uuid('head_employee_id').references((): AnyPgColumn => employees.id, { onDelete: 'set null' }),
 
     /** Soft delete / active flag */
     isActive: boolean('is_active').default(true).notNull(),
@@ -78,7 +80,9 @@ export const employees = pgTable(
     fullNameEnglish: varchar('full_name_english', { length: 255 }).notNull(),
     fullNameBangla: varchar('full_name_bangla', { length: 255 }).default(''),
     phone: varchar('phone', { length: 30 }).notNull(),
-    personalMobileNumber: varchar('personal_mobile_number', { length: 30 }).default(''),
+    personalMobileNumber: varchar('personal_mobile_number', {
+      length: 30,
+    }).default(''),
     religion: varchar('religion', { length: 50 }).notNull(),
     gender: varchar('gender', { length: 30 }).notNull(),
     dateOfBirth: date('date_of_birth').notNull(),
@@ -90,36 +94,52 @@ export const employees = pgTable(
     tinNumber: varchar('tin_number', { length: 50 }).default(''),
 
     // Family lineage
-    fatherNameEnglish: varchar('father_name_english', { length: 255 }).default(''),
-    fatherNameBangla: varchar('father_name_bangla', { length: 255 }).default(''),
-    motherNameEnglish: varchar('mother_name_english', { length: 255 }).default(''),
-    motherNameBangla: varchar('mother_name_bangla', { length: 255 }).default(''),
+    fatherNameEnglish: varchar('father_name_english', { length: 255 }).default(
+      '',
+    ),
+    fatherNameBangla: varchar('father_name_bangla', { length: 255 }).default(
+      '',
+    ),
+    motherNameEnglish: varchar('mother_name_english', { length: 255 }).default(
+      '',
+    ),
+    motherNameBangla: varchar('mother_name_bangla', { length: 255 }).default(
+      '',
+    ),
 
     // Address
     currentAddress: text('current_address').default(''),
     permanentAddress: text('permanent_address').default(''),
 
     // Emergency contact
-    emergencyContactName: varchar('emergency_contact_name', { length: 255 }).default(''),
-    emergencyContactRelation: varchar('emergency_contact_relation', { length: 100 }).default(''),
-    emergencyContactNumber: varchar('emergency_contact_number', { length: 30 }).default(''),
+    emergencyContactName: varchar('emergency_contact_name', {
+      length: 255,
+    }).default(''),
+    emergencyContactRelation: varchar('emergency_contact_relation', {
+      length: 100,
+    }).default(''),
+    emergencyContactNumber: varchar('emergency_contact_number', {
+      length: 30,
+    }).default(''),
 
     // Employment
     designationId: uuid('designation_id')
       .notNull()
-      .references(() => designations.id, { onDelete: 'restrict' }),
+      .references((): AnyPgColumn => designations.id, { onDelete: 'restrict' }),
     departmentId: uuid('department_id')
       .notNull()
-      .references(() => departments.id, { onDelete: 'restrict' }),
+      .references((): AnyPgColumn => departments.id, { onDelete: 'restrict' }),
     employeeType: varchar('employee_type', { length: 50 }).notNull(),
     joinDate: date('join_date').notNull(),
     lineManagerId: uuid('line_manager_id'),
 
     // Status
     status: varchar('status', { length: 20 }).default('active').notNull(), // active | inactive | terminated
+    inactiveDate: date('inactive_date'), // Scheduled date to become inactive
+    isSalary: boolean('is_salary').default(true).notNull(),
 
     // Auth
-    role: varchar('role', { length: 20 }).default('employee').notNull(), // admin | hr | employee
+    customRoleId: uuid('custom_role_id').references((): AnyPgColumn => customRoles.id, { onDelete: 'set null' }),
     refreshTokenVersion: integer('refresh_token_version').default(1).notNull(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     isEmailVerified: boolean('is_email_verified').default(false).notNull(),
@@ -131,8 +151,11 @@ export const employees = pgTable(
     uniqueIndex('employees_employee_id_idx').on(table.employeeId),
     uniqueIndex('employees_email_idx').on(table.email),
     index('employees_department_id_idx').on(table.departmentId),
+    index('employees_designation_id_idx').on(table.designationId),
     index('employees_status_idx').on(table.status),
+    index('employees_employee_type_idx').on(table.employeeType),
     index('employees_join_date_idx').on(table.joinDate),
+    index('employees_full_name_english_idx').on(table.fullNameEnglish),
   ],
 );
 
@@ -190,24 +213,21 @@ export const employeeNominees = pgTable(
 
 // ─── Bank Details ───────────────────────────────────────────────────────────
 
-export const employeeBankDetails = pgTable(
-  'employee_bank_details',
-  {
-    ...baseTable,
-    employeeId: uuid('employee_id')
-      .notNull()
-      .unique()
-      .references(() => employees.id, { onDelete: 'cascade' }),
-    bankName: varchar('bank_name', { length: 255 }).default(''),
-    branch: varchar('branch', { length: 255 }).default(''),
-    accountNumber: varchar('account_number', { length: 100 }).default(''),
-    accountType: varchar('account_type', { length: 50 }).default(''),
-    routingNumber: varchar('routing_number', { length: 50 }).default(''),
-    swiftCode: varchar('swift_code', { length: 50 }).default(''),
-    ibanNumber: varchar('iban_number', { length: 100 }).default(''),
-    bankStatementPdfUrl: text('bank_statement_pdf_url'),
-  },
-);
+export const employeeBankDetails = pgTable('employee_bank_details', {
+  ...baseTable,
+  employeeId: uuid('employee_id')
+    .notNull()
+    .unique()
+    .references(() => employees.id, { onDelete: 'cascade' }),
+  bankName: varchar('bank_name', { length: 255 }).default(''),
+  branch: varchar('branch', { length: 255 }).default(''),
+  accountNumber: varchar('account_number', { length: 100 }).default(''),
+  accountType: varchar('account_type', { length: 50 }).default(''),
+  routingNumber: varchar('routing_number', { length: 50 }).default(''),
+  swiftCode: varchar('swift_code', { length: 50 }).default(''),
+  ibanNumber: varchar('iban_number', { length: 100 }).default(''),
+  bankStatementPdfUrl: text('bank_statement_pdf_url'),
+});
 
 // ─── Documents ──────────────────────────────────────────────────────────────
 
@@ -259,39 +279,58 @@ export const employeesRelations = relations(employees, ({ many, one }) => ({
     references: [employees.id],
     relationName: 'lineManager',
   }),
-}));
-
-export const employeeSpousesRelations = relations(employeeSpouses, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeSpouses.employeeId],
-    references: [employees.id],
+  customRole: one(customRoles, {
+    fields: [employees.customRoleId],
+    references: [customRoles.id],
   }),
 }));
 
-export const employeeChildrenRelations = relations(employeeChildren, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeChildren.employeeId],
-    references: [employees.id],
+export const employeeSpousesRelations = relations(
+  employeeSpouses,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeSpouses.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeNomineesRelations = relations(employeeNominees, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeNominees.employeeId],
-    references: [employees.id],
+export const employeeChildrenRelations = relations(
+  employeeChildren,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeChildren.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeBankDetailsRelations = relations(employeeBankDetails, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeBankDetails.employeeId],
-    references: [employees.id],
+export const employeeNomineesRelations = relations(
+  employeeNominees,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeNominees.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
 
-export const employeeDocumentsRelations = relations(employeeDocuments, ({ one }) => ({
-  employee: one(employees, {
-    fields: [employeeDocuments.employeeId],
-    references: [employees.id],
+export const employeeBankDetailsRelations = relations(
+  employeeBankDetails,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeBankDetails.employeeId],
+      references: [employees.id],
+    }),
   }),
-}));
+);
+
+export const employeeDocumentsRelations = relations(
+  employeeDocuments,
+  ({ one }) => ({
+    employee: one(employees, {
+      fields: [employeeDocuments.employeeId],
+      references: [employees.id],
+    }),
+  }),
+);

@@ -1,10 +1,33 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import "./index.css"
 import App from "./App.tsx"
 
+import { ErrorBoundary } from "@/components/error-boundary"
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes caching
+      gcTime: 10 * 60 * 1000,   // 10 minutes garbage collection
+    },
+    mutations: {
+      retry: 0, // Never retry mutations (can cause duplicates)
+    },
+  },
+})
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )
+

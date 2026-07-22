@@ -27,7 +27,11 @@ describe('Designations Module (e2e)', () => {
 
   afterAll(async () => {
     if (createdDesigId) {
-      try { await authDelete(ctx, `/designations/${createdDesigId}`); } catch { /* ignore */ }
+      try {
+        await authDelete(ctx, `/designations/${createdDesigId}`);
+      } catch {
+        /* ignore */
+      }
     }
     await teardownApp(ctx);
   });
@@ -86,7 +90,10 @@ describe('Designations Module (e2e)', () => {
     });
 
     it('should support search', async () => {
-      const res = await authGet(ctx, `/designations?search=${encodeURIComponent(testDesig.name)}`);
+      const res = await authGet(
+        ctx,
+        `/designations?search=${encodeURIComponent(testDesig.name)}`,
+      );
       expect(res.status).toBe(200);
       expect(res.body.data.data.length).toBeGreaterThan(0);
     });
@@ -124,7 +131,10 @@ describe('Designations Module (e2e)', () => {
     });
 
     it('should return 404 for non-existent ID', async () => {
-      const res = await authGet(ctx, '/designations/00000000-0000-0000-0000-000000000000');
+      const res = await authGet(
+        ctx,
+        '/designations/00000000-0000-0000-0000-000000000000',
+      );
       expect(res.status).toBe(404);
     });
 

@@ -34,6 +34,13 @@ export const CacheKeys = {
     description: 'Paginated employee list',
   },
 
+  /** Simple list of active employees for dropdown select options */
+  employeeOptions: {
+    key: key('employees:options'),
+    ttl: 600, // 10 min
+    description: 'Simplified employee dropdown options list',
+  },
+
   /** Single employee by ID — TTL kept short to limit stale window after direct DB changes */
   employeeById: {
     key: key('employees:id:*'),
@@ -62,6 +69,20 @@ export const CacheKeys = {
     description: 'All departments',
   },
 
+  /** Cached department list (paginated) */
+  departmentListPaginated: {
+    key: key('departments:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated department list',
+  },
+
+  /** Department record by ID */
+  departmentById: {
+    key: key('departments:id:*'),
+    ttl: 300, // 5 min
+    description: 'Department record by ID',
+  },
+
   /** Designation list */
   designationList: {
     key: key('designations:list'),
@@ -69,11 +90,39 @@ export const CacheKeys = {
     description: 'All designations',
   },
 
-  /** Leave type configuration */
+  /** Cached designation list (paginated) */
+  designationListPaginated: {
+    key: key('designations:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated designation list',
+  },
+
+  /** Designation record by ID */
+  designationById: {
+    key: key('designations:id:*'),
+    ttl: 300, // 5 min
+    description: 'Designation record by ID',
+  },
+
+  /** Leave type configuration (dropdown list) */
   leaveTypes: {
     key: key('leave:types'),
     ttl: 900, // 15 min
-    description: 'Leave type configuration',
+    description: 'Leave type configuration options',
+  },
+
+  /** Cached leave type list (paginated) */
+  leaveTypeListPaginated: {
+    key: key('leave:types:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated leave type list',
+  },
+
+  /** Leave type record by ID */
+  leaveTypeById: {
+    key: key('leave:types:id:*'),
+    ttl: 300, // 5 min
+    description: 'Leave type record by ID',
   },
 
   /** Payroll run result */
@@ -81,6 +130,41 @@ export const CacheKeys = {
     key: key('payroll:run:*'),
     ttl: 1800, // 30 min
     description: 'Payroll run result by period',
+  },
+
+  /** Attendance settings (singleton) */
+  attendanceSettings: {
+    key: key('attendance:settings'),
+    ttl: 1800, // 30 min
+    description: 'Attendance settings singleton',
+  },
+
+  /** Holidays list */
+  holidaysList: {
+    key: key('attendance:holidays'),
+    ttl: 1800, // 30 min
+    description: 'Holidays configuration list',
+  },
+
+  /** Festival bonus settings (singleton) */
+  festivalBonusSettings: {
+    key: key('payroll:festival-bonus:settings'),
+    ttl: 1800, // 30 min
+    description: 'Festival bonus settings singleton',
+  },
+
+  /** All festival bonus cycles list */
+  festivalBonusCyclesList: {
+    key: key('payroll:festival-bonus:cycles:list'),
+    ttl: 1800, // 30 min
+    description: 'All festival bonus cycles list',
+  },
+
+  /** Details for a specific festival bonus cycle (including payouts) */
+  festivalBonusCycleDetails: {
+    key: key('payroll:festival-bonus:cycles:details:*'), // cycleId
+    ttl: 1800, // 30 min
+    description: 'Festival bonus cycle details by ID',
   },
 
   /** Generic settings / config cache */
@@ -121,10 +205,184 @@ export const CacheKeys = {
   /** JWT validation cache (short-lived) */
   jwtValidate: {
     key: key('jwt:validate:*'),
-    ttl: 60, // 1 min
+    ttl: 15, // 15 seconds
     description: 'Cached JWT user validation result',
   },
+
+  /** Executive Dashboard summary metrics */
+  executiveSummary: {
+    key: key('dashboard:executive'),
+    ttl: 60, // 1 minute cache TTL
+    description: 'Executive dashboard summary analytics',
+  },
+
+  /** Announcement list (legacy, non-paginated) */
+  announcementList: {
+    key: key('announcements:list'),
+    ttl: 300, // 5 min
+    description: 'All announcements (legacy)',
+  },
+
+  /** Tasks list cache */
+  tasksList: {
+    key: key('tasks:list:*'),
+    ttl: 60, // 1 minute
+    description: 'Cached list of tasks',
+  },
+
+  /** Task detail by ID */
+  taskById: {
+    key: key('tasks:id:*'),
+    ttl: 300, // 5 minutes
+    description: 'Cached task by ID',
+  },
+
+  /** Announcement paginated list (cursor-based) */
+  announcementCursorPage: {
+    key: key('announcements:cursor:*'), // cursor:limit:status:search
+    ttl: 300, // 5 min
+    description: 'Cursor-paginated announcements page',
+  },
+
+  /** Single announcement by ID */
+  announcementById: {
+    key: key('announcements:id:*'),
+    ttl: 300, // 5 min
+    description: 'Announcement record by ID',
+  },
+
+  /** Attendance logs for employee by month */
+  attendanceLogsByMonth: {
+    key: key('attendance:logs:*:*:*'), // employeeId:year:month
+    ttl: 120, // 2 min
+    description: 'Monthly attendance logs by employee',
+  },
+
+  /** Daily attendance logs for admin view */
+  attendanceDailyLogs: {
+    key: key('attendance:daily:*'), // date
+    ttl: 120, // 2 min
+    description: 'Daily attendance logs for admin',
+  },
+
+  /** Pending attendance corrections */
+  attendancePendingCorrections: {
+    key: key('attendance:corrections:pending'),
+    ttl: 60, // 1 min
+    description: 'Pending attendance correction requests',
+  },
+
+  /** Provident fund settings (singleton) */
+  providentFundSettings: {
+    key: key('provident-fund:settings'),
+    ttl: 1800, // 30 min
+    description: 'Provident fund configuration settings',
+  },
+
+  /** Leave applications list (paginated/filtered) */
+  leaveApplicationsList: {
+    key: key('leave:applications:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated and filtered leave applications list',
+  },
+
+  /** Single leave application by ID */
+  leaveApplicationById: {
+    key: key('leave:applications:id:*'),
+    ttl: 300, // 5 min
+    description: 'Single leave application details by ID',
+  },
+
+  /** Employee leave balances by year and month */
+  leaveBalances: {
+    key: key('leave:balances:*:*:*'), // employeeId:year:month
+    ttl: 300, // 5 min
+    description: 'Calculated leave balances for employee by year and month',
+  },
+
+  /** Salary templates list */
+  salaryTemplates: {
+    key: key('salary:templates'),
+    ttl: 600, // 10 min
+    description: 'All salary templates with components',
+  },
+
+  /** Single salary template by ID */
+  salaryTemplateById: {
+    key: key('salary:templates:id:*'),
+    ttl: 600, // 10 min
+    description: 'Salary template by ID',
+  },
+
+  /** Employee salary assignments list */
+  employeeSalaryList: {
+    key: key('salary:employee:list'),
+    ttl: 300, // 5 min
+    description: 'All employee salary assignments',
+  },
+
+  /** Employee salary by employee ID */
+  employeeSalaryById: {
+    key: key('salary:employee:id:*'),
+    ttl: 300, // 5 min
+    description: 'Employee salary by employee ID',
+  },
+
+  /** Claims list (paginated/filtered) */
+  claimsList: {
+    key: key('claims:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated and filtered claims list',
+  },
+
+  /** Single claim by ID */
+  claimById: {
+    key: key('claims:id:*'),
+    ttl: 300, // 5 min
+    description: 'Claim record by ID',
+  },
+
+  /** Regulation policies list */
+  regulationPolicies: {
+    key: key('regulations:policies:*'),
+    ttl: 300, // 5 min
+    description: 'All regulation policies',
+  },
+
+  /** Regulation policy by ID */
+  regulationPolicyById: {
+    key: key('regulations:policies:id:*'),
+    ttl: 300, // 5 min
+    description: 'Regulation policy by ID',
+  },
+
+  /** Regulation requests list (paginated/filtered) */
+  regulationRequestsList: {
+    key: key('regulations:requests:list:*'),
+    ttl: 300, // 5 min
+    description: 'Paginated and filtered regulation requests list',
+  },
+
+  /** Single regulation request by ID */
+  regulationRequestById: {
+    key: key('regulations:requests:id:*'),
+    ttl: 300, // 5 min
+    description: 'Regulation request by ID',
+  },
+
+  payrollDisbursements: {
+    key: key('payroll:disbursements'),
+    ttl: 300, // 5 min
+    description: 'All historical payroll disbursements',
+  },
+
+  lettersList: {
+    key: key('letters:list:*'),
+    ttl: 300, // 5 min
+    description: 'List of issued HR letters',
+  },
 } as const;
+
 
 export type CacheKeyDefinition = (typeof CacheKeys)[keyof typeof CacheKeys];
 

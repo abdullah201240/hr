@@ -1,4 +1,6 @@
+import { Suspense } from "react"
 import { Outlet } from "react-router"
+import { Spinner } from "@/components/ui/spinner"
 
 export function AuthLayout() {
   return (
@@ -12,10 +14,10 @@ export function AuthLayout() {
       <div className="relative z-10 w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <img src="/logo.png" alt="Sadoshima HR" className="h-14 w-14 object-contain" />
+          <img src="/logo.jpeg"  alt="Sadoshima HR" className="h-14 w-14 object-contain" />
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Sadoshima HR
+              ASG HR
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Enterprise Management System
@@ -25,7 +27,13 @@ export function AuthLayout() {
 
         {/* Auth card */}
         <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
-          <Outlet />
+          <Suspense fallback={
+            <div className="flex justify-center items-center py-8">
+              <Spinner className="h-6 w-6 text-primary animate-spin" />
+            </div>
+          }>
+            <Outlet />
+          </Suspense>
         </div>
 
         {/* Footer */}

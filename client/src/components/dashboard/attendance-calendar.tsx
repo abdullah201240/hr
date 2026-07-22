@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -5,16 +6,16 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LeaveBalanceChips } from "./leave-balance-chips"
 import type { AttendanceRecord, LeaveApplication, LeaveBalance } from "./types"
-import { LEAVE_TYPE_SHORT, MONTH_NAMES } from "./types"
+import { formatMonthYear, formatFullDate } from "./types"
 
 interface AttendanceCalendarProps {
   calMonth: number
   calYear: number
-  onMonthChange: (month: number) => void
+  onMonthChange: (month: number, year: number) => void
   currentTime: Date
   selectedDayNumber: number
   onSelectDay: (day: number) => void
-  onOpenDayDetail: () => void
+  onOpenDayDetail: (mode: "leave" | "regular") => void
   onOpenLeaveDialog: (day: number, leaveType?: string) => void
   finalAttendance: AttendanceRecord[]
   leaveApplications: LeaveApplication[]
@@ -24,7 +25,7 @@ interface AttendanceCalendarProps {
   onCancelLeave: (id: string) => void
 }
 
-export function AttendanceCalendar({
+export const AttendanceCalendar = memo(function AttendanceCalendar({
   calMonth,
   calYear,
   onMonthChange,
@@ -40,9 +41,12 @@ export function AttendanceCalendar({
   onDragOver,
   onCancelLeave,
 }: AttendanceCalendarProps) {
-  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate()
-  const startOffset = (new Date(calYear, calMonth, 1).getDay() + 6) % 7
-  const isCurrentMo = calMonth === currentTime.getMonth() && calYear === currentTime.getFullYear()
+  const daysInMonth = useMemo(() => new Date(calYear, calMonth + 1, 0).getDate(), [calYear, calMonth])
+  const startOffset = useMemo(() => (new Date(calYear, calMonth, 1).getDay() + 6) % 7, [calYear, calMonth])
+  const isCurrentMo = useMemo(
+    () => calMonth === currentTime.getMonth() && calYear === currentTime.getFullYear(),
+    [calMonth, calYear, currentTime]
+  )
   const today = currentTime.getDate()
 
   return (
@@ -55,14 +59,17 @@ export function AttendanceCalendar({
             </div>
             <div>
               <CardTitle className="text-base">Shift & Attendance Calendar</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">{MONTH_NAMES[calMonth]} {calYear}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{formatMonthYear(calMonth, calYear)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onMonthChange(calMonth === 0 ? 11 : calMonth - 1)}
+              onClick={() => {
+                if (calMonth === 0) onMonthChange(11, calYear - 1)
+                else onMonthChange(calMonth - 1, calYear)
+              }}
               className="h-8 w-8 p-0"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -70,7 +77,10 @@ export function AttendanceCalendar({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onMonthChange(calMonth === 11 ? 0 : calMonth + 1)}
+              onClick={() => {
+                if (calMonth === 11) onMonthChange(0, calYear + 1)
+                else onMonthChange(calMonth + 1, calYear)
+              }}
               className="h-8 w-8 p-0"
             >
               <ChevronRight className="h-4 w-4" />
@@ -94,9 +104,9 @@ export function AttendanceCalendar({
             {Array.from({ length: startOffset }).map((_, i) => <div key={`pad-${i}`} />)}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1
-              const record = calMonth === 5 ? finalAttendance.find(d => d.day === day) : null
+              const record = finalAttendance.find(d => d.day === day)
               const isToday = isCurrentMo && day === today
-              const isSel = day === selectedDayNumber && calMonth === 5
+              const isSel = day === selectedDayNumber
 
               let cellBg = "bg-transparent hover:bg-muted/30"
               let textColor = "text-foreground"
@@ -111,8 +121,24 @@ export function AttendanceCalendar({
                   cellBg = "bg-red-500/10 hover:bg-red-500/15 dark:bg-red-500/[0.04]"
                   textColor = "text-red-600 dark:text-red-400 font-semibold"
                 } else if (record.status === "leave") {
-                  cellBg = "bg-sky-500/10 hover:bg-sky-500/15 dark:bg-sky-500/[0.04]"
-                  textColor = "text-sky-600 dark:text-sky-400 font-semibold"
+                  const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                  const leaveKey = matchingLeave?.leaveType?.toLowerCase() || ""
+                  if (leaveKey === "earlyout") {
+                    cellBg = "bg-orange-500/10 hover:bg-orange-500/15 dark:bg-orange-500/[0.04]"
+                    textColor = "text-orange-600 dark:text-orange-400 font-semibold"
+                  } else if (leaveKey === "latearrival" || leaveKey === "lateentry") {
+                    cellBg = "bg-amber-500/10 hover:bg-amber-500/15 dark:bg-amber-500/[0.04]"
+                    textColor = "text-amber-600 dark:text-amber-400 font-semibold"
+                  } else if (leaveKey === "movement") {
+                    cellBg = "bg-indigo-500/10 hover:bg-indigo-500/15 dark:bg-indigo-500/[0.04]"
+                    textColor = "text-indigo-600 dark:text-indigo-400 font-semibold"
+                  } else if (leaveKey === "travels" || leaveKey === "travel") {
+                    cellBg = "bg-teal-500/10 hover:bg-teal-500/15 dark:bg-teal-500/[0.04]"
+                    textColor = "text-teal-600 dark:text-teal-400 font-semibold"
+                  } else {
+                    cellBg = "bg-sky-500/10 hover:bg-sky-500/15 dark:bg-sky-500/[0.04]"
+                    textColor = "text-sky-600 dark:text-sky-400 font-semibold"
+                  }
                 } else if (record.status === "holiday") {
                   cellBg = "bg-violet-500/10 hover:bg-violet-500/15 dark:bg-violet-500/[0.04]"
                   textColor = "text-violet-600 dark:text-violet-400 font-semibold"
@@ -128,11 +154,13 @@ export function AttendanceCalendar({
               return (
                 <Tooltip key={`d-${day}`}>
                   <TooltipTrigger asChild>
-                    <button
+                    <div
                       onClick={() => {
                         if (record) {
                           onSelectDay(day)
-                          if (record.status !== "upcoming") onOpenDayDetail()
+                          if (record.status !== "upcoming") {
+                            onOpenDayDetail("regular")
+                          }
                         }
                       }}
                       onDragOver={(e) => {
@@ -151,7 +179,7 @@ export function AttendanceCalendar({
                         onDragOver(null)
                       }}
                       className={cn(
-                        "relative rounded-xl flex flex-col items-stretch p-2 text-xs font-medium transition-all duration-200 hover:scale-[1.02] min-h-[100px] group",
+                        "relative rounded-xl flex flex-col items-stretch p-2 text-xs font-medium transition-all duration-200 hover:scale-[1.02] min-h-[100px] cursor-pointer group",
                         cellBg,
                         isToday && "ring-2 ring-primary",
                         isSel && "ring-2 ring-foreground",
@@ -161,17 +189,21 @@ export function AttendanceCalendar({
                       <div className="flex items-start justify-between">
                         <span className={cn("text-xs leading-none font-semibold", isToday ? "text-primary font-extrabold" : textColor)}>{day}</span>
                         {record && record.status !== "upcoming" && record.status !== "weekend" && record.status !== "holiday" && (
-                          record.status === "leave" ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                const app = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
-                                if (app) onCancelLeave(app.id)
-                              }}
-                              className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-red-500 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
-                              title="Cancel leave"
-                            >×</button>
-                          ) : (
+                          record.status === "leave" ? (() => {
+                            const app = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                            // Only show cancel button if leave is still pending
+                            if (!app || app.status.toLowerCase() !== "pending") return null
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onCancelLeave(app.id)
+                                }}
+                                className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-red-500 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                                title="Cancel leave"
+                              >×</button>
+                            )
+                          })() : (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -185,63 +217,98 @@ export function AttendanceCalendar({
                         )}
                       </div>
 
-                      {record && record.status !== "upcoming" && record.status !== "weekend" && (
-                        <div className="flex flex-col gap-0.5 mt-1 flex-1 justify-center">
-                          <span className={cn(
-                            "text-[9px] font-bold uppercase tracking-tight leading-none px-1.5 py-0.5 rounded self-start",
-                            record.status === "present" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
-                            record.status === "late" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
-                            record.status === "absent" && "bg-red-500/20 text-red-700 dark:text-red-400",
-                            record.status === "leave" && "bg-sky-500/20 text-sky-700 dark:text-sky-400",
-                            record.status === "holiday" && "bg-violet-500/20 text-violet-700 dark:text-violet-400"
-                          )}>
-                            {record.status === "leave"
-                              ? (() => {
+                      {record && record.status !== "upcoming" && (
+                        record.status === "leave" ? (
+                          <div 
+                            className="flex flex-col gap-1 mt-2 flex-1 justify-start p-1.5 rounded"
+                          >
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onSelectDay(day)
+                                onOpenDayDetail("leave")
+                              }}
+                              className={cn(
+                                "text-[9px] font-bold uppercase tracking-tight leading-normal px-1.5 py-0.5 rounded w-fit block truncate max-w-full cursor-pointer transition-colors",
+                                (() => {
                                   const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
-                                  return matchingLeave ? (LEAVE_TYPE_SHORT[matchingLeave.leaveType] || "LV") : "LV"
+                                  const leaveKey = matchingLeave?.leaveType?.toLowerCase() || ""
+                                  if (leaveKey === "earlyout") return "bg-orange-500/20 text-orange-700 dark:text-orange-400 hover:bg-orange-500/30"
+                                  if (leaveKey === "movement") return "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/30"
+                                  if (leaveKey === "travels" || leaveKey === "travel") return "bg-teal-500/20 text-teal-700 dark:text-teal-400 hover:bg-teal-500/30"
+                                  return "bg-sky-500/20 text-sky-700 dark:text-sky-400 hover:bg-sky-500/30"
                                 })()
-                              : record.status === "holiday"
+                              )}
+                            >
+                              {(() => {
+                                const matchingLeave = leaveApplications.find(la => day >= la.startDay && day <= la.endDay) as any
+                                return matchingLeave ? (matchingLeave.rawLeave?.leaveTypeName || "Leave") : "Leave"
+                              })()}
+                            </span>
+                            {(() => {
+                              const la = leaveApplications.find(la => day >= la.startDay && day <= la.endDay)
+                              const leaveStatus = la?.status?.toLowerCase() || ""
+                              return leaveStatus ? (
+                                <span className={cn(
+                                  "text-[7.5px] font-bold uppercase tracking-wider leading-none px-1.5 py-0.5 rounded w-fit",
+                                  leaveStatus === "pending" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
+                                  leaveStatus === "approved" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+                                  leaveStatus === "rejected" && "bg-red-500/20 text-red-700 dark:text-red-400",
+                                )}>
+                                  {leaveStatus}
+                                </span>
+                              ) : null
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-0.5 mt-1 flex-1 justify-center">
+                            <span className={cn(
+                              "text-[9px] font-bold uppercase tracking-tight leading-none px-1.5 py-0.5 rounded self-start",
+                              record.status === "present" && "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
+                              record.status === "late" && "bg-amber-500/20 text-amber-700 dark:text-amber-400",
+                              record.status === "absent" && "bg-red-500/20 text-red-700 dark:text-red-400",
+                              record.status === "holiday" && "bg-violet-500/20 text-violet-700 dark:text-violet-400",
+                              record.status === "weekend" && "bg-muted/60 text-muted-foreground"
+                            )}>
+                              {record.status === "holiday"
                                 ? "HOLIDAY"
-                                : record.status === "absent"
-                                  ? "ABSENT"
-                                  : record.status === "present"
-                                    ? "REGULAR"
-                                    : "LATE"
-                            }
-                          </span>
+                                : record.status === "weekend"
+                                  ? "WEEKEND OFF"
+                                  : record.status === "absent"
+                                    ? "ABSENT"
+                                    : record.status === "present"
+                                      ? "REGULAR"
+                                      : "LATE"
+                              }
+                            </span>
 
-                          {(record.status === "present" || record.status === "late") && record.checkIn && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Clock className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                              <span className="text-[9px] text-muted-foreground leading-none truncate">
-                                {record.checkIn}–{record.checkOut || "Active"}
+                            {(record.status === "present" || record.status === "late") && record.checkIn && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Clock className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                                <span className="text-[9px] text-muted-foreground leading-none truncate">
+                                  {record.checkIn}–{record.checkOut || "Active"}
+                                </span>
+                              </div>
+                            )}
+
+                            {(record.status === "present" || record.status === "late") && record.hours && (
+                              <span className="text-[9px] text-muted-foreground/80 leading-none">
+                                {record.hours}h{record.location === "Remote" ? " · RM" : ""}
                               </span>
-                            </div>
-                          )}
+                            )}
 
-                          {(record.status === "present" || record.status === "late") && record.hours && (
-                            <span className="text-[9px] text-muted-foreground/80 leading-none">
-                              {record.hours}h{record.location === "Remote" ? " · RM" : ""}
-                            </span>
-                          )}
-
-                          {record.status === "leave" && record.notes && (
-                            <span className="text-[8px] text-sky-600/70 dark:text-sky-400/70 leading-none truncate">
-                              {record.notes.replace("Approved ", "").split(":")[0]}
-                            </span>
-                          )}
-
-                          {record.status === "holiday" && record.notes && (
-                            <span className="text-[8px] text-violet-600/70 dark:text-violet-400/70 leading-none truncate">
-                              {record.notes.length > 22 ? record.notes.substring(0, 22) + "…" : record.notes}
-                            </span>
-                          )}
-                        </div>
+                            {record.status === "holiday" && record.notes && (
+                              <span className="text-[8px] text-violet-600/70 dark:text-violet-400/70 leading-none truncate">
+                                {record.notes.length > 22 ? record.notes.substring(0, 22) + "…" : record.notes}
+                              </span>
+                            )}
+                          </div>
+                        )
                       )}
-                    </button>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="text-xs max-w-[200px] p-2 space-y-1">
-                    <p className="font-bold">June {day}, 2026</p>
+                    <p className="font-bold">{formatFullDate(day, calMonth, calYear)}</p>
                     {record && (
                       <p className="capitalize">Status: <span className="font-semibold">{record.status}</span></p>
                     )}
@@ -257,4 +324,4 @@ export function AttendanceCalendar({
       </CardContent>
     </Card>
   )
-}
+})

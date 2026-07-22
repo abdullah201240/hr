@@ -8,6 +8,7 @@ import {
   Matches,
   MinLength,
   IsUUID,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -294,7 +295,10 @@ export class CreateEmployeeDto {
   @IsUUID()
   departmentId!: string;
 
-  @ApiProperty({ example: 'Full-time', enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'] })
+  @ApiProperty({
+    example: 'Full-time',
+    enum: ['Full-time', 'Part-time', 'Contract', 'Probation', 'Intern'],
+  })
   @IsString()
   @IsNotEmpty()
   employeeType!: string;
@@ -308,6 +312,16 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsUUID()
   lineManagerId?: string;
+
+  @ApiPropertyOptional({ description: 'UUID of custom role' })
+  @IsOptional()
+  @IsUUID()
+  customRoleId?: string;
+
+  @ApiPropertyOptional({ description: 'Whether salary is generated for this employee' })
+  @IsOptional()
+  @IsBoolean()
+  isSalary?: boolean;
 
   // Nested objects
   @ApiPropertyOptional({ type: [SpouseDto] })

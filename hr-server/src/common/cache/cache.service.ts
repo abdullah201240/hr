@@ -82,7 +82,10 @@ export class CacheService {
   /**
    * Delete by CacheKeyDefinition + dynamic parts.
    */
-  async delByKey(definition: CacheKeyDefinition, ...parts: string[]): Promise<void> {
+  async delByKey(
+    definition: CacheKeyDefinition,
+    ...parts: string[]
+  ): Promise<void> {
     return this.del(resolveKey(definition, ...parts));
   }
 
@@ -96,7 +99,7 @@ export class CacheService {
         if (keys.length > 0) {
           const pipeline = this.redis.pipeline();
           for (const key of keys) {
-            pipeline.del(key);
+            pipeline.unlink(key);
           }
           await pipeline.exec();
         }

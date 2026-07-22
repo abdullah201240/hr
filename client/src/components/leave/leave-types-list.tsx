@@ -8,35 +8,17 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ArrowRight, AlertCircle, CheckCircle2, Trash2, MoreHorizontal, Edit2, CalendarOff } from "lucide-react"
-
-interface LeaveType {
-  id: string
-  name: string
-  icon: any
-  color: string
-  days: number
-  paid: boolean
-  carryForward: boolean
-  maxCarryOver: number
-  requiresApproval: boolean
-  requiresDocument: boolean
-  description: string
-}
+import { AlertCircle, CheckCircle2, CalendarOff, X, Pencil, ToggleRight, ToggleLeft, ArrowRightLeft, Coins, CalendarClock, Users, Calculator } from "lucide-react"
+import type { LeaveType } from "@/types"
+import { cn } from "@/lib/utils"
 
 interface LeaveTypesListProps {
   leaveTypes: LeaveType[]
   onEdit: (leave: LeaveType) => void
-  onDelete: (id: string) => void
+  onToggleActive: (leave: LeaveType) => void
 }
 
-export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListProps) {
+export function LeaveTypesList({ leaveTypes, onEdit, onToggleActive }: LeaveTypesListProps) {
   return (
     <div className="w-full overflow-x-auto bg-transparent">
       <Table>
@@ -45,15 +27,16 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
             <TableHead className="font-semibold text-xs text-muted-foreground">Leave Type</TableHead>
             <TableHead className="hidden md:table-cell font-semibold text-xs text-muted-foreground">Description</TableHead>
             <TableHead className="font-semibold text-xs text-muted-foreground">Days</TableHead>
-            <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Status</TableHead>
+            <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Active</TableHead>
             <TableHead className="hidden lg:table-cell font-semibold text-xs text-muted-foreground">Policy</TableHead>
-            <TableHead className="w-12 font-semibold text-xs text-muted-foreground" />
+            <TableHead className="hidden xl:table-cell font-semibold text-xs text-muted-foreground">Rules</TableHead>
+            <TableHead className="w-24 font-semibold text-xs text-muted-foreground">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {leaveTypes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center border-b-0">
+              <TableCell colSpan={7} className="h-24 text-center border-b-0">
                 <div className="flex flex-col items-center justify-center">
                   <CalendarOff className="h-8 w-8 text-muted-foreground/40 mb-2" />
                   <p className="text-sm text-muted-foreground">No leave types configured yet.</p>
@@ -71,11 +54,14 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
                       
                       <div>
                         <p className="font-semibold text-sm">{leave.name}</p>
-                        <div className="flex items-center gap-1.5 mt-1">
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <Badge variant="secondary" className="text-[10px] h-5">{leave.days} days/year</Badge>
                           <Badge className={`text-[10px] h-5 ${leave.paid ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
                             {leave.paid ? 'Paid' : 'Unpaid'}
                           </Badge>
+                          {leave.clause && (
+                            <Badge variant="outline" className="text-[10px] h-5">§{leave.clause}</Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -84,6 +70,12 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
                   {/* Description */}
                   <TableCell className="hidden md:table-cell text-sm text-muted-foreground py-3 max-w-xs">
                     <p className="truncate">{leave.description}</p>
+                    {leave.eligibility && (
+                      <p className="text-[10px] mt-1 text-amber-600 flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {leave.eligibility}
+                      </p>
+                    )}
                   </TableCell>
 
                   {/* Days Allocation */}
@@ -91,57 +83,38 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
                     <div className="space-y-1">
                       <p className="text-sm font-bold">{leave.days}</p>
                       <p className="text-[10px] text-muted-foreground">days/year</p>
-                      {leave.carryForward && (
-                        <div className="flex items-center gap-1 text-[10px] text-violet-600 dark:text-violet-400 mt-1">
-                          <ArrowRight className="h-2.5 w-2.5" />
-                          <span>{leave.maxCarryOver} carry-over</span>
-                        </div>
-                      )}
                     </div>
                   </TableCell>
 
-                  {/* Status Badges */}
+                  {/* Active/Inactive Toggle */}
                   <TableCell className="hidden lg:table-cell py-3">
-                    <div className="space-y-1.5">
-                      {leave.requiresApproval ? (
-                        <Badge variant="outline" className="text-[10px] h-5 gap-1 border-amber-500/30 text-amber-600">
-                          <AlertCircle className="h-2.5 w-2.5" />
-                          Approval Required
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] h-5 gap-1 border-emerald-500/30 text-emerald-600">
+                    <Badge
+                      variant={leave.isActive ? "default" : "outline"}
+                      className={cn(
+                        "text-[10px] h-5 gap-1",
+                        leave.isActive
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          : "text-muted-foreground border-border/40"
+                      )}
+                    >
+                      {leave.isActive ? (
+                        <>
                           <CheckCircle2 className="h-2.5 w-2.5" />
-                          Auto-Approved
-                        </Badge>
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-2.5 w-2.5" />
+                          Inactive
+                        </>
                       )}
-                      {leave.requiresDocument && (
-                        <div>
-                          <Badge variant="secondary" className="text-[10px] h-5 gap-1">
-                            <AlertCircle className="h-2.5 w-2.5 text-sky-500" />
-                            Document Needed
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
+                    </Badge>
                   </TableCell>
 
                   {/* Policy Details */}
                   <TableCell className="hidden lg:table-cell py-3">
-                    <div className="space-y-1 text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        {leave.carryForward ? (
-                          <>
-                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                            <span>Carry Forward</span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="h-3 w-3 rounded-full bg-muted-foreground/20" />
-                            <span className="line-through opacity-50">No Carry Forward</span>
-                          </>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         {leave.paid ? (
                           <>
                             <CheckCircle2 className="h-3 w-3 text-emerald-500" />
@@ -154,33 +127,99 @@ export function LeaveTypesList({ leaveTypes, onEdit, onDelete }: LeaveTypesListP
                           </>
                         )}
                       </div>
+                      {leave.requiresApproval ? (
+                        <div className="flex items-center gap-1 text-[11px] text-amber-600">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Approval Required</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-[11px] text-emerald-600">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>Auto-Approved</span>
+                        </div>
+                      )}
+                      {leave.requiresDocument && (
+                        <div className="flex items-center gap-1 text-[11px] text-sky-600">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Document Needed</span>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
 
-                  {/* Actions Dropdown */}
+                  {/* Special Rules */}
+                  <TableCell className="hidden xl:table-cell py-3">
+                    <div className="space-y-1.5">
+                      {leave.carryForward && (
+                        <div className="flex items-center gap-1 text-[11px] text-sky-600">
+                          <ArrowRightLeft className="h-3 w-3" />
+                          <span>
+                            Carry Forward
+                            {leave.maxCarryOverDays ? ` (max ${leave.maxCarryOverDays}d)` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {leave.encashment && (
+                        <div className="flex items-center gap-1 text-[11px] text-violet-600">
+                          <Coins className="h-3 w-3" />
+                          <span>
+                            Encashment
+                            {leave.encashmentPercent ? ` (${leave.encashmentPercent}%)` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {leave.isProRata && (
+                        <div className="flex items-center gap-1 text-[11px] text-amber-600">
+                          <Calculator className="h-3 w-3" />
+                          <span>Pro-Rata</span>
+                        </div>
+                      )}
+                      {leave.sandwichRule && (
+                        <div className="flex items-center gap-1 text-[11px] text-rose-600">
+                          <CalendarClock className="h-3 w-3" />
+                          <span>Sandwich Rule</span>
+                        </div>
+                      )}
+                      {leave.compLeaveExpiryDays && (
+                        <div className="flex items-center gap-1 text-[11px] text-orange-600">
+                          <CalendarClock className="h-3 w-3" />
+                          <span>Comp Leave ({leave.compLeaveExpiryDays}d expiry)</span>
+                        </div>
+                      )}
+                      {!leave.carryForward && !leave.encashment && !leave.isProRata && !leave.sandwichRule && !leave.compLeaveExpiryDays && (
+                        <span className="text-[10px] text-muted-foreground/60">No special rules</span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Actions */}
                   <TableCell className="py-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem onClick={() => onEdit(leave)}>
-                          <Edit2 className="mr-2 h-3.5 w-3.5" />
-                          Edit Leave Type
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          variant="destructive"
-                          onClick={() => onDelete(leave.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-500/10"
-                        >
-                          <Trash2 className="mr-2 h-3.5 w-3.5" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-muted"
+                        onClick={() => onEdit(leave)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 ${
+                          leave.isActive
+                            ? "text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600"
+                            : "text-muted-foreground/40 hover:bg-muted"
+                        }`}
+                        onClick={() => onToggleActive(leave)}
+                      >
+                        {leave.isActive ? (
+                          <ToggleRight className="h-4 w-4" />
+                        ) : (
+                          <ToggleLeft className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )

@@ -7,8 +7,9 @@ import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
+
+import { useAuthStore } from "@/store/useAuthStore"
 
 const loginSchema = z.object({
   email: z
@@ -24,6 +25,8 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
+const LOGIN_EMAIL_KEY = "login_email_draft"
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
@@ -33,42 +36,30 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      email: sessionStorage.getItem(LOGIN_EMAIL_KEY) || "",
       password: "",
       rememberMe: false,
     },
   })
 
-  const rememberMe = watch("rememberMe")
+  const login = useAuthStore((state) => state.login)
 
   async function onSubmit(data: LoginFormValues) {
     setServerError(null)
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (data.email === "admin@sadoshima.com" && data.password === "password123") {
-            resolve(true)
-          } else if (data.email && data.password) {
-            // Accept any valid credentials for demo
-            resolve(true)
-          } else {
-            reject(new Error("Invalid credentials"))
-          }
-        }, 1200)
-      })
+      await login(data.email, data.password)
 
+      // Clear draft on successful login
+      sessionStorage.removeItem(LOGIN_EMAIL_KEY)
       navigate("/")
-    } catch {
-      setServerError("Invalid email or password. Please try again.")
+    } catch (err: any) {
+      setServerError(err.message || "Invalid email or password. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -103,7 +94,16 @@ export default function LoginPage() {
             placeholder="you@sadoshima.com"
             autoComplete="email"
             className={cn(errors.email && "border-destructive focus-visible:ring-destructive")}
-            {...register("email")}
+            {...register("email", {
+              onChange: (e) => {
+                const val = e.target.value as string
+                if (val) {
+                  sessionStorage.setItem(LOGIN_EMAIL_KEY, val)
+                } else {
+                  sessionStorage.removeItem(LOGIN_EMAIL_KEY)
+                }
+              },
+            })}
           />
           {errors.email && (
             <p className="text-xs text-destructive">{errors.email.message}</p>
@@ -157,22 +157,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Remember Me */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="rememberMe"
-            checked={rememberMe}
-            onCheckedChange={(checked) =>
-              setValue("rememberMe", checked === true)
-            }
-          />
-          <Label
-            htmlFor="rememberMe"
-            className="text-sm font-normal cursor-pointer"
-          >
-            Remember me for 30 days
-          </Label>
-        </div>
+       
 
         {/* Submit */}
         <Button
@@ -192,11 +177,13 @@ export default function LoginPage() {
       </form>
 
       {/* Demo hint */}
-      <div className="rounded-lg bg-muted/50 px-4 py-3 text-center">
-        <p className="text-xs text-muted-foreground">
-          Demo: Use any email &amp; password (8+ chars) to sign in
-        </p>
-      </div>
+      {import.meta.env.VITE_DEMO_MODE && (
+        <div className="rounded-lg bg-muted/50 px-4 py-3 text-center">
+          <p className="text-xs text-muted-foreground">
+            Demo: Use any email &amp; password (8+ chars) to sign in
+          </p>
+        </div>
+      )}
     </div>
   )
 }

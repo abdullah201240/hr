@@ -1,4 +1,4 @@
-import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject, UnauthorizedException, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -12,7 +12,8 @@ import { CacheKeys } from '../../../common/cache/cache-keys';
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
+  departmentId: string | null;
+  customRoleId: string | null;
   ver: number;
   jti: string;
   iat: number;
@@ -22,13 +23,17 @@ export interface JwtPayload {
 export interface JwtUser {
   id: string;
   email: string;
-  role: string;
+  departmentId: string | null;
+  customRoleId: string | null;
   fullNameEnglish: string;
   employeePhotoUrl: string | null;
+  permissions?: Set<string>;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     configService: ConfigService,
     @Inject(DB_CONNECTION) private readonly db: Database,
@@ -53,10 +58,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // 2. Check cache for validated user (avoids DB hit on every request)
-    const cached = await this.cache.getByKey<JwtUser & { ver: number; status: string }>(
-      CacheKeys.jwtValidate,
-      payload.sub,
-    );
+    const cached = await this.cache.getByKey<
+      JwtUser & { ver: number; status: string }
+    >(CacheKeys.jwtValidate, payload.sub);
 
     if (cached) {
       // Verify version from cache
@@ -69,26 +73,51 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       return {
         id: cached.id,
         email: cached.email,
-        role: cached.role,
+        departmentId: cached.departmentId ?? payload.departmentId ?? null,
+        customRoleId: cached.customRoleId ?? payload.customRoleId ?? null,
         fullNameEnglish: cached.fullNameEnglish,
         employeePhotoUrl: cached.employeePhotoUrl,
       };
     }
 
-    // 3. Cache miss — verify user exists and is active
-    const [user] = await this.db
-      .select({
-        id: employees.id,
-        email: employees.email,
-        role: employees.role,
-        status: employees.status,
-        refreshTokenVersion: employees.refreshTokenVersion,
-        fullNameEnglish: employees.fullNameEnglish,
-        employeePhotoUrl: employees.employeePhotoUrl,
-      })
-      .from(employees)
-      .where(eq(employees.id, payload.sub))
-      .limit(1);
+    // 3. Cache miss — verify user exists and is active (with retry logic)
+    let user;
+    let retries = 0;
+    const maxRetries = 3;
+
+    while (retries < maxRetries) {
+      try {
+        [user] = await this.db
+          .select({
+            id: employees.id,
+            email: employees.email,
+            departmentId: employees.departmentId,
+            customRoleId: employees.customRoleId,
+            status: employees.status,
+            refreshTokenVersion: employees.refreshTokenVersion,
+            fullNameEnglish: employees.fullNameEnglish,
+            employeePhotoUrl: employees.employeePhotoUrl,
+          })
+          .from(employees)
+          .where(eq(employees.id, payload.sub))
+          .limit(1);
+        break; // Success - exit retry loop
+      } catch (error) {
+        retries++;
+        if (retries === maxRetries) {
+          this.logger.error(
+            `Database query failed after ${maxRetries} attempts for user ${payload.sub}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+          throw new UnauthorizedException('Authentication service temporarily unavailable');
+        }
+        // Exponential backoff: 100ms, 200ms, 400ms
+        await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retries - 1)));
+        this.logger.warn(
+          `Database query attempt ${retries}/${maxRetries} failed, retrying...`,
+        );
+      }
+    }
 
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -107,7 +136,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const userToCache = {
       id: user.id,
       email: user.email,
-      role: user.role,
+      departmentId: user.departmentId ?? null,
+      customRoleId: user.customRoleId ?? null,
       fullNameEnglish: user.fullNameEnglish,
       employeePhotoUrl: user.employeePhotoUrl,
       ver: user.refreshTokenVersion,
@@ -119,7 +149,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: user.id,
       email: user.email,
-      role: user.role,
+      departmentId: user.departmentId ?? null,
+      customRoleId: user.customRoleId ?? null,
       fullNameEnglish: user.fullNameEnglish,
       employeePhotoUrl: user.employeePhotoUrl,
     };

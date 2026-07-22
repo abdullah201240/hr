@@ -46,8 +46,8 @@ const FIELD_LABELS: Record<string, string> = {
 
 interface AddEmployeeFormProps {
   onCancel: () => void
-  onSubmit: (data: any) => void
-  initialData?: any
+  onSubmit: (data: EmployeeFormInput) => void
+  initialData?: Partial<EmployeeFormInput>
   isEdit?: boolean
   isView?: boolean
 }
@@ -77,7 +77,7 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
   >(() => {
     const initial: Record<number, { nidPdfName: string | null; photoPreview: string | null }> = {}
     if (initialData?.nominees) {
-      initialData.nominees.forEach((nom: any, index: number) => {
+      initialData.nominees.forEach((nom: Record<string, unknown>, index: number) => {
         let nPdf: string | null = null
         let pPrev: string | null = null
         if (nom.nidPdf) {
@@ -387,7 +387,17 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
 
       {/* Form Content */}
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            if (activeTab !== "review") {
+              e.preventDefault()
+              nextStep()
+            } else {
+              handleSubmit(onSubmit)(e)
+            }
+          }}
+          className="space-y-6"
+        >
           <fieldset disabled={isView} className="min-h-[400px] disabled:opacity-95">
             {activeTab === "personal" && (
               <PersonalInfoStep
@@ -401,6 +411,7 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
                 nidPdfName={nidPdfName}
                 setNidPdfName={setNidPdfName}
                 isView={isView}
+                isEdit={isEdit}
               />
             )}
             {activeTab === "family" && <FamilyInfoStep isView={isView} />}
@@ -443,18 +454,18 @@ export default function AddEmployeeForm({ onCancel, onSubmit, initialData, isEdi
                 {isView ? "Close" : "Cancel"}
               </Button>
               {activeTab !== "review" ? (
-                <Button type="button" size="default" onClick={nextStep} className="gap-2 px-6">
+                <Button key="btn-continue" type="button" size="default" onClick={nextStep} className="gap-2 px-6">
                   Continue
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
                 isView ? (
-                  <Button type="button" size="default" onClick={onCancel} className="gap-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25">
+                  <Button key="btn-done" type="button" size="default" onClick={onCancel} className="gap-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25">
                     <CheckCircle2 className="h-4 w-4" />
                     Done
                   </Button>
                 ) : (
-                  <Button type="submit" size="default" className="gap-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25">
+                  <Button key="btn-submit" type="submit" size="default" className="gap-2 px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25">
                     <CheckCircle2 className="h-4 w-4" />
                     {isEdit ? "Save Changes" : "Create Employee"}
                   </Button>
