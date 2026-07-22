@@ -7,6 +7,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 ## Table of Contents
 
 - [Features](#features)
+- [Voice & Video Calling System](#voice--video-calling-system)
 - [Technology Stack](#technology-stack)
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
@@ -26,7 +27,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | Feature | Description |
 |---------|-------------|
 | **Employee Management** | Full CRUD with 7-step form: personal info, employment, family, nominees, banking, documents, review |
-| **Employee Profile** | View/edit employee details, status changes (active/inactive/terminated), password reset |
+| **Employee Profile** | Self-service profile with 8 tabs: Personal, Employment, Family, Nominee, Banking, Documents, Payslips (with detailed payslip dialog), Security (change password) |
 | **Department Management** | CRUD with hierarchy views, employee count tracking |
 | **Designation Management** | CRUD with department linkage |
 | **Organization Chart** | Visual tree view of reporting structure with drag-and-drop hierarchy |
@@ -109,7 +110,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | Feature | Description |
 |---------|-------------|
 | **Chat System** | Real-time messaging via WebSocket — channels and direct messages |
-| **Voice/Video Calls** | WebRTC-based calling with signaling server, call logs |
+| **Voice/Video Calls** | Full WebRTC calling system — see [Voice & Video Calling System](#voice--video-calling-system) for complete details |
 | **Chat Rooms** | Create channels, add members, role-based access (owner/admin/member) |
 | **Presence** | Online/offline/typing indicators via WebSocket |
 | **Announcements** | Company-wide and targeted announcements with priority |
@@ -122,6 +123,7 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 |---------|-------------|
 | **Roles & Permissions** | Pure custom RBAC — create roles, assign granular permissions |
 | **Settings: Attendance** | Office hours, holidays, auto-action config |
+| **Settings: Leave Management** | Leave type CRUD with color-coded badges, carry-forward rules, active toggle |
 | **Settings: Salary** | Salary template management, component configuration |
 | **Settings: Festival Bonus** | Bonus cycle settings |
 | **Settings: Access Control** | Role CRUD with permission assignment |
@@ -130,6 +132,17 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | **Audit Logs** | Trail of all state-changing operations (POST, PATCH, PUT, DELETE) |
 | **Office Regulations** | Policy creation and request management |
 | **Reports** | Workforce headcount, attendance summary, leave utilization, payroll cost analytics |
+| **CSV Export** | Export data to CSV files via built-in `exportToCsv()` utility |
+
+### Employee Dashboard
+| Feature | Description |
+|---------|-------------|
+| **Attendance Calendar** | Monthly calendar view with check-in/out status and daily details |
+| **Apply Leave Dialog** | Quick leave application directly from dashboard with leave type selection |
+| **Day Detail Dialog** | Click any calendar day to see attendance logs, leave details, or holiday info |
+| **My Tasks Card** | Live assigned tasks with create, update, delete, and status toggle — inline task management |
+| **Announcements Card** | Latest published announcements with paginated feed |
+| **Leave Balance Overview** | Leave balance chips showing utilization per leave type |
 
 ### Executive Dashboard
 | Feature | Description |
@@ -158,6 +171,203 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | **Print: Offer Letter** | Printable offer letter template |
 | **Print: HR Letter** | Printable HR letter template |
 | **Print: Payslip** | Printable payslip with full breakdown |
+
+---
+
+## Voice & Video Calling System
+
+A full-featured, peer-to-peer voice and video calling system built on **WebRTC** with WebSocket-based signaling through the NestJS chat gateway. Calls are initiated directly from within chat rooms (DM or channel conversations) and managed entirely through a Zustand store (`useCallStore`) with a fullscreen overlay UI (`CallOverlay`).
+
+### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           CALL SIGNALING FLOW                            │
+│                                                                          │
+│  Caller (Browser)              WebSocket Server              Callee (Browser)
+│  ───────────────              ────────────────              ────────────────
+│       │                              │                              │
+│  getUserMedia()                      │                              │
+│  (acquire local stream)              │                              │
+│       │                              │                              │
+│  call:initiate ──────────────────────►                              │
+│       │                         Redis Pub/Sub                      │
+│       │                         chat_events                        │
+│       │                              │                              │
+│       │                     call_incoming ──────────────────────────►
+│       │                              │                         (ringing UI)
+│       │                              │                              │
+│       │                     call:ringing ◄──────────────────────────
+│       │◄────────────────────         │                              │
+│  (ringing state)                     │                              │
+│       │                              │                              │
+│       │                     call:accept ◄───────────────────────────
+│       │◄────────────────────         │                              │
+│       │                              │                              │
+│  RTCPeerConnection                   │                              │
+│  createOffer()                       │                              │
+│  webrtc:signal {offer} ─────────────►                               │
+│       │                         WEBRTC_SIGNAL ──────────────────────►
+│       │                              │                    setRemoteDescription(offer)
+│       │                              │                    createAnswer()
+│       │              webrtc:signal {answer} ◄────────────────────────
+│       │◄────────────────────         │                              │
+│  setRemoteDescription(answer)        │                              │
+│       │                              │                              │
+│  ════════════════ WebRTC Peer Connection Established ════════════════
+│       │◄────────────────── Media Stream (audio/video) ──────────────►│
+│       │                              │                              │
+│  call:hangup ────────────────────────►                              │
+│       │                    logCallHistory() + cleanup               │
+│       │                              │                              │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+### Call States & Lifecycle
+
+| State | Description |
+|-------|-------------|
+| `idle` | No active call — overlay hidden |
+| `calling` | Outgoing call initiated, waiting for callee response (30s timeout) |
+| `ringing` | Incoming call detected (callee) or callee phone is ringing (caller) |
+| `connected` | WebRTC peer connection established, media flowing |
+| `ended` | Call terminated (hangup, cancel, reject, or timeout) |
+
+### Call Types & Controls
+
+| Control | Description |
+|---------|-------------|
+| **Audio Call** | Voice-only call using microphone |
+| **Video Call** | Audio + video using microphone and camera |
+| **Mute/Unmute** (`M` key) | Toggle microphone — disables audio track |
+| **Camera On/Off** (`V` key) | Toggle camera — disables video track; can upgrade audio call to video mid-call |
+| **Screen Sharing** | Share screen via `getDisplayMedia()` — replaces camera feed with screen capture |
+| **Speaker/Earpiece** | Toggle audio output device (speaker vs earpiece) via `setSinkId()` |
+| **Hang Up** (`Esc` key) | End the call, save call log, clean up all media streams |
+
+### WebRTC Configuration
+
+| Component | Detail |
+|-----------|--------|
+| **ICE Servers** | Configurable via `VITE_ICE_SERVERS` env var (JSON array) |
+| **Default STUN** | Google STUN servers (`stun.l.google.com:19302`, etc.) + Mozilla STUN |
+| **TURN Server** | Optional Metered TURN via `VITE_TURN_URL`, `VITE_TURN_USERNAME`, `VITE_TURN_CREDENTIAL` |
+| **Dynamic TURN** | Auto-fetches TURN credentials from Metered API via `VITE_METERED_DOMAIN` + `VITE_METERED_API_KEY` |
+| **Fallback TURN** | Default Metered OpenRelay (`openrelay.metered.ca:80/443`) if no custom TURN configured |
+| **ICE Restart** | Automatic ICE restart on `disconnected` state |
+| **ICE Timeout** | 25-second watchdog — auto-hangup if connection quality doesn't reach `excellent` |
+| **Candidate Queue** | Buffers ICE candidates received before `remoteDescription` is set, flushes after |
+
+### Connection Quality Monitoring
+
+| Quality | ICE State | Visual Indicator |
+|---------|-----------|-----------------|
+| `connecting` | `checking` | Cyan pulsing bars |
+| `excellent` | `connected` / `completed` | Green solid bars |
+| `poor` | `disconnected` | Amber bars (triggers ICE restart) |
+| `disconnected` | `failed` | Rose pulsing bars |
+
+Displayed as a 4-bar signal icon in the call header overlay.
+
+### Audio Tone System
+
+A programmatic `CallSoundManager` using the Web Audio API generates call tones — no audio files needed:
+
+| Tone | Frequencies | Pattern |
+|------|------------|---------|
+| **Dial Tone** | 440Hz + 480Hz sine | Pulses every 4s (2s on, 2s off) |
+| **Ring Tone** | 453Hz + 680Hz sine | Dual-ring pattern every 3.5s (0.8s on, 0.4s off, 0.8s on, 1.5s off) |
+| **End Tone** | 300Hz → 100Hz sweep | Single descending tone (0.45s) |
+
+### Secure Context Handling
+
+The calling feature requires a **secure context** (HTTPS or localhost) for `navigator.mediaDevices.getUserMedia()` access:
+
+- Detects `!window.isSecureContext` before attempting media acquisition
+- Throws `SECURE_CONTEXT_REQUIRED` with a clear user-facing error message
+- Graceful fallback: if camera fails but audio succeeds, downgrades to audio-only call with toast notification
+
+### Backend Call Handling (Chat Gateway)
+
+All call signaling flows through the WebSocket gateway at `chat.gateway.ts`:
+
+| WebSocket Event | Direction | Description |
+|-----------------|-----------|-------------|
+| `call:initiate` | Client → Server | Caller initiates — validates room, checks rate limits, checks active calls, creates `callId`, tracks in Redis |
+| `call:ringing` | Client → Server | Callee acknowledges incoming call ring |
+| `call:accept` | Client → Server | Callee accepts — updates Redis status to `connected` |
+| `call:reject` | Client → Server | Callee rejects — logs call history as `rejected`, clears Redis |
+| `call:cancel` | Client → Server | Caller cancels — logs call history as `missed`, clears Redis |
+| `call:hangup` | Client → Server | Either party hangs up — calculates duration, logs as `completed`/`cancelled`, clears Redis |
+| `webrtc:signal` | Client ↔ Server | Relays SDP offers/answers and ICE candidates between peers via Redis Pub/Sub |
+
+**Server-side events dispatched to clients:**
+
+| Server Event | Trigger |
+|-------------|---------|
+| `call_incoming` | Callee receives incoming call notification |
+| `call_initiated` | Caller receives callId + peer details |
+| `call_ringing` | Caller knows callee phone is ringing |
+| `call_accepted` | Caller knows callee picked up — triggers WebRTC offer creation |
+| `call_rejected` | Caller knows call was declined (with reason: `offline`, `busy`, `declined`) |
+| `call_cancelled` | Callee knows caller cancelled |
+| `call_hungup` | Other party hung up |
+| `webrtc_signal` | Forwarded SDP/ICE between peers |
+
+### Call Rate Limiting & Conflict Prevention
+
+- **Rate Limit**: Server enforces per-user call rate limiting via `checkCallRateLimit()` — prevents spam
+- **Active Call Check**: Both caller and callee are checked for existing active calls in Redis before allowing a new call
+- **Auto-Busy Signal**: If callee is already in a call, server immediately returns `call_rejected` with reason `busy`
+- **30s Ring Timeout**: Outgoing calls auto-cancel after 30 seconds with "No response from user" toast
+
+### Call Logs & History
+
+| Aspect | Detail |
+|--------|--------|
+| **Table** | `call_logs` (PostgreSQL) |
+| **Columns** | `id`, `room_id`, `caller_id`, `callee_id`, `type` (audio/video), `status` (missed/rejected/completed/cancelled), `duration` (seconds), `created_at` |
+| **API Endpoint** | `GET /api/chat/call-logs` — returns call history for the authenticated user (as caller or callee) |
+| **Active Call Check** | `GET /api/chat/active-call` — returns current active call state (used for WebSocket reconnection sync) |
+| **Auto-refresh** | Call logs are re-fetched after every call cleanup via `cleanupCallState()` |
+
+### Frontend Components
+
+| File | Purpose |
+|------|---------|
+| `client/src/store/useCallStore.ts` | Zustand store (1006 lines) — all call state, WebRTC management, media controls, sound manager |
+| `client/src/components/chat/CallOverlay.tsx` | Fullscreen call UI overlay (450 lines) — ringing panel + connected panel with video/audio layouts |
+| `client/src/hooks/useWebSocket.ts` | WebSocket hook — routes 8 call-related server events to `useCallStore` handlers |
+| `client/src/layouts/dashboard-layout.tsx` | Mounts `<CallOverlay />` globally — always available when authenticated |
+
+### UI Layout
+
+**Ringing/Calling Panel:**
+- Centered card with pulsing avatar animation
+- Peer name + call status text
+- Pre-call controls: Mute, Camera toggle, Speaker toggle
+- Accept (green) / Reject (red) buttons for incoming calls
+- Cancel (red) button for outgoing calls
+
+**Connected Panel:**
+- Fullscreen dark layout (`md:max-w-4xl md:h-[650px]`)
+- **Video mode**: Remote video fullscreen + local video as Picture-in-Picture (top-right corner)
+- **Audio mode**: Centered avatar with pulsing ring + "Voice Call connected" status
+- **Header overlay**: Call type label, connection quality indicator (4-bar signal icon), call duration timer (MM:SS)
+- **Bottom control bar**: Mute, Camera, Screen Share, Speaker, Hang Up — floating pill-shaped buttons with backdrop blur
+- Screen sharing replaces camera feed; auto-reverts to camera when sharing stops
+
+### Environment Variables
+
+```env
+# .env (client)
+VITE_ICE_SERVERS=          # Optional: JSON array of RTCIceServer objects
+VITE_TURN_URL=             # Optional: TURN server URL (e.g., turn:openrelay.metered.ca:443)
+VITE_TURN_USERNAME=        # Optional: TURN server username
+VITE_TURN_CREDENTIAL=      # Optional: TURN server credential
+VITE_METERED_DOMAIN=       # Optional: Metered API domain for dynamic TURN credential fetching
+VITE_METERED_API_KEY=      # Optional: Metered API key for dynamic TURN credentials
+```
 
 ---
 
@@ -217,6 +427,8 @@ Enterprise-grade Human Resource Management System built with a full-stack TypeSc
 | Panels | react-resizable-panels | 4.11 |
 | Drawer | vaul | 1.1 |
 | Command Palette | cmdk | 1.1 |
+| Real-time Calls | WebRTC (native browser API) | Peer-to-peer audio/video via RTCPeerConnection |
+| Sound Synthesis | Web Audio API | Programmatic call tones (dial, ring, end) |
 | Font | Geist Variable | 5.2 |
 
 ### Infrastructure
@@ -378,8 +590,8 @@ hr/
 │   │   │   ├── auth/                    # 3 files: login-form, protected-route, role-guard (PermissionGuard)
 │   │   │   ├── ceo-dashboard/           # 8 files: activity-feed, attendance-trend, KPI cards, leave-analytics,
 │   │   │   │                            #          performance-overview, quick-actions, recruitment-pipeline, workforce-charts
-│   │   │   ├── chat/                    # Chat overlay component
-│   │   │   ├── common/                  # UserAvatar, shared utilities
+│   │   │   ├── chat/                    # CallOverlay (voice/video call UI overlay)
+│   │   │   ├── common/                  # UserAvatar, PageSkeleton (loading placeholder)
 │   │   │   ├── dashboard/               # 7 files: announcements-card, apply-leave-dialog, attendance-calendar,
 │   │   │   │                            #          day-detail-dialog, leave-balance-chips, my-tasks-card, types
 │   │   │   ├── employee/                # 11 files: add-employee-form (7 steps), form-schema, form-ui,
@@ -394,7 +606,7 @@ hr/
 │   │   │   │                            #          ActionDialogs, PayoutComments
 │   │   │   ├── recruitment/             # 8 files: AnalyticsTab, JobsTab, PipelineTab, KPIs, Dialogs, Onboarding, utils
 │   │   │   ├── regulations/             # 6 files: policy/request forms, detail views, list
-│   │   │   ├── separation/              # Separation records component
+│   │   │   ├── separation/              # SettlementCalculatorModal (final settlement computation dialog)
 │   │   │   ├── settings/                # 6 files: access-control, attendance-setup, festival-bonus-setup,
 │   │   │   │                            #          office-hours, salary-setup, theme-settings
 │   │   │   ├── tasks/                   # 7+ files: Board, Create, Gantt, List, ListView, ProjectCreate,
@@ -414,7 +626,7 @@ hr/
 │   │   │   │                            # useTasksWebSocket, useWebSocket
 │   │   │   │                            # + use-mobile, use-theme
 │   │   ├── layouts/                     # auth-layout, dashboard-layout, footer, header, sidebar
-│   │   ├── lib/                         # api.ts (axios + interceptors), export.ts (CSV/PDF), utils.ts (cn)
+│   │   ├── lib/                         # api.ts (axios + interceptors), export.ts (CSV export), utils.ts (cn)
 │   │   ├── routes/pages/                # 50 page components + print/ directory
 │   │   │   ├── print/                   # 4 print templates: joining-letter, offer-letter, hr-letter, payslip
 │   │   │   └── *.tsx                    # All route pages (lazy loaded in App.tsx)
@@ -438,8 +650,9 @@ hr/
 │   │   │   ├── filters/                 # GlobalExceptionFilter (standardized error responses)
 │   │   │   ├── interceptors/            # ResponseInterceptor (unwrap), LoggingInterceptor (Pino),
 │   │   │   │                            # AuditLogInterceptor (state-change trail)
-│   │   │   └── guards/                  # LoginThrottleGuard (per-IP rate limit on login)
-│   │   ├── config/                      # 5 typed configs: app, database, redis, cloudinary, jwt
+│   │   │   ├── enums/                   # Shared enum constants
+│   │   │   └── pipes/                   # Shared validation pipes
+│   │   ├── config/                      # 6 typed configs: app, database, redis, cloudinary, jwt, bullmq (in queue module)
 │   │   ├── db/
 │   │   │   ├── schema/                  # 27 schema files → 61 PostgreSQL tables
 │   │   │   │   ├── _base.ts             # Shared base columns (id, createdAt, updatedAt)
@@ -543,7 +756,7 @@ skeleton, slider, sonner, spinner, switch, table, tabs, textarea, toggle,
 toggle-group, tooltip
 ```
 
-### All 50+ Routes
+### All 50+ Routes (48 pages + 2 redirects + 4 print templates)
 
 | Route | Component | Permission |
 |-------|-----------|-----------|
@@ -594,6 +807,8 @@ toggle-group, tooltip
 | `/designations/create` | CreateDesignationPage | employees:create + more |
 | `/designations/edit/:id` | EditDesignationPage | employees:create + more |
 | `/settings` | SettingsPage | settings:read/update |
+| `/attendance/setup` | → Redirect to `/settings?tab=attendance` | Authenticated |
+| `/claims` | → Redirect to `/claims/medical` | Authenticated |
 | `/recruitment/print/:id` | PrintJoiningLetterPage | recruitment:read/letters:read |
 | `/recruitment/print-offer/:id` | PrintOfferLetterPage | recruitment:read/letters:read |
 | `/letters/print/:id` | PrintHRLetterPage | recruitment:read/letters:read |
@@ -682,7 +897,7 @@ toggle-group, tooltip
 | `chat_rooms` | DM and channel rooms |
 | `chat_room_members` | Room membership + roles |
 | `chat_messages` | Message records |
-| `call_logs` | Voice/video call history |
+| `call_logs` | Voice/video call history — caller, callee, type (audio/video), status (missed/rejected/completed/cancelled), duration |
 | `notifications` | Notification records (with dedup, priority, actions) |
 | `notification_preferences` | Per-employee notification config |
 | `announcements` | Company announcements |
@@ -892,3 +1107,6 @@ This project maintains a navigable knowledge graph of the entire codebase using 
 | **Bearer token + httpOnly cookie** | Access token in header (API-friendly), refresh in cookie (secure, XSS-safe) |
 | **Neon serverless Postgres** | Auto-scaling, branching, connection pooling, no DB server management |
 | **Theme flash prevention** | Inline `<script>` in `index.html` reads localStorage before React hydration |
+| **WebRTC peer-to-peer calls** | No media server needed — browser-native P2P audio/video with WebSocket signaling |
+| **Programmatic audio tones** | Web Audio API oscillators instead of audio files — zero network cost, instant playback |
+| **Redis-tracked active calls** | Prevents duplicate calls, enables cross-instance signaling via Pub/Sub, auto-cleanup on disconnect |
