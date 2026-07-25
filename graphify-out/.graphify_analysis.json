@@ -1,70 +1,6 @@
 {
   "communities": {
     "0": [
-      "client_src_components_dashboard_my_tasks_card_tsx",
-      "client_src_components_leave_leave_types_list_tsx",
-      "client_src_components_payroll_disbursementfestivalbonustab_tsx",
-      "client_src_components_payroll_disbursementlogstab_tsx",
-      "client_src_components_payroll_disbursementtab_tsx",
-      "client_src_components_payroll_employeesalarytab_tsx",
-      "client_src_components_payroll_providentfundtab_tsx",
-      "client_src_components_recruitment_analyticstab_tsx",
-      "client_src_components_recruitment_jobstab_tsx",
-      "client_src_components_regulations_approvalqueue_tsx",
-      "client_src_components_regulations_myrequests_tsx",
-      "client_src_components_regulations_policylist_tsx",
-      "client_src_components_tasks_details_taskdependencies_tsx",
-      "client_src_components_ui_table_tsx",
-      "client_src_lib_export_ts",
-      "client_src_routes_pages_departments_tsx",
-      "client_src_routes_pages_leave_applications_tsx",
-      "client_src_routes_pages_leave_tsx",
-      "details_taskdependencies_handlelink",
-      "hooks_useleavetypes_useleavetypeoptionsquery",
-      "hooks_usepayroll_usedisbursemutation",
-      "hooks_useregulations_usedeletepolicymutation",
-      "hooks_useregulations_useregulationpoliciesquery",
-      "hooks_useregulations_useregulationrequestsquery",
-      "lib_export_exporttocsv",
-      "pages_departments_handledeletedept",
-      "pages_departments_handledeletedesg",
-      "pages_leave_applications_getleavebadgeclasses",
-      "pages_leave_applications_handleclosedialog",
-      "pages_leave_applications_handleviewdetails",
-      "pages_leave_getleavebadgeclasses",
-      "pages_leave_handleapprove",
-      "pages_leave_handleclosedialog",
-      "pages_leave_handlereject",
-      "pages_leave_handleviewdetails",
-      "payroll_disbursementfestivalbonustab_handledisburse",
-      "payroll_disbursementlogstab_handleexport",
-      "payroll_disbursementtab_getlastdayofmonth",
-      "payroll_disbursementtab_getpayslipallowancessum",
-      "payroll_disbursementtab_getpayslipdeductionssum",
-      "payroll_disbursementtab_handleexecutedisbursement",
-      "payroll_employeesalarytab_handleapply",
-      "payroll_employeesalarytab_handleexport",
-      "payroll_employeesalarytab_handleopenassign",
-      "payroll_employeesalarytab_handlesaveassign",
-      "payroll_employeesalarytab_openhistory",
-      "payroll_payrollprocessingtab_handleexport",
-      "payroll_providentfundtab_handleexport",
-      "regulations_approvalqueue_getstepbadge",
-      "regulations_approvalqueue_handleopendetail",
-      "regulations_myrequests_getstatusbadge",
-      "regulations_myrequests_handleopendetail",
-      "regulations_myrequests_handleselectpolicy",
-      "regulations_myrequests_tolocaledatestring",
-      "regulations_policylist_handlecreate",
-      "regulations_policylist_handledelete",
-      "regulations_policylist_handleedit",
-      "ui_badge_badge",
-      "ui_table_cn",
-      "ui_table_table",
-      "ui_table_tablebody",
-      "ui_table_tableheader"
-    ],
-    "1": [
       "chat_chat_service_chatservice",
       "chat_chat_service_chatservice_addmembertoroom",
       "chat_chat_service_chatservice_clearactivecall",
@@ -95,9 +31,11 @@
       "chat_chat_service_chatservice_trackactivecall",
       "chat_chat_service_chatservice_updateactivecallstatus",
       "client_src_components_ui_alert_dialog_tsx",
+      "client_src_hooks_usewebsocket_ts",
       "client_src_routes_pages_chat_tsx",
       "client_src_store_usecallstore_ts",
       "hooks_usewebsocket_sendwsmessage",
+      "hooks_usewebsocket_usewebsocket",
       "hr_server_src_modules_chat_chat_service_ts",
       "pages_chat_confirmdeletemessage",
       "pages_chat_fetchemployees",
@@ -127,64 +65,7 @@
       "ui_alert_dialog_alertdialogcancel",
       "ui_alert_dialog_cn"
     ],
-    "2": [
-      "client_src_components_employee_documents_step_tsx",
-      "client_src_components_employee_form_ui_tsx",
-      "client_src_components_recruitment_recruitmentkpis_tsx",
-      "client_src_components_tasks_details_taskchecklist_tsx",
-      "client_src_components_tasks_taskganttview_tsx",
-      "client_src_components_ui_badge_tsx",
-      "client_src_components_ui_button_tsx",
-      "client_src_components_ui_card_tsx",
-      "client_src_components_ui_chart_tsx",
-      "client_src_components_ui_checkbox_tsx",
-      "client_src_components_ui_command_tsx",
-      "client_src_components_ui_empty_tsx",
-      "client_src_components_ui_hover_card_tsx",
-      "client_src_components_ui_input_group_tsx",
-      "client_src_components_ui_input_otp_tsx",
-      "client_src_components_ui_input_tsx",
-      "client_src_components_ui_kbd_tsx",
-      "client_src_components_ui_label_tsx",
-      "client_src_components_ui_progress_tsx",
-      "client_src_components_ui_radio_group_tsx",
-      "client_src_components_ui_resizable_tsx",
-      "client_src_components_ui_slider_tsx",
-      "client_src_components_ui_spinner_tsx",
-      "client_src_components_ui_tabs_tsx",
-      "client_src_components_ui_textarea_tsx",
-      "client_src_components_ui_toggle_tsx",
-      "client_src_lib_utils_ts",
-      "details_taskchecklist_handlesubmit",
-      "employee_documents_step_getfilename",
-      "employee_documents_step_handlefilechange",
-      "employee_documents_step_removefile",
-      "employee_form_ui_fielderror",
-      "lib_utils_cn",
-      "ui_button_cn",
-      "ui_card_cardaction",
-      "ui_card_cn",
-      "ui_chart_cn",
-      "ui_chart_usechart",
-      "ui_checkbox_checkbox",
-      "ui_command_cn",
-      "ui_command_commandgroup",
-      "ui_command_commanditem",
-      "ui_empty_cn",
-      "ui_hover_card_hovercard",
-      "ui_input_group_cn",
-      "ui_input_group_inputgrouptext",
-      "ui_input_otp_cn",
-      "ui_kbd_cn",
-      "ui_radio_group_radiogroup",
-      "ui_radio_group_radiogroupitem",
-      "ui_resizable_resizablepanel",
-      "ui_resizable_resizablepanelgroup",
-      "ui_slider_slider",
-      "ui_tabs_cn",
-      "ui_textarea_cn"
-    ],
-    "3": [
+    "1": [
       "client_src_components_employee_add_employee_form_tsx",
       "client_src_components_recruitment_recruitment_utils_ts",
       "client_src_hooks_userecruitment_ts",
@@ -241,7 +122,7 @@
       "recruitment_recruitment_utils_promptjoiningletter",
       "recruitment_recruitment_utils_promptofferletter"
     ],
-    "4": [
+    "2": [
       "client_src_components_notifications_notification_bell_tsx",
       "client_src_components_notifications_notification_icon_tsx",
       "client_src_components_notifications_notification_item_tsx",
@@ -296,57 +177,159 @@
       "ui_dropdown_menu_cn",
       "ui_dropdown_menu_dropdownmenu"
     ],
+    "3": [
+      "client_src_components_settings_access_control_tab_tsx",
+      "client_src_hooks_usedepartments_ts",
+      "client_src_hooks_useemployees_ts",
+      "client_src_hooks_useroles_ts",
+      "client_src_routes_pages_create_department_tsx",
+      "client_src_routes_pages_create_employee_tsx",
+      "client_src_routes_pages_edit_department_tsx",
+      "client_src_routes_pages_edit_employee_tsx",
+      "client_src_routes_pages_profile_tsx",
+      "client_src_routes_pages_view_department_tsx",
+      "client_src_routes_pages_view_employee_tsx",
+      "hooks_usedepartments_usecreatedepartmentmutation",
+      "hooks_usedepartments_usedeletedepartmentmutation",
+      "hooks_usedepartments_usedepartmentquery",
+      "hooks_usedepartments_usedepartmentsquery",
+      "hooks_usedepartments_useupdatedepartmentmutation",
+      "hooks_useemployees_usecreateemployeemutation",
+      "hooks_useemployees_usedeleteemployeemutation",
+      "hooks_useemployees_useemployeeoptionsquery",
+      "hooks_useemployees_useemployeequery",
+      "hooks_useemployees_useupdateemployeemutation",
+      "hooks_useroles_usecreaterolemutation",
+      "hooks_useroles_usedeleterolemutation",
+      "hooks_useroles_usepermissionsquery",
+      "hooks_useroles_userolesquery",
+      "hooks_useroles_useupdaterolemutation",
+      "pages_create_department_handlesubmit",
+      "pages_create_employee_createemployeepage",
+      "pages_edit_department_handlesubmit",
+      "pages_edit_employee_editemployeepage",
+      "pages_profile_formatcurrency",
+      "pages_profile_formatdate",
+      "pages_profile_formatmonthkey",
+      "pages_profile_handlepasswordchange",
+      "pages_profile_handletabchange",
+      "pages_profile_infofield",
+      "pages_view_department_viewdepartmentpage",
+      "pages_view_employee_viewemployeepage",
+      "settings_access_control_tab_formatactionname",
+      "settings_access_control_tab_formatresourcename",
+      "settings_access_control_tab_getcategory",
+      "settings_access_control_tab_getgroupedsortedpermissions",
+      "settings_access_control_tab_handledeleterole",
+      "settings_access_control_tab_handleopenassignrole",
+      "settings_access_control_tab_handleopencreaterole",
+      "settings_access_control_tab_handleopeneditrole",
+      "settings_access_control_tab_handleresetchanges",
+      "settings_access_control_tab_handlesavechanges",
+      "settings_access_control_tab_handlesaverole",
+      "settings_access_control_tab_handlesaveroleassignment",
+      "settings_access_control_tab_handletoggleactivepermission",
+      "settings_access_control_tab_toggleallinresourceform",
+      "settings_access_control_tab_togglepermission"
+    ],
+    "4": [
+      "client_src_components_employee_documents_step_tsx",
+      "client_src_components_employee_form_ui_tsx",
+      "client_src_components_recruitment_recruitmentkpis_tsx",
+      "client_src_components_tasks_taskganttview_tsx",
+      "client_src_components_ui_badge_tsx",
+      "client_src_components_ui_button_tsx",
+      "client_src_components_ui_combobox_tsx",
+      "client_src_components_ui_command_tsx",
+      "client_src_components_ui_dialog_tsx",
+      "client_src_components_ui_empty_tsx",
+      "client_src_components_ui_hover_card_tsx",
+      "client_src_components_ui_input_group_tsx",
+      "client_src_components_ui_input_otp_tsx",
+      "client_src_components_ui_input_tsx",
+      "client_src_components_ui_kbd_tsx",
+      "client_src_components_ui_progress_tsx",
+      "client_src_components_ui_resizable_tsx",
+      "client_src_components_ui_slider_tsx",
+      "client_src_components_ui_tabs_tsx",
+      "client_src_components_ui_textarea_tsx",
+      "client_src_components_ui_toggle_tsx",
+      "client_src_lib_utils_ts",
+      "employee_documents_step_getfilename",
+      "employee_documents_step_handlefilechange",
+      "employee_documents_step_removefile",
+      "employee_form_ui_fielderror",
+      "lib_utils_cn",
+      "ui_button_cn",
+      "ui_combobox_cn",
+      "ui_combobox_comboboxclear",
+      "ui_combobox_comboboxcollection",
+      "ui_combobox_comboboxgroup",
+      "ui_combobox_comboboxtrigger",
+      "ui_combobox_comboboxvalue",
+      "ui_command_cn",
+      "ui_command_commandgroup",
+      "ui_command_commanditem",
+      "ui_dialog_cn",
+      "ui_dialog_dialogclose",
+      "ui_dialog_dialogportal",
+      "ui_empty_cn",
+      "ui_hover_card_hovercard",
+      "ui_input_group_cn",
+      "ui_input_group_inputgrouptext",
+      "ui_input_otp_cn",
+      "ui_kbd_cn",
+      "ui_resizable_resizablepanel",
+      "ui_resizable_resizablepanelgroup",
+      "ui_slider_slider",
+      "ui_tabs_cn",
+      "ui_textarea_cn"
+    ],
     "5": [
-      "client_src_components_leave_leave_summary_cards_tsx",
-      "client_src_components_regulations_requestdetail_tsx",
-      "client_src_hooks_useassets_ts",
-      "client_src_hooks_useleavetypes_ts",
-      "client_src_hooks_useloans_ts",
-      "client_src_hooks_usepermissions_ts",
-      "client_src_routes_pages_payroll_assets_tsx",
-      "client_src_routes_pages_payroll_loans_tsx",
-      "client_src_routes_pages_regulations_tsx",
-      "client_src_routes_pages_settings_tsx",
-      "hooks_useassets_useallocateassetmutation",
-      "hooks_useassets_useassetdetailsquery",
-      "hooks_useassets_useassetsquery",
-      "hooks_useassets_usecreateassetmutation",
-      "hooks_useassets_usereturnassetmutation",
-      "hooks_useassets_useupdateassetconditionmutation",
-      "hooks_useleavetypes_usecreateleavetypemutation",
-      "hooks_useleavetypes_usedeleteleavetypemutation",
-      "hooks_useleavetypes_useleavetypequery",
-      "hooks_useleavetypes_useleavetypesquery",
-      "hooks_useleavetypes_useupdateleavetypemutation",
-      "hooks_useloans_useapplyloanmutation",
-      "hooks_useloans_usedisburseloanmutation",
-      "hooks_useloans_useloandetailsquery",
-      "hooks_useloans_useloansquery",
-      "hooks_useloans_useprocessloanmutation",
-      "hooks_useloans_userecordloanpaymentmutation",
-      "hooks_usepermissions_usepermissions",
-      "hooks_useregulations_useupdaterequeststatusmutation",
-      "leave_leave_summary_cards_leavesummarycards",
-      "pages_payroll_assets_formatcurrency",
-      "pages_payroll_assets_handleallocatedevice",
-      "pages_payroll_assets_handleregisterdevice",
-      "pages_payroll_assets_handlereturndevice",
-      "pages_payroll_assets_handleupdatecondition",
-      "pages_payroll_assets_openallocate",
-      "pages_payroll_assets_opencondition",
-      "pages_payroll_assets_opendetails",
-      "pages_payroll_loans_formatcurrency",
-      "pages_payroll_loans_handleapplyloan",
-      "pages_payroll_loans_handledisburseloan",
-      "pages_payroll_loans_handleprocessloan",
-      "pages_payroll_loans_handlerecordpayment",
-      "pages_payroll_loans_opendetails",
-      "pages_settings_handleopenedit",
-      "pages_settings_handlesaveleavetype",
-      "pages_settings_handletabchange",
-      "pages_settings_handletoggleactive",
-      "regulations_requestdetail_requestdetail",
-      "regulations_requestdetail_tolocaledatestring"
+      "client_src_components_dashboard_my_tasks_card_tsx",
+      "client_src_components_leave_leave_types_list_tsx",
+      "client_src_components_payroll_disbursementfestivalbonustab_tsx",
+      "client_src_components_payroll_disbursementlogstab_tsx",
+      "client_src_components_payroll_disbursementtab_tsx",
+      "client_src_components_payroll_providentfundtab_tsx",
+      "client_src_components_recruitment_analyticstab_tsx",
+      "client_src_components_recruitment_jobstab_tsx",
+      "client_src_components_regulations_approvalqueue_tsx",
+      "client_src_components_tasks_details_taskdependencies_tsx",
+      "client_src_components_ui_table_tsx",
+      "client_src_hooks_useclaims_ts",
+      "client_src_routes_pages_business_travel_advance_tsx",
+      "client_src_routes_pages_departments_tsx",
+      "client_src_routes_pages_medical_reimbursement_tsx",
+      "client_src_routes_pages_tada_claim_tsx",
+      "details_taskdependencies_handlelink",
+      "hooks_useclaims_useclaimbyid",
+      "hooks_useclaims_useclaimsquery",
+      "hooks_useclaims_usecreateclaimmutation",
+      "hooks_useclaims_usedeleteclaimmutation",
+      "hooks_useclaims_useupdateclaimstatusmutation",
+      "hooks_usepayroll_usedisbursemutation",
+      "pages_business_travel_advance_handlestatuschange",
+      "pages_business_travel_advance_handlesubmit",
+      "pages_departments_handledeletedept",
+      "pages_departments_handledeletedesg",
+      "pages_medical_reimbursement_handlestatuschange",
+      "pages_medical_reimbursement_handlesubmit",
+      "pages_tada_claim_handlestatuschange",
+      "pages_tada_claim_handlesubmit",
+      "payroll_disbursementfestivalbonustab_handledisburse",
+      "payroll_disbursementtab_getlastdayofmonth",
+      "payroll_disbursementtab_getpayslipallowancessum",
+      "payroll_disbursementtab_getpayslipdeductionssum",
+      "payroll_disbursementtab_handleexecutedisbursement",
+      "regulations_approvalqueue_getstepbadge",
+      "regulations_approvalqueue_handleopendetail",
+      "ui_badge_badge",
+      "ui_dialog_dialogtrigger",
+      "ui_table_cn",
+      "ui_table_table",
+      "ui_table_tablebody",
+      "ui_table_tableheader"
     ],
     "6": [
       "hr_server_test_announcements_e2e_spec_ts",
@@ -484,12 +467,12 @@
       "client_src_components_employee_banking_step_tsx",
       "client_src_components_employee_family_info_step_tsx",
       "client_src_components_employee_nominee_step_tsx",
-      "client_src_components_employee_personal_info_step_tsx",
       "client_src_components_notifications_notification_preferences_tsx",
       "client_src_components_recruitment_jobcreatedialog_tsx",
       "client_src_components_recruitment_onboardingtab_tsx",
       "client_src_components_recruitment_pipelinetab_tsx",
       "client_src_components_recruitment_recruitmentdialogs_tsx",
+      "client_src_components_regulations_policyform_tsx",
       "client_src_components_tasks_details_taskpropertiesgrid_tsx",
       "client_src_components_tasks_details_tasktimelogs_tsx",
       "client_src_components_tasks_projectcreatedialog_tsx",
@@ -498,19 +481,20 @@
       "client_src_routes_pages_create_designation_tsx",
       "client_src_routes_pages_documents_tsx",
       "client_src_routes_pages_edit_designation_tsx",
+      "client_src_routes_pages_leave_applications_tsx",
       "details_tasktimelogs_handlelogtime",
       "employee_banking_step_handlepdfchange",
       "employee_nominee_step_handlenidpdfchange",
       "employee_nominee_step_handlephotochange",
       "employee_nominee_step_removenomineeat",
       "employee_nominee_step_updatefile",
-      "employee_personal_info_step_handleaddresssync",
-      "employee_personal_info_step_handlecurrentaddresschange",
-      "employee_personal_info_step_handlephotochange",
-      "employee_personal_info_step_removephoto",
       "notifications_notification_preferences_handlesave",
       "notifications_notification_preferences_togglecategory",
       "notifications_notification_preferences_togglemodule",
+      "pages_leave_applications_getleavebadgeclasses",
+      "pages_leave_applications_handleclosedialog",
+      "pages_leave_applications_handleviewdetails",
+      "regulations_policyform_handlesubmit",
       "ui_input_input",
       "ui_select_select",
       "ui_select_selectcontent",
@@ -519,6 +503,86 @@
       "ui_select_selectvalue"
     ],
     "10": [
+      "client_src_components_tasks_taskdetailssheet_tsx",
+      "client_src_hooks_usetasks_ts",
+      "hooks_usetasks_useaddchecklistitemmutation",
+      "hooks_usetasks_useaddcommentmutation",
+      "hooks_usetasks_usecreateattachmentmutation",
+      "hooks_usetasks_usecreatedependencymutation",
+      "hooks_usetasks_usecreatetimeentrymutation",
+      "hooks_usetasks_usedeleteattachmentmutation",
+      "hooks_usetasks_usedeletechecklistitemmutation",
+      "hooks_usetasks_usedeletecommentmutation",
+      "hooks_usetasks_usedeletedependencymutation",
+      "hooks_usetasks_usedeletetimeentrymutation",
+      "hooks_usetasks_usemarknotificationreadmutation",
+      "hooks_usetasks_usenotificationsquery",
+      "hooks_usetasks_usetaskdetailquery",
+      "hooks_usetasks_useupdatechecklistitemmutation",
+      "hooks_usetasks_useupdatecommentmutation",
+      "hooks_usetasks_useupdatetimeentrymutation",
+      "tasks_taskdetailssheet_formatseconds",
+      "tasks_taskdetailssheet_handleaddchecklistitem",
+      "tasks_taskdetailssheet_handleadddependency",
+      "tasks_taskdetailssheet_handleaddmanualtime",
+      "tasks_taskdetailssheet_handleaddwatcher",
+      "tasks_taskdetailssheet_handledeletechecklist",
+      "tasks_taskdetailssheet_handledescsave",
+      "tasks_taskdetailssheet_handleescape",
+      "tasks_taskdetailssheet_handlemetaupdate",
+      "tasks_taskdetailssheet_handlepincomment",
+      "tasks_taskdetailssheet_handlepostcomment",
+      "tasks_taskdetailssheet_handleremovewatcher",
+      "tasks_taskdetailssheet_handlesavecommentedit",
+      "tasks_taskdetailssheet_handlesimulatefileupload",
+      "tasks_taskdetailssheet_handlestarttimer",
+      "tasks_taskdetailssheet_handlestoptimer",
+      "tasks_taskdetailssheet_handletitlesave",
+      "tasks_taskdetailssheet_handletogglechecklist",
+      "tasks_taskdetailssheet_handletogglereaction",
+      "tasks_taskdetailssheet_rendermarkdown"
+    ],
+    "11": [
+      "attendance_overrideattendancedialog_handlesubmit",
+      "attendance_requestcorrectiondialog_convert12to24",
+      "attendance_requestcorrectiondialog_convert24to12",
+      "client_src_components_attendance_overrideattendancedialog_tsx",
+      "client_src_components_attendance_requestcorrectiondialog_tsx",
+      "client_src_components_dashboard_apply_leave_dialog_tsx",
+      "client_src_components_employee_status_change_dialog_tsx",
+      "client_src_components_leave_leave_type_dialog_tsx",
+      "client_src_components_letters_letterpreviewdialog_tsx",
+      "client_src_components_payroll_payrollactiondialogs_tsx",
+      "client_src_components_separation_settlementcalculatormodal_tsx",
+      "client_src_components_ui_label_tsx",
+      "client_src_components_ui_spinner_tsx",
+      "client_src_hooks_usesettlement_ts",
+      "client_src_routes_pages_login_tsx",
+      "dashboard_apply_leave_dialog_autoselectleavetype",
+      "dashboard_apply_leave_dialog_formatdatedisplay",
+      "dashboard_apply_leave_dialog_formatfilesize",
+      "dashboard_apply_leave_dialog_getdurationdays",
+      "dashboard_apply_leave_dialog_getfileicon",
+      "dashboard_apply_leave_dialog_handleaddattachment",
+      "dashboard_apply_leave_dialog_handlesubmit",
+      "employee_status_change_dialog_handleopenchange",
+      "employee_status_change_dialog_handlestatuschange",
+      "hooks_useemployees_usechangeemployeestatusmutation",
+      "hooks_usesettlement_usesavesettlementmutation",
+      "hooks_usesettlement_usesettlementquery",
+      "hooks_usesettlement_useupdatesettlementstatusmutation",
+      "leave_leave_type_dialog_handlereset",
+      "leave_leave_type_dialog_handlesave",
+      "pages_login_onsubmit",
+      "separation_settlementcalculatormodal_handlesave",
+      "separation_settlementcalculatormodal_handleupdatestatus",
+      "tasks_projectcreatedialog_handleformsubmit",
+      "tasks_taskcreatedialog_handleformsubmit",
+      "ui_dialog_dialog",
+      "ui_label_label",
+      "ui_spinner_spinner"
+    ],
+    "12": [
       "hr_server_src_modules_payroll_payroll_service_ts",
       "payroll_payroll_service_payrollservice",
       "payroll_payroll_service_payrollservice_approvepayslip",
@@ -555,7 +619,7 @@
       "payroll_payroll_service_payrollservice_unlockcycle",
       "payroll_payroll_service_payrollservice_updatepayslipadjustments"
     ],
-    "11": [
+    "13": [
       "hr_server_src_modules_tasks_tasks_controller_ts",
       "tasks_tasks_controller_taskscontroller",
       "tasks_tasks_controller_taskscontroller_addattachment",
@@ -591,79 +655,67 @@
       "tasks_tasks_controller_taskscontroller_updatetask",
       "tasks_tasks_controller_taskscontroller_updatetimeentry"
     ],
-    "12": [
-      "client_src_hooks_usetasks_ts",
-      "client_src_routes_pages_tasks_tsx",
-      "hooks_usetasks_useaddchecklistitemmutation",
-      "hooks_usetasks_useaddcommentmutation",
-      "hooks_usetasks_usebulkdeletetasksmutation",
-      "hooks_usetasks_usecreateattachmentmutation",
-      "hooks_usetasks_usecreatedependencymutation",
-      "hooks_usetasks_usecreatemilestonemutation",
-      "hooks_usetasks_usecreateprojectmutation",
-      "hooks_usetasks_usedeleteattachmentmutation",
-      "hooks_usetasks_usedeletecommentmutation",
-      "hooks_usetasks_usedeletedependencymutation",
-      "hooks_usetasks_usedeletemilestonemutation",
-      "hooks_usetasks_usedeleteprojectmutation",
-      "hooks_usetasks_useinfinitetasksquery",
-      "hooks_usetasks_usemarknotificationreadmutation",
-      "hooks_usetasks_usemilestonesquery",
-      "hooks_usetasks_usenotificationsquery",
-      "hooks_usetasks_useprojectactivitiesquery",
-      "hooks_usetasks_useprojectsquery",
-      "hooks_usetasks_usetaskdetailquery",
-      "hooks_usetasks_useupdatechecklistitemmutation",
-      "hooks_usetasks_useupdatecommentmutation",
-      "hooks_usetasks_useupdatemilestonemutation",
-      "hooks_usetasks_useupdateprojectmutation",
-      "hooks_usetasks_useupdatetimeentrymutation",
-      "pages_tasks_handlearchiveprojecttoggle",
-      "pages_tasks_handlecreateproject",
-      "pages_tasks_handlecreatetask",
-      "pages_tasks_handlekeydown",
-      "pages_tasks_handlequickadd",
-      "pages_tasks_handlestatuschange",
-      "pages_tasks_handleupdateprojectsettings",
-      "pages_tasks_setparam"
-    ],
-    "13": [
-      "attendance_requestcorrectiondialog_convert12to24",
-      "attendance_requestcorrectiondialog_convert24to12",
-      "client_src_components_attendance_overrideattendancedialog_tsx",
-      "client_src_components_attendance_requestcorrectiondialog_tsx",
-      "client_src_components_employee_status_change_dialog_tsx",
-      "client_src_components_leave_leave_type_dialog_tsx",
-      "client_src_components_letters_letterpreviewdialog_tsx",
-      "client_src_components_payroll_payrollactiondialogs_tsx",
-      "client_src_components_regulations_policyform_tsx",
-      "client_src_components_regulations_requestform_tsx",
-      "client_src_components_ui_switch_tsx",
-      "client_src_hooks_useregulations_ts",
-      "client_src_routes_pages_announcements_tsx",
-      "employee_status_change_dialog_handleopenchange",
-      "employee_status_change_dialog_handlestatuschange",
-      "hooks_useregulations_usecancelrequestmutation",
-      "hooks_useregulations_usecreatepolicymutation",
-      "hooks_useregulations_usecreaterequestmutation",
-      "hooks_useregulations_useupdatepolicymutation",
-      "leave_leave_type_dialog_handlereset",
-      "leave_leave_type_dialog_handlesave",
-      "pages_announcements_handledelete",
-      "pages_announcements_handlenextpage",
-      "pages_announcements_handleprevpage",
-      "pages_announcements_handlesave",
-      "pages_announcements_opencreatemodal",
-      "pages_announcements_openeditmodal",
-      "pages_announcements_openviewmodal",
-      "regulations_policyform_handlesubmit",
-      "regulations_requestform_requestform",
-      "ui_dialog_dialog",
-      "ui_label_label",
-      "ui_spinner_spinner",
-      "ui_switch_switch"
-    ],
     "14": [
+      "client_src_hooks_useassets_ts",
+      "client_src_hooks_useloans_ts",
+      "client_src_routes_pages_payroll_assets_tsx",
+      "client_src_routes_pages_payroll_loans_tsx",
+      "hooks_useassets_useallocateassetmutation",
+      "hooks_useassets_useassetdetailsquery",
+      "hooks_useassets_useassetsquery",
+      "hooks_useassets_usecreateassetmutation",
+      "hooks_useassets_usereturnassetmutation",
+      "hooks_useassets_useupdateassetconditionmutation",
+      "hooks_useloans_useapplyloanmutation",
+      "hooks_useloans_usedisburseloanmutation",
+      "hooks_useloans_useloandetailsquery",
+      "hooks_useloans_useloansquery",
+      "hooks_useloans_useprocessloanmutation",
+      "hooks_useloans_userecordloanpaymentmutation",
+      "pages_payroll_assets_formatcurrency",
+      "pages_payroll_assets_handleallocatedevice",
+      "pages_payroll_assets_handleregisterdevice",
+      "pages_payroll_assets_handlereturndevice",
+      "pages_payroll_assets_handleupdatecondition",
+      "pages_payroll_assets_openallocate",
+      "pages_payroll_assets_opencondition",
+      "pages_payroll_assets_opendetails",
+      "pages_payroll_loans_formatcurrency",
+      "pages_payroll_loans_handleapplyloan",
+      "pages_payroll_loans_handledisburseloan",
+      "pages_payroll_loans_handleprocessloan",
+      "pages_payroll_loans_handlerecordpayment",
+      "pages_payroll_loans_opendetails"
+    ],
+    "15": [
+      "client_src_components_payroll_employeesalarytab_tsx",
+      "client_src_components_payroll_payrollprocessingtab_tsx",
+      "client_src_lib_export_ts",
+      "lib_export_exporttocsv",
+      "payroll_disbursementlogstab_handleexport",
+      "payroll_employeesalarytab_handleapply",
+      "payroll_employeesalarytab_handleexport",
+      "payroll_employeesalarytab_handleopenassign",
+      "payroll_employeesalarytab_handlesaveassign",
+      "payroll_employeesalarytab_openhistory",
+      "payroll_payrollprocessingtab_getadjustmenttitle",
+      "payroll_payrollprocessingtab_getdaysinselectedmonth",
+      "payroll_payrollprocessingtab_getexistingadjustmentitems",
+      "payroll_payrollprocessingtab_getpayslipallowancessum",
+      "payroll_payrollprocessingtab_getpayslipdeductionssum",
+      "payroll_payrollprocessingtab_handleaddadjustmentitem",
+      "payroll_payrollprocessingtab_handleapplypartialpayperiod",
+      "payroll_payrollprocessingtab_handlecustomendchange",
+      "payroll_payrollprocessingtab_handlecustomstartchange",
+      "payroll_payrollprocessingtab_handleexport",
+      "payroll_payrollprocessingtab_handleremoveadjustmentitem",
+      "payroll_payrollprocessingtab_handlesaveadjustments",
+      "payroll_payrollprocessingtab_openadjustmentdialog",
+      "payroll_payrollprocessingtab_parsedayinput",
+      "payroll_payrollprocessingtab_parsemoneyinput",
+      "payroll_providentfundtab_handleexport"
+    ],
+    "16": [
       "chat_chat_gateway_chatgateway",
       "chat_chat_gateway_chatgateway_afterinit",
       "chat_chat_gateway_chatgateway_broadcastpresenceevent",
@@ -690,7 +742,7 @@
       "chat_chat_gateway_chatgateway_sendtoclient",
       "hr_server_src_modules_chat_chat_gateway_ts"
     ],
-    "15": [
+    "17": [
       "hr_server_src_modules_recruitment_recruitment_service_ts",
       "recruitment_recruitment_service_recruitmentservice",
       "recruitment_recruitment_service_recruitmentservice_addonboardingtask",
@@ -717,34 +769,7 @@
       "recruitment_recruitment_service_recruitmentservice_updatejob",
       "recruitment_recruitment_service_recruitmentservice_updatestage"
     ],
-    "16": [
-      "attendance_attendance_utils_exportattendancecsv",
-      "attendance_attendancekpis_attendancekpis",
-      "client_src_components_attendance_attendancekpis_tsx",
-      "client_src_components_employee_employment_step_tsx",
-      "client_src_components_letters_lettercreatedialog_tsx",
-      "client_src_routes_pages_company_attendance_tsx",
-      "client_src_routes_pages_employees_tsx",
-      "employee_employment_step_handlenidpdfchange",
-      "employee_employment_step_removenidpdf",
-      "hooks_usedepartments_usedepartmentoptionsquery",
-      "hooks_usedesignations_usedesignationoptionsquery",
-      "letters_lettercreatedialog_getcategorylabel",
-      "letters_lettercreatedialog_getlettertypeconfig",
-      "letters_lettercreatedialog_handlesubmitform",
-      "letters_lettercreatedialog_handletypeselect",
-      "letters_lettercreatedialog_resetform",
-      "pages_company_attendance_handleexportcsv",
-      "pages_company_attendance_handlenextpage",
-      "pages_company_attendance_handleopenoverride",
-      "pages_company_attendance_handleoverridesubmit",
-      "pages_company_attendance_handleprevpage",
-      "pages_employees_getinitials",
-      "pages_employees_getpagenumbers",
-      "pages_employees_handlesort",
-      "pages_employees_resetfilters"
-    ],
-    "17": [
+    "18": [
       "festival_bonus_festival_bonus_service_festivalbonusservice",
       "festival_bonus_festival_bonus_service_festivalbonusservice_addpayoutcomment",
       "festival_bonus_festival_bonus_service_festivalbonusservice_approvecycle",
@@ -770,83 +795,33 @@
       "festival_bonus_festival_bonus_service_festivalbonusservice_updatesettings",
       "hr_server_src_modules_festival_bonus_festival_bonus_service_ts"
     ],
-    "18": [
-      "client_src_components_tasks_taskdetailssheet_tsx",
-      "hooks_usetasks_usecreatetimeentrymutation",
-      "hooks_usetasks_usedeletechecklistitemmutation",
-      "hooks_usetasks_usedeletetimeentrymutation",
-      "tasks_taskdetailssheet_formatseconds",
-      "tasks_taskdetailssheet_handleaddchecklistitem",
-      "tasks_taskdetailssheet_handleadddependency",
-      "tasks_taskdetailssheet_handleaddmanualtime",
-      "tasks_taskdetailssheet_handleaddwatcher",
-      "tasks_taskdetailssheet_handledeletechecklist",
-      "tasks_taskdetailssheet_handledescsave",
-      "tasks_taskdetailssheet_handleescape",
-      "tasks_taskdetailssheet_handlemetaupdate",
-      "tasks_taskdetailssheet_handlepincomment",
-      "tasks_taskdetailssheet_handlepostcomment",
-      "tasks_taskdetailssheet_handleremovewatcher",
-      "tasks_taskdetailssheet_handlesavecommentedit",
-      "tasks_taskdetailssheet_handlesimulatefileupload",
-      "tasks_taskdetailssheet_handlestarttimer",
-      "tasks_taskdetailssheet_handlestoptimer",
-      "tasks_taskdetailssheet_handletitlesave",
-      "tasks_taskdetailssheet_handletogglechecklist",
-      "tasks_taskdetailssheet_handletogglereaction",
-      "tasks_taskdetailssheet_rendermarkdown"
-    ],
     "19": [
-      "client_src_hooks_useperformance_ts",
-      "client_src_routes_pages_performance_tsx",
-      "hooks_useperformance_useallkpisquery",
-      "hooks_useperformance_useappraisalcyclesquery",
-      "hooks_useperformance_usecreatecyclemutation",
-      "hooks_useperformance_usecreatekpimutation",
-      "hooks_useperformance_usecycleappraisalsquery",
-      "hooks_useperformance_usedeletekpimutation",
-      "hooks_useperformance_useemployeeappraisalquery",
-      "hooks_useperformance_useemployeekpisquery",
-      "hooks_useperformance_usesavekpiscoresmutation",
-      "hooks_useperformance_usesubmitmanagerappraisalmutation",
-      "hooks_useperformance_usesubmitselfappraisalmutation",
-      "hooks_useperformance_useupdatecyclestatusmutation",
-      "pages_performance_getratingband",
-      "pages_performance_gettenuremonths",
-      "pages_performance_handleaddkpi",
-      "pages_performance_handlecreatecycle",
-      "pages_performance_handledeletekpi",
-      "pages_performance_handleprintledger",
-      "pages_performance_handlesubmitmanager",
-      "pages_performance_handlesubmitself",
-      "pages_performance_handletogglecyclestatus"
+      "client_src_components_settings_attendance_setup_tsx",
+      "client_src_components_settings_office_hours_tsx",
+      "client_src_components_tasks_taskworkloadview_tsx",
+      "client_src_hooks_useattendancesettings_ts",
+      "hooks_useattendancesettings_useattendancesettingsquery",
+      "hooks_useattendancesettings_usecreateholidaymutation",
+      "hooks_useattendancesettings_usedeleteholidaymutation",
+      "hooks_useattendancesettings_useupdateattendancesettingsmutation",
+      "hooks_useattendancesettings_useupdateholidaymutation",
+      "settings_attendance_setup_cn",
+      "settings_attendance_setup_handleaddholiday",
+      "settings_attendance_setup_handleeditholiday",
+      "settings_attendance_setup_parseholidaydate",
+      "settings_attendance_setup_resetform",
+      "settings_attendance_setup_toggleweeklyday",
+      "settings_office_hours_formatduration",
+      "settings_office_hours_formattime12",
+      "settings_office_hours_saveattendancepolicies",
+      "settings_office_hours_saveleaverules",
+      "settings_office_hours_saveshifts",
+      "settings_office_hours_timetominutes",
+      "settings_office_hours_updatefield",
+      "tasks_taskworkloadview_calculatecapacity",
+      "tasks_taskworkloadview_parsetimetominutes"
     ],
     "20": [
-      "client_src_components_settings_salary_setup_tsx",
-      "client_src_hooks_usesalary_ts",
-      "client_src_routes_pages_payroll_employee_salary_tsx",
-      "hooks_usesalary_useassignemployeesalarymutation",
-      "hooks_usesalary_usebulksalaryrevisionmutation",
-      "hooks_usesalary_usecreatesalarytemplatemutation",
-      "hooks_usesalary_usedeletesalarytemplatemutation",
-      "hooks_usesalary_useemployeesalariesquery",
-      "hooks_usesalary_useemployeesalaryhistoryquery",
-      "hooks_usesalary_useemployeesalaryquery",
-      "hooks_usesalary_usesalarysummaryquery",
-      "hooks_usesalary_usesalarytemplatequery",
-      "hooks_usesalary_usesalarytemplatesquery",
-      "hooks_usesalary_useupdateemployeesalarymutation",
-      "hooks_usesalary_useupdatesalarytemplatemutation",
-      "pages_payroll_employee_salary_payrollemployeesalarypage",
-      "settings_salary_setup_handleaddcomponent",
-      "settings_salary_setup_handlecomponentchange",
-      "settings_salary_setup_handledeletetemplate",
-      "settings_salary_setup_handleremovecomponent",
-      "settings_salary_setup_handlesave",
-      "settings_salary_setup_handlesavepfsettings",
-      "settings_salary_setup_handlesavetemplate"
-    ],
-    "21": [
       "client_src_hooks_useletters_ts",
       "client_src_routes_pages_letters_tsx",
       "client_src_routes_pages_print_hr_letter_tsx",
@@ -871,7 +846,57 @@
       "pages_view_letter_viewletterpage",
       "print_hr_letter_printhrletterpage"
     ],
+    "21": [
+      "client_src_components_settings_salary_setup_tsx",
+      "client_src_hooks_usesalary_ts",
+      "client_src_routes_pages_payroll_employee_salary_tsx",
+      "hooks_usesalary_useassignemployeesalarymutation",
+      "hooks_usesalary_usebulksalaryrevisionmutation",
+      "hooks_usesalary_usecreatesalarytemplatemutation",
+      "hooks_usesalary_usedeletesalarytemplatemutation",
+      "hooks_usesalary_useemployeesalariesquery",
+      "hooks_usesalary_useemployeesalaryhistoryquery",
+      "hooks_usesalary_useemployeesalaryquery",
+      "hooks_usesalary_usesalarysummaryquery",
+      "hooks_usesalary_usesalarytemplatequery",
+      "hooks_usesalary_usesalarytemplatesquery",
+      "hooks_usesalary_useupdateemployeesalarymutation",
+      "hooks_usesalary_useupdatesalarytemplatemutation",
+      "pages_payroll_employee_salary_payrollemployeesalarypage",
+      "settings_salary_setup_handleaddcomponent",
+      "settings_salary_setup_handlecomponentchange",
+      "settings_salary_setup_handledeletetemplate",
+      "settings_salary_setup_handleremovecomponent",
+      "settings_salary_setup_handlesave",
+      "settings_salary_setup_handlesavepfsettings",
+      "settings_salary_setup_handlesavetemplate"
+    ],
     "22": [
+      "client_src_hooks_useperformance_ts",
+      "client_src_routes_pages_performance_tsx",
+      "hooks_useperformance_useallkpisquery",
+      "hooks_useperformance_useappraisalcyclesquery",
+      "hooks_useperformance_usecreatecyclemutation",
+      "hooks_useperformance_usecreatekpimutation",
+      "hooks_useperformance_usecycleappraisalsquery",
+      "hooks_useperformance_usedeletekpimutation",
+      "hooks_useperformance_useemployeeappraisalquery",
+      "hooks_useperformance_useemployeekpisquery",
+      "hooks_useperformance_usesavekpiscoresmutation",
+      "hooks_useperformance_usesubmitmanagerappraisalmutation",
+      "hooks_useperformance_usesubmitselfappraisalmutation",
+      "hooks_useperformance_useupdatecyclestatusmutation",
+      "pages_performance_getratingband",
+      "pages_performance_gettenuremonths",
+      "pages_performance_handleaddkpi",
+      "pages_performance_handlecreatecycle",
+      "pages_performance_handledeletekpi",
+      "pages_performance_handleprintledger",
+      "pages_performance_handlesubmitmanager",
+      "pages_performance_handlesubmitself",
+      "pages_performance_handletogglecyclestatus"
+    ],
+    "23": [
       "attendance_attendance_service_attendanceservice",
       "attendance_attendance_service_attendanceservice_approvecorrection",
       "attendance_attendance_service_attendanceservice_checkin",
@@ -895,7 +920,7 @@
       "attendance_attendance_service_attendanceservice_triggerlatenotifications",
       "hr_server_src_modules_attendance_attendance_service_ts"
     ],
-    "23": [
+    "24": [
       "hr_server_src_modules_recruitment_recruitment_controller_ts",
       "recruitment_recruitment_controller_recruitmentcontroller",
       "recruitment_recruitment_controller_recruitmentcontroller_addonboardingtask",
@@ -919,7 +944,7 @@
       "recruitment_recruitment_controller_recruitmentcontroller_updatejob",
       "recruitment_recruitment_controller_recruitmentcontroller_updatestage"
     ],
-    "24": [
+    "25": [
       "client_src_components_payroll_linemanagerapprovalstab_tsx",
       "client_src_components_payroll_mdapprovalstab_tsx",
       "client_src_hooks_usepayroll_ts",
@@ -942,30 +967,6 @@
       "payroll_mdapprovalstab_handleapprovepayslip",
       "payroll_mdapprovalstab_handlebulkapprove",
       "payroll_mdapprovalstab_handlerejectpayslip"
-    ],
-    "25": [
-      "client_src_components_settings_access_control_tab_tsx",
-      "client_src_hooks_useroles_ts",
-      "hooks_useroles_usecreaterolemutation",
-      "hooks_useroles_usedeleterolemutation",
-      "hooks_useroles_usepermissionsquery",
-      "hooks_useroles_userolesquery",
-      "hooks_useroles_useupdaterolemutation",
-      "settings_access_control_tab_formatactionname",
-      "settings_access_control_tab_formatresourcename",
-      "settings_access_control_tab_getcategory",
-      "settings_access_control_tab_getgroupedsortedpermissions",
-      "settings_access_control_tab_handledeleterole",
-      "settings_access_control_tab_handleopenassignrole",
-      "settings_access_control_tab_handleopencreaterole",
-      "settings_access_control_tab_handleopeneditrole",
-      "settings_access_control_tab_handleresetchanges",
-      "settings_access_control_tab_handlesavechanges",
-      "settings_access_control_tab_handlesaverole",
-      "settings_access_control_tab_handlesaveroleassignment",
-      "settings_access_control_tab_handletoggleactivepermission",
-      "settings_access_control_tab_toggleallinresourceform",
-      "settings_access_control_tab_togglepermission"
     ],
     "26": [
       "festival_bonus_festival_bonus_controller_festivalbonuscontroller",
@@ -1035,28 +1036,50 @@
       "repositories_chat_repository_chatrepository_updatelastread"
     ],
     "29": [
-      "client_src_components_ui_dialog_tsx",
-      "client_src_hooks_useclaims_ts",
-      "client_src_routes_pages_business_travel_advance_tsx",
-      "client_src_routes_pages_medical_reimbursement_tsx",
-      "client_src_routes_pages_tada_claim_tsx",
-      "hooks_useclaims_useclaimbyid",
-      "hooks_useclaims_useclaimsquery",
-      "hooks_useclaims_usecreateclaimmutation",
-      "hooks_useclaims_usedeleteclaimmutation",
-      "hooks_useclaims_useupdateclaimstatusmutation",
-      "pages_business_travel_advance_handlestatuschange",
-      "pages_business_travel_advance_handlesubmit",
-      "pages_medical_reimbursement_handlestatuschange",
-      "pages_medical_reimbursement_handlesubmit",
-      "pages_tada_claim_handlestatuschange",
-      "pages_tada_claim_handlesubmit",
-      "ui_dialog_cn",
-      "ui_dialog_dialogclose",
-      "ui_dialog_dialogportal",
-      "ui_dialog_dialogtrigger"
+      "client_src_routes_pages_tasks_tsx",
+      "hooks_usetasks_usebulkdeletetasksmutation",
+      "hooks_usetasks_usecreatemilestonemutation",
+      "hooks_usetasks_usecreateprojectmutation",
+      "hooks_usetasks_usedeletemilestonemutation",
+      "hooks_usetasks_usedeleteprojectmutation",
+      "hooks_usetasks_useinfinitetasksquery",
+      "hooks_usetasks_usemilestonesquery",
+      "hooks_usetasks_useprojectactivitiesquery",
+      "hooks_usetasks_useprojectsquery",
+      "hooks_usetasks_useupdatemilestonemutation",
+      "hooks_usetasks_useupdateprojectmutation",
+      "pages_tasks_handlearchiveprojecttoggle",
+      "pages_tasks_handlecreateproject",
+      "pages_tasks_handlecreatetask",
+      "pages_tasks_handlekeydown",
+      "pages_tasks_handlequickadd",
+      "pages_tasks_handlestatuschange",
+      "pages_tasks_handleupdateprojectsettings",
+      "pages_tasks_setparam"
     ],
     "30": [
+      "client_src_components_employee_personal_info_step_tsx",
+      "client_src_components_tasks_details_taskchecklist_tsx",
+      "client_src_components_ui_checkbox_tsx",
+      "client_src_hooks_useseparation_ts",
+      "client_src_routes_pages_separation_tsx",
+      "details_taskchecklist_handlesubmit",
+      "employee_personal_info_step_handleaddresssync",
+      "employee_personal_info_step_handlecurrentaddresschange",
+      "employee_personal_info_step_handlephotochange",
+      "employee_personal_info_step_removephoto",
+      "hooks_useseparation_usecreateseparationmutation",
+      "hooks_useseparation_usedeleteseparationmutation",
+      "hooks_useseparation_useseparationrecordsquery",
+      "hooks_useseparation_useupdateseparationmutation",
+      "pages_separation_handlecreate",
+      "pages_separation_handleupdateasset",
+      "pages_separation_handleupdateclearance",
+      "pages_separation_handleupdatehandover",
+      "pages_separation_mapbackendrecord",
+      "ui_checkbox_checkbox"
+    ],
+    "31": [
       "hr_server_src_modules_performance_performance_service_ts",
       "performance_performance_service_performanceservice",
       "performance_performance_service_performanceservice_bulkcalculatecyclegrades",
@@ -1077,28 +1100,28 @@
       "performance_performance_service_performanceservice_triggerselfappraisalsubmissionnotification",
       "performance_performance_service_performanceservice_updatecyclestatus"
     ],
-    "31": [
-      "client_src_hooks_useleaveapplications_ts",
-      "client_src_routes_pages_dashboard_tsx",
-      "hooks_useannouncements_useannouncementspaginated",
-      "hooks_useattendance_usemyattendancequery",
-      "hooks_useattendancesettings_useholidaysquery",
-      "hooks_useleaveapplications_useapplyleavemutation",
-      "hooks_useleaveapplications_useapproveleavemutation",
-      "hooks_useleaveapplications_usecancelleavemutation",
-      "hooks_useleaveapplications_useemployeeleavebalancesquery",
-      "hooks_useleaveapplications_useleaveapplicationsquery",
-      "hooks_useleaveapplications_useleavebalancesquery",
-      "hooks_useleaveapplications_userejectleavemutation",
-      "hooks_useleaveapplications_useupdateleavemutation",
-      "hooks_useleaveapplications_waitforleavejob",
-      "hooks_usetasks_usecreatetaskmutation",
-      "hooks_usetasks_usedeletetaskmutation",
-      "hooks_usetasks_usetasksquery",
-      "hooks_usetasks_useupdatetaskmutation",
-      "pages_dashboard_dashboardpage"
-    ],
     "32": [
+      "client_src_components_regulations_myrequests_tsx",
+      "client_src_components_regulations_policylist_tsx",
+      "client_src_components_regulations_requestform_tsx",
+      "client_src_hooks_useregulations_ts",
+      "hooks_useregulations_usecancelrequestmutation",
+      "hooks_useregulations_usecreatepolicymutation",
+      "hooks_useregulations_usecreaterequestmutation",
+      "hooks_useregulations_usedeletepolicymutation",
+      "hooks_useregulations_useregulationpoliciesquery",
+      "hooks_useregulations_useregulationrequestsquery",
+      "hooks_useregulations_useupdatepolicymutation",
+      "regulations_myrequests_getstatusbadge",
+      "regulations_myrequests_handleopendetail",
+      "regulations_myrequests_handleselectpolicy",
+      "regulations_myrequests_tolocaledatestring",
+      "regulations_policylist_handlecreate",
+      "regulations_policylist_handledelete",
+      "regulations_policylist_handleedit",
+      "regulations_requestform_requestform"
+    ],
+    "33": [
       "hr_server_src_modules_salary_salary_service_ts",
       "salary_salary_service_salaryservice",
       "salary_salary_service_salaryservice_assignsalary",
@@ -1118,7 +1141,7 @@
       "salary_salary_service_salaryservice_updatesalary",
       "salary_salary_service_salaryservice_updatetemplate"
     ],
-    "33": [
+    "34": [
       "hr_server_src_modules_payroll_payroll_controller_ts",
       "payroll_payroll_controller_payrollcontroller",
       "payroll_payroll_controller_payrollcontroller_approvepayslip",
@@ -1138,7 +1161,7 @@
       "payroll_payroll_controller_payrollcontroller_unlockcycle",
       "payroll_payroll_controller_payrollcontroller_updatepayslipadjustments"
     ],
-    "34": [
+    "35": [
       "regulations_regulations_service_regulationsservice",
       "regulations_regulations_service_regulationsservice_constructor",
       "regulations_regulations_service_regulationsservice_createpolicy",
@@ -1157,26 +1180,45 @@
       "regulations_regulations_service_regulationsservice_updatepolicy",
       "regulations_regulations_service_regulationsservice_updaterequeststatus"
     ],
-    "35": [
-      "client_src_components_dashboard_day_detail_dialog_tsx",
-      "dashboard_day_detail_dialog_convert24to12",
-      "dashboard_day_detail_dialog_formatdatedmy",
-      "dashboard_day_detail_dialog_formatdatetimedmy",
-      "dashboard_day_detail_dialog_getdurationhours",
-      "filters_global_exception_filter_globalexceptionfilter",
-      "filters_global_exception_filter_globalexceptionfilter_catch",
-      "hr_server_src_common_filters_global_exception_filter_ts",
-      "hr_server_src_modules_payroll_payroll_processor_ts",
-      "leave_application_leave_application_service_leaveapplicationservice_getleavebalances",
-      "leave_application_leave_application_service_leaveapplicationservice_getleavebalancesinternal",
-      "notifications_notifications_service_notificationservice_executeaction",
-      "organization_org_chart_openeditdialog",
-      "pages_company_attendance_string",
-      "payroll_payroll_processor_payrollprocessor",
-      "payroll_payroll_processor_payrollprocessor_constructor",
-      "payroll_payroll_processor_payrollprocessor_process"
-    ],
     "36": [
+      "hr_server_src_modules_notifications_notifications_service_ts",
+      "notifications_notifications_service_notificationservice",
+      "notifications_notifications_service_notificationservice_archive",
+      "notifications_notifications_service_notificationservice_archiveallread",
+      "notifications_notifications_service_notificationservice_constructor",
+      "notifications_notifications_service_notificationservice_delete",
+      "notifications_notifications_service_notificationservice_emit",
+      "notifications_notifications_service_notificationservice_emitbulk",
+      "notifications_notifications_service_notificationservice_executeaction",
+      "notifications_notifications_service_notificationservice_findall",
+      "notifications_notifications_service_notificationservice_getallemployeeids",
+      "notifications_notifications_service_notificationservice_getrecentunread",
+      "notifications_notifications_service_notificationservice_getunreadcount",
+      "notifications_notifications_service_notificationservice_markallasread",
+      "notifications_notifications_service_notificationservice_markasread",
+      "notifications_notifications_service_notificationservice_onmoduleinit",
+      "notifications_notifications_service_notificationservice_sanitizehtml"
+    ],
+    "37": [
+      "client_src_hooks_useleaveapplications_ts",
+      "client_src_routes_pages_dashboard_tsx",
+      "hooks_useannouncements_useannouncementspaginated",
+      "hooks_useattendance_usemyattendancequery",
+      "hooks_useattendancesettings_useholidaysquery",
+      "hooks_useleaveapplications_useapplyleavemutation",
+      "hooks_useleaveapplications_usecancelleavemutation",
+      "hooks_useleaveapplications_useemployeeleavebalancesquery",
+      "hooks_useleaveapplications_useleaveapplicationsquery",
+      "hooks_useleaveapplications_useleavebalancesquery",
+      "hooks_useleaveapplications_useupdateleavemutation",
+      "hooks_useleaveapplications_waitforleavejob",
+      "hooks_usetasks_usecreatetaskmutation",
+      "hooks_usetasks_usedeletetaskmutation",
+      "hooks_usetasks_usetasksquery",
+      "hooks_usetasks_useupdatetaskmutation",
+      "pages_dashboard_dashboardpage"
+    ],
+    "38": [
       "dto_create_room_dto_addmemberdto",
       "dto_create_room_dto_createchanneldto",
       "dto_create_room_dto_createdirectroomdto",
@@ -1194,7 +1236,7 @@
       "dto_create_room_dto_wswebrtcsignaldto",
       "hr_server_src_modules_chat_dto_create_room_dto_ts"
     ],
-    "37": [
+    "39": [
       "hr_server_src_modules_roles_roles_service_ts",
       "roles_roles_service_rolesservice",
       "roles_roles_service_rolesservice_constructor",
@@ -1212,7 +1254,7 @@
       "roles_roles_service_rolesservice_seedpermissions",
       "roles_roles_service_rolesservice_updatecustomrole"
     ],
-    "38": [
+    "40": [
       "hr_server_src_modules_performance_performance_controller_ts",
       "performance_performance_controller_performancecontroller",
       "performance_performance_controller_performancecontroller_constructor",
@@ -1230,7 +1272,7 @@
       "performance_performance_controller_performancecontroller_submitselfappraisal",
       "performance_performance_controller_performancecontroller_updatecyclestatus"
     ],
-    "39": [
+    "41": [
       "hr_server_src_modules_upload_cloudinary_service_ts",
       "upload_cloudinary_service_cloudinaryservice",
       "upload_cloudinary_service_cloudinaryservice_buildtransformation",
@@ -1248,43 +1290,25 @@
       "upload_cloudinary_service_cloudinaryservice_validatefilesize",
       "upload_cloudinary_service_cloudinaryservice_validatemimetype"
     ],
-    "40": [
-      "client_src_components_settings_attendance_setup_tsx",
-      "client_src_components_tasks_taskworkloadview_tsx",
-      "client_src_hooks_useattendancesettings_ts",
-      "hooks_useattendancesettings_useattendancesettingsquery",
-      "hooks_useattendancesettings_usecreateholidaymutation",
-      "hooks_useattendancesettings_usedeleteholidaymutation",
-      "hooks_useattendancesettings_useupdateattendancesettingsmutation",
-      "hooks_useattendancesettings_useupdateholidaymutation",
-      "settings_attendance_setup_cn",
-      "settings_attendance_setup_handleaddholiday",
-      "settings_attendance_setup_handleeditholiday",
-      "settings_attendance_setup_parseholidaydate",
-      "settings_attendance_setup_resetform",
-      "settings_attendance_setup_toggleweeklyday",
-      "tasks_taskworkloadview_calculatecapacity",
-      "tasks_taskworkloadview_parsetimetominutes"
-    ],
-    "41": [
-      "hr_server_src_modules_notifications_notifications_service_ts",
-      "notifications_notifications_service_notificationservice",
-      "notifications_notifications_service_notificationservice_archive",
-      "notifications_notifications_service_notificationservice_archiveallread",
-      "notifications_notifications_service_notificationservice_constructor",
-      "notifications_notifications_service_notificationservice_delete",
-      "notifications_notifications_service_notificationservice_emit",
-      "notifications_notifications_service_notificationservice_emitbulk",
-      "notifications_notifications_service_notificationservice_findall",
-      "notifications_notifications_service_notificationservice_getallemployeeids",
-      "notifications_notifications_service_notificationservice_getrecentunread",
-      "notifications_notifications_service_notificationservice_getunreadcount",
-      "notifications_notifications_service_notificationservice_markallasread",
-      "notifications_notifications_service_notificationservice_markasread",
-      "notifications_notifications_service_notificationservice_onmoduleinit",
-      "notifications_notifications_service_notificationservice_sanitizehtml"
-    ],
     "42": [
+      "client_src_components_employee_employment_step_tsx",
+      "client_src_components_letters_lettercreatedialog_tsx",
+      "client_src_routes_pages_employees_tsx",
+      "employee_employment_step_handlenidpdfchange",
+      "employee_employment_step_removenidpdf",
+      "hooks_usedepartments_usedepartmentoptionsquery",
+      "hooks_usedesignations_usedesignationoptionsquery",
+      "letters_lettercreatedialog_getcategorylabel",
+      "letters_lettercreatedialog_getlettertypeconfig",
+      "letters_lettercreatedialog_handlesubmitform",
+      "letters_lettercreatedialog_handletypeselect",
+      "letters_lettercreatedialog_resetform",
+      "pages_employees_getinitials",
+      "pages_employees_getpagenumbers",
+      "pages_employees_handlesort",
+      "pages_employees_resetfilters"
+    ],
+    "43": [
       "hr_server_src_modules_salary_salary_controller_ts",
       "salary_salary_controller_salarycontroller",
       "salary_salary_controller_salarycontroller_assignsalary",
@@ -1301,40 +1325,7 @@
       "salary_salary_controller_salarycontroller_updatesalary",
       "salary_salary_controller_salarycontroller_updatetemplate"
     ],
-    "43": [
-      "client_src_components_payroll_payrollprocessingtab_tsx",
-      "payroll_payrollprocessingtab_getadjustmenttitle",
-      "payroll_payrollprocessingtab_getdaysinselectedmonth",
-      "payroll_payrollprocessingtab_getexistingadjustmentitems",
-      "payroll_payrollprocessingtab_getpayslipallowancessum",
-      "payroll_payrollprocessingtab_getpayslipdeductionssum",
-      "payroll_payrollprocessingtab_handleaddadjustmentitem",
-      "payroll_payrollprocessingtab_handleapplypartialpayperiod",
-      "payroll_payrollprocessingtab_handlecustomendchange",
-      "payroll_payrollprocessingtab_handlecustomstartchange",
-      "payroll_payrollprocessingtab_handleremoveadjustmentitem",
-      "payroll_payrollprocessingtab_handlesaveadjustments",
-      "payroll_payrollprocessingtab_openadjustmentdialog",
-      "payroll_payrollprocessingtab_parsedayinput",
-      "payroll_payrollprocessingtab_parsemoneyinput"
-    ],
     "44": [
-      "leave_application_leave_application_service_leaveapplicationservice",
-      "leave_application_leave_application_service_leaveapplicationservice_calculateleavedays",
-      "leave_application_leave_application_service_leaveapplicationservice_cancel",
-      "leave_application_leave_application_service_leaveapplicationservice_constructor",
-      "leave_application_leave_application_service_leaveapplicationservice_create",
-      "leave_application_leave_application_service_leaveapplicationservice_createasync",
-      "leave_application_leave_application_service_leaveapplicationservice_findall",
-      "leave_application_leave_application_service_leaveapplicationservice_findone",
-      "leave_application_leave_application_service_leaveapplicationservice_getjobstatus",
-      "leave_application_leave_application_service_leaveapplicationservice_getlocaldatestr",
-      "leave_application_leave_application_service_leaveapplicationservice_parsedateutc",
-      "leave_application_leave_application_service_leaveapplicationservice_update",
-      "leave_application_leave_application_service_leaveapplicationservice_updateasync",
-      "leave_application_leave_application_service_leaveapplicationservice_updatestatus"
-    ],
-    "45": [
       "attendance_attendance_controller_attendancecontroller",
       "attendance_attendance_controller_attendancecontroller_approvecorrection",
       "attendance_attendance_controller_attendancecontroller_checkin",
@@ -1350,7 +1341,7 @@
       "attendance_attendance_controller_attendancecontroller_submitcorrection",
       "hr_server_src_modules_attendance_attendance_controller_ts"
     ],
-    "46": [
+    "45": [
       "dashboard_dashboard_service_dashboardservice",
       "dashboard_dashboard_service_dashboardservice_constructor",
       "dashboard_dashboard_service_dashboardservice_getattendancestats",
@@ -1365,6 +1356,22 @@
       "dashboard_dashboard_service_dashboardservice_getweeklytrend",
       "dashboard_dashboard_service_dashboardservice_getworkforcestats",
       "hr_server_src_modules_dashboard_dashboard_service_ts"
+    ],
+    "46": [
+      "leave_application_leave_application_service_leaveapplicationservice",
+      "leave_application_leave_application_service_leaveapplicationservice_calculateleavedays",
+      "leave_application_leave_application_service_leaveapplicationservice_cancel",
+      "leave_application_leave_application_service_leaveapplicationservice_constructor",
+      "leave_application_leave_application_service_leaveapplicationservice_create",
+      "leave_application_leave_application_service_leaveapplicationservice_createasync",
+      "leave_application_leave_application_service_leaveapplicationservice_findall",
+      "leave_application_leave_application_service_leaveapplicationservice_findone",
+      "leave_application_leave_application_service_leaveapplicationservice_getjobstatus",
+      "leave_application_leave_application_service_leaveapplicationservice_getlocaldatestr",
+      "leave_application_leave_application_service_leaveapplicationservice_parsedateutc",
+      "leave_application_leave_application_service_leaveapplicationservice_update",
+      "leave_application_leave_application_service_leaveapplicationservice_updateasync",
+      "leave_application_leave_application_service_leaveapplicationservice_updatestatus"
     ],
     "47": [
       "hr_server_src_modules_notifications_notifications_controller_ts",
@@ -1415,19 +1422,20 @@
       "pages_attendance_handlerequestcorrection"
     ],
     "50": [
-      "cache_cache_keys_patternof",
-      "cache_cache_service_cacheservice",
-      "cache_cache_service_cacheservice_constructor",
-      "cache_cache_service_cacheservice_del",
-      "cache_cache_service_cacheservice_delbykey",
-      "cache_cache_service_cacheservice_delbypattern",
-      "cache_cache_service_cacheservice_delpattern",
-      "cache_cache_service_cacheservice_get",
-      "cache_cache_service_cacheservice_getbykey",
-      "cache_cache_service_cacheservice_ping",
-      "cache_cache_service_cacheservice_set",
-      "cache_cache_service_cacheservice_setbykey",
-      "hr_server_src_common_cache_cache_service_ts"
+      "client_src_components_leave_leave_summary_cards_tsx",
+      "client_src_hooks_useleavetypes_ts",
+      "client_src_routes_pages_settings_tsx",
+      "hooks_useleavetypes_usecreateleavetypemutation",
+      "hooks_useleavetypes_usedeleteleavetypemutation",
+      "hooks_useleavetypes_useleavetypeoptionsquery",
+      "hooks_useleavetypes_useleavetypequery",
+      "hooks_useleavetypes_useleavetypesquery",
+      "hooks_useleavetypes_useupdateleavetypemutation",
+      "leave_leave_summary_cards_leavesummarycards",
+      "pages_settings_handleopenedit",
+      "pages_settings_handlesaveleavetype",
+      "pages_settings_handletabchange",
+      "pages_settings_handletoggleactive"
     ],
     "51": [
       "chat_chat_controller_chatcontroller",
@@ -1460,36 +1468,21 @@
       "regulations_regulations_controller_regulationscontroller_updaterequeststatus"
     ],
     "53": [
-      "hr_server_src_modules_notifications_notifications_gateway_ts",
-      "notifications_notifications_gateway_notificationgateway",
-      "notifications_notifications_gateway_notificationgateway_afterinit",
-      "notifications_notifications_gateway_notificationgateway_constructor",
-      "notifications_notifications_gateway_notificationgateway_getclusternotificationcount",
-      "notifications_notifications_gateway_notificationgateway_handleconnection",
-      "notifications_notifications_gateway_notificationgateway_handledisconnect",
-      "notifications_notifications_gateway_notificationgateway_handleredissyncevent",
-      "notifications_notifications_gateway_notificationgateway_onmoduledestroy",
-      "notifications_notifications_gateway_notificationgateway_publishsyncevent",
-      "notifications_notifications_gateway_notificationgateway_pushtouser",
-      "notifications_notifications_gateway_notificationgateway_runreconnectionsync",
-      "notifications_notifications_gateway_notificationgateway_sendtoclient"
+      "cache_cache_keys_patternof",
+      "cache_cache_service_cacheservice",
+      "cache_cache_service_cacheservice_constructor",
+      "cache_cache_service_cacheservice_del",
+      "cache_cache_service_cacheservice_delbykey",
+      "cache_cache_service_cacheservice_delbypattern",
+      "cache_cache_service_cacheservice_delpattern",
+      "cache_cache_service_cacheservice_get",
+      "cache_cache_service_cacheservice_getbykey",
+      "cache_cache_service_cacheservice_ping",
+      "cache_cache_service_cacheservice_set",
+      "cache_cache_service_cacheservice_setbykey",
+      "hr_server_src_common_cache_cache_service_ts"
     ],
     "54": [
-      "attendance_overrideattendancedialog_handlesubmit",
-      "client_src_components_dashboard_apply_leave_dialog_tsx",
-      "client_src_routes_pages_login_tsx",
-      "dashboard_apply_leave_dialog_autoselectleavetype",
-      "dashboard_apply_leave_dialog_formatdatedisplay",
-      "dashboard_apply_leave_dialog_formatfilesize",
-      "dashboard_apply_leave_dialog_getdurationdays",
-      "dashboard_apply_leave_dialog_getfileicon",
-      "dashboard_apply_leave_dialog_handleaddattachment",
-      "dashboard_apply_leave_dialog_handlesubmit",
-      "pages_login_onsubmit",
-      "tasks_projectcreatedialog_handleformsubmit",
-      "tasks_taskcreatedialog_handleformsubmit"
-    ],
-    "55": [
       "hr_server_src_modules_separation_separation_service_ts",
       "separation_separation_service_separationservice",
       "separation_separation_service_separationservice_calculatesettlementdraft",
@@ -1503,6 +1496,21 @@
       "separation_separation_service_separationservice_triggerseparationupdatenotification",
       "separation_separation_service_separationservice_update",
       "separation_separation_service_separationservice_updatesettlementstatus"
+    ],
+    "55": [
+      "hr_server_src_modules_notifications_notifications_gateway_ts",
+      "notifications_notifications_gateway_notificationgateway",
+      "notifications_notifications_gateway_notificationgateway_afterinit",
+      "notifications_notifications_gateway_notificationgateway_constructor",
+      "notifications_notifications_gateway_notificationgateway_getclusternotificationcount",
+      "notifications_notifications_gateway_notificationgateway_handleconnection",
+      "notifications_notifications_gateway_notificationgateway_handledisconnect",
+      "notifications_notifications_gateway_notificationgateway_handleredissyncevent",
+      "notifications_notifications_gateway_notificationgateway_onmoduledestroy",
+      "notifications_notifications_gateway_notificationgateway_publishsyncevent",
+      "notifications_notifications_gateway_notificationgateway_pushtouser",
+      "notifications_notifications_gateway_notificationgateway_runreconnectionsync",
+      "notifications_notifications_gateway_notificationgateway_sendtoclient"
     ],
     "56": [
       "client_src_routes_pages_payroll_processing_tsx",
@@ -1520,35 +1528,6 @@
       "payroll_payrollactiondialogs_salarydisbursementdialog"
     ],
     "57": [
-      "client_src_hooks_usedepartments_ts",
-      "client_src_routes_pages_create_department_tsx",
-      "client_src_routes_pages_edit_department_tsx",
-      "client_src_routes_pages_view_department_tsx",
-      "hooks_usedepartments_usecreatedepartmentmutation",
-      "hooks_usedepartments_usedeletedepartmentmutation",
-      "hooks_usedepartments_usedepartmentquery",
-      "hooks_usedepartments_usedepartmentsquery",
-      "hooks_usedepartments_useupdatedepartmentmutation",
-      "hooks_useemployees_useemployeeoptionsquery",
-      "pages_create_department_handlesubmit",
-      "pages_edit_department_handlesubmit",
-      "pages_view_department_viewdepartmentpage"
-    ],
-    "58": [
-      "employee_employee_service_employeeservice",
-      "employee_employee_service_employeeservice_changestatus",
-      "employee_employee_service_employeeservice_constructor",
-      "employee_employee_service_employeeservice_createasync",
-      "employee_employee_service_employeeservice_findall",
-      "employee_employee_service_employeeservice_findone",
-      "employee_employee_service_employeeservice_getdropdownoptions",
-      "employee_employee_service_employeeservice_getjobstatus",
-      "employee_employee_service_employeeservice_remove",
-      "employee_employee_service_employeeservice_resetpassword",
-      "employee_employee_service_employeeservice_updateasync",
-      "hr_server_src_modules_employee_employee_service_ts"
-    ],
-    "59": [
       "hr_server_src_modules_leave_application_leave_application_controller_ts",
       "leave_application_leave_application_controller_leaveapplicationcontroller",
       "leave_application_leave_application_controller_leaveapplicationcontroller_cancel",
@@ -1562,7 +1541,7 @@
       "leave_application_leave_application_controller_leaveapplicationcontroller_update",
       "leave_application_leave_application_controller_leaveapplicationcontroller_updatestatus"
     ],
-    "60": [
+    "58": [
       "employee_employee_controller_employeecontroller",
       "employee_employee_controller_employeecontroller_changestatus",
       "employee_employee_controller_employeecontroller_constructor",
@@ -1576,7 +1555,21 @@
       "employee_employee_controller_employeecontroller_update",
       "hr_server_src_modules_employee_employee_controller_ts"
     ],
-    "61": [
+    "59": [
+      "employee_employee_service_employeeservice",
+      "employee_employee_service_employeeservice_changestatus",
+      "employee_employee_service_employeeservice_constructor",
+      "employee_employee_service_employeeservice_createasync",
+      "employee_employee_service_employeeservice_findall",
+      "employee_employee_service_employeeservice_findone",
+      "employee_employee_service_employeeservice_getdropdownoptions",
+      "employee_employee_service_employeeservice_getjobstatus",
+      "employee_employee_service_employeeservice_remove",
+      "employee_employee_service_employeeservice_resetpassword",
+      "employee_employee_service_employeeservice_updateasync",
+      "hr_server_src_modules_employee_employee_service_ts"
+    ],
+    "60": [
       "auth_protected_route_protectedroute",
       "auth_role_guard_permissionguard",
       "client_src_app_tsx",
@@ -1589,6 +1582,20 @@
       "layouts_auth_layout_authlayout",
       "src_app_loadingspinner",
       "src_app_notfoundpage"
+    ],
+    "61": [
+      "client_src_components_dashboard_day_detail_dialog_tsx",
+      "dashboard_day_detail_dialog_convert24to12",
+      "dashboard_day_detail_dialog_formatdatedmy",
+      "dashboard_day_detail_dialog_formatdatetimedmy",
+      "dashboard_day_detail_dialog_getdurationhours",
+      "filters_global_exception_filter_globalexceptionfilter",
+      "filters_global_exception_filter_globalexceptionfilter_catch",
+      "hr_server_src_common_filters_global_exception_filter_ts",
+      "leave_application_leave_application_service_leaveapplicationservice_getleavebalances",
+      "leave_application_leave_application_service_leaveapplicationservice_getleavebalancesinternal",
+      "organization_org_chart_openeditdialog",
+      "pages_company_attendance_string"
     ],
     "62": [
       "client_src_components_ceo_dashboard_activity_feed_tsx",
@@ -1619,19 +1626,6 @@
       "pages_payroll_provident_fund_handleprocessrequest"
     ],
     "64": [
-      "cache_cache_keys_key",
-      "cache_cache_keys_resolvekey",
-      "guards_login_throttle_guard_loginthrottleguard",
-      "guards_login_throttle_guard_loginthrottleguard_canactivate",
-      "guards_login_throttle_guard_loginthrottleguard_constructor",
-      "hr_server_src_common_cache_cache_keys_ts",
-      "hr_server_src_modules_auth_guards_login_throttle_guard_ts",
-      "hr_server_src_modules_leave_application_leave_application_processor_ts",
-      "hr_server_src_modules_leave_application_leave_application_service_ts",
-      "hr_server_src_modules_regulations_regulations_service_ts",
-      "leave_application_leave_application_service_leaveapplicationservice_invalidatecache"
-    ],
-    "65": [
       "hr_server_src_modules_provident_fund_provident_fund_service_ts",
       "provident_fund_provident_fund_service_providentfundservice",
       "provident_fund_provident_fund_service_providentfundservice_constructor",
@@ -1644,7 +1638,7 @@
       "provident_fund_provident_fund_service_providentfundservice_processwithdrawalrequest",
       "provident_fund_provident_fund_service_providentfundservice_update"
     ],
-    "66": [
+    "65": [
       "hr_server_src_modules_provident_fund_provident_fund_controller_ts",
       "provident_fund_provident_fund_controller_providentfundcontroller",
       "provident_fund_provident_fund_controller_providentfundcontroller_applyforwithdrawal",
@@ -1657,7 +1651,7 @@
       "provident_fund_provident_fund_controller_providentfundsettingscontroller_find",
       "provident_fund_provident_fund_controller_providentfundsettingscontroller_update"
     ],
-    "67": [
+    "66": [
       "announcements_announcements_service_announcementsservice",
       "announcements_announcements_service_announcementsservice_constructor",
       "announcements_announcements_service_announcementsservice_create",
@@ -1670,7 +1664,7 @@
       "announcements_announcements_service_announcementsservice_update",
       "hr_server_src_modules_announcements_announcements_service_ts"
     ],
-    "68": [
+    "67": [
       "hr_server_src_modules_org_chart_org_chart_service_ts",
       "org_chart_org_chart_service_buildtree",
       "org_chart_org_chart_service_flattennodes",
@@ -1682,6 +1676,19 @@
       "org_chart_org_chart_service_orgchartservice_gettreefromemployees",
       "org_chart_org_chart_service_orgchartservice_resettree",
       "org_chart_org_chart_service_orgchartservice_updatenode"
+    ],
+    "68": [
+      "cache_cache_keys_key",
+      "cache_cache_keys_resolvekey",
+      "guards_login_throttle_guard_loginthrottleguard",
+      "guards_login_throttle_guard_loginthrottleguard_canactivate",
+      "guards_login_throttle_guard_loginthrottleguard_constructor",
+      "hr_server_src_common_cache_cache_keys_ts",
+      "hr_server_src_modules_auth_guards_login_throttle_guard_ts",
+      "hr_server_src_modules_leave_application_leave_application_processor_ts",
+      "hr_server_src_modules_leave_application_leave_application_service_ts",
+      "hr_server_src_modules_regulations_regulations_service_ts",
+      "leave_application_leave_application_service_leaveapplicationservice_invalidatecache"
     ],
     "69": [
       "client_src_hooks_useattendance_ts",
@@ -1710,19 +1717,6 @@
       "ui_separator_separator"
     ],
     "71": [
-      "client_src_hooks_useseparation_ts",
-      "client_src_routes_pages_separation_tsx",
-      "hooks_useseparation_usecreateseparationmutation",
-      "hooks_useseparation_usedeleteseparationmutation",
-      "hooks_useseparation_useseparationrecordsquery",
-      "hooks_useseparation_useupdateseparationmutation",
-      "pages_separation_handlecreate",
-      "pages_separation_handleupdateasset",
-      "pages_separation_handleupdateclearance",
-      "pages_separation_handleupdatehandover",
-      "pages_separation_mapbackendrecord"
-    ],
-    "72": [
       "client_src_components_payroll_detailedpayslipdialog_tsx",
       "client_src_routes_pages_payroll_disbursement_tsx",
       "client_src_routes_pages_payroll_lm_approvals_tsx",
@@ -1735,7 +1729,7 @@
       "pages_payroll_md_approvals_payrollmdapprovalspage",
       "payroll_detailedpayslipdialog_detailedpayslipdialog"
     ],
-    "73": [
+    "72": [
       "hr_server_src_modules_letters_letters_service_ts",
       "letters_letters_service_lettersservice",
       "letters_letters_service_lettersservice_constructor",
@@ -1747,7 +1741,7 @@
       "letters_letters_service_lettersservice_update",
       "letters_letters_service_lettersservice_updatestatus"
     ],
-    "74": [
+    "73": [
       "designation_designation_service_designationservice",
       "designation_designation_service_designationservice_constructor",
       "designation_designation_service_designationservice_create",
@@ -1759,7 +1753,7 @@
       "designation_designation_service_designationservice_update",
       "hr_server_src_modules_designation_designation_service_ts"
     ],
-    "75": [
+    "74": [
       "department_department_service_departmentservice",
       "department_department_service_departmentservice_constructor",
       "department_department_service_departmentservice_create",
@@ -1771,7 +1765,7 @@
       "department_department_service_departmentservice_update",
       "hr_server_src_modules_department_department_service_ts"
     ],
-    "76": [
+    "75": [
       "attendance_settings_attendance_settings_service_attendancesettingsservice",
       "attendance_settings_attendance_settings_service_attendancesettingsservice_constructor",
       "attendance_settings_attendance_settings_service_attendancesettingsservice_createholiday",
@@ -1783,7 +1777,7 @@
       "attendance_settings_attendance_settings_service_attendancesettingsservice_updatesettings",
       "hr_server_src_modules_attendance_settings_attendance_settings_service_ts"
     ],
-    "77": [
+    "76": [
       "hr_server_src_modules_separation_separation_controller_ts",
       "separation_separation_controller_separationcontroller",
       "separation_separation_controller_separationcontroller_constructor",
@@ -1795,7 +1789,7 @@
       "separation_separation_controller_separationcontroller_update",
       "separation_separation_controller_separationcontroller_updatesettlementstatus"
     ],
-    "78": [
+    "77": [
       "dto_performance_dto_createcycledto",
       "dto_performance_dto_createkpidto",
       "dto_performance_dto_kpiscoreitemdto",
@@ -1807,7 +1801,7 @@
       "dto_performance_dto_updatekpiscoresdto",
       "hr_server_src_modules_performance_dto_performance_dto_ts"
     ],
-    "79": [
+    "78": [
       "hr_server_src_modules_leave_type_leave_type_service_ts",
       "leave_type_leave_type_service_leavetypeservice",
       "leave_type_leave_type_service_leavetypeservice_constructor",
@@ -1819,7 +1813,7 @@
       "leave_type_leave_type_service_leavetypeservice_remove",
       "leave_type_leave_type_service_leavetypeservice_update"
     ],
-    "80": [
+    "79": [
       "employee_employee_processor_employeecreateprocessor",
       "employee_employee_processor_employeecreateprocessor_constructor",
       "employee_employee_processor_employeecreateprocessor_process",
@@ -1831,7 +1825,7 @@
       "employee_employee_processor_employeeupdateprocessor_process",
       "hr_server_src_modules_employee_employee_processor_ts"
     ],
-    "81": [
+    "80": [
       "client_src_hooks_useannouncements_ts",
       "hooks_useannouncements_createannouncement",
       "hooks_useannouncements_deleteannouncement",
@@ -1843,17 +1837,29 @@
       "hooks_useannouncements_usedeleteannouncement",
       "hooks_useannouncements_useupdateannouncement"
     ],
+    "81": [
+      "client_src_components_settings_festival_bonus_setup_tsx",
+      "client_src_components_ui_switch_tsx",
+      "hooks_usefestivalbonus_usefestivalbonussettingsquery",
+      "hooks_usefestivalbonus_useupdatefestivalbonussettingsmutation",
+      "settings_festival_bonus_setup_handleaddtierrule",
+      "settings_festival_bonus_setup_handleaddtype",
+      "settings_festival_bonus_setup_handleremovetierrule",
+      "settings_festival_bonus_setup_handleremovetype",
+      "settings_festival_bonus_setup_handlesave",
+      "ui_switch_switch"
+    ],
     "82": [
-      "client_src_hooks_usenotificationsocket_ts",
-      "client_src_hooks_usetaskswebsocket_ts",
-      "client_src_hooks_usewebsocket_ts",
-      "client_src_layouts_dashboard_layout_tsx",
-      "hooks_usenotificationsocket_usenotificationsocket",
-      "hooks_usetaskswebsocket_usetaskswebsocket",
-      "hooks_usewebsocket_usewebsocket",
-      "layouts_dashboard_layout_togglesidebar",
-      "ui_sheet_sheet",
-      "ui_sidebar_handlekeydown"
+      "claims_claims_service_claimsservice",
+      "claims_claims_service_claimsservice_constructor",
+      "claims_claims_service_claimsservice_create",
+      "claims_claims_service_claimsservice_delete",
+      "claims_claims_service_claimsservice_findall",
+      "claims_claims_service_claimsservice_findone",
+      "claims_claims_service_claimsservice_invalidatecache",
+      "claims_claims_service_claimsservice_triggerclaimsubmissionnotification",
+      "claims_claims_service_claimsservice_updatestatus",
+      "hr_server_src_modules_claims_claims_service_ts"
     ],
     "83": [
       "client_src_hooks_usedesignations_ts",
@@ -1868,18 +1874,6 @@
       "pages_view_designation_viewdesignationpage"
     ],
     "84": [
-      "claims_claims_service_claimsservice",
-      "claims_claims_service_claimsservice_constructor",
-      "claims_claims_service_claimsservice_create",
-      "claims_claims_service_claimsservice_delete",
-      "claims_claims_service_claimsservice_findall",
-      "claims_claims_service_claimsservice_findone",
-      "claims_claims_service_claimsservice_invalidatecache",
-      "claims_claims_service_claimsservice_triggerclaimsubmissionnotification",
-      "claims_claims_service_claimsservice_updatestatus",
-      "hr_server_src_modules_claims_claims_service_ts"
-    ],
-    "85": [
       "client_src_hooks_usereports_ts",
       "client_src_routes_pages_reports_tsx",
       "hooks_usereports_useattendancesummaryquery",
@@ -1891,19 +1885,19 @@
       "pages_reports_handleexportcsv",
       "pages_reports_handleprint"
     ],
-    "86": [
+    "85": [
+      "client_src_components_regulations_requestdetail_tsx",
+      "client_src_hooks_usepermissions_ts",
       "client_src_routes_pages_print_payslip_tsx",
-      "client_src_routes_pages_profile_tsx",
+      "client_src_routes_pages_regulations_tsx",
       "hooks_usepayroll_usemypayslipsquery",
-      "pages_profile_formatcurrency",
-      "pages_profile_formatdate",
-      "pages_profile_formatmonthkey",
-      "pages_profile_handlepasswordchange",
-      "pages_profile_handletabchange",
-      "pages_profile_infofield",
-      "print_payslip_formatcurrency"
+      "hooks_usepermissions_usepermissions",
+      "hooks_useregulations_useupdaterequeststatusmutation",
+      "print_payslip_formatcurrency",
+      "regulations_requestdetail_requestdetail",
+      "regulations_requestdetail_tolocaledatestring"
     ],
-    "87": [
+    "86": [
       "hr_server_src_modules_loans_loans_service_ts",
       "loans_loans_service_loansservice",
       "loans_loans_service_loansservice_constructor",
@@ -1914,7 +1908,7 @@
       "loans_loans_service_loansservice_processloanrequest",
       "loans_loans_service_loansservice_recordpayment"
     ],
-    "88": [
+    "87": [
       "hr_server_src_modules_loans_loans_controller_ts",
       "loans_loans_controller_loanscontroller",
       "loans_loans_controller_loanscontroller_applyforloan",
@@ -1925,7 +1919,7 @@
       "loans_loans_controller_loanscontroller_processloanrequest",
       "loans_loans_controller_loanscontroller_recordmanualpayment"
     ],
-    "89": [
+    "88": [
       "hr_server_src_modules_tasks_realtime_gateway_ts",
       "tasks_realtime_gateway_realtimegateway",
       "tasks_realtime_gateway_realtimegateway_afterinit",
@@ -1936,7 +1930,7 @@
       "tasks_realtime_gateway_realtimegateway_handledisconnect",
       "tasks_realtime_gateway_realtimegateway_onmoduledestroy"
     ],
-    "90": [
+    "89": [
       "hr_server_src_modules_letters_letters_controller_ts",
       "letters_letters_controller_letterscontroller",
       "letters_letters_controller_letterscontroller_constructor",
@@ -1947,7 +1941,7 @@
       "letters_letters_controller_letterscontroller_update",
       "letters_letters_controller_letterscontroller_updatestatus"
     ],
-    "91": [
+    "90": [
       "auth_auth_controller_authcontroller",
       "auth_auth_controller_authcontroller_changepassword",
       "auth_auth_controller_authcontroller_constructor",
@@ -1958,7 +1952,7 @@
       "auth_auth_controller_authcontroller_refresh",
       "hr_server_src_modules_auth_auth_controller_ts"
     ],
-    "92": [
+    "91": [
       "auth_auth_service_authservice",
       "auth_auth_service_authservice_changepassword",
       "auth_auth_service_authservice_constructor",
@@ -1969,7 +1963,7 @@
       "auth_auth_service_authservice_refreshtoken",
       "hr_server_src_modules_auth_auth_service_ts"
     ],
-    "93": [
+    "92": [
       "dto_salary_dto_assignemployeesalarydto",
       "dto_salary_dto_bulksalaryrevisiondto",
       "dto_salary_dto_createsalarytemplatecomponentdto",
@@ -1980,7 +1974,7 @@
       "dto_salary_dto_updatesalarytemplatedto",
       "hr_server_src_modules_salary_dto_salary_dto_ts"
     ],
-    "94": [
+    "93": [
       "designation_designation_controller_designationcontroller",
       "designation_designation_controller_designationcontroller_constructor",
       "designation_designation_controller_designationcontroller_create",
@@ -1991,7 +1985,7 @@
       "designation_designation_controller_designationcontroller_update",
       "hr_server_src_modules_designation_designation_controller_ts"
     ],
-    "95": [
+    "94": [
       "department_department_controller_departmentcontroller",
       "department_department_controller_departmentcontroller_constructor",
       "department_department_controller_departmentcontroller_create",
@@ -2002,7 +1996,7 @@
       "department_department_controller_departmentcontroller_update",
       "hr_server_src_modules_department_department_controller_ts"
     ],
-    "96": [
+    "95": [
       "attendance_settings_attendance_settings_controller_attendancesettingscontroller",
       "attendance_settings_attendance_settings_controller_attendancesettingscontroller_constructor",
       "attendance_settings_attendance_settings_controller_attendancesettingscontroller_createholiday",
@@ -2013,7 +2007,7 @@
       "attendance_settings_attendance_settings_controller_attendancesettingscontroller_updatesettings",
       "hr_server_src_modules_attendance_settings_attendance_settings_controller_ts"
     ],
-    "97": [
+    "96": [
       "hr_server_src_modules_leave_type_leave_type_controller_ts",
       "leave_type_leave_type_controller_leavetypecontroller",
       "leave_type_leave_type_controller_leavetypecontroller_constructor",
@@ -2024,7 +2018,7 @@
       "leave_type_leave_type_controller_leavetypecontroller_remove",
       "leave_type_leave_type_controller_leavetypecontroller_update"
     ],
-    "98": [
+    "97": [
       "assets_assets_service_assetsservice",
       "assets_assets_service_assetsservice_allocateasset",
       "assets_assets_service_assetsservice_constructor",
@@ -2035,7 +2029,7 @@
       "assets_assets_service_assetsservice_updatecondition",
       "hr_server_src_modules_assets_assets_service_ts"
     ],
-    "99": [
+    "98": [
       "assets_assets_controller_assetscontroller",
       "assets_assets_controller_assetscontroller_allocateasset",
       "assets_assets_controller_assetscontroller_constructor",
@@ -2046,18 +2040,7 @@
       "assets_assets_controller_assetscontroller_updatecondition",
       "hr_server_src_modules_assets_assets_controller_ts"
     ],
-    "100": [
-      "ceo_dashboard_kpi_metric_cards_formatcurrency",
-      "ceo_dashboard_kpi_metric_cards_getcards",
-      "client_src_components_ceo_dashboard_kpi_metric_cards_tsx",
-      "client_src_components_common_page_skeleton_tsx",
-      "client_src_components_notifications_notification_list_tsx",
-      "client_src_components_ui_skeleton_tsx",
-      "common_page_skeleton_pageskeleton",
-      "notifications_notification_list_groupnotificationsbydate",
-      "ui_skeleton_skeleton"
-    ],
-    "101": [
+    "99": [
       "client_src_components_ui_drawer_tsx",
       "ui_drawer_cn",
       "ui_drawer_drawer",
@@ -2068,7 +2051,7 @@
       "ui_drawer_drawertitle",
       "ui_drawer_drawertrigger"
     ],
-    "102": [
+    "100": [
       "client_src_components_ui_menubar_tsx",
       "ui_menubar_cn",
       "ui_menubar_menubar",
@@ -2079,7 +2062,18 @@
       "ui_menubar_menubarradioitem",
       "ui_menubar_menubarsubcontent"
     ],
-    "103": [
+    "101": [
+      "attendance_attendance_utils_exportattendancecsv",
+      "attendance_attendancekpis_attendancekpis",
+      "client_src_components_attendance_attendancekpis_tsx",
+      "client_src_routes_pages_company_attendance_tsx",
+      "pages_company_attendance_handleexportcsv",
+      "pages_company_attendance_handlenextpage",
+      "pages_company_attendance_handleopenoverride",
+      "pages_company_attendance_handleoverridesubmit",
+      "pages_company_attendance_handleprevpage"
+    ],
+    "102": [
       "client_src_hooks_usedisciplinary_ts",
       "client_src_routes_pages_disciplinary_tsx",
       "hooks_usedisciplinary_usecreatedisciplinarycasemutation",
@@ -2090,18 +2084,18 @@
       "pages_disciplinary_handleopendetail",
       "pages_disciplinary_handlesaveresolution"
     ],
-    "104": [
-      "client_src_hooks_useemployees_ts",
-      "client_src_routes_pages_edit_employee_tsx",
-      "client_src_routes_pages_view_employee_tsx",
-      "hooks_useemployees_usechangeemployeestatusmutation",
-      "hooks_useemployees_usedeleteemployeemutation",
-      "hooks_useemployees_useemployeequery",
-      "hooks_useemployees_useupdateemployeemutation",
-      "pages_edit_employee_editemployeepage",
-      "pages_view_employee_viewemployeepage"
+    "103": [
+      "client_src_hooks_usenotificationsocket_ts",
+      "client_src_hooks_usetaskswebsocket_ts",
+      "client_src_layouts_dashboard_layout_tsx",
+      "common_page_skeleton_pageskeleton",
+      "hooks_usenotificationsocket_usenotificationsocket",
+      "hooks_usetaskswebsocket_usetaskswebsocket",
+      "layouts_dashboard_layout_togglesidebar",
+      "ui_sheet_sheet",
+      "ui_sidebar_handlekeydown"
     ],
-    "105": [
+    "104": [
       "hr_server_src_common_interceptors_logging_interceptor_ts",
       "interceptors_logging_interceptor_logginginterceptor",
       "interceptors_logging_interceptor_logginginterceptor_formatduration",
@@ -2111,17 +2105,7 @@
       "interceptors_logging_interceptor_logginginterceptor_resetcolor",
       "interceptors_logging_interceptor_logginginterceptor_sanitizebody"
     ],
-    "106": [
-      "leave_application_leave_application_processor_leaveapplicationprocessor",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_cleanupcloudinaryfiles",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_constructor",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_invalidatecache",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_parsedateutc",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_process",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_processcreate",
-      "leave_application_leave_application_processor_leaveapplicationprocessor_processupdate"
-    ],
-    "107": [
+    "105": [
       "dto_recruitment_dto_createcandidatedto",
       "dto_recruitment_dto_createjobopeningdto",
       "dto_recruitment_dto_generatejoiningletterdto",
@@ -2131,7 +2115,7 @@
       "dto_recruitment_dto_updatejobopeningdto",
       "hr_server_src_modules_recruitment_dto_recruitment_dto_ts"
     ],
-    "108": [
+    "106": [
       "hr_server_src_modules_roles_roles_controller_ts",
       "roles_roles_controller_rolescontroller",
       "roles_roles_controller_rolescontroller_constructor",
@@ -2141,7 +2125,7 @@
       "roles_roles_controller_rolescontroller_getroles",
       "roles_roles_controller_rolescontroller_updatecustomrole"
     ],
-    "109": [
+    "107": [
       "announcements_announcements_controller_announcementscontroller",
       "announcements_announcements_controller_announcementscontroller_constructor",
       "announcements_announcements_controller_announcementscontroller_create",
@@ -2151,7 +2135,7 @@
       "announcements_announcements_controller_announcementscontroller_update",
       "hr_server_src_modules_announcements_announcements_controller_ts"
     ],
-    "110": [
+    "108": [
       "hr_server_src_modules_org_chart_org_chart_controller_ts",
       "org_chart_org_chart_controller_orgchartcontroller",
       "org_chart_org_chart_controller_orgchartcontroller_constructor",
@@ -2161,7 +2145,7 @@
       "org_chart_org_chart_controller_orgchartcontroller_resettree",
       "org_chart_org_chart_controller_orgchartcontroller_updatenode"
     ],
-    "111": [
+    "109": [
       "disciplinary_disciplinary_service_disciplinaryservice",
       "disciplinary_disciplinary_service_disciplinaryservice_constructor",
       "disciplinary_disciplinary_service_disciplinaryservice_create",
@@ -2171,7 +2155,17 @@
       "disciplinary_disciplinary_service_disciplinaryservice_update",
       "hr_server_src_modules_disciplinary_disciplinary_service_ts"
     ],
-    "112": [
+    "110": [
+      "leave_application_leave_application_processor_leaveapplicationprocessor",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_cleanupcloudinaryfiles",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_constructor",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_invalidatecache",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_parsedateutc",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_process",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_processcreate",
+      "leave_application_leave_application_processor_leaveapplicationprocessor_processupdate"
+    ],
+    "111": [
       "hr_server_src_modules_notifications_services_preferences_service_ts",
       "services_preferences_service_preferencesservice",
       "services_preferences_service_preferencesservice_checkquiethours",
@@ -2181,7 +2175,7 @@
       "services_preferences_service_preferencesservice_shoulddeliver",
       "services_preferences_service_preferencesservice_updatepreferences"
     ],
-    "113": [
+    "112": [
       "hr_server_src_modules_reports_reports_controller_ts",
       "reports_reports_controller_reportscontroller",
       "reports_reports_controller_reportscontroller_constructor",
@@ -2191,7 +2185,7 @@
       "reports_reports_controller_reportscontroller_getsummarykpis",
       "reports_reports_controller_reportscontroller_getworkforceheadcount"
     ],
-    "114": [
+    "113": [
       "claims_claims_controller_claimscontroller",
       "claims_claims_controller_claimscontroller_constructor",
       "claims_claims_controller_claimscontroller_create",
@@ -2201,7 +2195,7 @@
       "claims_claims_controller_claimscontroller_updatestatus",
       "hr_server_src_modules_claims_claims_controller_ts"
     ],
-    "115": [
+    "114": [
       "client_src_components_ui_pagination_tsx",
       "ui_pagination_pagination",
       "ui_pagination_paginationcontent",
@@ -2211,47 +2205,27 @@
       "ui_pagination_paginationnext",
       "ui_pagination_paginationprevious"
     ],
+    "115": [
+      "client_src_routes_pages_leave_tsx",
+      "hooks_useleaveapplications_useapproveleavemutation",
+      "hooks_useleaveapplications_userejectleavemutation",
+      "pages_leave_getleavebadgeclasses",
+      "pages_leave_handleapprove",
+      "pages_leave_handleclosedialog",
+      "pages_leave_handlereject",
+      "pages_leave_handleviewdetails"
+    ],
     "116": [
-      "client_src_components_settings_office_hours_tsx",
-      "settings_office_hours_formatduration",
-      "settings_office_hours_formattime12",
-      "settings_office_hours_saveattendancepolicies",
-      "settings_office_hours_saveleaverules",
-      "settings_office_hours_saveshifts",
-      "settings_office_hours_timetominutes",
-      "settings_office_hours_updatefield"
+      "client_src_routes_pages_announcements_tsx",
+      "pages_announcements_handledelete",
+      "pages_announcements_handlenextpage",
+      "pages_announcements_handleprevpage",
+      "pages_announcements_handlesave",
+      "pages_announcements_opencreatemodal",
+      "pages_announcements_openeditmodal",
+      "pages_announcements_openviewmodal"
     ],
     "117": [
-      "ceo_dashboard_performance_overview_performanceoverview",
-      "ceo_dashboard_quick_actions_quickactions",
-      "client_src_components_ceo_dashboard_performance_overview_tsx",
-      "client_src_components_ceo_dashboard_quick_actions_tsx",
-      "client_src_hooks_useexecutivedashboard_ts",
-      "client_src_routes_pages_ceo_dashboard_tsx",
-      "hooks_useexecutivedashboard_useexecutivedashboardquery",
-      "pages_ceo_dashboard_formatcurrency"
-    ],
-    "118": [
-      "client_src_components_dashboard_announcements_card_tsx",
-      "client_src_components_dashboard_attendance_calendar_tsx",
-      "client_src_components_dashboard_leave_balance_chips_tsx",
-      "client_src_components_dashboard_types_ts",
-      "dashboard_leave_balance_chips_leavebalancechips",
-      "dashboard_types_formatdatestr",
-      "dashboard_types_formatfulldate",
-      "dashboard_types_formatmonthyear"
-    ],
-    "119": [
-      "client_src_components_ui_sidebar_tsx",
-      "client_src_hooks_use_mobile_ts",
-      "hooks_use_mobile_useismobile",
-      "ui_sidebar_cn",
-      "ui_sidebar_sidebarmenu",
-      "ui_sidebar_sidebarmenubutton",
-      "ui_sidebar_sidebarmenuitem",
-      "ui_sidebar_usesidebar"
-    ],
-    "120": [
       "chat_calloverlay_applyaudiooutput",
       "chat_calloverlay_formatduration",
       "chat_calloverlay_handlekeydown",
@@ -2261,17 +2235,7 @@
       "chat_calloverlay_renderqualityicon",
       "client_src_components_chat_calloverlay_tsx"
     ],
-    "121": [
-      "client_src_components_settings_festival_bonus_setup_tsx",
-      "hooks_usefestivalbonus_usefestivalbonussettingsquery",
-      "hooks_usefestivalbonus_useupdatefestivalbonussettingsmutation",
-      "settings_festival_bonus_setup_handleaddtierrule",
-      "settings_festival_bonus_setup_handleaddtype",
-      "settings_festival_bonus_setup_handleremovetierrule",
-      "settings_festival_bonus_setup_handleremovetype",
-      "settings_festival_bonus_setup_handlesave"
-    ],
-    "122": [
+    "118": [
       "hr_server_src_modules_reports_reports_service_ts",
       "reports_reports_service_reportsservice",
       "reports_reports_service_reportsservice_constructor",
@@ -2280,6 +2244,46 @@
       "reports_reports_service_reportsservice_getpayrollcost",
       "reports_reports_service_reportsservice_getsummarykpis",
       "reports_reports_service_reportsservice_getworkforceheadcount"
+    ],
+    "119": [
+      "client_src_components_dashboard_announcements_card_tsx",
+      "client_src_components_dashboard_attendance_calendar_tsx",
+      "client_src_components_dashboard_leave_balance_chips_tsx",
+      "client_src_components_dashboard_types_ts",
+      "dashboard_leave_balance_chips_leavebalancechips",
+      "dashboard_types_formatdatestr",
+      "dashboard_types_formatfulldate",
+      "dashboard_types_formatmonthyear"
+    ],
+    "120": [
+      "ceo_dashboard_kpi_metric_cards_formatcurrency",
+      "ceo_dashboard_kpi_metric_cards_getcards",
+      "client_src_components_ceo_dashboard_kpi_metric_cards_tsx",
+      "client_src_components_common_page_skeleton_tsx",
+      "client_src_components_notifications_notification_list_tsx",
+      "client_src_components_ui_skeleton_tsx",
+      "notifications_notification_list_groupnotificationsbydate",
+      "ui_skeleton_skeleton"
+    ],
+    "121": [
+      "ceo_dashboard_performance_overview_performanceoverview",
+      "ceo_dashboard_quick_actions_quickactions",
+      "client_src_components_ceo_dashboard_performance_overview_tsx",
+      "client_src_components_ceo_dashboard_quick_actions_tsx",
+      "client_src_hooks_useexecutivedashboard_ts",
+      "client_src_routes_pages_ceo_dashboard_tsx",
+      "hooks_useexecutivedashboard_useexecutivedashboardquery",
+      "pages_ceo_dashboard_formatcurrency"
+    ],
+    "122": [
+      "client_src_components_ui_sidebar_tsx",
+      "client_src_hooks_use_mobile_ts",
+      "hooks_use_mobile_useismobile",
+      "ui_sidebar_cn",
+      "ui_sidebar_sidebarmenu",
+      "ui_sidebar_sidebarmenubutton",
+      "ui_sidebar_sidebarmenuitem",
+      "ui_sidebar_usesidebar"
     ],
     "123": [
       "attendance_attendance_processor_attendanceprocessor",
@@ -2309,24 +2313,6 @@
       "hr_server_src_modules_employee_dto_create_employee_dto_ts"
     ],
     "126": [
-      "client_src_components_ui_combobox_tsx",
-      "ui_combobox_cn",
-      "ui_combobox_comboboxclear",
-      "ui_combobox_comboboxcollection",
-      "ui_combobox_comboboxgroup",
-      "ui_combobox_comboboxtrigger",
-      "ui_combobox_comboboxvalue"
-    ],
-    "127": [
-      "client_src_components_separation_settlementcalculatormodal_tsx",
-      "client_src_hooks_usesettlement_ts",
-      "hooks_usesettlement_usesavesettlementmutation",
-      "hooks_usesettlement_usesettlementquery",
-      "hooks_usesettlement_useupdatesettlementstatusmutation",
-      "separation_settlementcalculatormodal_handlesave",
-      "separation_settlementcalculatormodal_handleupdatestatus"
-    ],
-    "128": [
       "health_health_controller_healthcontroller",
       "health_health_controller_healthcontroller_check",
       "health_health_controller_healthcontroller_checkdb",
@@ -2334,7 +2320,7 @@
       "health_health_controller_healthcontroller_constructor",
       "hr_server_src_modules_health_health_controller_ts"
     ],
-    "129": [
+    "127": [
       "dto_regulations_dto_createpolicydto",
       "dto_regulations_dto_createrequestdto",
       "dto_regulations_dto_regulationquerydto",
@@ -2342,7 +2328,7 @@
       "dto_regulations_dto_updaterequeststatusdto",
       "hr_server_src_modules_regulations_dto_regulations_dto_ts"
     ],
-    "130": [
+    "128": [
       "hr_server_src_modules_notifications_notifications_processor_ts",
       "notifications_notifications_processor_notificationprocessor",
       "notifications_notifications_processor_notificationprocessor_constructor",
@@ -2350,7 +2336,7 @@
       "notifications_notifications_processor_notificationprocessor_runcleanup",
       "notifications_notifications_processor_notificationprocessor_senddigests"
     ],
-    "131": [
+    "129": [
       "guards_deduplication_guard_deduplicationguard",
       "guards_deduplication_guard_deduplicationguard_constructor",
       "guards_deduplication_guard_deduplicationguard_markemitted",
@@ -2358,15 +2344,7 @@
       "guards_deduplication_guard_deduplicationguard_shouldemit",
       "hr_server_src_modules_notifications_guards_deduplication_guard_ts"
     ],
-    "132": [
-      "client_src_components_ui_sheet_tsx",
-      "ui_sheet_cn",
-      "ui_sheet_sheetclose",
-      "ui_sheet_sheetdescription",
-      "ui_sheet_sheetportal",
-      "ui_sheet_sheettrigger"
-    ],
-    "133": [
+    "130": [
       "client_src_components_ui_context_menu_tsx",
       "ui_context_menu_cn",
       "ui_context_menu_contextmenu",
@@ -2374,7 +2352,7 @@
       "ui_context_menu_contextmenuradioitem",
       "ui_context_menu_contextmenutrigger"
     ],
-    "134": [
+    "131": [
       "client_src_components_tasks_tasklistview_tsx",
       "tasks_tasklistview_handleselectall",
       "tasks_tasklistview_handleselectrow",
@@ -2382,7 +2360,7 @@
       "tasks_tasklistview_triggerbulkdelete",
       "tasks_tasklistview_triggerbulkstatus"
     ],
-    "135": [
+    "132": [
       "client_src_components_tasks_taskboard_tsx",
       "tasks_taskboard_handlecarddrop",
       "tasks_taskboard_handledragstart",
@@ -2390,7 +2368,7 @@
       "tasks_taskboard_sorttasks",
       "tasks_taskboard_togglecollapse"
     ],
-    "136": [
+    "133": [
       "client_src_components_tasks_details_taskcomments_tsx",
       "details_taskcomments_handlecommentchange",
       "details_taskcomments_handlepost",
@@ -2398,7 +2376,7 @@
       "details_taskcomments_if",
       "details_taskcomments_selectmention"
     ],
-    "137": [
+    "134": [
       "client_src_components_leave_leave_details_dialog_tsx",
       "leave_leave_details_dialog_formatdatedmy",
       "leave_leave_details_dialog_formatdatetimedmy",
@@ -2406,842 +2384,878 @@
       "leave_leave_details_dialog_getleavebadgeclasses",
       "leave_leave_details_dialog_getleavecode"
     ],
-    "138": [
+    "135": [
+      "client_src_components_ui_sheet_tsx",
+      "ui_sheet_cn",
+      "ui_sheet_sheetclose",
+      "ui_sheet_sheetdescription",
+      "ui_sheet_sheetportal",
+      "ui_sheet_sheettrigger"
+    ],
+    "136": [
       "dto_pagination_dto_paginatedresponsedto",
       "dto_pagination_dto_paginatedresponsedto_constructor",
       "dto_pagination_dto_paginationdto",
       "dto_pagination_dto_paginationdto_offset",
       "hr_server_src_common_dto_pagination_dto_ts"
     ],
-    "139": [
+    "137": [
       "dto_attendance_dto_adminlogoverridedto",
       "dto_attendance_dto_checkindto",
       "dto_attendance_dto_checkoutdto",
       "dto_attendance_dto_submitcorrectiondto",
       "hr_server_src_modules_attendance_dto_attendance_dto_ts"
     ],
-    "140": [
+    "138": [
       "dto_letters_dto_createletterdto",
       "dto_letters_dto_letterquerydto",
       "dto_letters_dto_updateletterdto",
       "dto_letters_dto_updateletterstatusdto",
       "hr_server_src_modules_letters_dto_letters_dto_ts"
     ],
-    "141": [
+    "139": [
       "guards_roles_guard_rolesguard",
       "guards_roles_guard_rolesguard_canactivate",
       "guards_roles_guard_rolesguard_constructor",
       "guards_roles_guard_rolesguard_maprequesttopermission",
       "hr_server_src_modules_auth_guards_roles_guard_ts"
     ],
-    "142": [
+    "140": [
       "guards_jwt_auth_guard_jwtauthguard",
       "guards_jwt_auth_guard_jwtauthguard_canactivate",
       "guards_jwt_auth_guard_jwtauthguard_constructor",
       "guards_jwt_auth_guard_jwtauthguard_handlerequest",
       "hr_server_src_modules_auth_guards_jwt_auth_guard_ts"
     ],
-    "143": [
+    "141": [
       "dto_claims_dto_claimattachmentdto",
       "dto_claims_dto_claimquerydto",
       "dto_claims_dto_createclaimdto",
       "dto_claims_dto_updateclaimstatusdto",
       "hr_server_src_modules_claims_dto_claims_dto_ts"
     ],
-    "144": [
+    "142": [
       "client_src_components_ui_accordion_tsx",
       "ui_accordion_accordion",
       "ui_accordion_accordioncontent",
       "ui_accordion_accordionitem",
       "ui_accordion_accordiontrigger"
     ],
-    "145": [
+    "143": [
       "client_src_components_ui_breadcrumb_tsx",
       "ui_breadcrumb_breadcrumb",
       "ui_breadcrumb_breadcrumblink",
       "ui_breadcrumb_breadcrumbpage",
       "ui_breadcrumb_cn"
     ],
-    "146": [
+    "144": [
       "client_src_components_ui_carousel_tsx",
       "ui_carousel_carousel",
       "ui_carousel_carouselnext",
       "ui_carousel_cn",
       "ui_carousel_usecarousel"
     ],
-    "147": [
+    "145": [
       "hr_server_src_common_interceptors_audit_log_interceptor_ts",
       "interceptors_audit_log_interceptor_auditloginterceptor",
       "interceptors_audit_log_interceptor_auditloginterceptor_constructor",
       "interceptors_audit_log_interceptor_auditloginterceptor_intercept"
     ],
-    "148": [
+    "146": [
       "cache_redis_module_redismodule",
       "cache_redis_module_redismodule_constructor",
       "cache_redis_module_redismodule_onmoduledestroy",
       "hr_server_src_common_cache_redis_module_ts"
     ],
-    "149": [
+    "147": [
       "dto_loans_dto_createloanrequestdto",
       "dto_loans_dto_processloanrequestdto",
       "dto_loans_dto_recordmanualpaymentdto",
       "hr_server_src_modules_loans_dto_loans_dto_ts"
     ],
-    "150": [
+    "148": [
       "hr_server_src_modules_tasks_tasks_processor_ts",
       "tasks_tasks_processor_tasksprocessor",
       "tasks_tasks_processor_tasksprocessor_constructor",
       "tasks_tasks_processor_tasksprocessor_process"
     ],
-    "151": [
+    "149": [
       "dto_create_leave_application_dto_createleaveapplicationdto",
       "dto_create_leave_application_dto_updateleaveapplicationdto",
       "dto_create_leave_application_dto_updateleaveapplicationstatusdto",
       "hr_server_src_modules_leave_application_dto_create_leave_application_dto_ts"
     ],
-    "152": [
+    "150": [
       "hr_server_src_modules_auth_strategies_jwt_strategy_ts",
       "strategies_jwt_strategy_jwtstrategy",
       "strategies_jwt_strategy_jwtstrategy_constructor",
       "strategies_jwt_strategy_jwtstrategy_validate"
     ],
-    "153": [
+    "151": [
       "guards_ownership_guard_ownershipguard",
       "guards_ownership_guard_ownershipguard_canactivate",
       "guards_ownership_guard_ownershipguard_constructor",
       "hr_server_src_modules_auth_guards_ownership_guard_ts"
     ],
-    "154": [
+    "152": [
       "dto_announcement_dto_announcementquerydto",
       "dto_announcement_dto_createannouncementdto",
       "dto_announcement_dto_updateannouncementdto",
       "hr_server_src_modules_announcements_dto_announcement_dto_ts"
     ],
-    "155": [
+    "153": [
       "dto_attendance_settings_dto_createholidaydto",
       "dto_attendance_settings_dto_updateattendancesettingsdto",
       "dto_attendance_settings_dto_updateholidaydto",
       "hr_server_src_modules_attendance_settings_dto_attendance_settings_dto_ts"
     ],
-    "156": [
+    "154": [
       "dashboard_dashboard_controller_dashboardcontroller",
       "dashboard_dashboard_controller_dashboardcontroller_constructor",
       "dashboard_dashboard_controller_dashboardcontroller_getexecutivesummary",
       "hr_server_src_modules_dashboard_dashboard_controller_ts"
     ],
-    "157": [
+    "155": [
       "dto_separation_dto_createseparationdto",
       "dto_separation_dto_separationquerydto",
       "dto_separation_dto_updateseparationdto",
       "hr_server_src_modules_separation_dto_separation_dto_ts"
     ],
-    "158": [
+    "156": [
       "dto_disciplinary_dto_createdisciplinarycasedto",
       "dto_disciplinary_dto_disciplinaryquerydto",
       "dto_disciplinary_dto_updatedisciplinarycasedto",
       "hr_server_src_modules_disciplinary_dto_disciplinary_dto_ts"
     ],
-    "159": [
+    "157": [
       "dto_payroll_dto_disbursedto",
       "dto_payroll_dto_payslipadjustmentitemdto",
       "dto_payroll_dto_updatepayslipadjustmentsdto",
       "hr_server_src_modules_payroll_dto_payroll_dto_ts"
     ],
-    "160": [
+    "158": [
       "hr_server_src_modules_performance_performance_processor_ts",
       "performance_performance_processor_performanceprocessor",
       "performance_performance_processor_performanceprocessor_constructor",
       "performance_performance_processor_performanceprocessor_process"
     ],
-    "161": [
+    "159": [
       "dto_assets_dto_allocateassetdto",
       "dto_assets_dto_createassetdto",
       "dto_assets_dto_updateassetconditiondto",
       "hr_server_src_modules_assets_dto_assets_dto_ts"
     ],
-    "162": [
+    "160": [
       "guards_rate_limiter_guard_notificationratelimiter",
       "guards_rate_limiter_guard_notificationratelimiter_candeliver",
       "guards_rate_limiter_guard_notificationratelimiter_constructor",
       "hr_server_src_modules_notifications_guards_rate_limiter_guard_ts"
     ],
-    "163": [
+    "161": [
       "client_src_components_ui_popover_tsx",
       "ui_popover_popover",
       "ui_popover_popoverdescription",
       "ui_popover_popovertrigger"
     ],
-    "164": [
+    "162": [
       "client_src_components_ui_native_select_tsx",
       "ui_native_select_nativeselect",
       "ui_native_select_nativeselectoptgroup",
       "ui_native_select_nativeselectoption"
     ],
-    "165": [
+    "163": [
       "client_src_components_ui_toggle_group_tsx",
       "ui_toggle_group_cn",
       "ui_toggle_group_togglegroup",
       "ui_toggle_group_togglegroupitem"
     ],
-    "166": [
+    "164": [
+      "hr_server_src_modules_payroll_payroll_processor_ts",
+      "payroll_payroll_processor_payrollprocessor",
+      "payroll_payroll_processor_payrollprocessor_constructor",
+      "payroll_payroll_processor_payrollprocessor_process"
+    ],
+    "165": [
       "hr_server_src_common_interceptors_response_interceptor_ts",
       "interceptors_response_interceptor_responseinterceptor",
       "interceptors_response_interceptor_responseinterceptor_intercept"
     ],
-    "167": [
+    "166": [
       "hr_server_src_modules_chat_processors_chat_notification_processor_ts",
       "processors_chat_notification_processor_chatnotificationprocessor",
       "processors_chat_notification_processor_chatnotificationprocessor_process"
     ],
-    "168": [
+    "167": [
       "dto_approval_dto_addpayoutcommentdto",
       "dto_approval_dto_rejectpayoutdto",
       "hr_server_src_modules_festival_bonus_dto_approval_dto_ts"
     ],
-    "169": [
+    "168": [
       "dto_create_designation_dto_createdesignationdto",
       "dto_create_designation_dto_updatedesignationdto",
       "hr_server_src_modules_designation_dto_create_designation_dto_ts"
     ],
-    "170": [
+    "169": [
       "dto_create_department_dto_createdepartmentdto",
       "dto_create_department_dto_updatedepartmentdto",
       "hr_server_src_modules_department_dto_create_department_dto_ts"
     ],
-    "171": [
+    "170": [
       "dto_org_chart_dto_createorgnodedto",
       "dto_org_chart_dto_updateorgnodedto",
       "hr_server_src_modules_org_chart_dto_org_chart_dto_ts"
     ],
-    "172": [
+    "171": [
       "dto_settlement_dto_calculatesettlementdto",
       "dto_settlement_dto_updatesettlementstatusdto",
       "hr_server_src_modules_separation_dto_settlement_dto_ts"
     ],
-    "173": [
+    "172": [
       "dto_create_leave_type_dto_createleavetypedto",
       "dto_create_leave_type_dto_updateleavetypedto",
       "hr_server_src_modules_leave_type_dto_create_leave_type_dto_ts"
     ],
-    "174": [
+    "173": [
       "dto_emit_notification_dto_broadcastdto",
       "dto_emit_notification_dto_emitnotificationdto",
       "hr_server_src_modules_notifications_dto_emit_notification_dto_ts"
     ],
-    "175": [
+    "174": [
       "client_src_components_error_boundary_tsx",
       "components_error_boundary_componentdidcatch",
       "components_error_boundary_getderivedstatefromerror"
     ],
+    "175": [
+      "client_src_components_ui_card_tsx",
+      "ui_card_cardaction",
+      "ui_card_cn"
+    ],
     "176": [
+      "client_src_components_ui_chart_tsx",
+      "ui_chart_cn",
+      "ui_chart_usechart"
+    ],
+    "177": [
       "client_src_components_ui_navigation_menu_tsx",
       "ui_navigation_menu_cn",
       "ui_navigation_menu_navigationmenutrigger"
     ],
-    "177": [
+    "178": [
       "client_src_components_ui_alert_tsx",
       "ui_alert_alert",
       "ui_alert_cn"
     ],
-    "178": [
+    "179": [
       "client_src_components_ui_calendar_tsx",
       "ui_calendar_calendar",
       "ui_calendar_cn"
     ],
-    "179": [
+    "180": [
+      "client_src_components_ui_radio_group_tsx",
+      "ui_radio_group_radiogroup",
+      "ui_radio_group_radiogroupitem"
+    ],
+    "181": [
       "client_src_components_ui_avatar_tsx",
       "ui_avatar_avatarbadge",
       "ui_avatar_cn"
     ],
-    "180": [
+    "182": [
       "client_src_routes_pages_payroll_disbursement_logs_tsx",
       "hooks_usepayroll_usedisbursementsquery",
       "pages_payroll_disbursement_logs_payrolldisbursementlogspage"
     ],
-    "181": [
-      "client_src_routes_pages_create_employee_tsx",
-      "hooks_useemployees_usecreateemployeemutation",
-      "pages_create_employee_createemployeepage"
-    ],
-    "182": [
+    "183": [
       "hr_server_test_seed_test_data_ts",
       "test_seed_test_data_seed"
     ],
-    "183": [
+    "184": [
       "hr_server_test_seed_leave_types_ts",
       "test_seed_leave_types_seed"
     ],
-    "184": [
+    "185": [
       "hr_server_src_main_ts",
       "src_main_bootstrap"
     ],
-    "185": [
+    "186": [
       "hr_server_src_app_module_ts",
       "src_app_module_appmodule"
     ],
-    "186": [
+    "187": [
       "db_index_databasemodule",
       "hr_server_src_db_index_ts"
     ],
-    "187": [
+    "188": [
       "attendance_attendance_module_attendancemodule",
       "hr_server_src_modules_attendance_attendance_module_ts"
     ],
-    "188": [
+    "189": [
       "hr_server_src_modules_loans_loans_module_ts",
       "loans_loans_module_loansmodule"
     ],
-    "189": [
+    "190": [
       "hr_server_src_modules_tasks_tasks_module_ts",
       "tasks_tasks_module_tasksmodule"
     ],
-    "190": [
+    "191": [
       "hr_server_src_modules_letters_letters_module_ts",
       "letters_letters_module_lettersmodule"
     ],
-    "191": [
+    "192": [
       "hr_server_src_modules_leave_application_leave_application_module_ts",
       "leave_application_leave_application_module_leaveapplicationmodule"
     ],
-    "192": [
+    "193": [
       "dto_leave_application_query_dto_leaveapplicationquerydto",
       "hr_server_src_modules_leave_application_dto_leave_application_query_dto_ts"
     ],
-    "193": [
+    "194": [
       "chat_chat_module_chatmodule",
       "hr_server_src_modules_chat_chat_module_ts"
     ],
-    "194": [
+    "195": [
       "hr_server_src_modules_provident_fund_provident_fund_module_ts",
       "provident_fund_provident_fund_module_providentfundmodule"
     ],
-    "195": [
+    "196": [
       "dto_provident_fund_dto_updateprovidentfundsettingsdto",
       "hr_server_src_modules_provident_fund_dto_provident_fund_dto_ts"
     ],
-    "196": [
+    "197": [
       "auth_auth_module_authmodule",
       "hr_server_src_modules_auth_auth_module_ts"
     ],
-    "197": [
+    "198": [
       "dto_login_dto_logindto",
       "hr_server_src_modules_auth_dto_login_dto_ts"
     ],
-    "198": [
+    "199": [
       "guards_owner_decorator_owneronly",
       "hr_server_src_modules_auth_guards_owner_decorator_ts"
     ],
-    "199": [
+    "200": [
       "guards_roles_decorator_permissions",
       "hr_server_src_modules_auth_guards_roles_decorator_ts"
     ],
-    "200": [
+    "201": [
       "guards_public_decorator_public",
       "hr_server_src_modules_auth_guards_public_decorator_ts"
     ],
-    "201": [
+    "202": [
       "hr_server_src_modules_salary_salary_module_ts",
       "salary_salary_module_salarymodule"
     ],
-    "202": [
+    "203": [
       "festival_bonus_festival_bonus_module_festivalbonusmodule",
       "hr_server_src_modules_festival_bonus_festival_bonus_module_ts"
     ],
-    "203": [
+    "204": [
       "dto_update_payout_dto_updatefestivalbonuspayoutdto",
       "hr_server_src_modules_festival_bonus_dto_update_payout_dto_ts"
     ],
-    "204": [
+    "205": [
       "dto_create_cycle_dto_createfestivalbonuscycledto",
       "hr_server_src_modules_festival_bonus_dto_create_cycle_dto_ts"
     ],
-    "205": [
+    "206": [
       "dto_festival_bonus_settings_dto_updatefestivalbonussettingsdto",
       "hr_server_src_modules_festival_bonus_dto_festival_bonus_settings_dto_ts"
     ],
-    "206": [
+    "207": [
       "dto_disburse_cycle_dto_disbursefestivalbonuscycledto",
       "hr_server_src_modules_festival_bonus_dto_disburse_cycle_dto_ts"
     ],
-    "207": [
+    "208": [
       "health_health_module_healthmodule",
       "hr_server_src_modules_health_health_module_ts"
     ],
-    "208": [
+    "209": [
       "hr_server_src_modules_recruitment_recruitment_module_ts",
       "recruitment_recruitment_module_recruitmentmodule"
     ],
-    "209": [
+    "210": [
       "designation_designation_module_designationmodule",
       "hr_server_src_modules_designation_designation_module_ts"
     ],
-    "210": [
+    "211": [
       "dto_designation_query_dto_designationquerydto",
       "hr_server_src_modules_designation_dto_designation_query_dto_ts"
     ],
-    "211": [
+    "212": [
       "hr_server_src_modules_roles_roles_module_ts",
       "roles_roles_module_rolesmodule"
     ],
-    "212": [
+    "213": [
       "announcements_announcements_module_announcementsmodule",
       "hr_server_src_modules_announcements_announcements_module_ts"
     ],
-    "213": [
+    "214": [
       "department_department_module_departmentmodule",
       "hr_server_src_modules_department_department_module_ts"
     ],
-    "214": [
+    "215": [
       "dto_department_query_dto_departmentquerydto",
       "hr_server_src_modules_department_dto_department_query_dto_ts"
     ],
-    "215": [
+    "216": [
       "attendance_settings_attendance_settings_module_attendancesettingsmodule",
       "hr_server_src_modules_attendance_settings_attendance_settings_module_ts"
     ],
-    "216": [
+    "217": [
       "dashboard_dashboard_module_dashboardmodule",
       "hr_server_src_modules_dashboard_dashboard_module_ts"
     ],
-    "217": [
+    "218": [
       "hr_server_src_modules_org_chart_org_chart_module_ts",
       "org_chart_org_chart_module_orgchartmodule"
     ],
-    "218": [
+    "219": [
       "hr_server_src_modules_queue_queue_module_ts",
       "queue_queue_module_queuemodule"
     ],
-    "219": [
+    "220": [
       "hr_server_src_modules_separation_separation_module_ts",
       "separation_separation_module_separationmodule"
     ],
-    "220": [
+    "221": [
       "disciplinary_disciplinary_module_disciplinarymodule",
       "hr_server_src_modules_disciplinary_disciplinary_module_ts"
     ],
-    "221": [
+    "222": [
       "hr_server_src_modules_payroll_payroll_module_ts",
       "payroll_payroll_module_payrollmodule"
     ],
-    "222": [
+    "223": [
       "hr_server_src_modules_performance_performance_module_ts",
       "performance_performance_module_performancemodule"
     ],
-    "223": [
+    "224": [
       "hr_server_src_modules_regulations_regulations_module_ts",
       "regulations_regulations_module_regulationsmodule"
     ],
-    "224": [
+    "225": [
       "hr_server_src_modules_leave_type_leave_type_module_ts",
       "leave_type_leave_type_module_leavetypemodule"
     ],
-    "225": [
+    "226": [
       "dto_leave_type_query_dto_leavetypequerydto",
       "hr_server_src_modules_leave_type_dto_leave_type_query_dto_ts"
     ],
-    "226": [
+    "227": [
       "employee_employee_module_employeemodule",
       "hr_server_src_modules_employee_employee_module_ts"
     ],
-    "227": [
+    "228": [
       "dto_change_status_dto_changestatusdto",
       "hr_server_src_modules_employee_dto_change_status_dto_ts"
     ],
-    "228": [
+    "229": [
       "dto_update_employee_dto_updateemployeedto",
       "hr_server_src_modules_employee_dto_update_employee_dto_ts"
     ],
-    "229": [
+    "230": [
       "dto_employee_query_dto_employeequerydto",
       "hr_server_src_modules_employee_dto_employee_query_dto_ts"
     ],
-    "230": [
+    "231": [
       "assets_assets_module_assetsmodule",
       "hr_server_src_modules_assets_assets_module_ts"
     ],
-    "231": [
+    "232": [
       "hr_server_src_modules_notifications_notifications_module_ts",
       "notifications_notifications_module_notificationsmodule"
     ],
-    "232": [
+    "233": [
       "dto_notification_query_dto_notificationquerydto",
       "hr_server_src_modules_notifications_dto_notification_query_dto_ts"
     ],
-    "233": [
+    "234": [
       "dto_preferences_dto_updatepreferencesdto",
       "hr_server_src_modules_notifications_dto_preferences_dto_ts"
     ],
-    "234": [
+    "235": [
       "hr_server_src_modules_upload_upload_module_ts",
       "upload_upload_module_uploadmodule"
     ],
-    "235": [
+    "236": [
       "hr_server_src_modules_reports_reports_module_ts",
       "reports_reports_module_reportsmodule"
     ],
-    "236": [
+    "237": [
       "claims_claims_module_claimsmodule",
       "hr_server_src_modules_claims_claims_module_ts"
     ],
-    "237": [
+    "238": [
       "client_vite_config_manualchunks",
       "client_vite_config_ts"
     ],
-    "238": [
+    "239": [
       "client_public_theme_script_js",
       "public_theme_script_applytheme"
     ],
-    "239": [
+    "240": [
       "client_src_components_ui_aspect_ratio_tsx",
       "ui_aspect_ratio_aspectratio"
     ],
-    "240": [
+    "241": [
       "client_src_components_ui_direction_tsx",
       "ui_direction_directionprovider"
     ],
-    "241": [
+    "242": [
       "client_src_components_ui_collapsible_tsx",
       "ui_collapsible_collapsible"
     ],
-    "242": [
+    "243": [
       "client_src_components_letters_print_templates_printrelieving_tsx",
       "templates_printrelieving_printrelieving"
     ],
-    "243": [
+    "244": [
       "client_src_components_letters_print_templates_printfinalwarning_tsx",
       "templates_printfinalwarning_printfinalwarning"
     ],
-    "244": [
+    "245": [
       "client_src_components_letters_print_templates_printsuspension_tsx",
       "templates_printsuspension_printsuspension"
     ],
-    "245": [
+    "246": [
       "client_src_components_letters_print_templates_printsalaryrevision_tsx",
       "templates_printsalaryrevision_printsalaryrevision"
     ],
-    "246": [
+    "247": [
       "client_src_components_letters_print_templates_printinquirycommittee_tsx",
       "templates_printinquirycommittee_printinquirycommittee"
     ],
-    "247": [
+    "248": [
       "client_src_components_letters_print_templates_printwarning_tsx",
       "templates_printwarning_printwarning"
     ],
-    "248": [
+    "249": [
       "client_src_components_letters_print_templates_printoffer_tsx",
       "templates_printoffer_printoffer"
     ],
-    "249": [
+    "250": [
       "client_src_components_letters_print_templates_printdomesticinquiry_tsx",
       "templates_printdomesticinquiry_printdomesticinquiry"
     ],
-    "250": [
+    "251": [
       "client_src_components_letters_print_templates_printconfirmation_tsx",
       "templates_printconfirmation_printconfirmation"
     ],
-    "251": [
+    "252": [
       "client_src_components_letters_print_templates_printfirstwarning_tsx",
       "templates_printfirstwarning_printfirstwarning"
     ],
-    "252": [
+    "253": [
       "client_src_components_letters_print_templates_printpromotion_tsx",
       "templates_printpromotion_printpromotion"
     ],
-    "253": [
+    "254": [
       "client_src_components_letters_print_templates_printappointment_tsx",
       "templates_printappointment_printappointment"
     ],
-    "254": [
+    "255": [
       "auth_authorized_authorized",
       "client_src_components_auth_authorized_tsx"
     ],
-    "255": [
+    "256": [
       "client_src_lib_api_ts",
       "lib_api_processqueue"
     ],
-    "256": [
+    "257": [
       "client_src_routes_pages_payroll_tsx",
       "pages_payroll_payrollpage"
     ],
-    "257": [
+    "258": [
       "client_src_store_useauthstore_ts",
       "store_useauthstore_getinitialuser"
     ],
-    "258": [
-      "hr_server_drizzle_config_ts"
-    ],
     "259": [
-      "hr_server_eslint_config_mjs"
+      "readme_hr_management_system",
+      "readme_rbac_permission_model"
     ],
     "260": [
-      "hr_server_src_config_database_config_ts"
+      "readme_bullmq_job_queue",
+      "readme_payroll_processing_pipeline"
     ],
     "261": [
-      "hr_server_src_config_redis_config_ts"
+      "readme_webrtc_calling_system",
+      "readme_websocket_realtime"
     ],
     "262": [
-      "hr_server_src_config_app_config_ts"
+      "hr_server_drizzle_config_ts"
     ],
     "263": [
-      "hr_server_src_config_jwt_config_ts"
+      "hr_server_eslint_config_mjs"
     ],
     "264": [
-      "hr_server_src_config_cloudinary_config_ts"
+      "hr_server_src_config_database_config_ts"
     ],
     "265": [
-      "hr_server_src_db_schema_disciplinary_ts"
+      "hr_server_src_config_redis_config_ts"
     ],
     "266": [
-      "hr_server_src_db_schema_announcement_ts"
+      "hr_server_src_config_app_config_ts"
     ],
     "267": [
-      "hr_server_src_db_schema_office_regulations_relations_ts"
+      "hr_server_src_config_jwt_config_ts"
     ],
     "268": [
-      "hr_server_src_db_schema_leave_application_ts"
+      "hr_server_src_config_cloudinary_config_ts"
     ],
     "269": [
-      "hr_server_src_db_schema_performance_ts"
+      "hr_server_src_db_schema_disciplinary_ts"
     ],
     "270": [
-      "hr_server_src_db_schema_office_regulations_ts"
+      "hr_server_src_db_schema_announcement_ts"
     ],
     "271": [
-      "hr_server_src_db_schema_provident_fund_ts"
+      "hr_server_src_db_schema_office_regulations_relations_ts"
     ],
     "272": [
-      "hr_server_src_db_schema_notifications_ts"
+      "hr_server_src_db_schema_leave_application_ts"
     ],
     "273": [
-      "hr_server_src_db_schema_employee_ts"
+      "hr_server_src_db_schema_performance_ts"
     ],
     "274": [
-      "hr_server_src_db_schema_salary_ts"
+      "hr_server_src_db_schema_office_regulations_ts"
     ],
     "275": [
-      "hr_server_src_db_schema_assets_ts"
+      "hr_server_src_db_schema_provident_fund_ts"
     ],
     "276": [
-      "hr_server_src_db_schema_loans_ts"
+      "hr_server_src_db_schema_notifications_ts"
     ],
     "277": [
-      "hr_server_src_db_schema_festival_bonus_ts"
+      "hr_server_src_db_schema_employee_ts"
     ],
     "278": [
-      "hr_server_src_db_schema_chat_ts"
+      "hr_server_src_db_schema_salary_ts"
     ],
     "279": [
-      "hr_server_src_db_schema_payroll_ts"
+      "hr_server_src_db_schema_assets_ts"
     ],
     "280": [
-      "hr_server_src_db_schema_audit_logs_ts"
+      "hr_server_src_db_schema_loans_ts"
     ],
     "281": [
-      "hr_server_src_db_schema_claims_ts"
+      "hr_server_src_db_schema_festival_bonus_ts"
     ],
     "282": [
-      "hr_server_src_db_schema_attendance_ts"
+      "hr_server_src_db_schema_chat_ts"
     ],
     "283": [
-      "hr_server_src_db_schema_roles_ts"
+      "hr_server_src_db_schema_payroll_ts"
     ],
     "284": [
-      "hr_server_src_db_schema_index_ts"
+      "hr_server_src_db_schema_audit_logs_ts"
     ],
     "285": [
-      "hr_server_src_db_schema_org_chart_ts"
+      "hr_server_src_db_schema_claims_ts"
     ],
     "286": [
-      "hr_server_src_db_schema_tasks_ts"
+      "hr_server_src_db_schema_attendance_ts"
     ],
     "287": [
-      "hr_server_src_db_schema_leave_type_ts"
+      "hr_server_src_db_schema_roles_ts"
     ],
     "288": [
-      "hr_server_src_db_schema_separation_ts"
+      "hr_server_src_db_schema_index_ts"
     ],
     "289": [
-      "hr_server_src_db_schema_recruitment_ts"
+      "hr_server_src_db_schema_org_chart_ts"
     ],
     "290": [
-      "hr_server_src_db_schema_base_ts"
+      "hr_server_src_db_schema_tasks_ts"
     ],
     "291": [
-      "hr_server_src_db_schema_letters_ts"
+      "hr_server_src_db_schema_leave_type_ts"
     ],
     "292": [
-      "hr_server_src_modules_queue_bullmq_config_ts"
+      "hr_server_src_db_schema_separation_ts"
     ],
     "293": [
-      "hr_server_src_modules_notifications_types_notification_types_ts"
+      "hr_server_src_db_schema_recruitment_ts"
     ],
     "294": [
-      "client_eslint_config_js"
+      "hr_server_src_db_schema_base_ts"
     ],
     "295": [
-      "client_src_types_leave_ts"
+      "hr_server_src_db_schema_letters_ts"
     ],
     "296": [
-      "client_src_types_provident_fund_ts"
+      "hr_server_src_modules_queue_bullmq_config_ts"
     ],
     "297": [
-      "client_src_types_notifications_ts"
+      "hr_server_src_modules_notifications_types_notification_types_ts"
     ],
     "298": [
-      "client_src_types_salary_ts"
+      "client_eslint_config_js"
     ],
     "299": [
-      "client_src_types_claims_ts"
+      "client_src_types_leave_ts"
     ],
     "300": [
-      "client_src_types_attendance_ts"
+      "client_src_types_provident_fund_ts"
     ],
     "301": [
-      "client_src_types_index_ts"
+      "client_src_types_notifications_ts"
     ],
     "302": [
-      "client_src_types_org_ts"
+      "client_src_types_salary_ts"
     ],
     "303": [
-      "client_src_components_ui_sonner_tsx"
+      "client_src_types_claims_ts"
     ],
     "304": [
-      "client_src_components_ceo_dashboard_workforce_charts_tsx"
+      "client_src_types_attendance_ts"
     ],
     "305": [
-      "client_src_components_ceo_dashboard_attendance_trend_chart_tsx"
+      "client_src_types_index_ts"
     ],
     "306": [
-      "client_src_components_ceo_dashboard_recruitment_pipeline_tsx"
+      "client_src_types_org_ts"
     ],
     "307": [
-      "client_src_components_ceo_dashboard_leave_analytics_tsx"
+      "client_src_components_ui_sonner_tsx"
     ],
     "308": [
-      "client_src_components_tasks_details_taskfiles_tsx"
+      "client_src_components_ceo_dashboard_workforce_charts_tsx"
     ],
     "309": [
-      "client_src_components_letters_print_letterprintcomponents_tsx"
+      "client_src_components_ceo_dashboard_attendance_trend_chart_tsx"
     ],
     "310": [
-      "client_src_components_letters_print_types_ts"
+      "client_src_components_ceo_dashboard_recruitment_pipeline_tsx"
     ],
     "311": [
-      "client_src_components_letters_print_templates_printdefaultletter_tsx"
+      "client_src_components_ceo_dashboard_leave_analytics_tsx"
     ],
     "312": [
-      "client_src_components_navigation_nav_data_ts"
+      "client_src_components_tasks_details_taskfiles_tsx"
     ],
     "313": [
-      "client_src_components_employee_form_schema_ts"
+      "client_src_components_letters_print_letterprintcomponents_tsx"
     ],
     "314": [
-      "client_src_components_employee_review_step_tsx"
+      "client_src_components_letters_print_types_ts"
     ],
     "315": [
-      "client_src_store_usechatstore_ts"
+      "client_src_components_letters_print_templates_printdefaultletter_tsx"
     ],
     "316": [
-      "client_src_store_usenotificationstore_ts"
+      "client_src_components_navigation_nav_data_ts"
     ],
     "317": [
+      "client_src_components_employee_form_schema_ts"
+    ],
+    "318": [
+      "client_src_components_employee_review_step_tsx"
+    ],
+    "319": [
+      "client_src_store_usechatstore_ts"
+    ],
+    "320": [
+      "client_src_store_usenotificationstore_ts"
+    ],
+    "321": [
       "client_src_store_useorgstore_ts"
     ]
   },
   "cohesion": {
-    "0": 0.06,
-    "1": 0.05,
-    "2": 0.04,
-    "3": 0.06,
-    "4": 0.05,
-    "5": 0.05,
+    "0": 0.05,
+    "1": 0.06,
+    "2": 0.05,
+    "3": 0.05,
+    "4": 0.04,
+    "5": 0.1,
     "6": 0.23,
     "7": 0.07,
     "8": 0.09,
     "9": 0.14,
-    "10": 0.12,
-    "11": 0.06,
-    "12": 0.08,
-    "13": 0.09,
-    "14": 0.12,
-    "15": 0.08,
-    "16": 0.1,
-    "17": 0.18,
-    "18": 0.1,
-    "19": 0.12,
+    "10": 0.08,
+    "11": 0.07,
+    "12": 0.12,
+    "13": 0.06,
+    "14": 0.09,
+    "15": 0.1,
+    "16": 0.12,
+    "17": 0.08,
+    "18": 0.18,
+    "19": 0.11,
     "20": 0.12,
     "21": 0.12,
-    "22": 0.19,
-    "23": 0.09,
-    "24": 0.11,
+    "22": 0.12,
+    "23": 0.19,
+    "24": 0.09,
     "25": 0.11,
     "26": 0.1,
     "27": 0.1,
     "28": 0.1,
-    "29": 0.14,
-    "30": 0.13,
-    "31": 0.2,
-    "32": 0.17,
-    "33": 0.11,
-    "34": 0.24,
-    "35": 0.13,
-    "36": 0.12,
-    "37": 0.15,
+    "29": 0.11,
+    "30": 0.11,
+    "31": 0.13,
+    "32": 0.13,
+    "33": 0.17,
+    "34": 0.11,
+    "35": 0.24,
+    "36": 0.13,
+    "37": 0.24,
     "38": 0.12,
-    "39": 0.16,
-    "40": 0.16,
-    "41": 0.14,
-    "42": 0.13,
-    "43": 0.18,
+    "39": 0.15,
+    "40": 0.12,
+    "41": 0.16,
+    "42": 0.16,
+    "43": 0.13,
     "44": 0.15,
-    "45": 0.15,
-    "46": 0.25,
+    "45": 0.25,
+    "46": 0.15,
     "47": 0.14,
     "48": 0.15,
     "49": 0.18,
-    "50": 0.22,
+    "50": 0.16,
     "51": 0.15,
     "52": 0.15,
-    "53": 0.21,
-    "54": 0.15,
-    "55": 0.23,
+    "53": 0.22,
+    "54": 0.23,
+    "55": 0.21,
     "56": 0.17,
-    "57": 0.19,
-    "58": 0.18,
-    "59": 0.17,
+    "57": 0.17,
+    "58": 0.17,
+    "59": 0.18,
     "60": 0.17,
-    "61": 0.17,
+    "61": 0.2,
     "62": 0.17,
     "63": 0.21,
-    "64": 0.2,
-    "65": 0.22,
-    "66": 0.18,
-    "67": 0.31,
-    "68": 0.27,
+    "64": 0.22,
+    "65": 0.18,
+    "66": 0.31,
+    "67": 0.27,
+    "68": 0.2,
     "69": 0.18,
     "70": 0.18,
-    "71": 0.22,
-    "72": 0.45,
-    "73": 0.38,
+    "71": 0.45,
+    "72": 0.38,
+    "73": 0.24,
     "74": 0.24,
-    "75": 0.24,
+    "75": 0.2,
     "76": 0.2,
     "77": 0.2,
-    "78": 0.2,
-    "79": 0.24,
+    "78": 0.24,
+    "79": 0.2,
     "80": 0.2,
     "81": 0.2,
-    "82": 0.2,
+    "82": 0.33,
     "83": 0.24,
-    "84": 0.33,
-    "85": 0.29,
-    "86": 0.2,
+    "84": 0.29,
+    "85": 0.27,
+    "86": 0.22,
     "87": 0.22,
-    "88": 0.22,
-    "89": 0.25,
-    "90": 0.22,
+    "88": 0.25,
+    "89": 0.22,
+    "90": 0.28,
     "91": 0.28,
-    "92": 0.28,
+    "92": 0.22,
     "93": 0.22,
     "94": 0.22,
     "95": 0.22,
@@ -3249,52 +3263,52 @@
     "97": 0.22,
     "98": 0.22,
     "99": 0.22,
-    "100": 0.25,
-    "101": 0.22,
-    "102": 0.22,
-    "103": 0.28,
-    "104": 0.33,
-    "105": 0.29,
-    "106": 0.54,
+    "100": 0.22,
+    "101": 0.25,
+    "102": 0.28,
+    "103": 0.22,
+    "104": 0.29,
+    "105": 0.25,
+    "106": 0.25,
     "107": 0.25,
     "108": 0.25,
-    "109": 0.25,
-    "110": 0.25,
-    "111": 0.32,
-    "112": 0.36,
+    "109": 0.32,
+    "110": 0.54,
+    "111": 0.36,
+    "112": 0.25,
     "113": 0.25,
     "114": 0.25,
     "115": 0.25,
-    "116": 0.29,
+    "116": 0.25,
     "117": 0.25,
-    "118": 0.29,
+    "118": 0.25,
     "119": 0.29,
-    "120": 0.25,
+    "120": 0.29,
     "121": 0.25,
-    "122": 0.25,
+    "122": 0.29,
     "123": 0.43,
     "124": 0.29,
     "125": 0.29,
-    "126": 0.29,
-    "127": 0.38,
-    "128": 0.33,
-    "129": 0.33,
-    "130": 0.47,
-    "131": 0.47,
-    "132": 0.33,
+    "126": 0.33,
+    "127": 0.33,
+    "128": 0.47,
+    "129": 0.47,
+    "130": 0.33,
+    "131": 0.33,
+    "132": 0.4,
     "133": 0.33,
-    "134": 0.33,
-    "135": 0.4,
-    "136": 0.33,
+    "134": 0.4,
+    "135": 0.33,
+    "136": 0.4,
     "137": 0.4,
     "138": 0.4,
-    "139": 0.4,
+    "139": 0.5,
     "140": 0.4,
-    "141": 0.5,
+    "141": 0.4,
     "142": 0.4,
     "143": 0.4,
-    "144": 0.4,
-    "145": 0.4,
+    "144": 0.5,
+    "145": 0.5,
     "146": 0.5,
     "147": 0.5,
     "148": 0.5,
@@ -3314,7 +3328,7 @@
     "162": 0.5,
     "163": 0.5,
     "164": 0.5,
-    "165": 0.5,
+    "165": 0.67,
     "166": 0.67,
     "167": 0.67,
     "168": 0.67,
@@ -3329,8 +3343,8 @@
     "177": 0.67,
     "178": 0.67,
     "179": 0.67,
-    "180": 1.0,
-    "181": 1.0,
+    "180": 0.67,
+    "181": 0.67,
     "182": 1.0,
     "183": 1.0,
     "184": 1.0,
@@ -3466,7 +3480,11 @@
     "314": 1.0,
     "315": 1.0,
     "316": 1.0,
-    "317": 1.0
+    "317": 1.0,
+    "318": 1.0,
+    "319": 1.0,
+    "320": 1.0,
+    "321": 1.0
   },
   "gods": [
     {
@@ -3580,38 +3598,38 @@
   "questions": [
     {
       "type": "bridge_node",
-      "question": "Why does `String()` connect `Community 35` to `Community 0`, `Community 5`, `Community 7`, `Community 137`, `Community 10`, `Community 14`, `Community 16`, `Community 21`, `Community 22`, `Community 29`, `Community 31`, `Community 53`, `Community 54`, `Community 55`, `Community 56`, `Community 57`, `Community 72`, `Community 83`, `Community 84`, `Community 100`, `Community 122`?",
+      "question": "Why does `String()` connect `Community 61` to `Community 3`, `Community 5`, `Community 134`, `Community 7`, `Community 11`, `Community 12`, `Community 16`, `Community 20`, `Community 23`, `Community 164`, `Community 36`, `Community 37`, `Community 50`, `Community 54`, `Community 55`, `Community 56`, `Community 71`, `Community 82`, `Community 83`, `Community 101`, `Community 118`, `Community 120`?",
       "why": "High betweenness centrality (0.089) - this node is a cross-community bridge."
     },
     {
       "type": "bridge_node",
-      "question": "Why does `cn()` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 132`, `Community 133`, `Community 134`, `Community 135`, `Community 9`, `Community 136`, `Community 7`, `Community 12`, `Community 13`, `Community 144`, `Community 145`, `Community 146`, `Community 18`, `Community 20`, `Community 16`, `Community 19`, `Community 21`, `Community 29`, `Community 163`, `Community 164`, `Community 165`, `Community 35`, `Community 40`, `Community 43`, `Community 176`, `Community 177`, `Community 178`, `Community 179`, `Community 54`, `Community 56`, `Community 62`, `Community 70`, `Community 71`, `Community 82`, `Community 100`, `Community 101`, `Community 102`, `Community 103`, `Community 115`, `Community 116`, `Community 118`, `Community 119`, `Community 121`, `Community 126`, `Community 127`?",
+      "question": "Why does `cn()` connect `Community 4` to `Community 0`, `Community 1`, `Community 2`, `Community 130`, `Community 131`, `Community 5`, `Community 132`, `Community 135`, `Community 133`, `Community 9`, `Community 10`, `Community 11`, `Community 7`, `Community 142`, `Community 143`, `Community 144`, `Community 15`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 29`, `Community 30`, `Community 161`, `Community 162`, `Community 163`, `Community 42`, `Community 175`, `Community 176`, `Community 177`, `Community 178`, `Community 179`, `Community 180`, `Community 181`, `Community 56`, `Community 61`, `Community 62`, `Community 70`, `Community 81`, `Community 99`, `Community 100`, `Community 102`, `Community 103`, `Community 114`, `Community 116`, `Community 119`, `Community 120`, `Community 122`?",
       "why": "High betweenness centrality (0.082) - this node is a cross-community bridge."
     },
     {
       "type": "bridge_node",
-      "question": "Why does `Input()` connect `Community 9` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 12`, `Community 13`, `Community 16`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 25`, `Community 29`, `Community 40`, `Community 43`, `Community 54`, `Community 57`, `Community 63`, `Community 71`, `Community 85`, `Community 86`, `Community 103`, `Community 116`, `Community 119`, `Community 121`, `Community 127`?",
+      "question": "Why does `Input()` connect `Community 9` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 7`, `Community 10`, `Community 11`, `Community 14`, `Community 15`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 29`, `Community 30`, `Community 32`, `Community 42`, `Community 63`, `Community 81`, `Community 84`, `Community 101`, `Community 102`, `Community 115`, `Community 116`, `Community 122`?",
       "why": "High betweenness centrality (0.046) - this node is a cross-community bridge."
     },
     {
       "type": "isolated_nodes",
       "question": "What connects `AppModule`, `DatabaseModule`, `AttendanceModule` to the rest of the system?",
-      "why": "170 weakly-connected nodes found - possible documentation gaps or missing edges."
+      "why": "176 weakly-connected nodes found - possible documentation gaps or missing edges."
     },
     {
       "type": "low_cohesion",
       "question": "Should `Community 0` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.06 - nodes in this community are weakly interconnected."
-    },
-    {
-      "type": "low_cohesion",
-      "question": "Should `Community 1` be split into smaller, more focused modules?",
       "why": "Cohesion score 0.05 - nodes in this community are weakly interconnected."
     },
     {
       "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.06 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
       "question": "Should `Community 2` be split into smaller, more focused modules?",
-      "why": "Cohesion score 0.04 - nodes in this community are weakly interconnected."
+      "why": "Cohesion score 0.05 - nodes in this community are weakly interconnected."
     }
   ]
 }

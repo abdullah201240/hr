@@ -577,6 +577,7 @@
 /Users/abdullahalsakib/Documents/my/hr/client/src/store/useNotificationStore.ts
 /Users/abdullahalsakib/Documents/my/hr/client/src/store/useAuthStore.ts
 /Users/abdullahalsakib/Documents/my/hr/client/src/store/useOrgStore.ts
+/Users/abdullahalsakib/Documents/my/hr/README.md
 /Users/abdullahalsakib/Documents/my/hr/hr-server/README.md
 /Users/abdullahalsakib/Documents/my/hr/client/index.html
 /Users/abdullahalsakib/Documents/my/hr/client/README.md
