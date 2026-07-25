@@ -181,15 +181,22 @@ axiosInstance.interceptors.response.use(
       errorMessage = error.message;
     }
 
-    // Trigger visual toast
-    toast.error(errorMessage, {
-      description: errorDescription || undefined,
-      duration: 5000,
-    });
+    // Attach human-readable message to error object
+    (error as any).userMessage = errorMessage;
+
+    // Trigger visual toast (skip on login endpoint to let login form handle inline error)
+    const isLoginReq = error.config?.url?.includes("auth/login");
+    if (!isLoginReq) {
+      toast.error(errorMessage, {
+        description: errorDescription || undefined,
+        duration: 5000,
+      });
+    }
 
     return Promise.reject(error);
   }
 );
+
 
 // Standardized client wrapper
 export const apiClient = {

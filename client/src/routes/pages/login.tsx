@@ -59,11 +59,14 @@ export default function LoginPage() {
       sessionStorage.removeItem(LOGIN_EMAIL_KEY)
       navigate("/")
     } catch (err: any) {
-      setServerError(err.message || "Invalid email or password. Please try again.")
+      const msg = err?.userMessage || err?.response?.data?.error?.message || err?.response?.data?.message || err?.message
+      const cleanMsg = (msg && !msg.includes("Request failed") && !msg.includes("status code")) ? msg : "Invalid email or password. Please try again."
+      setServerError(cleanMsg)
     } finally {
       setIsLoading(false)
     }
   }
+
 
   return (
     <div className="space-y-6">

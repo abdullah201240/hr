@@ -317,7 +317,7 @@ const setupPeerConnectionListeners = (
       stream = new MediaStream();
     }
     
-    const exists = stream.getTracks().some(t => t.id === event.track.id);
+    const exists = stream.getTracks().some((t: MediaStreamTrack) => t.id === event.track.id);
     if (!exists) {
       stream.addTrack(event.track);
       const updatedStream = new MediaStream(stream.getTracks());
